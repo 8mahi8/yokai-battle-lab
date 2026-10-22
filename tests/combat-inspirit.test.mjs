@@ -30,11 +30,9 @@ test('all front asleep yields await-rotation instead of scheduler exception',()=
  combat.rotate(0,1);
  assert.equal(combat.step().type,'action');
 });
-test('duration expiry while sleeping is deliberately unresolved',()=>{
+test('unsupported temporary sleep is rejected rather than left permanently stuck',()=>{
  const combat=createCombat({seed:14});
- combat.applyInspirit({id:'A1',sign:'negative',effect:'sleep',duration:2});
- combat.simulate(40);
- assert.equal(combat.snapshot().inspirits.A1[0].remaining,2);
+ assert.throws(()=>combat.applyInspirit({id:'A1',sign:'negative',effect:'sleep',duration:2}),/unsupported/);
 });
 test('inspirited battle remains seed deterministic across purification and rotation',()=>{
  function replay(){
