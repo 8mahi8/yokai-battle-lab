@@ -20,7 +20,7 @@ main{width:min(1300px,100%);margin:auto}header{display:flex;align-items:center;j
 <body>
 <main>
 <header><div><div class="topline">ORIGINAL BATTLE PROJECT / RESEARCH LAB</div><h1>輪戦ラボ <small style="font-size:.48em;color:#a9bed4">Phase 1</small></h1></div><span class="flag">検証中・原作完全再現ではありません</span></header>
-<div class="note">6体・前衛3体・回転・行動ポイントを検証するための仮表示。行動ポイントの更新方式、初期補正、同値優先順は<strong>研究用の暫定モデル</strong>です。攻撃・HP・オンライン対戦はまだありません。</div>
+<div class="note">6体・前衛3体・回転・行動ポイントを検証するための仮表示。初期待ちの範囲・行動後・交代後の待ちは非公式のゲームデータ解析表を参照。行動待ちの進め方・同値優先順は<strong>研究用の暫定モデル</strong>です。攻撃・HP・オンライン対戦はまだありません。</div>
 <div class="layout">
 <section class="arena" aria-label="左右のレンタルチーム配置">
  <div id="side0" class="side a"></div>
@@ -28,7 +28,7 @@ main{width:min(1300px,100%);margin:auto}header{display:flex;align-items:center;j
 </section>
 <aside class="panel"><h2>行動順テスト</h2>
  <div class="metric"><span>実行した行動</span><b id="turn">0</b></div>
- <div class="metric"><span>累積待ちポイント（暫定内部値）</span><b id="time">0</b></div>
+ <div class="metric"><span>行動待ちの経過量（暫定モデル）</span><b id="time">0</b></div>
  <div class="controlRow"><button class="btn primary" id="step">1行動進める</button><button class="btn" id="steps">20行動進める</button><button class="btn" id="reset">リセット</button></div>
  <h2 style="margin-top:14px">イベントログ</h2><div class="feed" id="feed" aria-live="polite"></div>
  <div id="message" class="footer">サークルを回した直後は約3秒の再操作制限（対戦研究に基づく）があります。</div>
@@ -53,8 +53,8 @@ function draw() {
   const bench = team.benchIds.map(id=>byId.get(id));
   $('side'+team.side).innerHTML = `
   <div class="sideHead"><b>TEAM ${letter} <span>同一レンタル6体</span></b><span>配置 ${team.offset+1}/6</span></div>
-  <div class="front">${front.map(m=>`<div class="unit active ${lastActor===m.id?'fired':''}"><span class="medal">${m.id}</span><strong>${escape(m.name)}</strong><small>素早さ ${m.speed} / 待ち ${m.wait}</small></div>`).join('')}</div>
-  <div class="bench">${bench.map(m=>`<span>${m.id} · ${escape(m.name)} · 待ち${m.wait}</span>`).join('')}</div>
+  <div class="front">${front.map(m=>`<div class="unit active ${lastActor===m.id?'fired':''}"><span class="medal">${m.id}</span><strong>${escape(m.name)}</strong><small>素早さ ${m.speed} / 待ち ${m.wait ?? '—'}</small></div>`).join('')}</div>
+  <div class="bench">${bench.map(m=>`<span>${m.id} · ${escape(m.name)} · 待ち—</span>`).join('')}</div>
   <div class="controls"><button class="btn" data-side="${team.side}" data-dir="-1">◀ 左回転</button><button class="btn" data-side="${team.side}" data-dir="1">右回転 ▶</button></div>`;
  }
  $('feed').innerHTML = events.slice(-18).reverse().map(e=>`<div class="entry">#${String(e.action).padStart(3,'0')} <em>${e.id}</em> 行動　待ち+${e.cost} / 経過${e.elapsed}</div>`).join('') || '<div class="entry">まだ行動していません</div>';
@@ -64,7 +64,7 @@ document.body.addEventListener('click',e=>{
  const btn=e.target.closest('button'); if (!btn) return;
  if (btn.dataset.side!==undefined) {
   const result=battle.rotate(Number(btn.dataset.side),Number(btn.dataset.dir),performance.now());
-  $('message').textContent=result.ok?'サークル交代成功（行動ポイントは維持）':`回転制限中。あと約${(result.remainingMs/1000).toFixed(1)}秒`;
+  $('message').textContent=result.ok?'サークル交代成功（入ってきた前衛の待ちは再設定）':`回転制限中。あと約${(result.remainingMs/1000).toFixed(1)}秒`;
   draw();
  } else if(btn.id==='step') execute(1);
  else if(btn.id==='steps') execute(20);
