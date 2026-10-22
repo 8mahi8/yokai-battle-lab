@@ -7,6 +7,7 @@ import { createBattle } from './phase1.mjs';
 import { createInspiritLedger } from './inspirit.mjs';
 import { actionWeights, pickAction } from './selection.mjs';
 import { createSoulSystem } from './soul.mjs';
+import { chooseChargeKind, createChargeTrial } from './charge-input.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
   {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5]},
@@ -64,6 +65,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const clock=createBattle({seed,teams:squads.map(t=>t.map(m=>({name:m.name,speed:m.speed}))),rotationCooldownMs:0});
   const rng=seededRandom(seed ^ 0xA365E91F);
   const pins=[null,null], events=[];
+  const guided=[null,null];
   let winner=null;
   const front=(side)=>clock.snapshot().teams[side].frontIds.map(id=>byId.get(id));
   const livingFront=(side)=>front(side).filter(x=>x.hp>0);
@@ -90,12 +92,20 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   function rotate(side,direction){
     if(winner!==null)throw new Error('battle finished');
     const result=clock.rotate(side,direction,0);
-    if(result.ok)syncPinned();
+    if(result.ok){
+      syncPinned();
+      const pending=guided[side];
+      if(pending&&!clock.snapshot().teams[side].frontIds.includes(pending.id)){
+        cancelGuidedCharge(side);
+        result.chargeCancelled=true;
+      }
+    }
     return result;
   }
   function setWatchMode(side,mode){
     if(winner!==null)throw new Error('battle finished');
     const result=soul.setMode(side,mode);
+    guided[side]=null;
     if(mode==='zero')pins[side]=null; // original Watch Zero replaces Pin with Poke
     return result;
   }
@@ -116,8 +126,39 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const pending=soul.snapshot().pending[side];
     const caster=pending?byId.get(pending.casterId):null;
     const result=soul.resolve({side,token,success,frontIds:clock.snapshot().teams[side].frontIds,alive:!!caster&&caster.hp>0});
+    if(guided[side]?.token===token)guided[side]=null;
     // Only charge + resource consumption are implemented; actual special-move effects aren't.
     return result.ok?{...result,effectStatus:'unimplemented'}:result;
+  }
+  /** Player-facing touch charge: challenge selected deterministically per accepted attempt. */
+  function beginGuidedCharge(side,id){
+    if(side!==0&&side!==1)throw new RangeError('invalid side');
+    if(guided[side])return {ok:false,reason:'charge_already_pending'};
+    const result=prepareSoultimate(side,id);
+    if(!result.ok)return result;
+    const trialSeed=(seed^(result.token*0x9e3779b1)^((side+1)*0x85ebca6b))|0;
+    const kind=chooseChargeKind(trialSeed);
+    const trial=createChargeTrial({kind,seed:trialSeed});
+    guided[side]={token:result.token,id,kind,trial};
+    return {ok:true,token:result.token,kind,challenge:trial.snapshot(),
+      mode:result.mode,consumers:[...result.consumers]};
+  }
+  function chargeInput(side,input){
+    if(side!==0&&side!==1)throw new RangeError('invalid side');
+    const state=guided[side];
+    if(!state)return {ok:false,reason:'no_active_charge'};
+    const charge=soul.snapshot().pending[side];
+    if(!charge||charge.token!==state.token){guided[side]=null;return {ok:false,reason:'stale_charge'};}
+    const result=state.trial.input(input);
+    if(!result.completed)return {ok:true,completed:false,challenge:result};
+    const special=resolveSoultimate(side,state.token,true);
+    return {ok:special.ok,completed:true,challenge:result,special};
+  }
+  function cancelGuidedCharge(side){
+    if(side!==0&&side!==1)throw new RangeError('invalid side');
+    const state=guided[side];
+    if(!state)return {ok:false,reason:'no_active_charge'};
+    return resolveSoultimate(side,state.token,false);
   }
   function pokeEligibility(side,id){
     if(side!==0&&side!==1)throw new RangeError('invalid side');
@@ -148,7 +189,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     return pickAction(weights,rng);
   }
   function snapshot(){
-    return {seed,winner,pins:[...pins],clock:clock.snapshot(),squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights]}))),events:events.slice(-80).map(e=>({...e})),soul:soul.snapshot(),inspirits:Object.fromEntries([...byId.keys()].map(id=>[id,statuses.list(id)]))};
+    return {seed,winner,pins:[...pins],clock:clock.snapshot(),squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights]}))),events:events.slice(-80).map(e=>({...e})),soul:soul.snapshot(),
+      guided:guided.map(g=>g?{token:g.token,id:g.id,kind:g.kind,challenge:g.trial.snapshot()}:null),
+      inspirits:Object.fromEntries([...byId.keys()].map(id=>[id,statuses.list(id)]))};
   }
   function step(){
     if(winner!==null)return {type:'finished',winner};
@@ -222,5 +265,6 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     return result;
   }
   return {snapshot,step,simulate,rotate,pin,applyInspirit,purify,preview:clock.predict,
-    setWatchMode,giveSoul,prepareSoultimate,resolveSoultimate,pokeEligibility};
+    setWatchMode,giveSoul,prepareSoultimate,resolveSoultimate,pokeEligibility,
+    beginGuidedCharge,chargeInput,cancelGuidedCharge};
 }
