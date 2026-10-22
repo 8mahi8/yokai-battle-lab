@@ -83,3 +83,19 @@ Research implementation is **on the feature branch only**, not on main or Google
 - Full details, sources, test limitations, and remaining Phase 3 work: `docs/PHASE3_FOUR_ACTION_QA_20261023.md`.
 
 **Next:** verify original Inspirit attack chances/effect magnitudes and skill priority; source-check original healing/sudden death; develop and test input-based purification (not instant click). Four-way combat still has no Soul, Soultimate, zero式 poking/G moves, real PvP or production-ready visuals.
+
+
+---
+
+## 2026-10-23 — Phase 4 Soul/G-tech research milestone (latest)
+
+See detailed source and QA notebook: [PHASE4_SOUL_QA_20261023.md](./PHASE4_SOUL_QA_20261023.md).
+
+- Implemented a new **isolated** Soul system `engine/soul.mjs`. Full Soul permits normal Soultimate; Watch Zero mode permits G-tech with caster and **two original-ring neighbors**, including backline neighbors, all full. The three meters are consumed only on a valid successful charge resolution.
+- Developed two-step pending-charge token and stale/cancel protection; separate normal/zero mode gates, zero-mode Poke eligibility, zero-mode disables Pin.
+- Integrated `soul` snapshot and `setWatchMode`, `giveSoul` (lab only), `prepareSoultimate`, `resolveSoultimate`, `pokeEligibility` into `engine/combat.mjs`.
+- The current **research** display `lab/phase2.html` contains Soul meters, manual experimental `妖気+25` buttons, mode switch, charge start/completion/cancel and Poke-eligibility check.
+- **Real Soultimate damage/heal, Soul recharge timing, charge minigame and Poke outcome remain UNIMPLEMENTED.** Default Soul income is zero; optional `researchSoulGainPerAction` is a non-original fixture. G double power flag is not incorrectly applied as damage×2.
+- Actual remote GitHub branch CI on commit `71ce361c55f61d9773a3dbdc42d8cda04c82cf6f`: **success**, action run https://github.com/8mahi8/yokai-battle-lab/actions/runs/39871269551 . Prior run on `262b523...` explicitly reported **71/71 tests passed**, including 13 Soul module tests, 8 combat integration tests and 3 UI syntax checks.
+- No real school Safari/iPad, visual browser QA for this new Soul UI, two-client transport, or Google Sites embed check has been performed for Phase 4.
+- **Important:** This is not a completed Phase 4 and should not be promoted to main / published Google Sites. Next priorities are verified automatic Soul accumulation, charge minigame, actual move effects and tactical Poke/Soul conservation; original combat mechanics remain higher priority than additional art.
