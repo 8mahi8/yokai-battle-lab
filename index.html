@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#121b30">
+<title>妖怪キャラ研究室 | 2.5D Animation Lab</title>
+<style>
+:root{--bg:#10192b;--glass:#19253b;--line:#415372;--ink:#f1f5ff;--sub:#a5b5cd;--gold:#f3cb7d;--mint:#9edbd5;--red:#ff778c}
+*{box-sizing:border-box}html{font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN", "Yu Gothic",sans-serif;background:var(--bg);color:var(--ink)}body{margin:0;min-height:100dvh;overflow-x:hidden;background:radial-gradient(ellipse at 24% 0%,#263e59 0,transparent 44%),linear-gradient(130deg,#11172a,#18263a 65%,#11172a)}button{font:inherit;touch-action:manipulation}button:focus-visible{outline:3px solid #93ecf8;outline-offset:3px}.shell{width:min(1360px,100%);margin:auto;padding:clamp(12px,2vw,26px)}header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}.brand{display:flex;align-items:center;gap:12px;min-width:0}.crest{flex:none;width:44px;height:44px;display:grid;place-items:center;border:1px solid #d9b7799e;border-radius:13px;background:linear-gradient(140deg,#445369,#24334b);box-shadow:inset 0 0 0 3px #101a2c}.crest svg{width:29px;height:29px}.eyebrow{letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-size:11px;font-weight:800}.brand h1{font-size:clamp(17px,2.3vw,25px);letter-spacing:.06em;margin:1px 0 0;white-space:nowrap}.headerTag{border:1px solid #53647e;border-radius:100px;padding:7px 12px;color:#c8d7ee;font-size:11px;white-space:nowrap}.layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(320px,.92fr);gap:14px}.stagePanel,.controls{background:linear-gradient(157deg,#26364cb5,#111c2be8);border:1px solid #54658169;border-radius:22px;box-shadow:0 12px 30px #03070b44;overflow:hidden}.stageTop{height:51px;display:flex;justify-content:space-between;align-items:center;padding:0 17px;border-bottom:1px solid #ffffff13}.sectionTag{font-size:11px;font-weight:800;letter-spacing:.13em;color:var(--gold)}.stageTop small{font-size:11px;color:#c9d3e2}.stage{position:relative;isolation:isolate;min-height:clamp(345px,44vw,610px);height:min(61vh,620px);overflow:hidden;background:radial-gradient(ellipse at 50% 60%,#506b8a33,transparent 55%),linear-gradient(#15263d 0%,#273f58 53%,#4d5360 100%)}.scene{width:100%;height:100%;display:block;user-select:none;-webkit-user-select:none}.stage:after{content:"";pointer-events:none;position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 51%,#11172875 100%)}.sceneMist{position:absolute;inset:auto 0 4%;height:23%;z-index:0;background:linear-gradient(transparent,#bbd1d116);filter:blur(12px);pointer-events:none}.sceneLabel{position:absolute;z-index:2;top:20px;left:20px;border:1px solid #c7d2e650;background:#0a1326a8;border-radius:8px;padding:9px 12px;backdrop-filter:blur(8px)}.sceneLabel b{display:block;color:#f4dbac;font-size:15px;letter-spacing:.05em}.sceneLabel span{display:block;margin-top:3px;font-size:10px;color:#bccfe4}.sceneBadge{z-index:2;position:absolute;right:20px;top:20px;border:1px solid #6fd3c97b;background:#113d46af;color:#c6fff3;padding:6px 11px;border-radius:50px;font-size:11px;font-weight:800}.viewRail{z-index:2;position:absolute;left:18px;bottom:16px;display:flex;gap:7px;flex-wrap:wrap}.viewBtn{border:1px solid #d9e4f14a;color:#d8e5f7;border-radius:8px;background:#09172bdc;padding:8px 13px;font-size:12px;font-weight:700}.viewBtn[aria-pressed=true]{color:#17283b;background:#f3dbab;border-color:#f3dbab}.stageFoot{display:flex;justify-content:space-between;gap:10px;align-items:center;color:#a5b7cd;font-size:11px;padding:12px 17px;border-top:1px solid #ffffff12}.statusLight{display:inline-block;margin-right:6px;width:7px;height:7px;border-radius:100px;background:#94e8c8;box-shadow:0 0 12px #7af2cf}.controls{padding:19px;display:flex;flex-direction:column;gap:15px}.controlHead h2{font-size:21px;margin:4px 0 6px;font-weight:800}.controlHead p{margin:0;color:#abbcd2;font-size:12px;line-height:1.65}.label{display:flex;justify-content:space-between;align-items:center;color:#cfddf0;font-size:11px;font-weight:800;letter-spacing:.04em;margin-bottom:9px}.muted{color:#8297b4;font-size:11px;font-weight:500}.actionGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.action{min-height:52px;display:flex;align-items:center;gap:9px;text-align:left;padding:9px 10px;border-radius:12px;border:1px solid #526782;background:#23344c;color:#e5edf9;transition:transform .14s,background .14s,border-color .14s;cursor:pointer}.action:active{transform:scale(.974)}.action[aria-pressed=true]{background:linear-gradient(130deg,#eecb8f,#dca567);border-color:#ffeaac;color:#1e2b3b;box-shadow:0 0 0 2px #e4be7940}.ico{width:30px;flex:none;font-size:17px;text-align:center}.action b{font-size:12px;display:block}.action small{font-size:10px;display:block;margin-top:2px;opacity:.75}.status{border:1px solid #ffffff19;background:#121e31;border-radius:13px;padding:13px 14px;min-height:99px}.statusTitle{font-size:15px;color:var(--gold);font-weight:800}.statusText{font-size:12px;color:#c0cde0;line-height:1.7;margin:5px 0 0}.subcontrols{border-top:1px solid #ffffff21;padding-top:14px}.slideRow{display:flex;align-items:center;gap:14px}.slideRow input{width:100%;accent-color:#edd098;min-height:26px}.miniNote{font-size:10px;color:#879bb5;line-height:1.7}.controlBottom{margin-top:auto;display:flex;flex-wrap:wrap;gap:8px}.pill{border:1px solid #647894;background:#263752;color:#e3edfa;border-radius:9px;padding:10px 13px;font-size:11px;font-weight:750}.pill[aria-pressed=true]{background:#d4e6e6;color:#18333b}.lower{margin-top:13px;padding:15px 17px;border:1px solid #ffffff18;border-radius:15px;color:#adbdd4;background:#131f31b3;font-size:12px;line-height:1.75}.lower strong{color:#f0d6a6}.credits{text-align:center;color:#7f94ac;font-size:10px;margin:13px 0 0}.sparkle{pointer-events:none}.fxText{font-weight:900;letter-spacing:1px;paint-order:stroke;stroke:#4b203b;stroke-width:4px}.hidden{display:none}
+@media(max-width:900px){.layout{grid-template-columns:minmax(0,1.2fr) minmax(260px,.88fr)}.controls{padding:13px;gap:11px}.stage{height:clamp(340px,60vh,570px)}.action{min-height:46px;padding:8px}.headerTag{display:none}}
+@media(max-width:700px){.layout{grid-template-columns:1fr}.stage{height:min(59vh,520px);min-height:345px}.controls{padding:16px}.lower{margin-top:10px}}
+@media(max-height:480px) and (orientation:landscape){.shell{padding:7px 10px}header{margin-bottom:6px}.crest{width:30px;height:30px}.brand h1{font-size:14px}.eyebrow{font-size:8px}.layout{grid-template-columns:minmax(0,1.4fr) minmax(230px,1fr);gap:8px}.stageTop{height:28px;padding:0 9px}.stageTop small{font-size:9px}.stage{height:calc(100dvh - 100px);min-height:260px}.stageFoot{padding:5px 9px;font-size:9px}.controls{padding:10px;gap:7px}.controlHead h2{font-size:15px;margin:2px 0}.controlHead p{display:none}.label{margin-bottom:5px;font-size:10px}.actionGrid{gap:5px}.action{min-height:36px;padding:4px 6px;gap:5px}.action b{font-size:10px}.action small{display:none}.ico{width:18px;font-size:13px}.status{padding:7px 10px;min-height:50px}.statusTitle{font-size:12px}.statusText{font-size:10px;margin:0;line-height:1.35}.subcontrols{padding-top:5px}.miniNote{display:none}.controlBottom{gap:5px}.pill{padding:6px 9px;font-size:10px}.lower,.credits{display:none}.sceneLabel{top:8px;left:8px;padding:5px}.sceneLabel b{font-size:11px}.sceneBadge{top:8px;right:8px}.viewRail{bottom:8px;left:8px}.viewBtn{padding:4px 7px;font-size:10px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+<header><div class="brand"><div class="crest" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 3l14 8v18l-14 8L6 29V11z" fill="none" stroke="#ead19b" stroke-width="2"/><path d="M12 22q8-17 16 0q-8 12-16 0Z" fill="#e9af83"/><circle cx="20" cy="20" r="3" fill="#23344b"/></svg></div><div><div class="eyebrow">Character animation experiment / 01</div><h1>妖怪キャラ研究室 <span style="font-weight:400;color:#9fb0c7;font-size:.63em">2.5D LAB</span></h1></div></div><div class="headerTag">GitHub Pages · iPad / Mobile</div></header>
+<main class="layout"><section class="stagePanel" aria-label="キャラクターのアニメーション表示"><div class="stageTop"><span class="sectionTag">LIVE CHARACTER PREVIEW</span><small>SVG RIG / Canvas-free</small></div>
+<div class="stage"><div class="sceneMist"></div><div class="sceneLabel"><b>猫の妖怪 / 試作一号</b><span>手描きSVG風の非公式オリジナル試作</span></div><div class="sceneBadge">● ANIMATING</div>
+<svg class="scene" id="scene" viewBox="0 0 760 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="赤い猫の妖怪が呼吸し、腕や足、二本の霊火のしっぽを動かしている">
+<defs>
+  <radialGradient id="sky"><stop stop-color="#415973"/><stop offset="1" stop-color="#172942"/></radialGradient>
+  <linearGradient id="floor" x2="0" y2="1"><stop stop-color="#60646e"/><stop offset="1" stop-color="#2d3c50"/></linearGradient>
+  <linearGradient id="torii" x2="1" y2=".2"><stop stop-color="#8b404c"/><stop offset=".55" stop-color="#de7270"/><stop offset="1" stop-color="#813646"/></linearGradient>
+  <linearGradient id="bodyRed" x1="0" x2="1" y2=".2"><stop stop-color="#9a3a43"/><stop offset=".27" stop-color="#d75655"/><stop offset=".65" stop-color="#f17565"/><stop offset="1" stop-color="#bc424d"/></linearGradient>
+  <radialGradient id="headRed" cx=".36" cy=".23" r=".84"><stop stop-color="#ff9782"/><stop offset=".43" stop-color="#ed6c63"/><stop offset=".82" stop-color="#cb4d51"/><stop offset="1" stop-color="#8b3545"/></radialGradient>
+  <linearGradient id="cream" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#fff8db"/><stop offset=".65" stop-color="#f3d8af"/><stop offset="1" stop-color="#dba87c"/></linearGradient>
+  <radialGradient id="eyeWhite"><stop stop-color="#fffef7"/><stop offset="1" stop-color="#ddd9d2"/></radialGradient>
+  <radialGradient id="iris"><stop stop-color="#ffe19a"/><stop offset=".42" stop-color="#af723f"/><stop offset="1" stop-color="#593f37"/></radialGradient>
+  <linearGradient id="flame"><stop stop-color="#efffff"/><stop offset=".4" stop-color="#8df6ff"/><stop offset=".77" stop-color="#36c5eb"/><stop offset="1" stop-color="#4273d7"/></linearGradient>
+  <radialGradient id="auraFill"><stop stop-color="#9ff2f470"/><stop offset="1" stop-color="#9ff2f400"/></radialGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#fff0ac"/><stop offset=".5" stop-color="#d9a757"/><stop offset="1" stop-color="#9a6b49"/></linearGradient>
+  <filter id="softblur"><feGaussianBlur stdDeviation="11"/></filter>
+  <filter id="shadowblur"><feGaussianBlur stdDeviation="8"/></filter>
+  <filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <clipPath id="stageClip"><rect width="760" height="600"/></clipPath>
+</defs>
+<g id="world" clip-path="url(#stageClip)">
+ <rect width="760" height="600" fill="url(#sky)"/>
+ <g opacity=".45"><circle cx="574" cy="112" r="80" fill="#d4eff5" opacity=".22" filter="url(#softblur)"/><circle cx="574" cy="112" r="49" fill="#d9e7ef" opacity=".22"/></g>
+ <path d="M0 300Q92 220 190 298Q270 238 385 304Q490 222 591 278Q680 230 760 304L760 405H0Z" fill="#173d53" opacity=".8"/>
+ <path d="M0 338Q93 292 190 353Q320 290 445 358Q570 300 760 360V430H0Z" fill="#223e4d"/>
+ <g id="shrines" opacity=".63" stroke="#632c3a" stroke-width="2"><path d="M51 401V176h24v225m-43-235h105l10-18H25Z" fill="url(#torii)"/><path d="M43 197h91v19H43Z" fill="#a7525b"/><path d="M689 413V190h18v223m-42-230h85v-15h-85Z" fill="#93505a"/><path d="M652 212h102v15H652Z" fill="#a55c68"/></g>
+ <g opacity=".45"><path d="M0 401q150-40 290 13t470-11v197H0Z" fill="#74808b"/></g>
+ <path d="M0 428Q380 398 760 430V600H0Z" fill="url(#floor)"/>
+ <g opacity=".4" stroke="#aeb7bb" stroke-width="2"><path d="M0 500Q365 460 760 507M0 565Q380 507 760 565" fill="none"/><path d="M110 430L20 600M280 430L230 600M478 430L542 600M625 430L760 584"/></g>
+ <ellipse cx="385" cy="514" rx="169" ry="32" fill="#041824" opacity=".57" filter="url(#shadowblur)"/>
+ <ellipse cx="385" cy="517" rx="160" ry="26" fill="#5b7895" opacity=".48"/>
+ <ellipse cx="385" cy="508" rx="123" ry="22" fill="#bcc4c2" opacity=".16"/>
+ <g id="fxRing" opacity="0"><ellipse cx="385" cy="486" rx="135" ry="25" fill="none" stroke="#9ceaf9" stroke-width="5"/></g>
+ <g id="aura" opacity=".6"><ellipse cx="385" cy="375" rx="147" ry="181" fill="url(#auraFill)" opacity=".34"/></g>
+ <g id="charAnchor" transform="translate(385 466)">
+  <g id="charMotion"><g id="charTurn">
+   <!-- animated twin spirit tails, based behind body -->
+   <g id="tailL"><path d="M-47-65C-161-59-190-141-148-182C-153-134-84-137-54-129C-10-121-24-78-47-65Z" fill="#9e3b4e" stroke="#62303f" stroke-width="7" stroke-linejoin="round"/><path d="M-149-167C-205-227-180-261-164-283C-165-254-122-258-133-214C-107-220-113-185-147-161Z" fill="url(#flame)" stroke="#29649e" stroke-width="5" stroke-linejoin="round" filter="url(#glow)"/><path d="M-149-173C-169-215-151-224-156-247C-143-229-129-222-143-190Z" fill="#f6ffff" opacity=".7"/></g>
+   <g id="tailR"><path d="M46-66C161-59 190-141 148-182C153-134 84-137 54-129C10-121 24-79 46-66Z" fill="#a14254" stroke="#632d3e" stroke-width="7" stroke-linejoin="round"/><path d="M149-167C205-227 180-261 164-283C165-254 122-258 133-214C107-220 113-185 147-161Z" fill="url(#flame)" stroke="#29649e" stroke-width="5" stroke-linejoin="round" filter="url(#glow)"/><path d="M149-173C169-215 151-224 156-247C143-229 129-222 143-190Z" fill="#faffff" opacity=".7"/></g>
+   <!-- front view -->
+   <g id="frontArt">
+    <g id="backArmL" transform="translate(-50 -149)"><path d="M-4 4Q-31 12-37 43Q-46 73-27 81Q-6 78 2 55L16 15Z" fill="url(#bodyRed)" stroke="#713944" stroke-width="7"/><path d="M-39 60q3-11 15-13l23 10q9 24-17 30q-31 5-21-27Z" fill="url(#cream)" stroke="#6c3c44" stroke-width="6"/></g>
+    <g id="backArmR" transform="translate(50 -149)"><path d="M4 4Q31 12 37 43Q46 73 27 81Q6 78-2 55L-16 15Z" fill="url(#bodyRed)" stroke="#713944" stroke-width="7"/><path d="M39 60q-3-11-15-13l-23 10q-9 24 17 30q31 5 21-27Z" fill="url(#cream)" stroke="#6c3c44" stroke-width="6"/></g>
+    <g id="legL" transform="translate(-31 -62)"><path d="M-24 4Q-34 30-23 52Q-14 64 6 55L15 14Z" fill="url(#bodyRed)" stroke="#703746" stroke-width="7"/><ellipse cx="-15" cy="49" rx="30" ry="15" fill="url(#cream)" stroke="#75414a" stroke-width="6"/><path d="M-17 44V58M-5 43V57" stroke="#ac7b6c" stroke-width="2.5"/></g>
+    <g id="legR" transform="translate(31 -62)"><path d="M24 4Q34 30 23 52Q14 64-6 55L-15 14Z" fill="url(#bodyRed)" stroke="#703746" stroke-width="7"/><ellipse cx="15" cy="49" rx="30" ry="15" fill="url(#cream)" stroke="#75414a" stroke-width="6"/><path d="M17 44V58M5 43V57" stroke="#ac7b6c" stroke-width="2.5"/></g>
+    <g id="torso"><path d="M-61-157Q-79-130-67-76Q-57-34-10-28Q43-21 67-74Q80-135 56-157Z" fill="url(#bodyRed)" stroke="#723841" stroke-width="8" stroke-linejoin="round"/><path d="M-42-134Q-56-95-44-77Q-27-48 5-47Q39-48 47-80Q58-112 37-139Q3-162-42-134Z" fill="url(#cream)" stroke="#a8635e" stroke-width="4"/><path d="M-27-88Q-2-108 24-90Q36-78 19-71Q-4-61-20-74Q-31-81-17-93M-4-100Q7-112 18-103" fill="none" stroke="#d78f7e" stroke-width="5" stroke-linecap="round" opacity=".83"/><path d="M-51-145Q-42-126-27-125" stroke="#ffe3cc" stroke-width="4" stroke-linecap="round" opacity=".5"/></g>
+    <g id="face" transform="translate(0 -197)">
+     <g id="ears"><path d="M-85-39Q-114-92-107-143Q-61-130-36-95" fill="url(#bodyRed)" stroke="#683c47" stroke-width="8" stroke-linejoin="round"/><path d="M-83-67Q-97-103-96-123Q-70-111-57-90" fill="#f0ab9a" stroke="#b4656b" stroke-width="3"/><path d="M83-39Q113-92 105-143Q60-130 34-95" fill="url(#bodyRed)" stroke="#683c47" stroke-width="8" stroke-linejoin="round"/><path d="M82-66Q96-101 95-122Q69-111 56-89" fill="#edac9e" stroke="#b4656b" stroke-width="3"/></g>
+     <path d="M-116-47Q-128-108-74-121Q-16-141 43-123Q112-120 123-62Q139 0 98 44Q58 77 8 77Q-74 83-109 30Q-127 4-116-47Z" fill="url(#headRed)" stroke="#743640" stroke-width="9" stroke-linejoin="round"/>
+     <path d="M-99-53Q-77-84-47-77M49-80Q83-87 103-54" fill="none" stroke="#f9c0a5" stroke-width="6" stroke-linecap="round" opacity=".55"/>
+     <g id="muzzle"><path d="M-78 12Q-82-7-56-12Q-28-16-6 5Q19-18 54-15Q86-10 82 14Q82 53 8 60Q-80 60-78 12Z" fill="url(#cream)" stroke="#ad7775" stroke-width="3"/><ellipse cx="-77" cy="16" rx="17" ry="11" fill="#f08f8c" opacity=".62"/><ellipse cx="78" cy="16" rx="17" ry="11" fill="#f08f8c" opacity=".6"/>
+     <path d="M-17 20Q0 30 16 19Q6 12-2 13Q-13 13-17 20Z" fill="#603b42"/><path d="M0 25v12q-11 11-23-2M0 37q13 12 24-4" fill="none" stroke="#653e43" stroke-width="4" stroke-linecap="round"/><path d="M-17 39q14 11 34 0" stroke="#b76a73" stroke-width="3" fill="none" opacity=".7"/></g>
+     <g id="eyes"><g id="eyeL"><ellipse cx="-50" cy="-31" rx="31" ry="39" fill="url(#eyeWhite)" stroke="#753e47" stroke-width="5"/><ellipse cx="-42" cy="-28" rx="15" ry="24" fill="url(#iris)"/><ellipse cx="-40" cy="-28" rx="7" ry="18" fill="#27293c"/><ellipse cx="-47" cy="-39" rx="6" ry="8" fill="#fff"/><circle cx="-32" cy="-18" r="2.5" fill="#fff"/></g><g id="eyeR"><ellipse cx="50" cy="-31" rx="31" ry="39" fill="url(#eyeWhite)" stroke="#753e47" stroke-width="5"/><ellipse cx="42" cy="-28" rx="15" ry="24" fill="url(#iris)"/><ellipse cx="40" cy="-28" rx="7" ry="18" fill="#27293c"/><ellipse cx="47" cy="-39" rx="6" ry="8" fill="#fff"/><circle cx="32" cy="-18" r="2.5" fill="#fff"/></g></g>
+     <g id="blinkCover" opacity="0"><path d="M-84-29Q-50-10-15-30M15-30Q50-10 84-29" stroke="#8b414d" stroke-width="12" stroke-linecap="round" fill="none"/><path d="M-81-35Q-50-23-17-35M17-35Q50-23 81-35" stroke="#e26e67" stroke-width="12" stroke-linecap="round" fill="none"/></g>
+     <g opacity=".78" stroke="#f7c1a9" stroke-width="3" stroke-linecap="round"><path d="M-89 1l-22-2M-86 10l-23 5M91 0l22-4M89 10l22 7"/></g>
+    </g>
+    <g id="scarf"><path d="M-49-174Q0-156 49-174" fill="none" stroke="#823845" stroke-width="18" stroke-linecap="round"/><path d="M-46-174Q0-156 47-173" fill="none" stroke="#f1b9a7" stroke-width="9" stroke-linecap="round"/><circle cx="2" cy="-162" r="18" fill="url(#gold)" stroke="#684449" stroke-width="5"/><path d="M-8-163Q2-170 12-163" stroke="#fff1c3" stroke-width="3" fill="none"/><circle cx="2" cy="-152" r="4" fill="#7d634f"/></g>
+   </g>
+   <!-- back drawn separately: real back silhouette, not horizontal mirror -->
+   <g id="backArt" style="display:none">
+    <g id="backLegL" transform="translate(-31 -62)"><path d="M-25 4Q-32 30-22 52Q-12 64 8 54L13 11Z" fill="url(#bodyRed)" stroke="#703746" stroke-width="7"/><ellipse cx="-16" cy="49" rx="29" ry="14" fill="#d76d64" stroke="#75414a" stroke-width="6"/></g>
+    <g id="backLegR" transform="translate(31 -62)"><path d="M25 4Q32 30 22 52Q12 64-8 54L-13 11Z" fill="url(#bodyRed)" stroke="#703746" stroke-width="7"/><ellipse cx="16" cy="49" rx="29" ry="14" fill="#d76d64" stroke="#75414a" stroke-width="6"/></g>
+    <g id="backBody"><path d="M-65-159Q-87-123-68-70Q-52-25 0-25Q50-25 68-70Q84-129 57-159Z" fill="url(#bodyRed)" stroke="#723841" stroke-width="8"/><path d="M-26-91Q0-72 26-91" fill="none" stroke="#ffb397" stroke-width="8" opacity=".48"/><path d="M-58-143Q-82-94-60-72" stroke="#ffbc9f" stroke-width="5" opacity=".4" fill="none"/></g>
+    <g id="backFace" transform="translate(0 -197)"><path d="M-85-39Q-114-92-107-143Q-61-130-36-95M83-39Q113-92 105-143Q60-130 34-95" fill="url(#bodyRed)" stroke="#683c47" stroke-width="8"/><path d="M-116-47Q-128-108-74-121Q-16-141 43-123Q112-120 123-62Q139 0 98 44Q58 77 8 77Q-74 83-109 30Q-127 4-116-47Z" fill="url(#headRed)" stroke="#743640" stroke-width="9"/><path d="M-78-87Q-20-111 47-96" fill="none" stroke="#ffb49d" stroke-width="8" opacity=".48"/><path d="M-65 34Q0 59 67 33" fill="none" stroke="#be5254" stroke-width="7" opacity=".55"/></g>
+    <g id="backArmBL" transform="translate(-52 -149)"><path d="M-4 4Q-31 12-37 43Q-46 73-27 81Q-6 78 2 55L16 15Z" fill="url(#bodyRed)" stroke="#713944" stroke-width="7"/></g>
+    <g id="backArmBR" transform="translate(52 -149)"><path d="M4 4Q31 12 37 43Q46 73 27 81Q6 78-2 55L-16 15Z" fill="url(#bodyRed)" stroke="#713944" stroke-width="7"/></g>
+   </g>
+  </g></g>
+ </g>
+ <g id="effect" opacity="0"><g id="star"><path d="M425 295L435 335L477 344L437 353L425 395L412 354L373 344L415 333Z" fill="#d9ffff" stroke="#59b8d5" stroke-width="7" filter="url(#glow)"/></g><circle id="effectCircle" cx="385" cy="360" r="55" fill="none" stroke="#c6efff" stroke-width="6"/><text id="effectText" x="385" y="148" text-anchor="middle" font-size="38" fill="#fff3b8" class="fxText">ニャン！</text></g>
+ <g id="particles"></g>
+ </g>
+</svg>
+<div class="viewRail" role="group" aria-label="キャラクターの向き"><button class="viewBtn" data-view="front" aria-pressed="true">正面</button><button class="viewBtn" data-view="quarter" aria-pressed="false">斜め（試作）</button><button class="viewBtn" data-view="back" aria-pressed="false">背面</button></div></div>
+<div class="stageFoot"><span><i class="statusLight"></i><span id="statusSmall">待機モーション再生中</span></span><span id="frameStatus">60 FPS を目標 · ベクター描画</span></div></section>
+<aside class="controls"><div class="controlHead"><div class="eyebrow">Animation controller</div><h2>動きを選んで確認</h2><p>1匹の妖怪の造形・重量感・アニメーションを評価するための、戦闘とは独立したデモです。</p></div>
+<div><div class="label">アクション <span class="muted">タップすると再生</span></div><div class="actionGrid" role="group" aria-label="アニメーション選択">
+<button class="action" data-action="idle" aria-pressed="true"><span class="ico">◉</span><span><b>待機</b><small>呼吸・しっぽ</small></span></button>
+<button class="action" data-action="attack" aria-pressed="false"><span class="ico">✦</span><span><b>通常攻撃</b><small>連続パンチ</small></span></button>
+<button class="action" data-action="magic" aria-pressed="false"><span class="ico">✧</span><span><b>妖術</b><small>ため・発動</small></span></button>
+<button class="action" data-action="curse" aria-pressed="false"><span class="ico">☯</span><span><b>とりつき</b><small>呪いの動作</small></span></button>
+<button class="action" data-action="special" aria-pressed="false"><span class="ico">★</span><span><b>必殺技</b><small>連打・フィニッシュ</small></span></button>
+<button class="action" data-action="hit" aria-pressed="false"><span class="ico">✹</span><span><b>被弾</b><small>反動・復帰</small></span></button>
+<button class="action" data-action="faint" aria-pressed="false"><span class="ico">☁</span><span><b>気絶</b><small>倒れる</small></span></button>
+<button class="action" data-action="walk" aria-pressed="false"><span class="ico">⇢</span><span><b>移動</b><small>足の運動</small></span></button>
+</div></div>
+<div class="status" aria-live="polite"><div class="statusTitle" id="actionTitle">待機</div><p class="statusText" id="actionDesc">胸の呼吸、耳の微動、浮かぶ霊火のしっぽを、それぞれ違う周期で動かしています。</p></div>
+<div class="subcontrols"><div class="label"><span>再生速度</span><span class="muted" id="speedNumber">1.0×</span></div><div class="slideRow"><span class="muted">0.5×</span><input id="speed" type="range" min="0.5" max="1.5" step="0.1" value="1" aria-label="再生速度"><span class="muted">1.5×</span></div><div class="miniNote">背面は専用の描画。斜めはリグの仮変形で、次の制作工程で専用の立体表現に発展させる予定。</div></div>
+<div class="controlBottom"><button class="pill" id="loopBtn" aria-pressed="false">↻ 繰り返し OFF</button><button class="pill" id="pauseBtn" aria-pressed="false">Ⅱ 一時停止</button><button class="pill" id="resetBtn">↺ 最初に戻す</button></div>
+</aside></main>
+<div class="lower"><strong>制作メモ：</strong>小国戦線III「ガルド」の制作フローを参考に、前後別のSVG原画と関節単位の変形を使った初回の造形テスト。キャラクターの輪郭・動きの自然さ・スマホでの見やすさを優先。<strong>現在は絵とモーションの評価用</strong>で、実際の妖怪ウォッチ2の戦闘ロジック・キャラデータ・効果音は未実装。公式の画像・音声・3Dモデルは使用していません。</div>
+<p class="credits">UNOFFICIAL ANIMATION STUDY · Original vector artwork · No assets extracted from the game</p>
+</div>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id), $$=q=>Array.from(document.querySelectorAll(q));
+const names={idle:['待機','胸の呼吸、耳の微動、浮かぶ霊火のしっぽを、それぞれ違う周期で動かしています。',0],attack:['通常攻撃','腕の引き、踏ん張り、連続パンチと命中後の反動を確認。',1.35],magic:['妖術','ため動作から霊力の解放まで。体の上下動とエフェクトが連動します。',1.95],curse:['とりつき','体のひねりと手のジェスチャー、紫の霊力で表現。',1.85],special:['必殺技','連打から大きな一撃へ。攻撃テンポと残像を確認。',2.65],hit:['被弾','後ろにのけぞり、少し遅れて頭が揺れ、姿勢を戻します。',.9],faint:['気絶','体を傾けながら倒れ、視線と霊火の動きを落とします。',1.75],walk:['移動','左右の脚を交互に動かし、体重移動を与えます。',2.4]};
+const actions=$$('.action'), views=$$('.viewBtn');
+let action='idle',view='front',start=performance.now(),last=start,clock=0,speed=1,loop=false,paused=false,ended=false,particleTimer=0;
+const lerp=(a,b,t)=>a+(b-a)*t, clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x)), ease=t=>{t=clamp(t);return t*t*(3-2*t)}, env=(t,a,b,c,d)=>ease((t-a)/(b-a))* (1-ease((t-c)/(d-c))), one=(t,a,b)=>ease((t-a)/(b-a)), tri=(t,a,b,c)=>Math.min(one(t,a,b),1-one(t,b,c));
+const anchor=$('charMotion'),turn=$('charTurn'),front=$('frontArt'),back=$('backArt'),face=$('face'),backFace=$('backFace'),torso=$('torso'),backBody=$('backBody'),ears=$('ears'),scarf=$('scarf'),tailL=$('tailL'),tailR=$('tailR'),legL=$('legL'),legR=$('legR'),backLegL=$('backLegL'),backLegR=$('backLegR'),arms=[$('backArmL'),$('backArmR')],backArms=[$('backArmBL'),$('backArmBR')],effect=$('effect'),star=$('star'),ring=$('effectCircle'),effectTxt=$('effectText'),fxRing=$('fxRing'),aura=$('aura'),blink=$('blinkCover'),particles=$('particles');
+const setT=(el,x,y,r=0,sx=1,sy=1,px=0,py=0)=>el.setAttribute('transform',`translate(${x.toFixed(3)} ${y.toFixed(3)}) rotate(${r.toFixed(3)} ${px} ${py}) scale(${sx.toFixed(3)} ${sy.toFixed(3)})`);
+const setOp=(el,v)=>el.setAttribute('opacity',String(clamp(v).toFixed(3)));
+function trigger(a){if(!names[a])return;action=a;clock=0;ended=false;particleTimer=0;particles.textContent='';for(const b of actions)b.setAttribute('aria-pressed',b.dataset.action===a?'true':'false');$('actionTitle').textContent=names[a][0];$('actionDesc').textContent=names[a][1];$('statusSmall').textContent=names[a][0]+'モーション再生中';}
+for(const b of actions)b.addEventListener('click',()=>trigger(b.dataset.action));
+for(const b of views)b.addEventListener('click',()=>{view=b.dataset.view;for(const v of views)v.setAttribute('aria-pressed',v.dataset.view===view?'true':'false')});
+$('speed').addEventListener('input',e=>{speed=+e.target.value;$('speedNumber').textContent=speed.toFixed(1)+'×'});
+$('loopBtn').addEventListener('click',()=>{loop=!loop;$('loopBtn').setAttribute('aria-pressed',loop);$('loopBtn').textContent='↻ 繰り返し '+(loop?'ON':'OFF')});
+$('pauseBtn').addEventListener('click',()=>{paused=!paused;$('pauseBtn').setAttribute('aria-pressed',paused);$('pauseBtn').textContent=paused?'▶ 再開':'Ⅱ 一時停止'});
+$('resetBtn').addEventListener('click',()=>trigger('idle'));
+window.addEventListener('keydown',e=>{const m={'1':'idle','2':'attack','3':'magic','4':'curse','5':'special','6':'hit','7':'faint','8':'walk'};if(m[e.key]&&!e.repeat)trigger(m[e.key]);if(e.code==='Space'&&e.target.tagName!=='BUTTON'&&e.target.tagName!=='INPUT'){e.preventDefault();$('pauseBtn').click()}});
+let activeParticles=[];
+function spawnBurst(when,color='#bdf6ff',count=12,spread=120){if(particleTimer>=when)return;particleTimer=when+.001;for(let i=0;i<count;i++){const angle=(Math.PI*2*i/count)+Math.random()*.35;const dist=spread*(.55+Math.random()*.6);activeParticles.push({x:385+Math.cos(angle)*18,y:325+Math.sin(angle)*22,vx:Math.cos(angle)*dist,vy:Math.sin(angle)*dist-34,size:2.5+Math.random()*5,life:.55+Math.random()*.5,max:1,color});}}
+function particleFrame(dt){let html='';activeParticles=activeParticles.filter(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=55*dt;p.life-=dt;return p.life>0});for(const p of activeParticles){const alpha=clamp(p.life);html+=`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${(p.size*alpha).toFixed(2)}" fill="${p.color}" opacity="${alpha.toFixed(2)}"/>`;}particles.innerHTML=html;}
+function render(t,dt){
+const w=Math.sin(t*2.1),w2=Math.sin(t*3.1+1.7),breath=Math.sin(t*2.4),bl=((t+1.5)%5.1);const blinkPower=env(bl,3.63,3.7,3.80,3.94);
+let bob=breath*2.2,rot=0,shiftX=0,shiftY=0,sx=1,sy=1,armA=-5+Math.sin(t*2.7)*3,armB=5-Math.sin(t*2.7+.8)*3,handShiftL=0,handShiftR=0,legA=Math.sin(t*2.4)*1.5,legB=-legA,headRot=Math.sin(t*1.75)*1.7,headMove=0,auraPower=.14,showFx=0,starSize=1,ringScale=1,ringColor='#bfefff',text='',fxColor='#d4fbff',fxY=0,tailGain=1;
+if(action==='walk'){
+ let ramp=one(t,.1,.4)*(1-one(t,2.15,2.4));let s=Math.sin(t*13.5);bob=Math.abs(s)*5*ramp+breath;rot=s*.7*ramp;legA=24*s*ramp;legB=-legA;armA=14*s*ramp;armB=-14*s*ramp;shiftX=Math.sin(t*1.3)*10;headRot=-s*.8*ramp;
+}
+if(action==='attack'||action==='special'){
+ const isS=action==='special',end=isS?2.65:1.35;
+ const firing=isS?env(t,.22,.37,2.13,2.37):env(t,.12,.23,.95,1.22);const rate=isS?31:24;
+ const strike=Math.sin(t*rate),alternator=strike>=0?1:-1;
+ const windup=env(t,.01,.18,isS?.28:.24,isS?.4:.37);
+ rot=-9*windup+strike*4*firing;shiftX=6*windup+14*firing;bob=-4*firing;
+ armA=-36*windup+(-25+Math.max(0,strike)*83)*firing;
+ armB=36*windup+(25-Math.max(0,-strike)*83)*firing;
+ handShiftL=-6*Math.max(0,strike)*firing;handShiftR=6*Math.max(0,-strike)*firing;
+ legA=8*windup-7*firing;legB=-5*windup+6*firing;
+ headRot=-rot*.45;headMove=3*windup;
+ if(isS){auraPower=.18+.62*firing;showFx=.5*firing;starSize=.5+Math.abs(strike)*.9;ringScale=.45+Math.abs(strike)*.4;
+   let finish=env(t,2.03,2.16,2.42,2.62);rot+=-13*finish;shiftX+=25*finish;armB-=80*finish;showFx=finish;starSize=2+2.1*finish;ringScale=.5+finish*2;text=finish>.12?'フィニッシュ！':'';fxColor='#c8ffff';
+   if(t>2.16&&particleTimer<2.16)spawnBurst(2.16,'#c5efff',28,220);
+ }else{showFx=.25*firing;starSize=.48+Math.abs(strike)*.5;ringScale=.7;}
+}
+if(action==='magic'||action==='curse'){
+const curse=action==='curse',end=curse?1.85:1.95, charge=env(t,.16,.43,curse?1.2:1.24,curse?1.47:1.58),shoot=env(t,curse?1.12:1.27,curse?1.37:1.52,curse?1.6:1.74,end);
+armA=-30*charge-65*shoot;armB=30*charge+65*shoot;rot=(curse?-7:0)*charge+12*shoot;bob=-18*charge-4*shoot;headRot=curse?-10*charge:8*charge;headMove=-4*charge;auraPower=.23+.77*charge;showFx=.2*charge+shoot;ringColor=curse?'#c69afa':'#87ecf9';fxColor=ringColor;ringScale=.45+2.3*shoot;starSize=.3+1.6*shoot;text=shoot>.22?(curse?'とりつき！':'妖術！'):'';
+if(shoot>.3&&particleTimer<(curse?1.4:1.58))spawnBurst(curse?1.4:1.58,curse?'#c99afb':'#9aebff',23,175);
+}
+if(action==='hit'){
+ const j=env(t,.04,.14,.4,.85);rot=15*j;shiftX=24*j;bob=9*j;sx=1-.1*j;sy=1+.06*j;armA=-31*j;armB=38*j;headRot=12*j;headMove=4*j;showFx=1.2*env(t,.04,.13,.16,.38);starSize=.7;ringScale=.6;ringColor='#ffccbf';fxColor='#ffdbb5';
+ if(t>.14&&particleTimer<.14)spawnBurst(.14,'#f3d3b8',10,100);
+}
+if(action==='faint'){
+ const j=one(t,.14,1.2);rot=78*ease(j);shiftX=33*j;shiftY=30*j;sx=1-.11*j;sy=1-.10*j;armA=40*j;armB=-65*j;legA=-19*j;legB=12*j;headRot=8*j;tailGain=1-.7*j;auraPower=.08*(1-j);if(j>=.95){text='きぜつ…';showFx=.16;fxColor='#c7dcf5';}
+}
+const q=view==='quarter',b=view==='back';front.style.display=b?'none':'inline';back.style.display=b?'inline':'none';
+const perspective=q?.80:1;setT(turn,q?14:0,0,q?-4:0,perspective,1);setT(anchor,shiftX,shiftY+bob,rot,sx,sy);
+const armsUse=b?backArms:arms,legsUse=b?[backLegL,backLegR]:[legL,legR];
+const xoff=b?52:50,yoff=-149;
+setT(armsUse[0],-xoff+handShiftL,yoff,armA,1,1,0,12);setT(armsUse[1],xoff+handShiftR,yoff,armB,1,1,0,12);
+setT(legsUse[0],-31, -62,legA);setT(legsUse[1],31,-62,legB);
+setT(face,0,-197+headMove,headRot);setT(backFace,0,-197+headMove,headRot);
+setT(ears,0,0,Math.sin(t*2.9)*.7);setT(torso,0,0,0,1+breath*.007,1+breath*.014);setT(backBody,0,0,0,1+breath*.007,1+breath*.014);setT(scarf,0,0,Math.sin(t*2.9)*1.2);setOp(blink,blinkPower);
+tailL.setAttribute('transform',`rotate(${((-7+Math.sin(t*2.8)*8)*tailGain).toFixed(3)} -47 -65)`);tailR.setAttribute('transform',`rotate(${((7-Math.sin(t*2.4+1.2)*8)*tailGain).toFixed(3)} 46 -66)`);setOp(aura,auraPower+.12);setOp(fxRing,showFx*.55);
+if(showFx){star.setAttribute('transform',`translate(-40 0) translate(425 344) scale(${starSize.toFixed(3)}) translate(-425 -344)`);ring.setAttribute('transform',`translate(385 360) scale(${ringScale.toFixed(3)}) translate(-385 -360)`);ring.setAttribute('stroke',ringColor);setOp(effect,showFx);effectTxt.textContent=text;effectTxt.setAttribute('fill',fxColor);setT(effectTxt,0,fxY)}else setOp(effect,0);
+particleFrame(dt);
+}
+function frame(now){const dt=Math.min((now-last)/1000,.05);last=now;if(!paused){clock+=dt*speed;const duration=names[action][2];if(duration&&clock>=duration){if(loop){clock%=duration;particleTimer=0;particles.textContent='';activeParticles=[];}else{action='idle';clock=0;ended=false;particleTimer=0;for(const b of actions)b.setAttribute('aria-pressed',b.dataset.action==='idle'?'true':'false');$('actionTitle').textContent='待機';$('actionDesc').textContent=names.idle[1];$('statusSmall').textContent='待機モーション再生中';}}}render(clock,paused?0:dt);requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+})();
+</script>
+</body></html>
