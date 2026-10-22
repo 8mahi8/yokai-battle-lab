@@ -99,3 +99,19 @@ See detailed source and QA notebook: [PHASE4_SOUL_QA_20261023.md](./PHASE4_SOUL_
 - Actual remote GitHub branch CI on commit `71ce361c55f61d9773a3dbdc42d8cda04c82cf6f`: **success**, action run https://github.com/8mahi8/yokai-battle-lab/actions/runs/39871269551 . Prior run on `262b523...` explicitly reported **71/71 tests passed**, including 13 Soul module tests, 8 combat integration tests and 3 UI syntax checks.
 - No real school Safari/iPad, visual browser QA for this new Soul UI, two-client transport, or Google Sites embed check has been performed for Phase 4.
 - **Important:** This is not a completed Phase 4 and should not be promoted to main / published Google Sites. Next priorities are verified automatic Soul accumulation, charge minigame, actual move effects and tactical Poke/Soul conservation; original combat mechanics remain higher priority than additional art.
+
+
+---
+
+## 2026-10-23: Phase 4 touch-charge and interrupt research (LATEST)
+
+Source-backed implementation: `engine/charge-input.mjs`, `engine/combat.mjs`, `engine/soul.mjs`, `lab/phase2.html`.
+
+- The four original YW2 mini-game **types** (Spin, Tap, Trace, Align) are now deterministic gesture-driven research prototypes, selected from a seeded random draw. Trace repeats one fixture glyph three times and Align takes three clock alignments. Internal scoring, shapes, selection odds and timing are marked provisional.
+- The game requires passing the touch challenge before it consumes a valid normal Soultimate or G-tech charge. A cancelled charge does not spend Soul. Mode switch and wheel rotation of the caster invalidate the pending charge. Caster normal action eligibility is suspended during charge as a *working hypothesis*.
+- When the charging member is hit, use the documented interruption formula and hit-count-dependent base. An interrupted/KO'd charge is cancelled; the action log records that decision. Specific move interrupt modifiers, real status exceptions and loss-of-Soul behavior are not verified.
+- New overlay with real browser Pointer Events, SVG targets, progress, cancel, and a manual 'advance one battle action' interruption test. `chargeInput` state-machine-level tests cover all four gestures but **physical touch gesture QA on actual Safari/iPad is not yet performed**.
+- GitHub Actions unit suite: **91/91 PASS** as of the last verified Chromium-interaction run: https://github.com/8mahi8/yokai-battle-lab/actions/runs/39873553071. Actual Chromium DOM and automated button clicks (Soul charge, cancel, rotation/purification, G-mode charge) passed. Exact finger event sequences in browser are still not E2E tested.
+- Complete reference ledger and explicit fixture values: `docs/PHASE4_CHARGE_INPUT_QA_20261023.md`.
+
+**Still out of scope / blocked:** real Soultimate attack/heal effects, exact recharge mechanics, in-game animations with overlapping tactical events and no-motion charge, Poke resolution, full original-rule fidelity, multiplayer sessions and production-ready single HTML Google Sites embedding. None of these should be described as complete. main and the published Google Sites version remain unchanged.
