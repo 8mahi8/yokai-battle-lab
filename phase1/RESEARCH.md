@@ -1,3 +1,5 @@
+> **旧スケジューラ試作（参照用）。** 正式なPhase 1の作業入口は `engine/phase1.mjs` + `tests/phase1.test.mjs` + `lab/phase1.html`。この旧コードの初期待ち値近似は新しい94行表を採用する前のものです。機能実装を旧経路へ追加しないこと。
+
 # Phase 1: action order and wheel — research record (2026-10-23)
 
 ## Sources and confidence
