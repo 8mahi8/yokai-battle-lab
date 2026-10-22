@@ -1,3 +1,5 @@
+// LEGACY research experiment only. Canonical Phase 1 engine: ../engine/phase1.mjs
+// This prototype's initial-wait approximation is obsolete; do not extend it.
 // Phase 1: six-slot wheel + action wait simulator. Not yet a complete game.
 const LIMITS=[1,...Array.from({length:55},(_,i)=>5+i*3),170,175,180,185,190,195,200,...Array.from({length:30},(_,i)=>210+i*10),999];
 const WEIGHTS=[123,...Array.from({length:55},(_,i)=>122-i),67,66,65,64,63,62,61,...Array.from({length:30},(_,i)=>60-i),30];
