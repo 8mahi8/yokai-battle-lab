@@ -4,6 +4,25 @@
  * Pure event-driven scheduling. No browser, timer, network, RNG library or sprites.
  */
 
+
+// YW2 first-action wait table, derived from the 94 YW2/YW3 speed rows
+// at https://www.mtwildwood.net/turn-order.php; ranges are inclusive.
+// This is not the YW1 table and not a guessed fraction of normal wait.
+const INITIAL_WAIT_ROWS = Object.freeze([
+ [1,156,187],[5,155,186],
+ ...Array.from({length:55},(_,i)=>[8+i*3,154-i,185-i-Math.max(0,i-51)]),
+ ...Array.from({length:6},(_,i)=>[175+i*5,99-i,126-2*i]),
+ ...Array.from({length:4},(_,i)=>[210+i*10,93-i,114-2*i]),
+ ...Array.from({length:26},(_,i)=>[250+i*10,88-2*i,106-2*i]),
+ [Infinity,36,54]
+].map(row=>Object.freeze(row)));
+
+export function initialWaitRange(speed) {
+ if(!Number.isInteger(speed)||speed<1)throw new RangeError('speed must be a positive integer');
+ const row=INITIAL_WAIT_ROWS.find(([limit])=>speed<=limit);
+ return [row[1],row[2]];
+}
+
 export function waitCostFromSpeed(speed) {
   if (!Number.isInteger(speed) || speed < 1) throw new RangeError('speed must be a positive integer');
   if (speed <= 171) return 369 - Math.floor(speed / 3) * 3;
@@ -31,13 +50,9 @@ const baseRental = [
   { name: 'レンタル 06', speed: 151 }
 ];
 
-export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000,
-  openingFraction = [0.4, 0.6] } = {}) {
+export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000 } = {}) {
   if (!Number.isInteger(seed)) throw new TypeError('seed must be an integer');
   if (!Number.isFinite(rotationCooldownMs) || rotationCooldownMs < 0) throw new RangeError('invalid rotation cooldown');
-  if (!Array.isArray(openingFraction) || openingFraction.length !== 2 ||
-      !openingFraction.every(x => typeof x === 'number' && x >= 0 && x <= 1) ||
-      openingFraction[0] > openingFraction[1]) throw new RangeError('invalid opening fraction');
   if (teams !== undefined && (!Array.isArray(teams) || teams.length !== 2 ||
       !teams.every(t => Array.isArray(t) && t.length === 6))) throw new TypeError('requires two teams of six');
 
@@ -49,14 +64,14 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
     members: roster.map((source, index) => {
       const cost = waitCostFromSpeed(source.speed);
       const opening = index < 3;
-      const factor = opening ? openingFraction[0] + random() * (openingFraction[1] - openingFraction[0]) : 1;
+      const [low, high] = initialWaitRange(source.speed);
       return {
         id: `${side === 0 ? 'A' : 'B'}${index + 1}`,
         name: source.name || `Unit ${index + 1}`,
         speed: source.speed,
         cost,
         // Working hypothesis: lower debt means an earlier action.
-        wait: Math.max(0, Math.round(cost * factor)),
+        wait: opening ? low + Math.floor(random() * (high - low + 1)) : null,
         acted: 0,
         originalFront: opening
       };
@@ -91,9 +106,13 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
     if (!Number.isFinite(atMs)) throw new TypeError('atMs must be finite');
     const team = data[side];
     if (atMs < team.lastRotateAt + rotationCooldownMs) return { ok: false, reason: 'cooldown', remainingMs: team.lastRotateAt + rotationCooldownMs - atMs };
+    const oldFront = new Set(frontline(team));
     team.offset = (team.offset + direction + 6) % 6;
+    const newFront = new Set(frontline(team)), rotatedIn=[], rotatedOut=[];
+    for(const m of oldFront) if(!newFront.has(m)) {m.wait=null;rotatedOut.push(m.id);}
+    for(const m of newFront) if(!oldFront.has(m)) {m.wait=m.cost;rotatedIn.push(m.id);}
     team.lastRotateAt = atMs;
-    return { ok: true, side, offset: team.offset, frontIds: frontline(team).map(x => x.id) };
+    return { ok: true, side, offset: team.offset, frontIds: frontline(team).map(x => x.id),rotatedIn,rotatedOut };
   }
 
   function step() {
