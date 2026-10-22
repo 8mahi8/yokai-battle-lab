@@ -38,7 +38,7 @@ function draw(){
  el('log').innerHTML=actions.slice(-35).reverse().map(x=>'<div>#'+x.turn+' '+x.actor+' '+({attack:'攻撃',technique:'妖術',heal:'回復',guard:'防御'}[x.kind]||'')+(x.target?' → '+x.target:'')+(x.amount?' '+x.amount+'HP':'')+(x.hit===false?' ミス':'')+'</div>').join('')||'<div>行動待ち</div>';
  if(snap.winner!==null)el('status').textContent='TEAM '+(snap.winner?'B':'A')+' 勝利！';
 }
-function next(n){const result=battle.simulate(n);for(const r of result)if(r.type==='action'){actions.push(r);last=r.actor;}el('status').textContent=result.at(-1)?.type==='awaiting_rotation'?'前衛不在・回転が必要':n+'行動実行';draw();}
+function next(n){const result=battle.simulate(n);for(const r of result)if(r.type==='action'){actions.push(r);last=r.actor;}el('status').textContent=result[result.length-1]?.type==='awaiting_rotation'?'前衛不在・回転が必要':n+'行動実行';draw();}
 document.addEventListener('click',event=>{
  const btn=event.target.closest('button');if(!btn)return;
  try{
