@@ -66,3 +66,20 @@ First reproduce all Phase 1 + Combat tests against the exact GitHub branch; then
 - End-to-end two-client online room and Firebase Realtime Database, single self-contained HTML for Google Sites direct embed; iPad Safari physical verification.
 
 **Next priority:** source-backed four-action selection, Inspirits and purification control states; source-check healing and sudden death rather than adding guesswork. Then automated PvP transport tests. Do not merge to main or publish Google Sites without explicit approval; zero spending.
+
+
+---
+
+## 2026-10-23 — Four-action research milestone (newest)
+
+Research implementation is **on the feature branch only**, not on main or Google Sites.
+
+- Combat AI now samples **Attack / Technique / Inspirit / Guard** (four base weights totaling 100 per rental fixture); basic game-code-derived attitude priority for **Gentle, Careful, Grouchy** factored into `engine/selection.mjs`.
+- `engine/combat.mjs` includes an automatic negative sleep Inspirit, positive experimental Strength buff, fixture-based resistance checks and source-status logging. The Strength buff is **fictional 10%**; source-accurate YW2 Inspirit effect magnitude is not claimed.
+- Existing backline-only purification removes negative statuses; UI displays sleep/buff markers and Inspirit/resistance log entries.
+- Added **9 regression tests** in `tests/four-actions.test.mjs`. A local source mirror passed **58/58** `node --test tests/*.test.mjs`; this is NOT an authenticated GitHub Actions run.
+- Headless Chromium local inlined-module UI test passed interaction and overflow checks at 1194x834 / 1024x768 / 1366x400 / 390x844 / 844x390. **Not a physical Safari or Google Sites direct-embed check**.
+- 1,000 seeds, at most 2,000 actions each: Team A=**499**, Team B=**448**, unresolved=**53**. The unresolved games must not be hidden with an arbitrary timer.
+- Full details, sources, test limitations, and remaining Phase 3 work: `docs/PHASE3_FOUR_ACTION_QA_20261023.md`.
+
+**Next:** verify original Inspirit attack chances/effect magnitudes and skill priority; source-check original healing/sudden death; develop and test input-based purification (not instant click). Four-way combat still has no Soul, Soultimate, zero式 poking/G moves, real PvP or production-ready visuals.
