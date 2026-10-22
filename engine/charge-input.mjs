@@ -43,6 +43,7 @@ export function createChargeTrial({kind,seed=20261023}={}){
  const targets=[...TAP_POINTS];
  for(let i=targets.length-1;i>0;i--){let j=Math.floor(rand()*(i+1));[targets[i],targets[j]]=[targets[j],targets[i]];}
  const clocks=Array.from({length:3},()=>1+Math.floor(rand()*12));
+ const tracePath=TRACE_PATHS[Math.floor(rand()*TRACE_PATHS.length)];
  let count=0,active=false,complete=false;
  let lastAngle=null,turnDirection=0,angularTravel=0,traceIndex=0;
  let handAngle=-Math.PI/2;
@@ -51,13 +52,13 @@ export function createChargeTrial({kind,seed=20261023}={}){
  function snapshot(){
   const total=requirements[kind];
   let progress=kind==='spin'?Math.min(1,angularTravel/(TWO_PI*total))
-   :kind==='trace'?Math.min(1,(count+traceIndex/Math.max(1,TRACE_PATHS[count]?.length??1))/total)
+   :kind==='trace'?Math.min(1,(count+traceIndex/Math.max(1,tracePath.length))/total)
    :Math.min(1,count/total);
   return {kind,seed,completed:complete,active,progress,count,total,
     target:currentTarget()?.slice()??null,
     clockNumber:kind==='align'?clocks[count]??null:null,
     handAngle:kind==='align'?handAngle:null,
-    path:kind==='trace'?(TRACE_PATHS[count]?.map(x=>[...x])??[]):[],
+    path:kind==='trace'?tracePath.map(x=>[...x]):[],
     pathIndex:kind==='trace'?traceIndex:0};
  }
  function input(event){
@@ -86,7 +87,7 @@ export function createChargeTrial({kind,seed=20261023}={}){
     }
    }
   }else if(kind==='trace'){
-   const path=TRACE_PATHS[count];
+   const path=tracePath;
    if(event.type==='up'){active=false;traceIndex=0;}
    else if(event.type==='down'){
     active=close(p,path[0],.13);traceIndex=active?1:0;
