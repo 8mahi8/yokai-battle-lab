@@ -70,7 +70,12 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   let winner=null;
   const front=(side)=>clock.snapshot().teams[side].frontIds.map(id=>byId.get(id));
   const livingFront=(side)=>front(side).filter(x=>x.hp>0);
-  function syncCanAct(id){const member=byId.get(id);clock.setCanAct(id,member.hp>0&&!statuses.has(id,'sleep'));}
+  function syncCanAct(id){
+    const member=byId.get(id);
+    const pending=soul.snapshot().pending[member.side];
+    const charging=pending?.casterId===id;
+    clock.setCanAct(id,member.hp>0&&!statuses.has(id,'sleep')&&!charging);
+  }
   /** Experimental injection: not an auto AI Inspirit move; hit/resistance unimplemented. */
   function applyInspirit({id,sign,effect,source=null,duration=null}={}){
     if(winner!==null)throw new Error('battle finished');
@@ -105,8 +110,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   }
   function setWatchMode(side,mode){
     if(winner!==null)throw new Error('battle finished');
+    const old=soul.snapshot().pending[side];
     const result=soul.setMode(side,mode);
     guided[side]=null;
+    if(old)syncCanAct(old.casterId);
     chargeHits[side]=0;
     if(mode==='zero')pins[side]=null; // original Watch Zero replaces Pin with Poke
     return result;
@@ -120,8 +127,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(side!==0&&side!==1)throw new RangeError('invalid side');
     const team=clock.snapshot().teams[side];
     const caster=byId.get(id);
+    const clockUnit=team.members.find(m=>m.id===id);
+    if(caster&&clockUnit&&!clockUnit.canAct)return {ok:false,reason:'caster_unable_to_act'};
     const result=soul.prepare({side,casterId:id,frontIds:team.frontIds,alive:!!caster&&caster.hp>0});
-    if(result.ok)chargeHits[side]=0;
+    if(result.ok){chargeHits[side]=0;syncCanAct(id);}
     return result;
   }
   function resolveSoultimate(side,token,success){
@@ -132,6 +141,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const result=soul.resolve({side,token,success,frontIds:clock.snapshot().teams[side].frontIds,alive:!!caster&&caster.hp>0});
     if(guided[side]?.token===token)guided[side]=null;
     chargeHits[side]=0;
+    if(pending&&pending.token===token)syncCanAct(pending.casterId);
     // Only charge + resource consumption are implemented; actual special-move effects aren't.
     return result.ok?{...result,effectStatus:'unimplemented'}:result;
   }
@@ -203,7 +213,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     ensureFront();
     const pending=clock.snapshot();
     if(![0,1].every(s=>livingFront(s).length))return {type:'awaiting_rotation',fronts:pending.teams.map(t=>t.frontIds)};
-    if(!pending.teams.some(team=>team.frontIds.some(id=>byId.get(id).hp>0&&!statuses.has(id,'sleep'))))
+    if(!pending.teams.some(team=>team.frontIds.some(id=>team.members.find(m=>m.id===id)?.canAct)))
       return {type:'awaiting_rotation',reason:'all_front_units_unable_to_act',fronts:pending.teams.map(t=>t.frontIds)};
     const clockEvent=clock.step();
     const actor=byId.get(clockEvent.id);
@@ -262,6 +272,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
               success:false,alive:target.hp>0});
             guided[chargeSide]=null;
             chargeHits[chargeSide]=0;
+            syncCanAct(target.id);
           }else chargeHits[chargeSide]++;
         }
         if(target.hp===0){syncCanAct(target.id);actor.knockouts++;syncPinned();}
