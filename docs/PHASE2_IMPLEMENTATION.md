@@ -20,7 +20,7 @@
 - https://mtwildwood.net/critical-hits.php — baseline YW2 chance 1 in 99, plus attack/abilities modifiers **not yet modeled**.
 - https://mtwildwood.net/damage.php — YW2 one-hit physical/magical formulas, ±10%+1 variation without guard.
 - https://mtwildwood.net/guarding.php — 0.5 guard factor, additional boost/skills **not modeled**.
-- https://www.mtwildwood.net/attitudes.php — weights and attitude rules; code currently uses explicit fictional rental-fixture weights **without replicating condition-specific attitude rules**.
+- https://www.mtwildwood.net/attitudes.php — weights and attitude rules; code currently uses explicit fictional rental-fixture weights and **selected YW2 condition multipliers** (Gentle/Careful/Grouchy only). No full attitude system..
 - https://gamepedia.jp/youkai-yw2/archives/1454 — behavior/attitude category explanation.
 
 ### Explicit assumptions or missing systems
@@ -28,7 +28,7 @@
 - Exact floating-point operation order, randomized damage distribution, special accuracy/crit effects, elemental resistances, move levels/hits, soultimate interruptions, and KO side effects may diverge from game.
 - Healing magnitude `floor((power + spirit)/3)` is **a fictional experimental placeholder**, not a sourced YW2 formula.
 - Guard clear-on-next-actor turn used as a working model, needs YW2 PvP verification.
-- Original attitude probability, targeting priority and AI move choice are not yet reproduced.
+- A limited subset of original Gentle/Careful/Grouchy attitude modifiers is now implemented for health and Strength/Defense conditions. Full four-action weights, all other attitudes, Inspirit, and targeting priority are not yet reproduced; values and move sets remain rental fixtures.
 - No possession/inspirit, purification, loafing, Soul gauge, poking, G moves, tribe bonuses or skills.
 - For test seed 8, healing-heavy remaining survivors can stalemate for over 1,500 actions. Do not add a guessed time-limit win to conceal this: research original match timeout first.
 - No timing-based opponent synchronisation or school Safari/Google Sites test.
@@ -60,3 +60,7 @@ The established source https://www.mtwildwood.net/yokai-wheel.php describes YW2 
 ### Browser QA caveat
 
 A self-contained interactive test page was committed as `lab/phase2.html`, referencing both ESM modules relative to that path. The local UI script passes Node syntax checking, but Chromium screenshot rendering failed due to headless browser startup timeout in the current runtime. **No rendered-page visual approval or actual Safari/iPad test is claimed.**
+
+### Stress-run follow-up
+
+After adding those attitude multipliers, a local stress run of **100 distinct seeded battles × at most 2,000 action events** found **4 unresolved battles** rather than treating victory as guaranteed. These are kept as expected long-match cases pending source-confirmed sudden-death timing, not buried by a fabricated turn cap.
