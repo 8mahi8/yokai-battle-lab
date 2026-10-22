@@ -25,11 +25,15 @@ function intStat(value, label, min=0) {
 }
 function buildMember(source,side,index) {
   for(const key of ['speed','maxHp','strength','spirit','defense','attackPower','techniquePower']) intStat(source[key],key,key==='speed'||key==='maxHp'?1:0);
+  if(source.loafChance!==undefined){
+    intStat(source.loafChance,'loafChance');
+    if(source.loafChance>100)throw new RangeError('loafChance > 100');
+  }
   if(!['damage','heal'].includes(source.technique))throw new TypeError('technique must be damage/heal');
   if(!Array.isArray(source.weights)||source.weights.length!==3||source.weights.some(x=>!Number.isInteger(x)||x<0)||source.weights.reduce((a,b)=>a+b,0)===0)throw new TypeError('invalid weights');
   return {id:(side===0?'A':'B')+(index+1),name:source.name||'Unit '+(index+1),side,maxHp:source.maxHp,hp:source.maxHp,speed:source.speed,
     strength:source.strength,spirit:source.spirit,defense:source.defense,attackPower:source.attackPower,techniquePower:source.techniquePower,
-    technique:source.technique,attitude:source.attitude??'neutral',weights:[...source.weights],guard:false,knockouts:0};
+    loafChance:source.loafChance??0,technique:source.technique,attitude:source.attitude??'neutral',weights:[...source.weights],guard:false,knockouts:0};
 }
 export function hitChance(attacker,target) {
   return Math.floor(Math.max(75,Math.min(98,98+(attacker.speed-target.speed)/5)));
@@ -43,7 +47,7 @@ export function baseDamage(attacker,target,kind,critical=false) {
     :(critical?total/5+total/2.5-target.defense/14:total/10+total/3-target.defense/7);
   return Math.max(1,Math.min(999,Math.floor(amount)));
 }
-export function createCombat({seed=20261023,teams,autoRotateReserves=true}={}) {
+export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   const source=teams??[RENTAL_SQUAD,RENTAL_SQUAD];
   if(!Array.isArray(source)||source.length!==2||!source.every(x=>Array.isArray(x)&&x.length===6))throw new TypeError('requires two rosters of six');
@@ -132,10 +136,12 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true}={}) {
     const actor=byId.get(clockEvent.id);
     // A guard lasts until the next time that actor begins an action.
     actor.guard=false;
-    const kind=choice(actor);
+    const kind=enableLoafing&&rng()*100<actor.loafChance?'loaf':choice(actor);
     let target=null,amount=0,hit=true,critical=false;
     if(kind==='guard'){
       actor.guard=true;
+    }else if(kind==='loaf'){
+      // Test fixture only. True YW2 level, leader and skill-adjusted rates are not yet modeled.
     }else if(kind==='technique'&&actor.technique==='heal'){
       const hurt=livingFront(actor.side).filter(x=>x.hp<x.maxHp).sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp);
       target=hurt[0]??null;
