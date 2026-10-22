@@ -1,0 +1,26 @@
+name: Research battle unit tests
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout test branch
+        uses: actions/checkout@v4
+      - name: Report Node runtime
+        run: node --version
+      - name: Validate core JavaScript
+        run: |
+          node --check engine/phase1.mjs
+          node --check engine/combat.mjs
+          node --check engine/selection.mjs
+          node --check engine/inspirit.mjs
+          node --check engine/soul.mjs
+      - name: Run repository tests
+        run: node --test tests/*.test.mjs
