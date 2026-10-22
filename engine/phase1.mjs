@@ -151,10 +151,32 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
     return { ...event };
   }
 
+  /** Side-effect-free tentative order preview: assumes no rotation, KO or status changes. */
+  function predict(count = 5) {
+    if (!Number.isInteger(count) || count < 0 || count > 30) throw new RangeError('count 0..30');
+    const active = frontlineAll().filter(m => m.canAct && Number.isFinite(m.wait))
+      .map(m => ({ id: m.id, cost: m.cost, wait: m.wait }));
+    const events = [];
+    let sinceNow = 0;
+    for (let n = 0; n < count && active.length; n++) {
+      const delta = Math.min(...active.map(m => m.wait));
+      for (const member of active) member.wait = Math.max(0, member.wait - delta);
+      const actor = active.find(m => m.wait === 0);
+      sinceNow += delta;
+      const current = frontlineAll().find(m => m.id === actor.id);
+      events.push({
+        id: actor.id, pointsUntil: sinceNow, waitBefore: current.wait,
+        normalWait: actor.cost, assumedActionWait: 3, confidence: 'research-model'
+      });
+      actor.wait = actor.cost;
+    }
+    return events;
+  }
+
   function simulate(count = 1) {
     if (!Number.isInteger(count) || count < 0 || count > 10000) throw new RangeError('count 0..10000');
     return Array.from({ length: count }, () => step());
   }
 
-  return { snapshot, step, simulate, rotate, setCanAct };
+  return { snapshot, step, simulate, rotate, setCanAct, predict };
 }
