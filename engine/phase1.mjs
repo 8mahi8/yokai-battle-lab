@@ -73,7 +73,8 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
         // Working hypothesis: lower debt means an earlier action.
         wait: opening ? low + Math.floor(random() * (high - low + 1)) : null,
         acted: 0,
-        originalFront: opening
+        originalFront: opening,
+        canAct: true
       };
     })
   }));
@@ -110,13 +111,27 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
     team.offset = (team.offset + direction + 6) % 6;
     const newFront = new Set(frontline(team)), rotatedIn=[], rotatedOut=[];
     for(const m of oldFront) if(!newFront.has(m)) {m.wait=null;rotatedOut.push(m.id);}
-    for(const m of newFront) if(!oldFront.has(m)) {m.wait=m.cost;rotatedIn.push(m.id);}
+    for(const m of newFront) if(!oldFront.has(m)) {m.wait=m.canAct?m.cost:null;rotatedIn.push(m.id);}
     team.lastRotateAt = atMs;
     return { ok: true, side, offset: team.offset, frontIds: frontline(team).map(x => x.id),rotatedIn,rotatedOut };
   }
 
-  function step() {
-    const active = frontlineAll();
+  function setCanAct(id, allowed) {
+    if (typeof allowed !== 'boolean') throw new TypeError('allowed must be boolean');
+    const side = data.find(t => t.members.some(m => m.id === id));
+    if (!side) throw new RangeError('unknown unit id');
+    const unit = side.members.find(m => m.id === id);
+    if (unit.canAct === allowed) return;
+    unit.canAct = allowed;
+    if (!allowed) unit.wait = null;
+    else if (frontline(side).includes(unit)) unit.wait = unit.cost;
+  }
+
+  function step(actionWait = 3) {
+    if (!Number.isInteger(actionWait) || actionWait < 0 || actionWait > 10)
+      throw new RangeError('actionWait must be 0..10');
+    const active = frontlineAll().filter(x=>x.canAct && Number.isFinite(x.wait));
+    if (!active.length) throw new Error('No eligible front-line actors; rotate to living reserves');
     // For equal debt: front position within each team, then side A before B.
     // Tie precedence is a *test convention*, not established source behavior.
     const delta = Math.min(...active.map(x => x.wait));
@@ -124,10 +139,10 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
     pointsElapsed += delta;
     const winner = active.find(x => x.wait === 0);
     winner.acted += 1;
-    winner.wait = winner.cost;
+    winner.wait = winner.cost * actionWait / 3;
     const event = {
       action: ++turn, id: winner.id, name: winner.name,
-      speed: winner.speed, cost: winner.cost,
+      speed: winner.speed, cost: winner.cost, actionWait,
       elapsed: delta, pointsElapsed,
       frontA: frontline(data[0]).map(x => x.id),
       frontB: frontline(data[1]).map(x => x.id)
@@ -141,5 +156,5 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
     return Array.from({ length: count }, () => step());
   }
 
-  return { snapshot, step, simulate, rotate };
+  return { snapshot, step, simulate, rotate, setCanAct };
 }
