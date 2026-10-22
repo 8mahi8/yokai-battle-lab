@@ -4,6 +4,7 @@
  * No online transport, status effects, soul or Soultimate implementation.
  */
 import { createBattle } from './phase1.mjs';
+import { createInspiritLedger } from './inspirit.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
   {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',weights:[70,25,5]},
@@ -48,12 +49,30 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true}={}) {
   if(!Array.isArray(source)||source.length!==2||!source.every(x=>Array.isArray(x)&&x.length===6))throw new TypeError('requires two rosters of six');
   const squads=source.map((team,side)=>team.map((member,i)=>buildMember(member,side,i)));
   const byId=new Map(squads.flat().map(x=>[x.id,x]));
+ const statuses=createInspiritLedger([...byId.keys()]);
   const clock=createBattle({seed,teams:squads.map(t=>t.map(m=>({name:m.name,speed:m.speed}))),rotationCooldownMs:0});
   const rng=seededRandom(seed ^ 0xA365E91F);
   const pins=[null,null], events=[];
   let winner=null;
   const front=(side)=>clock.snapshot().teams[side].frontIds.map(id=>byId.get(id));
   const livingFront=(side)=>front(side).filter(x=>x.hp>0);
+  function syncCanAct(id){const member=byId.get(id);clock.setCanAct(id,member.hp>0&&!statuses.has(id,'sleep'));}
+  /** Experimental injection: not an auto AI Inspirit move; hit/resistance unimplemented. */
+  function applyInspirit({id,sign,effect,source=null,duration=null}={}){
+    if(winner!==null)throw new Error('battle finished');
+    if(!byId.has(id))throw new RangeError('unknown member');
+    if(!['sleep','research-marker'].includes(effect))throw new RangeError('effect not modeled');
+    if(effect==='sleep'&&sign!=='negative')throw new RangeError('sleep is negative');
+    const result=statuses.apply({id,sign,effect,source,duration});
+    syncCanAct(id);return result;
+  }
+  function purify(side,id){
+    if(winner!==null)throw new Error('battle finished');
+    if(![0,1].includes(side))throw new RangeError('invalid side');
+    const result=statuses.purify({id,side,benchIds:clock.snapshot().teams[side].benchIds});
+    if(result.ok)syncCanAct(id);
+    return result;
+  }
   function syncPinned(){ for(let side=0;side<2;side++)if(pins[side]&&!livingFront(1-side).some(m=>m.id===pins[side]))pins[side]=null; }
   function rotate(side,direction){
     if(winner!==null)throw new Error('battle finished');
@@ -99,13 +118,15 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true}={}) {
     return 'guard';
   }
   function snapshot(){
-    return {seed,winner,pins:[...pins],clock:clock.snapshot(),squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights]}))),events:events.slice(-80).map(e=>({...e}))};
+    return {seed,winner,pins:[...pins],clock:clock.snapshot(),squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights]}))),events:events.slice(-80).map(e=>({...e})),inspirits:Object.fromEntries([...byId.keys()].map(id=>[id,statuses.list(id)]))};
   }
   function step(){
     if(winner!==null)return {type:'finished',winner};
     ensureFront();
     const pending=clock.snapshot();
     if(![0,1].every(s=>livingFront(s).length))return {type:'awaiting_rotation',fronts:pending.teams.map(t=>t.frontIds)};
+    if(!pending.teams.some(team=>team.frontIds.some(id=>byId.get(id).hp>0&&!statuses.has(id,'sleep'))))
+      return {type:'awaiting_rotation',reason:'all_front_units_unable_to_act',fronts:pending.teams.map(t=>t.frontIds)};
     const clockEvent=clock.step();
     const actor=byId.get(clockEvent.id);
     // A guard lasts until the next time that actor begins an action.
@@ -133,7 +154,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true}={}) {
         else {const range=Math.floor(damage/10+1); damage=Math.max(1,Math.min(999,damage+Math.floor(rng()*(2*range+1))-range));}
         amount=Math.min(target.hp,damage);
         target.hp-=amount;
-        if(target.hp===0){clock.setCanAct(target.id,false);actor.knockouts++;syncPinned();}
+        if(target.hp===0){syncCanAct(target.id);actor.knockouts++;syncPinned();}
       }
     }
     if(squads.some(team=>team.every(member=>member.hp===0)))winner=squads[0].every(m=>m.hp===0)?1:0;
@@ -141,6 +162,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true}={}) {
       actor:actor.id,kind:kind==='technique'&&actor.technique==='heal'?'heal':kind,target:target?.id??null,
       hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,winner};
     events.push(action);
+    const expired=statuses.tick({actorId:actor.id});
+    for(const item of expired)syncCanAct(item.id);
     return {...action};
   }
   function simulate(count=1){
@@ -152,5 +175,5 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true}={}) {
     }
     return result;
   }
-  return {snapshot,step,simulate,rotate,pin};
+  return {snapshot,step,simulate,rotate,pin,applyInspirit,purify};
 }
