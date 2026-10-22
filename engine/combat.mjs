@@ -6,7 +6,7 @@
 import { createBattle } from './phase1.mjs';
 import { createInspiritLedger } from './inspirit.mjs';
 import { actionWeights, pickAction } from './selection.mjs';
-import { createSoulSystem } from './soul.mjs';
+import { createSoulSystem, chargeInterruptChance } from './soul.mjs';
 import { chooseChargeKind, createChargeTrial } from './charge-input.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
@@ -66,6 +66,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const rng=seededRandom(seed ^ 0xA365E91F);
   const pins=[null,null], events=[];
   const guided=[null,null];
+  const chargeHits=[0,0];
   let winner=null;
   const front=(side)=>clock.snapshot().teams[side].frontIds.map(id=>byId.get(id));
   const livingFront=(side)=>front(side).filter(x=>x.hp>0);
@@ -106,6 +107,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(winner!==null)throw new Error('battle finished');
     const result=soul.setMode(side,mode);
     guided[side]=null;
+    chargeHits[side]=0;
     if(mode==='zero')pins[side]=null; // original Watch Zero replaces Pin with Poke
     return result;
   }
@@ -118,7 +120,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(side!==0&&side!==1)throw new RangeError('invalid side');
     const team=clock.snapshot().teams[side];
     const caster=byId.get(id);
-    return soul.prepare({side,casterId:id,frontIds:team.frontIds,alive:!!caster&&caster.hp>0});
+    const result=soul.prepare({side,casterId:id,frontIds:team.frontIds,alive:!!caster&&caster.hp>0});
+    if(result.ok)chargeHits[side]=0;
+    return result;
   }
   function resolveSoultimate(side,token,success){
     if(winner!==null)throw new Error('battle finished');
@@ -127,6 +131,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const caster=pending?byId.get(pending.casterId):null;
     const result=soul.resolve({side,token,success,frontIds:clock.snapshot().teams[side].frontIds,alive:!!caster&&caster.hp>0});
     if(guided[side]?.token===token)guided[side]=null;
+    chargeHits[side]=0;
     // Only charge + resource consumption are implemented; actual special-move effects aren't.
     return result.ok?{...result,effectStatus:'unimplemented'}:result;
   }
@@ -205,7 +210,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     // A guard lasts until the next time that actor begins an action.
     actor.guard=false;
     const kind=enableLoafing&&rng()*100<actor.loafChance?'loaf':choice(actor);
-    let target=null,amount=0,hit=true,critical=false,effect=null,resisted=false;
+    let target=null,amount=0,hit=true,critical=false,effect=null,resisted=false,interruption=null;
     if(kind==='guard'){
       actor.guard=true;
     }else if(kind==='loaf'){
@@ -242,13 +247,30 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         else {const range=Math.floor(damage/10+1); damage=Math.max(1,Math.min(999,damage+Math.floor(rng()*(2*range+1))-range));}
         amount=Math.min(target.hp,damage);
         target.hp-=amount;
+        // A charge can be interrupted by an incoming hit. The probability
+        // comes from the published YW2 formula; move bonus defaults to zero.
+        const chargeSide=target.side;
+        const pendingCharge=soul.snapshot().pending[chargeSide];
+        if(pendingCharge?.casterId===target.id){
+          const chance=chargeInterruptChance({damage:amount,maxHp:target.maxHp,
+            hitsTaken:chargeHits[chargeSide],critical});
+          const stopped=target.hp===0||rng()*100<chance;
+          interruption={target:target.id,chance,stopped,reason:target.hp===0?'caster_ko':stopped?'hit_interruption':'charge_continues'};
+          if(stopped){
+            soul.resolve({side:chargeSide,token:pendingCharge.token,
+              frontIds:clock.snapshot().teams[chargeSide].frontIds,
+              success:false,alive:target.hp>0});
+            guided[chargeSide]=null;
+            chargeHits[chargeSide]=0;
+          }else chargeHits[chargeSide]++;
+        }
         if(target.hp===0){syncCanAct(target.id);actor.knockouts++;syncPinned();}
       }
     }
     if(squads.some(team=>team.every(member=>member.hp===0)))winner=squads[0].every(m=>m.hp===0)?1:0;
     const action={type:'action',turn:clockEvent.action,elapsed:clockEvent.elapsed,pointsElapsed:clockEvent.pointsElapsed,
       actor:actor.id,kind:kind==='technique'&&actor.technique==='heal'?'heal':kind,target:target?.id??null,
-      hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,effect,resisted,winner};
+      hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,effect,resisted,interruption,winner};
     events.push(action);
     if(researchSoulGainPerAction>0){for(const member of squads.flat())if(member.hp>0)soul.addSoul(member.id,researchSoulGainPerAction);}
     const expired=statuses.tick({actorId:actor.id});
