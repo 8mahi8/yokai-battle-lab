@@ -8,7 +8,13 @@ export const CHARGE_KINDS = Object.freeze(['spin','tap','trace','align']);
 const TWO_PI = Math.PI * 2;
 function rngFor(seed) {
  if(!Number.isInteger(seed))throw new TypeError('integer seed required');
- let s=(seed>>>0)||1;
+ // Avalanche adjacent integer seeds before the first draw. A raw xorshift
+ // first output is correlated for nearby seeds and biased mode selection.
+ let s=seed>>>0;
+ s=Math.imul(s^(s>>>16),0x7feb352d);
+ s=Math.imul(s^(s>>>15),0x846ca68b);
+ s=(s^(s>>>16))>>>0;
+ if(!s)s=1;
  return ()=>{s^=s<<13;s^=s>>>17;s^=s<<5;return (s>>>0)/4294967296;};
 }
 export function chooseChargeKind(seed) {
