@@ -5,14 +5,15 @@
  */
 import { createBattle } from './phase1.mjs';
 import { createInspiritLedger } from './inspirit.mjs';
+import { actionWeights, pickAction } from './selection.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
-  {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',weights:[70,25,5]},
-  {name:'こもれび',speed:170,maxHp:210,strength:55,spirit:125,defense:65,attackPower:40,techniquePower:50,technique:'heal',attitude:'gentle',weights:[30,65,5]},
-  {name:'いしもり',speed:105,maxHp:310,strength:92,spirit:45,defense:145,attackPower:45,techniquePower:35,technique:'damage',attitude:'careful',weights:[40,10,50]},
-  {name:'すずかぜ',speed:251,maxHp:190,strength:73,spirit:115,defense:55,attackPower:45,techniquePower:65,technique:'damage',attitude:'grouchy',weights:[40,55,5]},
-  {name:'ほたる',speed:195,maxHp:220,strength:66,spirit:112,defense:72,attackPower:45,techniquePower:50,technique:'heal',attitude:'gentle',weights:[35,60,5]},
-  {name:'くろがね',speed:128,maxHp:305,strength:116,spirit:47,defense:130,attackPower:65,techniquePower:25,technique:'damage',attitude:'grouchy',weights:[70,10,20]}
+  {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5]},
+  {name:'こもれび',speed:170,maxHp:210,strength:55,spirit:125,defense:65,attackPower:40,techniquePower:50,technique:'heal',attitude:'gentle',inspirit:'strength-up',weights:[25,55,15,5]},
+  {name:'いしもり',speed:105,maxHp:310,strength:92,spirit:45,defense:145,attackPower:45,techniquePower:35,technique:'damage',attitude:'careful',inspirit:'strength-up',weights:[35,10,15,40]},
+  {name:'すずかぜ',speed:251,maxHp:190,strength:73,spirit:115,defense:55,attackPower:45,techniquePower:65,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[35,50,10,5]},
+  {name:'ほたる',speed:195,maxHp:220,strength:66,spirit:112,defense:72,attackPower:45,techniquePower:50,technique:'heal',attitude:'gentle',inspirit:'strength-up',weights:[30,50,15,5]},
+  {name:'くろがね',speed:128,maxHp:305,strength:116,spirit:47,defense:130,attackPower:65,techniquePower:25,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,10,10,20]}
 ]);
 
 function seededRandom(seed) {
@@ -25,15 +26,17 @@ function intStat(value, label, min=0) {
 }
 function buildMember(source,side,index) {
   for(const key of ['speed','maxHp','strength','spirit','defense','attackPower','techniquePower']) intStat(source[key],key,key==='speed'||key==='maxHp'?1:0);
-  if(source.loafChance!==undefined){
+  if(source.inspiritResistance!==undefined){intStat(source.inspiritResistance,'inspiritResistance');if(source.inspiritResistance>100)throw new RangeError('resistance > 100');}
+ if(!['sleep','strength-up'].includes(source.inspirit))throw new TypeError('unsupported Inspirit');
+ if(source.loafChance!==undefined){
     intStat(source.loafChance,'loafChance');
     if(source.loafChance>100)throw new RangeError('loafChance > 100');
   }
   if(!['damage','heal'].includes(source.technique))throw new TypeError('technique must be damage/heal');
-  if(!Array.isArray(source.weights)||source.weights.length!==3||source.weights.some(x=>!Number.isInteger(x)||x<0)||source.weights.reduce((a,b)=>a+b,0)===0)throw new TypeError('invalid weights');
+  if(!Array.isArray(source.weights)||source.weights.length!==4||source.weights.some(x=>!Number.isInteger(x)||x<0)||source.weights.reduce((a,b)=>a+b,0)!==100)throw new TypeError('invalid weights');
   return {id:(side===0?'A':'B')+(index+1),name:source.name||'Unit '+(index+1),side,maxHp:source.maxHp,hp:source.maxHp,speed:source.speed,
     strength:source.strength,spirit:source.spirit,defense:source.defense,attackPower:source.attackPower,techniquePower:source.techniquePower,
-    loafChance:source.loafChance??0,technique:source.technique,attitude:source.attitude??'neutral',weights:[...source.weights],guard:false,knockouts:0};
+    loafChance:source.loafChance??0,inspiritResistance:source.inspiritResistance??20,inspirit:source.inspirit,technique:source.technique,attitude:source.attitude??'neutral',weights:[...source.weights],guard:false,knockouts:0};
 }
 export function hitChance(attacker,target) {
   return Math.floor(Math.max(75,Math.min(98,98+(attacker.speed-target.speed)/5)));
@@ -65,7 +68,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   function applyInspirit({id,sign,effect,source=null,duration=null}={}){
     if(winner!==null)throw new Error('battle finished');
     if(!byId.has(id))throw new RangeError('unknown member');
-    if(!['sleep','research-marker'].includes(effect))throw new RangeError('effect not modeled');
+    if(!['sleep','strength-up','research-marker'].includes(effect))throw new RangeError('effect not modeled');
+    if(effect==='strength-up'&&sign!=='positive')throw new RangeError('strength-up is positive');
     if(effect==='sleep'&&sign!=='negative')throw new RangeError('sleep is negative');
     if(effect==='sleep'&&duration!==null)throw new RangeError('sleep owner-turn duration is unsupported');
     const result=statuses.apply({id,sign,effect,source,duration});
@@ -98,29 +102,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     syncPinned();
   }
   function choice(actor){
-    const allies=livingFront(actor.side), enemies=livingFront(1-actor.side);
-    const weights=[...actor.weights];
-    // Selected YW2 attitude multipliers; priority follows mtwildwood.net/attitudes.php.
-    // No Inspirit, Soultimate charge or buff effects in this research fixture.
-    if(actor.attitude==='gentle' && actor.technique==='heal'){
-      if(allies.every(x=>x.hp===x.maxHp))weights[1]=0;
-      else if(allies.every(x=>x.hp/x.maxHp>=0.90))weights[1]*=0.2;
-      else if(allies.some(x=>x.hp/x.maxHp<0.25)){weights[0]=0;weights[2]=0;}
-      else if(allies.some(x=>x.hp/x.maxHp<0.50))weights[1]*=5;
-    }else if(actor.attitude==='careful'){
-      if(actor.technique==='heal' && allies.some(x=>x.hp/x.maxHp<0.25))weights[1]*=4;
-      else if(actor.hp/actor.maxHp<0.25)weights[2]*=10;
-      else if(actor.hp/actor.maxHp<=0.50)weights[2]*=5;
-    }else if(actor.attitude==='grouchy'){
-      if(actor.technique==='heal' && allies.some(x=>x.hp/x.maxHp<0.25))weights[1]*=3;
-      else if(enemies.length && actor.strength>Math.min(...enemies.map(x=>x.defense)))weights[0]*=3;
-    }
-    if(actor.technique==='heal'&&!allies.some(m=>m.hp<m.maxHp)) weights[1]=0;
-    const total=weights.reduce((a,b)=>a+b,0);
-    const roll=rng()*total;
-    if(roll<weights[0])return 'attack';
-    if(roll<weights[0]+weights[1])return 'technique';
-    return 'guard';
+    const allies=livingFront(actor.side),enemies=livingFront(1-actor.side);
+    const negativeCounts=Object.fromEntries(enemies.map(m=>[m.id,statuses.list(m.id).filter(x=>x.sign==='negative').length]));
+    const positiveCounts=Object.fromEntries(allies.map(m=>[m.id,statuses.list(m.id).filter(x=>x.sign==='positive').length]));
+    const weights=actionWeights(actor,{allies,enemies,enemyPin:pins[actor.side],negativeCounts,positiveCounts});
+    return pickAction(weights,rng);
   }
   function snapshot(){
     return {seed,winner,pins:[...pins],clock:clock.snapshot(),squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights]}))),events:events.slice(-80).map(e=>({...e})),inspirits:Object.fromEntries([...byId.keys()].map(id=>[id,statuses.list(id)]))};
@@ -137,11 +123,24 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     // A guard lasts until the next time that actor begins an action.
     actor.guard=false;
     const kind=enableLoafing&&rng()*100<actor.loafChance?'loaf':choice(actor);
-    let target=null,amount=0,hit=true,critical=false;
+    let target=null,amount=0,hit=true,critical=false,effect=null,resisted=false;
     if(kind==='guard'){
       actor.guard=true;
     }else if(kind==='loaf'){
-      // Test fixture only. True YW2 level, leader and skill-adjusted rates are not yet modeled.
+      // Test fixture only; official level/leader-adjusted chance is unmodeled.
+    }else if(kind==='inspirit'){
+      const sign=actor.inspirit==='sleep'?'negative':'positive';
+      const group=sign==='negative'?livingFront(1-actor.side):livingFront(actor.side);
+      const candidates=group.filter(x=>!statuses.has(x.id,actor.inspirit));
+      if(!candidates.length)throw new Error('Inspirit selected without eligible target');
+      target=sign==='negative'
+       ? candidates.find(m=>m.id===pins[actor.side])??candidates[Math.floor(rng()*candidates.length)]
+       : candidates[Math.floor(rng()*candidates.length)];
+      effect=actor.inspirit;
+      // Resistance formula is cross-version research; unit resistance is a TEST fixture.
+      resisted=sign==='negative'&&rng()*100<target.inspiritResistance;
+      hit=!resisted;
+      if(hit)applyInspirit({id:target.id,sign,effect,source:actor.id});
     }else if(kind==='technique'&&actor.technique==='heal'){
       const hurt=livingFront(actor.side).filter(x=>x.hp<x.maxHp).sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp);
       target=hurt[0]??null;
@@ -156,7 +155,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       if(hit){
         // YW2 base unmodified critical chance: approximately 1 in 99.
         critical=rng()*99<1;
-        let damage=baseDamage(actor,target,kind,critical);
+        let damage=baseDamage(statuses.has(actor.id,'strength-up')?{...actor,strength:Math.floor(actor.strength*1.10)}:actor,target,kind,critical);
         if(target.guard) damage=Math.max(1,Math.floor(damage*.5));
         else {const range=Math.floor(damage/10+1); damage=Math.max(1,Math.min(999,damage+Math.floor(rng()*(2*range+1))-range));}
         amount=Math.min(target.hp,damage);
@@ -167,7 +166,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(squads.some(team=>team.every(member=>member.hp===0)))winner=squads[0].every(m=>m.hp===0)?1:0;
     const action={type:'action',turn:clockEvent.action,elapsed:clockEvent.elapsed,pointsElapsed:clockEvent.pointsElapsed,
       actor:actor.id,kind:kind==='technique'&&actor.technique==='heal'?'heal':kind,target:target?.id??null,
-      hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,winner};
+      hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,effect,resisted,winner};
     events.push(action);
     const expired=statuses.tick({actorId:actor.id});
     for(const item of expired)syncCanAct(item.id);
