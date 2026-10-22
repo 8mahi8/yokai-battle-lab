@@ -3,6 +3,19 @@
  * Source for mode and ring adjacency: https://gamepedia.jp/youkai-yw2/archives/1873
  * Soul accrual rate, minigame timing, extra effect rules deliberately NOT modeled.
  */
+/** Published YW1/YW2/YW3 baseline interruption formula; no per-move bonuses yet.
+ * https://mtwildwood.net/soultimate-charge.php
+ */
+export function chargeInterruptChance({damage,maxHp,hitsTaken=0,critical=false,moveBonus=0,immune=false}={}){
+ if(!Number.isFinite(damage)||damage<0||!Number.isFinite(maxHp)||maxHp<=0||
+    !Number.isInteger(hitsTaken)||hitsTaken<0||!Number.isFinite(moveBonus)||
+    typeof critical!=='boolean'||typeof immune!=='boolean')
+    throw new RangeError('invalid charge interruption parameters');
+ if(immune)return 0;
+ const base=[8,12,18,35][Math.min(hitsTaken,3)];
+ return Math.max(0,Math.min(100,base+10*damage/maxHp+moveBonus+(critical?10:0)));
+}
+
 export function createSoulSystem({teams} = {}) {
   if (!Array.isArray(teams) || teams.length !== 2 ||
       teams.some(team => !Array.isArray(team) || team.length !== 6)) {
