@@ -17,7 +17,7 @@ test('browser laboratory imports an existing engine path',()=>{
 });
 test('Soul research controls have both visible affordances and handlers',()=>{
  const html=readFileSync(new URL('../lab/phase2.html',import.meta.url),'utf8');
- for(const token of ['data-soul','data-watch','data-special','data-finish','data-cancel','pokeEligibility','prepareSoultimate','resolveSoultimate'])
+ for(const token of ['data-soul','data-watch','data-special','data-cancel','pokeEligibility','beginGuidedCharge','chargeInput','cancelGuidedCharge','pointerdown','pointermove','pointerup','chargePad'])
    assert.ok(html.includes(token),'missing UI control or handler: '+token);
  assert.match(html,/技効果は未実装/);
 });
