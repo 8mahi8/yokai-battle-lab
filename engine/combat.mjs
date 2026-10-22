@@ -63,6 +63,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true}={}) {
     if(!byId.has(id))throw new RangeError('unknown member');
     if(!['sleep','research-marker'].includes(effect))throw new RangeError('effect not modeled');
     if(effect==='sleep'&&sign!=='negative')throw new RangeError('sleep is negative');
+    if(effect==='sleep'&&duration!==null)throw new RangeError('sleep owner-turn duration is unsupported');
     const result=statuses.apply({id,sign,effect,source,duration});
     syncCanAct(id);return result;
   }
@@ -175,5 +176,5 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true}={}) {
     }
     return result;
   }
-  return {snapshot,step,simulate,rotate,pin,applyInspirit,purify};
+  return {snapshot,step,simulate,rotate,pin,applyInspirit,purify,preview:clock.predict};
 }
