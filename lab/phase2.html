@@ -24,6 +24,7 @@
   <p class="charge-help" id="chargeHelp"></p>
   <svg id="chargePad" class="charge-pad" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-label="タッチ操作エリア"></svg>
   <div class="charge-meter"><i id="chargeMeter"></i></div>
+  <button id="chargeBattleStep">戦闘を1行動進める（中断テスト）</button>
   <p class="charge-note">入力条件・図形は研究用の仮設定。原作そのものの判定を保証しません。</p>
  </section>
 </div>
@@ -46,7 +47,7 @@ function renderCharge(challenge){
  el('chargeTitle').textContent=chargeNames[challenge.kind]+' / '+(challenge.count+1)+'/'+challenge.total;
  el('chargeHelp').textContent=chargeHelp[challenge.kind];
  el('chargeMeter').style.width=(challenge.progress*100).toFixed(1)+'%';
- const ring='<circle cx="50" cy="50" r="32" fill="none" stroke="#46677c" stroke-width="2"/>';
+ const ring='<rect width="100" height="100" fill="#102235"/><circle cx="50" cy="50" r="32" fill="none" stroke="#46677c" stroke-width="2"/>';
  let body=ring;
  if(challenge.kind==='spin'){
   body+='<circle cx="50" cy="50" r="30" fill="none" stroke="#e6c575" stroke-width="8" stroke-dasharray="12 7" opacity=".85"/>'+
@@ -98,10 +99,17 @@ function draw(){
   html+='</div><div class="bench">'+ring.benchIds.map(id=>{let m=byId.get(id);const needsPurify=snap.inspirits[id]?.some(x=>x.sign==='negative');const meter=soulMap.get(id);return '<span>'+id+' '+esc(m.name)+' HP'+m.hp+'/'+m.maxHp+' 妖気'+meter.soul+'/'+meter.capacity+' <button data-soul="'+id+'">妖気+25</button>'+(needsPurify?' 💤 <button data-purify="'+id+'" data-owner="'+side+'">おはらい</button>':'')+'</span>';}).join('')+'</div><div class="controls"><button data-rotate="'+side+'" data-dir="-1">◀ 左回転</button><button data-rotate="'+side+'" data-dir="1">右回転 ▶</button></div>';
   el('team'+side).innerHTML=html;
  }
- el('log').innerHTML=actions.slice(-35).reverse().map(x=>'<div>#'+x.turn+' '+x.actor+' '+({attack:'攻撃',technique:'妖術',heal:'回復',guard:'防御',inspirit:'取り憑き',loaf:'サボり'}[x.kind]||'')+(x.target?' → '+x.target:'')+(x.amount?' '+x.amount+'HP':'')+(x.effect?' ['+({sleep:'睡眠','strength-up':'ちから強化'}[x.effect]||x.effect)+']':'')+(x.resisted?' 耐性で失敗':x.hit===false?' ミス':'')+'</div>').join('')||'<div>行動待ち</div>';
+ el('log').innerHTML=actions.slice(-35).reverse().map(x=>'<div>#'+x.turn+' '+x.actor+' '+({attack:'攻撃',technique:'妖術',heal:'回復',guard:'防御',inspirit:'取り憑き',loaf:'サボり'}[x.kind]||'')+(x.target?' → '+x.target:'')+(x.amount?' '+x.amount+'HP':'')+(x.effect?' ['+({sleep:'睡眠','strength-up':'ちから強化'}[x.effect]||x.effect)+']':'')+(x.resisted?' 耐性で失敗':x.hit===false?' ミス':'')+(x.interruption?.stopped?' ⚡必殺中断':'')+'</div>').join('')||'<div>行動待ち</div>';
  if(snap.winner!==null)el('status').textContent='TEAM '+(snap.winner?'B':'A')+' 勝利！';
 }
-function next(n){const result=battle.simulate(n);for(const r of result)if(r.type==='action'){actions.push(r);last=r.actor;}el('status').textContent=result[result.length-1]?.type==='awaiting_rotation'?'前衛不在・回転が必要':n+'行動実行';draw();}
+function next(n){
+ const result=battle.simulate(n);
+ for(const r of result)if(r.type==='action'){actions.push(r);last=r.actor;}
+ const interrupted=result.find(r=>r.interruption?.stopped);
+ el('status').textContent=interrupted?'必殺チャージ中断：'+interrupted.interruption.target
+   :result[result.length-1]?.type==='awaiting_rotation'?'前衛不在・回転が必要':n+'行動実行';
+ draw();
+}
 document.addEventListener('click',event=>{
  const btn=event.target.closest('button');if(!btn)return;
  try{
@@ -166,7 +174,8 @@ let pointerId=null;
 const chargePad=el('chargePad');
 chargePad.addEventListener('pointerdown',e=>{
  if(activeChargeSide===null)return;
- e.preventDefault();pointerId=e.pointerId;chargePad.setPointerCapture(e.pointerId);
+ if(pointerId!==null)return;
+ e.preventDefault();pointerId=e.pointerId;if(chargePad.setPointerCapture)chargePad.setPointerCapture(e.pointerId);
  applyTouch({type:'down',...normalizedPointer(e)});
 });
 chargePad.addEventListener('pointermove',e=>{
@@ -179,6 +188,7 @@ function releasePointer(e){
 }
 chargePad.addEventListener('pointerup',releasePointer);
 chargePad.addEventListener('pointercancel',releasePointer);
+el('chargeBattleStep').addEventListener('click',()=>{if(activeChargeSide!==null)next(1);});
 el('chargeCancel').addEventListener('click',()=>{
  if(activeChargeSide===null)return;
  const result=battle.cancelGuidedCharge(activeChargeSide);
