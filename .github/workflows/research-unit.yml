@@ -24,3 +24,5 @@ jobs:
           node --check engine/soul.mjs
       - name: Run repository tests
         run: node --test tests/*.test.mjs
+      - name: Render real browser research UI
+        run: node tools/browser-smoke.mjs
