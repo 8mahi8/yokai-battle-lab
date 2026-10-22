@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createBattle, waitCostFromSpeed } from '../engine/phase1.mjs';
+import { createBattle, waitCostFromSpeed, initialWaitRange } from '../engine/phase1.mjs';
 
 const speedCases = [
   [1,369], [3,366], [171,198], [172,198], [175,198], [176,195],
@@ -31,14 +31,20 @@ test('whole battle with same seed is deterministic and rental teams are mirrored
   assert.deepEqual(roster[0],roster[1]);
 });
 
-test('frontline rotation is circular and preserves unit-specific debt', () => {
-  const battle=createBattle({seed:11,rotationCooldownMs:0});
-  const old=battle.snapshot().teams[0].members.map(x=>x.wait);
-  for(let k=0;k<6;k++) assert.equal(battle.rotate(0,1,k).ok,true);
-  assert.deepEqual(battle.snapshot().teams[0].frontIds,['A1','A2','A3']);
-  assert.deepEqual(battle.snapshot().teams[0].members.map(x=>x.wait),old);
-  assert.equal(battle.rotate(0,-1,9).ok,true);
-  assert.deepEqual(battle.snapshot().teams[0].frontIds,['A6','A1','A2']);
+test('initial wait table matches traced YW2 boundary rows', () => {
+ const rows=[[1,156,187],[5,155,186],[161,103,134],[164,102,132],[167,101,130],[170,100,128],[171,99,126],[175,99,126],[176,98,124],[200,94,116],[201,93,114],[210,93,114],[211,92,112],[250,88,106],[500,38,56],[501,36,54]];
+ for(const [speed,low,high] of rows) assert.deepEqual(initialWaitRange(speed),[low,high]);
+ for(const invalid of [0,1.2,-1,NaN,Infinity])assert.throws(()=>initialWaitRange(invalid));
+});
+
+test('whole wheel returns to same layout while rotating-in debt resets', () => {
+ const b=createBattle({seed:11,rotationCooldownMs:0});
+ const before=b.snapshot();
+ for(let i=0;i<6;i++)assert.equal(b.rotate(0,1,i).ok,true);
+ const after=b.snapshot();
+ assert.deepEqual(after.teams[0].frontIds,before.teams[0].frontIds);
+ assert.equal(after.teams[0].members[0].wait,after.teams[0].members[0].cost);
+ assert.equal(after.teams[0].members.filter(m=>m.wait!==null).length,3);
 });
 
 test('only active members accrue action eligibility in working model', () => {
@@ -55,15 +61,17 @@ test('only active members accrue action eligibility in working model', () => {
   assert.ok(after.pointsElapsed>0);
 });
 
-test('rear member enters active pool without resetting its waiting debt', () => {
-  const battle=createBattle({seed:8,rotationCooldownMs:0});
-  battle.simulate(15);
-  const before=battle.snapshot().teams[0].members[3].wait;
-  assert.equal(battle.rotate(0,1,0).ok,true);
-  assert.deepEqual(battle.snapshot().teams[0].frontIds,['A2','A3','A4']);
-  assert.equal(battle.snapshot().teams[0].members[3].wait,before);
-  battle.simulate(5);
-  assert.ok(battle.snapshot().teams[0].members[3].wait <= before || battle.snapshot().teams[0].members[3].acted > 0);
+test('only new front member resets, survivors keep their wait, outgoing becomes inactive', () => {
+ const b=createBattle({seed:8,rotationCooldownMs:0});
+ b.simulate(15);
+ const before=b.snapshot(), oldWait=before.teams[0].members[1].wait;
+ const result=b.rotate(0,1,0);
+ const after=b.snapshot();
+ assert.deepEqual(result.rotatedIn,['A4']);
+ assert.deepEqual(result.rotatedOut,['A1']);
+ assert.equal(after.teams[0].members[0].wait,null);
+ assert.equal(after.teams[0].members[1].wait,oldWait);
+ assert.equal(after.teams[0].members[3].wait,after.teams[0].members[3].cost);
 });
 
 test('3-second circle cooldown is independent of action points', () => {
@@ -86,7 +94,7 @@ test('a rotate never changes the opposing side, unit stats or global point clock
   assert.deepEqual(before.teams[1],after.teams[1]);
   assert.equal(before.turn,after.turn);
   assert.equal(before.pointsElapsed,after.pointsElapsed);
-  assert.deepEqual(before.teams[0].members,after.teams[0].members);
+  assert.deepEqual(before.teams[0].members.map(m=>m.speed),after.teams[0].members.map(m=>m.speed));
 });
 
 test('rotation interleaving and seed yield replayable logs', () => {
@@ -109,4 +117,16 @@ test('simulation exposes no action/damage choices in phase 1', () => {
   assert.ok(actions.every(x => ['A','B'].includes(x.id[0])));
   assert.ok(actions.every(x=>!('damage' in x) && !('attack' in x)));
   assert.equal(battle.snapshot().turn,1000);
+});
+
+test('initial front waits stay inside source ranges for 40 seeds', () => {
+ for(let seed=1;seed<=40;seed++){
+  const state=createBattle({seed}).snapshot();
+  for(const team of state.teams)for(const member of team.members){
+   if(member.originalFront){
+    const [low,high]=initialWaitRange(member.speed);
+    assert.ok(member.wait>=low && member.wait<=high);
+   }else assert.equal(member.wait,null);
+  }
+ }
 });
