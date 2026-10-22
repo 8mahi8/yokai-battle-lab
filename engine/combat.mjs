@@ -6,6 +6,7 @@
 import { createBattle } from './phase1.mjs';
 import { createInspiritLedger } from './inspirit.mjs';
 import { actionWeights, pickAction } from './selection.mjs';
+import { createSoulSystem } from './soul.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
   {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5]},
@@ -26,6 +27,7 @@ function intStat(value, label, min=0) {
 }
 function buildMember(source,side,index) {
   for(const key of ['speed','maxHp','strength','spirit','defense','attackPower','techniquePower']) intStat(source[key],key,key==='speed'||key==='maxHp'?1:0);
+  if(source.soulCapacity!==undefined)intStat(source.soulCapacity,'soulCapacity',1);
   if(source.inspiritResistance!==undefined){intStat(source.inspiritResistance,'inspiritResistance');if(source.inspiritResistance>100)throw new RangeError('resistance > 100');}
  if(!['sleep','strength-up'].includes(source.inspirit))throw new TypeError('unsupported Inspirit');
  if(source.loafChance!==undefined){
@@ -36,7 +38,7 @@ function buildMember(source,side,index) {
   if(!Array.isArray(source.weights)||source.weights.length!==4||source.weights.some(x=>!Number.isInteger(x)||x<0)||source.weights.reduce((a,b)=>a+b,0)!==100)throw new TypeError('invalid weights');
   return {id:(side===0?'A':'B')+(index+1),name:source.name||'Unit '+(index+1),side,maxHp:source.maxHp,hp:source.maxHp,speed:source.speed,
     strength:source.strength,spirit:source.spirit,defense:source.defense,attackPower:source.attackPower,techniquePower:source.techniquePower,
-    loafChance:source.loafChance??0,inspiritResistance:source.inspiritResistance??20,inspirit:source.inspirit,technique:source.technique,attitude:source.attitude??'neutral',weights:[...source.weights],guard:false,knockouts:0};
+    loafChance:source.loafChance??0,inspiritResistance:source.inspiritResistance??20,inspirit:source.inspirit,technique:source.technique,attitude:source.attitude??'neutral',weights:[...source.weights],guard:false,knockouts:0,soulCapacity:source.soulCapacity??100};
 }
 export function hitChance(attacker,target) {
   return Math.floor(Math.max(75,Math.min(98,98+(attacker.speed-target.speed)/5)));
@@ -50,12 +52,14 @@ export function baseDamage(attacker,target,kind,critical=false) {
     :(critical?total/5+total/2.5-target.defense/14:total/10+total/3-target.defense/7);
   return Math.max(1,Math.min(999,Math.floor(amount)));
 }
-export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false}={}) {
+export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
+  if(!Number.isInteger(researchSoulGainPerAction)||researchSoulGainPerAction<0||researchSoulGainPerAction>10000)throw new RangeError('invalid experimental Soul gain');
   const source=teams??[RENTAL_SQUAD,RENTAL_SQUAD];
   if(!Array.isArray(source)||source.length!==2||!source.every(x=>Array.isArray(x)&&x.length===6))throw new TypeError('requires two rosters of six');
   const squads=source.map((team,side)=>team.map((member,i)=>buildMember(member,side,i)));
   const byId=new Map(squads.flat().map(x=>[x.id,x]));
+  const soul=createSoulSystem({teams:squads.map(team=>team.map(m=>({id:m.id,capacity:m.soulCapacity})))});
  const statuses=createInspiritLedger([...byId.keys()]);
   const clock=createBattle({seed,teams:squads.map(t=>t.map(m=>({name:m.name,speed:m.speed}))),rotationCooldownMs:0});
   const rng=seededRandom(seed ^ 0xA365E91F);
@@ -89,8 +93,43 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(result.ok)syncPinned();
     return result;
   }
+  function setWatchMode(side,mode){
+    if(winner!==null)throw new Error('battle finished');
+    const result=soul.setMode(side,mode);
+    if(mode==='zero')pins[side]=null; // original Watch Zero replaces Pin with Poke
+    return result;
+  }
+  function giveSoul(id,amount){
+    if(winner!==null)throw new Error('battle finished');
+    return soul.addSoul(id,amount); // explicit lab input; no automatic real-game accrual assumed
+  }
+  function prepareSoultimate(side,id){
+    if(winner!==null)throw new Error('battle finished');
+    if(side!==0&&side!==1)throw new RangeError('invalid side');
+    const team=clock.snapshot().teams[side];
+    const caster=byId.get(id);
+    return soul.prepare({side,casterId:id,frontIds:team.frontIds,alive:!!caster&&caster.hp>0});
+  }
+  function resolveSoultimate(side,token,success){
+    if(winner!==null)throw new Error('battle finished');
+    if(side!==0&&side!==1)throw new RangeError('invalid side');
+    const pending=soul.snapshot().pending[side];
+    const caster=pending?byId.get(pending.casterId):null;
+    const result=soul.resolve({side,token,success,frontIds:clock.snapshot().teams[side].frontIds,alive:!!caster&&caster.hp>0});
+    // Only charge + resource consumption are implemented; actual special-move effects aren't.
+    return result.ok?{...result,effectStatus:'unimplemented'}:result;
+  }
+  function pokeEligibility(side,id){
+    if(side!==0&&side!==1)throw new RangeError('invalid side');
+    const enemyFront=clock.snapshot().teams[1-side].frontIds;
+    const last=events.length?events[events.length-1]:null;
+    return soul.pokeEligibility({side,targetId:id,enemyFrontIds:enemyFront,
+      negativeIds:enemyFront.filter(x=>statuses.list(x).some(t=>t.sign==='negative')),
+      loafingIds:last?.kind==='loaf'?[last.actor]:[]});
+  }
   function pin(side,id=null){
     if(![0,1].includes(side))throw new RangeError('invalid side');
+    if(soul.snapshot().modes[side]==='zero')throw new Error('Pin unavailable in Watch Zero mode');
     if(id!==null&&!livingFront(1-side).some(m=>m.id===id))throw new RangeError('target must be living enemy in front');
     pins[side]=id;
   }
@@ -109,7 +148,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     return pickAction(weights,rng);
   }
   function snapshot(){
-    return {seed,winner,pins:[...pins],clock:clock.snapshot(),squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights]}))),events:events.slice(-80).map(e=>({...e})),inspirits:Object.fromEntries([...byId.keys()].map(id=>[id,statuses.list(id)]))};
+    return {seed,winner,pins:[...pins],clock:clock.snapshot(),squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights]}))),events:events.slice(-80).map(e=>({...e})),soul:soul.snapshot(),inspirits:Object.fromEntries([...byId.keys()].map(id=>[id,statuses.list(id)]))};
   }
   function step(){
     if(winner!==null)return {type:'finished',winner};
@@ -168,6 +207,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       actor:actor.id,kind:kind==='technique'&&actor.technique==='heal'?'heal':kind,target:target?.id??null,
       hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,effect,resisted,winner};
     events.push(action);
+    if(researchSoulGainPerAction>0){for(const member of squads.flat())if(member.hp>0)soul.addSoul(member.id,researchSoulGainPerAction);}
     const expired=statuses.tick({actorId:actor.id});
     for(const item of expired)syncCanAct(item.id);
     return {...action};
@@ -181,5 +221,6 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     }
     return result;
   }
-  return {snapshot,step,simulate,rotate,pin,applyInspirit,purify,preview:clock.predict};
+  return {snapshot,step,simulate,rotate,pin,applyInspirit,purify,preview:clock.predict,
+    setWatchMode,giveSoul,prepareSoultimate,resolveSoultimate,pokeEligibility};
 }
