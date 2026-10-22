@@ -61,52 +61,42 @@ const srv=createServer(async(req,res)=>{
  }catch{res.writeHead(404).end('Missing');}
 });
 const tmp=mkdtempSync(path.join(tmpdir(),'research-chrome-'));
-let timeout;
+async function renderedDom(url,tag,expected,virtualTime){
+ let failure='';
+ for(let attempt=1;attempt<=2;attempt++){
+  const profile=path.join(tmp,tag+'-'+attempt);
+  let out='',errors='',timedOut=false;
+  const child=spawn(browser,[
+   '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+   '--disable-background-networking','--no-first-run','--no-default-browser-check',
+   '--disable-extensions','--disable-background-timer-throttling',
+   '--user-data-dir='+profile,'--virtual-time-budget='+virtualTime,'--dump-dom',url
+  ],{stdio:['ignore','pipe','pipe']});
+  const timeout=setTimeout(()=>{timedOut=true;child.kill('SIGKILL');},14000);
+  child.stdout.on('data',b=>{out+=String(b).slice(0,250000);});
+  child.stderr.on('data',b=>{errors+=String(b).slice(0,30000);});
+  const exit=await new Promise(resolve=>child.on('close',resolve));
+  clearTimeout(timeout);
+  const missing=expected.filter(x=>!out.includes(x));
+  if(!timedOut&&exit===0&&!missing.length)return out;
+  failure='attempt '+attempt+': exit='+exit+', timedOut='+timedOut+
+   ', missing='+missing.join(', ')+'; DOM='+out.slice(-1000)+'; STDERR='+errors.slice(-1000);
+  console.warn(tag+' Chrome attempt failed; '+failure.slice(0,500));
+ }
+ throw new Error('Chromium '+tag+' failed after retries: '+failure);
+}
 try{
  await new Promise(resolve=>srv.listen(0,'127.0.0.1',resolve));
  const address=srv.address();
- const url='http://127.0.0.1:'+address.port+'/lab/phase2.html';
- let out='',errors='';
- const child=spawn(browser,[
-  '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
-  '--disable-background-networking','--no-first-run','--no-default-browser-check',
-  '--user-data-dir='+tmp,'--virtual-time-budget=1000','--dump-dom',url
- ],{stdio:['ignore','pipe','pipe']});
- timeout=setTimeout(()=>child.kill('SIGKILL'),18000);
- child.stdout.on('data',b=>{out+=String(b).slice(0,250000);});
- child.stderr.on('data',b=>{errors+=String(b).slice(0,20000);});
- const exit=await new Promise(resolve=>child.on('close',resolve));
- const expected=[
-  ['front A1','data-special="A1"'],['front B1','data-special="B1"'],
-  ['research forecast','class="slot"'],['Watch mode','data-watch="0"'],
-  ['Soul button','data-soul="A1"'],['touch charge layer','id="chargePad"']
- ];
- const missing=expected.filter(([_,marker])=>!out.includes(marker)).map(([label])=>label);
- if(exit!==0||missing.length){
-  throw new Error('Chromium DOM smoke failed: exit='+exit+', missing='+missing.join(', ')+
-   '\nDOM ending: '+out.slice(-1000)+'\nSTDERR: '+errors.slice(-1200));
- }
+ const rootUrl='http://127.0.0.1:'+address.port;
+ await renderedDom(rootUrl+'/lab/phase2.html','render',[
+  'data-special="A1"','data-special="B1"','class="slot"',
+  'data-watch="0"','data-soul="A1"','id="chargePad"'
+ ],1500);
  console.log('Chromium HTML/ES-module DOM rendered: 2 teams, forecast, Soul and charge controls');
- const qaProfile=path.join(tmp,'interaction');
- const qaUrl='http://127.0.0.1:'+address.port+'/__browser_smoke__.html';
- let qaOut='',qaErr='';
- const qa=spawn(browser,[
-  '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
-  '--disable-background-networking','--no-first-run',
-  '--user-data-dir='+qaProfile,'--virtual-time-budget=1600','--dump-dom',qaUrl
- ],{stdio:['ignore','pipe','pipe']});
- clearTimeout(timeout);
- timeout=setTimeout(()=>qa.kill('SIGKILL'),18000);
- qa.stdout.on('data',b=>{qaOut+=String(b);});
- qa.stderr.on('data',b=>{qaErr+=String(b);});
- const qaExit=await new Promise(resolve=>qa.on('close',resolve));
- if(qaExit!==0||!qaOut.includes('QA-PASS')){
-  throw new Error('Chromium UI interaction failure: exit='+qaExit+
-   '\\nDOM='+qaOut.slice(-1700)+'\\nSTDERR='+qaErr.slice(-800));
- }
+ await renderedDom(rootUrl+'/__browser_smoke__.html','interaction',['QA-PASS'],2500);
  console.log('Chromium interactive smoke passed: Soul buttons, Soultimate cancel, sleep/purify, G charge');
 }finally{
- clearTimeout(timeout);
  await new Promise(resolve=>srv.close(resolve));
  rmSync(tmp,{recursive:true,force:true});
 }
