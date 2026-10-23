@@ -201,3 +201,18 @@ Primary research and technical evidence: [PHASE5_THREE_PLUS_ROTATIONS_QA_2026102
 - Tests: `tests/wheel-three-plus.test.mjs` (7), `tests/combat-wheel-action-boundaries.test.mjs` (3), `tests/rotation-three-plus-visibility.test.mjs` (3), plus real Chromium synthetic-pointer two-vs-three-turn E2E assertions.
 - **Actual GitHub CI:** `193/193` tests passed with **0 fail / 0 skip**, and real Chromium render + interactive branch ESM and button/touch tests passed on https://github.com/8mahi8/yokai-battle-lab/actions/runs/39926638836 . Docs-only commits after this run should be checked against their own workflow result.
 - Original 3DS split-video comparison needed before implementing 3+ targeting. Source-backed initial action rights and Flash Soul consumption also need isolated research before scheduler changes. No user action needed yet; **main, live Google Sites version and production Firebase remain unchanged**.
+
+
+---
+
+## 2026-10-23 — Phase 6: initial-front action rights / Flash Soul experimental prototype (LATEST)
+
+Detailed source and implementation ledger: **[PHASE6_OPENING_FLASH_QA_20261023.md](./PHASE6_OPENING_FLASH_QA_20261023.md)**.
+
+- Investigated matching-time original-front bias, weaker-than-earned opening rights, and Flash Soul's one-time interception of the next planned actor. Sources: https://note.com/uzoumzou_nanoha/n/n2fb6ae41559c , https://note.com/ricosama0726/n/n14710bbe446c , https://note.com/tombow_yw/n/n1e4cf179d2d9 ; grounded baseline speed/initial wait table: https://www.mtwildwood.net/turn-order.php .
+- Added **opt-in** `engine/opening-priority.mjs`. Tracks the matching-time registered front independently of currently visible wheel positions, one-use Flash flags and action interception. `skippedTurnPolicy:'consume'|'preserve'` is a **pair of research hypotheses**, not a verified Flash point formula. Flash does NOT become a permanent speed boost and its flag is not used up by merely rotating to rear.
+- `engine/phase1.mjs`: optional `openingPriorityResearch` changes real seeded action selection, annotates consumed Flash and replaced original actor, and supports identical non-mutating 5-action forecasts. `visibleStartOffsets` and `matchingCreditMode:'metadata-only'|'initial-wait'` let original matching-front registration be compared with the lineup displayed immediately before combat. The latter uses the published speed-specific opening wait as a **provisional interpretation**, valid only before the first auto action; no unsupported numerical original-front credit is forced on default battles.
+- `engine/combat.mjs`: optional `researchOpeningPriority` connects Flash selection to actual BOT combat actions; default identical rental party is untouched.
+- `lab/phase1.html`: Flash ON/OFF, deploy B6, original matching-front toggle, prebattle half-turn, matching initial-wait comparison, and skipped-turn wait policy, with one-use Flash badge, next-five forecast and labeled assumptions.
+- New tests `opening-priority` 7, `phase1-opening-flash` 8, `combat-opening-flash` 6, `opening-priority-ui` 2 and `opening-match-offset` 6. **222/222 tests PASS; zero fail/skip** in actual GitHub CI at https://github.com/8mahi8/yokai-battle-lab/actions/runs/39929586534 . Real headless Chromium exercised both the new Phase 1 matching/Flash UI and previous Phase 4/5 battle interactions.
+- **Important unsourced gaps:** correct Flash point subtraction and skip compensation, initial-front advantage surviving after others already act, multiple simultaneous Flash ordering, no-action infinite Flash exploit and proper source-frame timing. No physical old iPad Safari or network peer match tested. Remains research-only. `main`, published Google Sites and production Firebase unchanged.
