@@ -22,12 +22,12 @@ test('element scales technique damage INCLUDING the defense subtraction',()=>{
  assert.equal(calculateOneHit({...attack,elementMultiplier:2}).amount,
    calculateOneHit(attack).amount,'physical base attack is neutral in this model');
 });
-test('multi-hit power is applied separately per hit; do not multiply stat n times',()=>{
+test('multi-hit power is applied separately per hit; divide stat only, subtract full Defense on every hit',()=>{
  const triple=calculateOneHit({...attack,power:30,hits:3});
- assert.equal(triple.amount,Math.floor(((30*3+100)/2-80/4)/3));
+ assert.equal(triple.amount,Math.floor((30+100/3)/2-80/4));
  const tripleTech=calculateOneHit({...tech,power:35,hits:3,elementMultiplier:1.25});
  assert.equal(tripleTech.amount,
-  Math.floor(((35*3+100)/10+(35*3+100)/3-80/7)*1.25/3));
+  Math.floor(((35+100/3)/10+(35+100/3)/3-80/7)*1.25));
 });
 test('guard half damage and guard-breaking applies to physical move only',()=>{
  assert.equal(calculateOneHit({...attack,guarded:true}).amount,27);
