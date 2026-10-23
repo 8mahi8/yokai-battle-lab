@@ -116,7 +116,12 @@ function draw(){
   (cutin?'<div>カットイン '+cutin.startedAt+'–'+cutin.endsAt+'ms / 我慢'+cutin.enduresSpent+'個</div>':'<div>カットイン未開始</div>')+
   (pending?'<div>カウンター命中予定: '+pending.hitAt+'ms / '+esc(pending.frontLock)+
     ' / '+(pending.targetIds?esc(pending.targetIds.join('、')):'命中時の前衛')+'</div>':'')+
-  hits.map(h=>'<div class="timeline-event moment">命中 '+h.resolvedAt+'ms : '+esc(h.targetIds.join('、'))+' ('+esc(h.frontLock)+')</div>').join('');
+  hits.map(h=>{
+   const unverified=snap.events.some(e=>e.type==='counter-hit-indeterminate'&&e.hitId===h.id);
+   return '<div class="timeline-event moment">'+(unverified?'⚠ 命中先未確定（HP変更なし）':'命中')+
+     ' '+h.resolvedAt+'ms : '+(unverified?'候補 '+esc(h.targetIds.join('、')):esc(h.targetIds.join('、')))+
+     ' ('+esc(h.frontLock)+')</div>';
+  }).join('');
  const corrections=snap.events.filter(e=>e.type==='wheel-target-correction').slice(-3);
  const unresolved=snap.events.filter(e=>e.type==='counter-hit-indeterminate').slice(-2);
  const isUnknown=(wheel.groups[1]?.rotations??0)>=3 || snap.uncertainCounterHits.some(x=>x.reason.side===1);
