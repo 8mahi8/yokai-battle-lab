@@ -1,21 +1,22 @@
 /** Phase 2 deterministic battle research prototype.
  * Combat action selection and damage are modeled from Mt. Wildwood's YW2 pages;
  * original rental stats, weights, heal formula and auto reserve rotation are test fixtures.
- * No online transport, status effects, soul or Soultimate implementation.
+ * Research-only browser lab: special move effects are opt-in and unverified.
  */
 import { createBattle } from './phase1.mjs';
 import { createInspiritLedger } from './inspirit.mjs';
 import { actionWeights, pickAction } from './selection.mjs';
-import { createSoulSystem, chargeInterruptChance } from './soul.mjs';
+import { createSoulSystem, chargeInterruptChance, soulCapacityForRank } from './soul.mjs';
+import {observedNonAttackRecovery,normalizeRentalSpecial,soultimateBaseHit,researchSpecialHeal} from './soultimate-effects.mjs';
 import { chooseChargeKind, createChargeTrial } from './charge-input.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
-  {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5]},
-  {name:'こもれび',speed:170,maxHp:210,strength:55,spirit:125,defense:65,attackPower:40,techniquePower:50,technique:'heal',attitude:'gentle',inspirit:'strength-up',weights:[25,55,15,5]},
-  {name:'いしもり',speed:105,maxHp:310,strength:92,spirit:45,defense:145,attackPower:45,techniquePower:35,technique:'damage',attitude:'careful',inspirit:'strength-up',weights:[35,10,15,40]},
-  {name:'すずかぜ',speed:251,maxHp:190,strength:73,spirit:115,defense:55,attackPower:45,techniquePower:65,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[35,50,10,5]},
-  {name:'ほたる',speed:195,maxHp:220,strength:66,spirit:112,defense:72,attackPower:45,techniquePower:50,technique:'heal',attitude:'gentle',inspirit:'strength-up',weights:[30,50,15,5]},
-  {name:'くろがね',speed:128,maxHp:305,strength:116,spirit:47,defense:130,attackPower:65,techniquePower:25,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,10,10,20]}
+  {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5],special:{kind:'attack',targets:'all',method:'physical',power:70}},
+  {name:'こもれび',speed:170,maxHp:210,strength:55,spirit:125,defense:65,attackPower:40,techniquePower:50,technique:'heal',attitude:'gentle',inspirit:'strength-up',weights:[25,55,15,5],special:{kind:'heal',targets:'all',power:55}},
+  {name:'いしもり',speed:105,maxHp:310,strength:92,spirit:45,defense:145,attackPower:45,techniquePower:35,technique:'damage',attitude:'careful',inspirit:'strength-up',weights:[35,10,15,40],special:{kind:'attack',targets:'one',method:'physical',power:120}},
+  {name:'すずかぜ',speed:251,maxHp:190,strength:73,spirit:115,defense:55,attackPower:45,techniquePower:65,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[35,50,10,5],special:{kind:'attack',targets:'all',method:'technique',power:65}},
+  {name:'ほたる',speed:195,maxHp:220,strength:66,spirit:112,defense:72,attackPower:45,techniquePower:50,technique:'heal',attitude:'gentle',inspirit:'strength-up',weights:[30,50,15,5],special:{kind:'heal',targets:'all',power:75}},
+  {name:'くろがね',speed:128,maxHp:305,strength:116,spirit:47,defense:130,attackPower:65,techniquePower:25,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,10,10,20],special:{kind:'attack',targets:'one',method:'physical',power:145}}
 ]);
 
 function seededRandom(seed) {
@@ -29,6 +30,8 @@ function intStat(value, label, min=0) {
 function buildMember(source,side,index) {
   for(const key of ['speed','maxHp','strength','spirit','defense','attackPower','techniquePower']) intStat(source[key],key,key==='speed'||key==='maxHp'?1:0);
   if(source.soulCapacity!==undefined)intStat(source.soulCapacity,'soulCapacity',1);
+  if(source.soultimateRank!==undefined)soulCapacityForRank(source.soultimateRank);
+  const special=normalizeRentalSpecial(source.special);
   if(source.inspiritResistance!==undefined){intStat(source.inspiritResistance,'inspiritResistance');if(source.inspiritResistance>100)throw new RangeError('resistance > 100');}
  if(!['sleep','strength-up'].includes(source.inspirit))throw new TypeError('unsupported Inspirit');
  if(source.loafChance!==undefined){
@@ -39,7 +42,7 @@ function buildMember(source,side,index) {
   if(!Array.isArray(source.weights)||source.weights.length!==4||source.weights.some(x=>!Number.isInteger(x)||x<0)||source.weights.reduce((a,b)=>a+b,0)!==100)throw new TypeError('invalid weights');
   return {id:(side===0?'A':'B')+(index+1),name:source.name||'Unit '+(index+1),side,maxHp:source.maxHp,hp:source.maxHp,speed:source.speed,
     strength:source.strength,spirit:source.spirit,defense:source.defense,attackPower:source.attackPower,techniquePower:source.techniquePower,
-    loafChance:source.loafChance??0,inspiritResistance:source.inspiritResistance??20,inspirit:source.inspirit,technique:source.technique,attitude:source.attitude??'neutral',weights:[...source.weights],guard:false,knockouts:0,soulCapacity:source.soulCapacity??100};
+    loafChance:source.loafChance??0,inspiritResistance:source.inspiritResistance??20,inspirit:source.inspirit,technique:source.technique,attitude:source.attitude??'neutral',weights:[...source.weights],guard:false,knockouts:0,soulCapacity:source.soulCapacity??(source.soultimateRank?soulCapacityForRank(source.soultimateRank):100),special};
 }
 export function hitChance(attacker,target) {
   return Math.floor(Math.max(75,Math.min(98,98+(attacker.speed-target.speed)/5)));
@@ -53,9 +56,14 @@ export function baseDamage(attacker,target,kind,critical=false) {
     :(critical?total/5+total/2.5-target.defense/14:total/10+total/3-target.defense/7);
   return Math.max(1,Math.min(999,Math.floor(amount)));
 }
-export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0}={}) {
+export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0,
+  observedSoulRecovery=false,enableResearchSoultimateEffects=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(!Number.isInteger(researchSoulGainPerAction)||researchSoulGainPerAction<0||researchSoulGainPerAction>10000)throw new RangeError('invalid experimental Soul gain');
+  if(typeof observedSoulRecovery!=='boolean'||typeof enableResearchSoultimateEffects!=='boolean')
+    throw new TypeError('research feature flags must be boolean');
+  if(observedSoulRecovery&&researchSoulGainPerAction)
+    throw new RangeError('choose only one research Soul recovery model');
   const source=teams??[RENTAL_SQUAD,RENTAL_SQUAD];
   if(!Array.isArray(source)||source.length!==2||!source.every(x=>Array.isArray(x)&&x.length===6))throw new TypeError('requires two rosters of six');
   const squads=source.map((team,side)=>team.map((member,i)=>buildMember(member,side,i)));
@@ -142,9 +150,65 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(guided[side]?.token===token)guided[side]=null;
     chargeHits[side]=0;
     if(pending&&pending.token===token)syncCanAct(pending.casterId);
-    // Only charge + resource consumption are implemented; actual special-move effects aren't.
-    return result.ok?{...result,effectStatus:'unimplemented'}:result;
+    // Charge costs are source-backed; rental special magnitudes/accuracy are NOT.
+    if(!result.ok)return result;
+    if(!enableResearchSoultimateEffects)return {...result,effectStatus:'unimplemented'};
+    return applyResearchSoultimate(result);
   }
+  /** Experimental effect pipeline; only used when explicit opt-in flag is true. */
+  function applyResearchSoultimate(chargeResult){
+    const caster=byId.get(chargeResult.casterId);
+    const spec=caster.special;
+    const group=spec.kind==='heal'?livingFront(caster.side):livingFront(1-caster.side);
+    const targets=spec.targets==='all'?group
+      :spec.kind==='heal'
+        ? [...group].sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp).slice(0,1)
+        :[group.find(x=>x.id===pins[caster.side])??group[Math.floor(rng()*group.length)]].filter(Boolean);
+    const effects=[];
+    for(const target of targets){
+      if(spec.kind==='heal'){
+        const healed=Math.min(target.maxHp-target.hp,
+          researchSpecialHeal({power:spec.power,spirit:caster.spirit,multiplier:chargeResult.powerMultiplier}));
+        target.hp+=healed;
+        effects.push({target:target.id,kind:'heal',amount:healed,remainingHp:target.hp});
+        continue;
+      }
+      // The regular attack/technique base is a source-informed approximation, NOT
+      // a proven formula for this special; accuracy and damage variance likewise.
+      const hit=rng()*100<hitChance(caster,target);
+      let damage=0;
+      if(hit){
+        const base=soultimateBaseHit({power:spec.power,strength:caster.strength,
+          spirit:caster.spirit,defense:target.defense,method:spec.method,multiplier:chargeResult.powerMultiplier});
+        const spread=Math.floor(base/10+1);
+        damage=Math.max(1,Math.min(999,base+Math.floor(rng()*(2*spread+1))-spread));
+        if(target.guard)damage=Math.max(1,Math.floor(damage*.5));
+        damage=Math.min(damage,target.hp);
+        target.hp-=damage;
+        if(target.hp===0){
+          // A KO ends any pending charge for the target without double-spending Soul.
+          const enemyPending=soul.snapshot().pending[target.side];
+          if(enemyPending?.casterId===target.id){
+            soul.resolve({side:target.side,token:enemyPending.token,frontIds:clock.snapshot().teams[target.side].frontIds,success:false,alive:false});
+            guided[target.side]=null;
+            chargeHits[target.side]=0;
+          }
+          syncCanAct(target.id);
+          caster.knockouts++;
+          syncPinned();
+        }
+      }
+      effects.push({target:target.id,kind:'damage',hit,amount:damage,remainingHp:target.hp});
+    }
+    if(squads.some(team=>team.every(member=>member.hp===0)))
+      winner=squads[0].every(member=>member.hp===0)?1:0;
+    const event={type:'special',turn:clock.snapshot().turn,
+      actor:caster.id,kind:chargeResult.kind,method:spec.method,targets:spec.targets,
+      effects:effects.map(effect=>({...effect})),winner,provisional:true};
+    events.push(event);
+    return {...chargeResult,effectStatus:'experimental',effects:effects.map(effect=>({...effect})),winner,event};
+  }
+
   /** Player-facing touch charge: challenge selected deterministically per accepted attempt. */
   function beginGuidedCharge(side,id){
     if(side!==0&&side!==1)throw new RangeError('invalid side');
@@ -204,7 +268,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     return pickAction(weights,rng);
   }
   function snapshot(){
-    return {seed,winner,pins:[...pins],clock:clock.snapshot(),squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights]}))),events:events.slice(-80).map(e=>({...e})),soul:soul.snapshot(),
+    return {seed,winner,pins:[...pins],clock:clock.snapshot(),squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights],special:{...m.special}}))),events:events.slice(-80).map(e=>({...e})),soul:soul.snapshot(),
       guided:guided.map(g=>g?{token:g.token,id:g.id,kind:g.kind,challenge:g.trial.snapshot()}:null),
       inspirits:Object.fromEntries([...byId.keys()].map(id=>[id,statuses.list(id)]))};
   }
@@ -284,6 +348,12 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,effect,resisted,interruption,winner};
     events.push(action);
     if(researchSoulGainPerAction>0){for(const member of squads.flat())if(member.hp>0)soul.addSoul(member.id,researchSoulGainPerAction);}
+    if(observedSoulRecovery && actor.hp>0){
+      const recovered=observedNonAttackRecovery(action.kind);
+      if(recovered) soul.addSoul(actor.id,recovered);
+      action.soulRecovered=recovered;
+      // Do not auto-grant Soul to everyone or use a wall-clock timer.
+    }
     const expired=statuses.tick({actorId:actor.id});
     for(const item of expired)syncCanAct(item.id);
     return {...action};
