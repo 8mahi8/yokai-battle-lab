@@ -121,6 +121,15 @@ async function main(){
   assert.equal(hostMatch.advanceAuto().ok,true);
   await spin(()=>guestMatch.status().revision===4,'guest sees host-advanced turn');
   assert.equal(guestSnapshots.at(-1).game.winner,null);
+  // The user can tap several times without silently dropping inputs: only
+  // one RTDB write is in flight; each authoritative ACK drains one queued tap.
+  assert.equal(guestMatch.enqueue({type:'rotate',direction:1}).ok,true);
+  assert.equal(guestMatch.enqueue({type:'watch',mode:'standard'}).ok,true);
+  assert.equal(guestMatch.enqueue({type:'rotate',direction:-1}).ok,true);
+  await spin(()=>guestMatch.status().acked===5,'three quick queued inputs ACKed in order');
+  assert.equal(guestMatch.status().queuedInputs,0);
+  assert.equal(hostMatch.snapshot().clientSequences[1],5);
+  assert.deepEqual(ackEvents.map(x=>x.clientSeq),[1,2,3,4,5]);
   assert.deepEqual(bridgeErrors,[]);
   guestMatch.stop();hostMatch.stop();
   hostB.leaveLocal();guestB.leaveLocal();
