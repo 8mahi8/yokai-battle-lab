@@ -5,8 +5,9 @@
  * If two wheel turns happen with no automatic Yo-kai action between them,
  * the first is not reflected in some attack-target snapshots.
  *
- * This implementation only corrects PENDING target locks, before damage is
- * applied. Corrections are provisional and require side-by-side YW2 testing.
+ * This implementation only corrects PENDING target locks for the observed
+ * exactly-two-rotation case. 3+ rotations generate explicit UNCERTAINTY records
+ * rather than unverified guessed target rules. Side-by-side testing is needed.
  * No claim is made about exact frame window or 3DS network semantics.
  */
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -19,7 +20,7 @@ export function createWheelCoalescing({fronts}={}){
  if(!Array.isArray(fronts)||fronts.length!==2)throw new TypeError('two teams required');
  const physical=fronts.map(validateFront);
  if(physical[0].some(id=>physical[1].includes(id)))throw new TypeError('overlapping teams');
- const groups=[null,null], history=[];
+ const groups=[null,null], history=[],uncertainties=[];
  let serial=0,epoch=0;
  function checkSide(side){if(side!==0&&side!==1)throw new RangeError('side must be 0 or 1');}
  function rotate({side,frontIds}={}){
@@ -48,8 +49,17 @@ export function createWheelCoalescing({fronts}={}){
   }
   history.push({sequence:serial,side,physical:[...next],epoch,rotations:groups[side].rotations});
   if(history.length>100)history.shift();
+  let uncertainty=null;
+  if(groups[side].rotations>=3){
+   // There is a sourced TWO-turn observation, but no grounded rule for 3+.
+   // Do not silently generalize pair cancellation to arbitrary sequences.
+   uncertainty={code:'three-plus-rotations-unverified',side,epoch,
+     rotations:groups[side].rotations,frontIds:[...next]};
+   uncertainties.push(clone(uncertainty));
+   if(uncertainties.length>100)uncertainties.shift();
+  }
   return {changed:true,side,frontIds:[...next],epoch,groupRotations:groups[side].rotations,
-    corrections:clone(corrections)};
+    corrections:clone(corrections),uncertainty:clone(uncertainty)};
  }
  function trackLockedHit({targetSide,hitId}={}){
   checkSide(targetSide);
@@ -69,6 +79,6 @@ export function createWheelCoalescing({fronts}={}){
   if(!Number.isSafeInteger(hitId)||hitId<=0)throw new RangeError('positive hit id required');
   for(const group of groups)if(group)group.locks=group.locks.filter(x=>x.hitId!==hitId);
  }
- function snapshot(){return clone({physical,groups,history,epoch,serial});}
+ function snapshot(){return clone({physical,groups,history,uncertainties,epoch,serial});}
  return {rotate,trackLockedHit,actionBoundary,finalizeHit,snapshot};
 }
