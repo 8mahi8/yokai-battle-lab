@@ -10,7 +10,7 @@ test('Phase1 research scheduler HTML embeds syntactically valid ES Module',()=>{
  assert.equal(parsed.status,0,parsed.stderr);
 });
 test('opening-first and Flash UI makes source-uncertain policies explicit',()=>{
- for(const part of ['flashToggle','flashDeploy','matchingToggle','skipPolicy','priorityForecast',
+ for(const part of ['flashToggle','flashDeploy','matchingToggle','matchingCredit','prebattleOffset','skipPolicy','priorityForecast',
   '行動権の減算式','数値補正は未実装','⚡閃光'])
   assert.ok(html.includes(part),'Missing Flash UI/qualification: '+part);
 });
