@@ -147,3 +147,14 @@ test('only host publishes match state and unattached client cannot send',async()
  await assert.rejects(x.guest.sendIntent(1,{type:'rotate',extra:'x'.repeat(10000)}),/oversized/);
  assert.equal(x.mem.get(YOKAI_ROOM_ROOT+'/202020/inputs/guest'),null);
 });
+
+test('pin clear remains an explicit null command after Firebase JSON roundtrip',async()=>{
+ const x=setup();await x.host.createRoom({code:'101010'});await x.guest.joinRoom('101010');
+ const events=[];x.host.subscribeInputs(p=>events.push(p));
+ const result=await x.guest.sendIntent(1,{type:'pin',targetId:null});
+ assert.equal(result.ok,true);
+ assert.deepEqual(events.map(x=>x.intent),[{type:'pin',targetId:null}]);
+ assert.equal(x.mem.get(YOKAI_ROOM_ROOT+'/101010/inputs/guest').intent.targetId,'__clear__');
+ const m=createMatchProtocol();
+ assert.equal(m.dispatch(1,1,events[0].intent).ok,true);
+});
