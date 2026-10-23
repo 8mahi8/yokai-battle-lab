@@ -9,13 +9,14 @@ export function createInspiritLedger(validIds) {
   function checkId(id){if(!ids.has(id))throw new RangeError('unknown member');}
   function clone(s){return {...s};}
   function list(id){checkId(id);return entries.get(id).map(clone);}
-  function apply({id,sign,effect,source=null,duration=null}={}){
+  function apply({id,sign,effect,source=null,duration=null,level=1}={}){
     checkId(id);
     if(!['positive','negative'].includes(sign))throw new RangeError('positive or negative sign required');
     if(typeof effect!=='string'||!effect||effect.length>64)throw new TypeError('effect label required');
     if(source!==null&&(typeof source!=='string'||source.length>64))throw new TypeError('invalid source');
     if(duration!==null&&(!Number.isInteger(duration)||duration<1||duration>10000))throw new RangeError('invalid owner-turn duration');
-    const item={serial:nextSerial++,sign,effect,source,
+    if(!Number.isInteger(level)||level<1||level>4)throw new RangeError('Inspirit level 1..4 required');
+    const item={serial:nextSerial++,sign,effect,source,level,
       mode:duration!==null?'ownerTurns':sign==='positive'?'globalActions':'persistent',
       remaining:duration!==null?duration:sign==='positive'?30:null};
     entries.get(id).push(item);
