@@ -13,6 +13,7 @@ import { validateSpecialSpec, planResearchSpecial } from './special-effects.mjs'
 import { createPresentationTimeline } from './presentation-timeline.mjs';
 import { createCounterWindow } from './counter-window.mjs';
 import { createWheelCoalescing } from './wheel-coalescing.mjs';
+import { createPokeTrial } from './poke-input.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
   {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5]},
@@ -67,12 +68,16 @@ export function baseDamage(attacker,target,kind,critical=false) {
 }
 export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0,researchSpecialEffects=false,
   researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false,
-  researchWheelCoalescing=false,researchOpeningPriority=null}={}) {
+  researchWheelCoalescing=false,researchOpeningPriority=null,
+  researchPokeSoulTransfer=0}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
   if(typeof researchPresentation!=='boolean')throw new TypeError('researchPresentation must be boolean');
   if(typeof researchCounterTiming!=='boolean')throw new TypeError('researchCounterTiming must be boolean');
   if(typeof researchWheelCoalescing!=='boolean')throw new TypeError('researchWheelCoalescing must be boolean');
+  if(!Number.isInteger(researchPokeSoulTransfer)||researchPokeSoulTransfer<0||
+    researchPokeSoulTransfer>250)
+    throw new RangeError('researchPokeSoulTransfer must be an integer 0..250');
   if(researchOpeningPriority!==null&&(typeof researchOpeningPriority!=='object'||Array.isArray(researchOpeningPriority)))throw new TypeError('invalid researchOpeningPriority');
   if(researchWheelCoalescing&&!researchCounterTiming)
     throw new RangeError('wheel pairing research requires counter timing research');
@@ -95,6 +100,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const pins=[null,null], events=[];
   const guided=[null,null];
   const chargeHits=[0,0];
+  const pokes=[null,null],pokedTargets=[new Set(),new Set()];
+  // Loaf vulnerability is provisional until that unit's next action.
+  const loafingActors=new Set();
   // Opponent-visible animation is a SEPARATE research clock; no mapping from
   // phase1.pointsElapsed to wall-clock milliseconds is claimed here.
   const presentation=researchPresentation?createPresentationTimeline({coalesceRotations:researchWheelCoalescing}):null;
@@ -218,6 +226,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const result=clock.rotate(side,direction,0);
     if(result.ok){
       syncPinned();
+      // Rotating a target out of the enemy front cancels an unfinished poke.
+      for(let i=0;i<2;i++){
+        if(pokes[i]&&!clock.snapshot().teams[1-i].frontIds.includes(pokes[i].targetId))
+          pokes[i]=null;
+      }
       const frontIds=clock.snapshot().teams[side].frontIds;
       if(counter)counter.setFront({side,ids:frontIds});
       if(wheel){
@@ -256,6 +269,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       recordView({side,kind:'chargeCancel',token:old.token,memberId:old.casterId,detail:'mode_changed'});
     }
     guided[side]=null;
+    pokes[side]=null;
     if(old)syncCanAct(old.casterId);
     chargeHits[side]=0;
     if(mode==='zero')pins[side]=null; // original Watch Zero replaces Pin with Poke
@@ -381,11 +395,64 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   }
   function pokeEligibility(side,id){
     if(side!==0&&side!==1)throw new RangeError('invalid side');
+    if(winner!==null)return {ok:false,reason:'battle_finished'};
     const enemyFront=clock.snapshot().teams[1-side].frontIds;
-    const last=events.length?events[events.length-1]:null;
+    if(pokedTargets[side].has(id))return {ok:false,reason:'already_poked'};
+    if(!byId.has(id)||byId.get(id).side===side||byId.get(id).hp<=0)
+      return {ok:false,reason:'enemy_not_living'};
     return soul.pokeEligibility({side,targetId:id,enemyFrontIds:enemyFront,
       negativeIds:enemyFront.filter(x=>statuses.list(x).some(t=>t.sign==='negative')),
-      loafingIds:last?.kind==='loaf'?[last.actor]:[]});
+      loafingIds:enemyFront.filter(id=>loafingActors.has(id))});
+  }
+  function beginPoke(side,id){
+    if(side!==0&&side!==1)throw new RangeError('invalid side');
+    if(pokes[side])return {ok:false,reason:'poke_already_pending'};
+    const eligible=pokeEligibility(side,id);
+    if(!eligible.ok)return eligible;
+    const trial=createPokeTrial({targetId:id});
+    pokes[side]={targetId:id,trial};
+    return {ok:true,targetId:id,challenge:trial.snapshot()};
+  }
+  function pokeInput(side,input){
+    if(side!==0&&side!==1)throw new RangeError('invalid side');
+    const pending=pokes[side];
+    if(!pending)return {ok:false,reason:'no_active_poke'};
+    const valid=pokeEligibility(side,pending.targetId);
+    if(!valid.ok){
+      pokes[side]=null;
+      return {ok:false,reason:'poke_target_no_longer_valid',detail:valid.reason};
+    }
+    const challenge=pending.trial.input(input);
+    if(!challenge.completed)return {ok:true,completed:false,challenge};
+    pokes[side]=null;
+    pokedTargets[side].add(pending.targetId);
+    // The manual confirms Soul-drain as ONE possible result. Which unit
+    // receives it, how much and the result odds are unresolved. Only a lab
+    // fixture is implemented: select first LIVING front ally and drain up
+    // to the configured integer from the target's Soul (0 by default).
+    const targetSoul=soul.snapshot().teams[1-side].find(x=>x.id===pending.targetId);
+    const recipient=livingFront(side)[0]??null;
+    const receiverSoul=recipient?soul.snapshot().teams[side].find(x=>x.id===recipient.id):null;
+    const amount=researchPokeSoulTransfer>0&&recipient
+      ?Math.min(researchPokeSoulTransfer,targetSoul.soul,
+        receiverSoul.capacity-receiverSoul.soul):0;
+    if(amount>0){
+      soul.setSoul(pending.targetId,targetSoul.soul-amount);
+      soul.addSoul(recipient.id,amount);
+    }
+    const reward={kind:researchPokeSoulTransfer>0?'research-soul-transfer':'unresolved',
+      amount,recipientId:recipient?.id??null,sourceId:pending.targetId,
+      model:'research-only'};
+    const event={type:'poke',side,targetId:pending.targetId,reward,
+      actionCount:challenge.hits};
+    events.push(event);
+    return {ok:true,completed:true,challenge,reward};
+  }
+  function cancelPoke(side){
+    if(side!==0&&side!==1)throw new RangeError('invalid side');
+    if(!pokes[side])return {ok:false,reason:'no_active_poke'};
+    pokes[side]=null;
+    return {ok:true,cancelled:true};
   }
   function pin(side,id=null){
     if(![0,1].includes(side))throw new RangeError('invalid side');
@@ -421,6 +488,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   function snapshot(){
     return {seed,winner,pins:[...pins],clock:clock.snapshot(),squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights]}))),events:events.slice(-80).map(e=>({...e})),soul:soul.snapshot(),
       guided:guided.map(g=>g?{token:g.token,id:g.id,kind:g.kind,challenge:g.trial.snapshot()}:null),
+      poke:{active:pokes.map(p=>p?{targetId:p.targetId,challenge:p.trial.snapshot()}:null),
+        used:pokedTargets.map(set=>[...set]),loafing:[...loafingActors],
+        rewardFixture:researchPokeSoulTransfer},
       inspirits:Object.fromEntries([...byId.keys()].map(id=>[id,statuses.list(id)])),
       ...(presentation?{presentation:presentation.snapshot()}:{}),
       ...(counter?{counterWindow:counter.snapshot(),counterEffectsPending:pendingCounterEffects.size}:{}),
@@ -441,6 +511,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const clockEvent=clock.step();
     if(wheel)wheel.actionBoundary();
     const actor=byId.get(clockEvent.id);
+    loafingActors.delete(actor.id);
     // A guard lasts until the next time that actor begins an action.
     actor.guard=false;
     const kind=enableLoafing&&rng()*100<actor.loafChance?'loaf':choice(actor);
@@ -448,7 +519,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(kind==='guard'){
       actor.guard=true;
     }else if(kind==='loaf'){
-      // Test fixture only; official level/leader-adjusted chance is unmodeled.
+      // The vulnerable window until this actor next acts is a research
+      // approximation. Source confirms loafing can trigger Zero Poke.
+      loafingActors.add(actor.id);
     }else if(kind==='inspirit'){
       const sign=actor.inspirit==='sleep'?'negative':'positive';
       const group=sign==='negative'?livingFront(1-actor.side):livingFront(actor.side);
@@ -518,6 +591,6 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   }
   return {snapshot,step,simulate,rotate,pin,applyInspirit,purify,preview:clock.predict,
     setWatchMode,giveSoul,prepareSoultimate,resolveSoultimate,pokeEligibility,
-    beginGuidedCharge,chargeInput,cancelGuidedCharge,
+    beginPoke,pokeInput,cancelPoke,beginGuidedCharge,chargeInput,cancelGuidedCharge,
     beginPresentationMotion,advancePresentation,beginCounterCutin};
 }
