@@ -268,7 +268,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     return pickAction(weights,rng);
   }
   function snapshot(){
-    return {seed,winner,pins:[...pins],clock:clock.snapshot(),squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights],special:{...m.special}}))),events:events.slice(-80).map(e=>({...e})),soul:soul.snapshot(),
+    return {seed,winner,pins:[...pins],clock:clock.snapshot(),squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights],special:{...m.special}}))),events:events.slice(-80).map(e=>({...e,effects:e.effects?.map(x=>({...x}))})),soul:soul.snapshot(),
       guided:guided.map(g=>g?{token:g.token,id:g.id,kind:g.kind,challenge:g.trial.snapshot()}:null),
       inspirits:Object.fromEntries([...byId.keys()].map(id=>[id,statuses.list(id)]))};
   }
