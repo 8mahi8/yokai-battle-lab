@@ -36,7 +36,8 @@ export function makeRoomCode(randomBytes=defaultRandomBytes){
  const limit=4294000000; // floor(2^32/1000000)*1000000
  for(let i=0;i<16;i++){
   const x=randomBytes(4);
-  if(!x||x.length!==4)throw new Error('random source unavailable');
+  if(!x||x.length!==4||Array.from(x).some(b=>!Number.isInteger(b)||b<0||b>255))
+   throw new Error('invalid random source');
   const n=((x[0]*0x1000000)+(x[1]<<16)+(x[2]<<8)+x[3])>>>0;
   if(n<limit)return String(n%1000000).padStart(6,'0');
  }
