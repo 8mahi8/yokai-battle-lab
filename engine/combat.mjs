@@ -16,6 +16,7 @@ import { createWheelCoalescing } from './wheel-coalescing.mjs';
 import { createPokeTrial } from './poke-input.mjs';
 import { createPurifyTrial, choosePurifyKind, PURIFY_KINDS } from './purify-input.mjs';
 import {ELEMENTS, validateElementResistances, calculateOneHit, deriveStrengthStage} from './damage-model.mjs';
+import {yw2HitProbability,yw2CriticalProbability,rollPercent} from './hit-model.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
   {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5]},
@@ -47,6 +48,15 @@ function buildMember(source,side,index) {
     intStat(source.inspiritLevel,'inspiritLevel',1);
     if(source.inspiritLevel>4)throw new RangeError('Inspirit level must be 1..4');
   }
+  if(source.attackAccuracy!==undefined&&(!Number.isFinite(source.attackAccuracy)||
+    source.attackAccuracy<.5||source.attackAccuracy>4))
+    throw new RangeError('attackAccuracy must be .5..4');
+  if(source.moveCritBonus!==undefined){
+    intStat(source.moveCritBonus,'moveCritBonus');
+    if(source.moveCritBonus>98)throw new RangeError('moveCritBonus >98');
+  }
+  if(source.criticalImmune!==undefined&&typeof source.criticalImmune!=='boolean')
+    throw new TypeError('criticalImmune must be a boolean');
   if(source.guardBreak!==undefined&&typeof source.guardBreak!=='boolean')
     throw new TypeError('guardBreak must be a boolean');
  if(!['sleep','strength-up'].includes(source.inspirit))throw new TypeError('unsupported Inspirit');
@@ -60,6 +70,8 @@ function buildMember(source,side,index) {
     strength:source.strength,spirit:source.spirit,defense:source.defense,criticalDefense:source.criticalDefense??source.defense,
     attackPower:source.attackPower,techniquePower:source.techniquePower,techniqueElement,elementResistances,
     inspiritLevel:source.inspiritLevel??1,guardBreak:source.guardBreak??false,
+    attackAccuracy:source.attackAccuracy??1,moveCritBonus:source.moveCritBonus??0,
+    criticalImmune:source.criticalImmune??false,
     loafChance:source.loafChance??0,inspiritResistance:source.inspiritResistance??20,inspirit:source.inspirit,technique:source.technique,attitude:source.attitude??'neutral',weights:[...source.weights],guard:false,knockouts:0,soultimateRank:source.soultimateRank??1,
     soulCapacity:source.soulCapacity??soulCapacityForRank(source.soultimateRank??1),
     special:validateSpecialSpec(source.special??(
@@ -597,7 +609,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     // A guard lasts until the next time that actor begins an action.
     actor.guard=false;
     const kind=enableLoafing&&rng()*100<actor.loafChance?'loaf':choice(actor);
-    let target=null,amount=0,hit=true,critical=false,effect=null,resisted=false,interruption=null,damageResearch=null;
+    let target=null,amount=0,hit=true,critical=false,effect=null,resisted=false,interruption=null,damageResearch=null,
+      hitResearch=null,criticalResearch=null;
     if(kind==='guard'){
       actor.guard=true;
     }else if(kind==='loaf'){
@@ -627,10 +640,21 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     }else{
       const opponents=livingFront(1-actor.side);
       target=opponents.find(m=>m.id===pins[actor.side])??opponents[Math.floor(rng()*opponents.length)];
-      hit=rng()*100<hitChance(actor,target);
+      if(researchDamageModel){
+        hitResearch=yw2HitProbability({kind,attackerSpeed:actor.speed,targetSpeed:target.speed,
+          moveAccuracy:actor.attackAccuracy});
+        hit=rollPercent(hitResearch.probability,rng());
+      }else hit=rng()*100<hitChance(actor,target);
       if(hit){
-        // YW2 base unmodified critical chance: approximately 1 in 99.
-        critical=rng()*99<1;
+        if(researchDamageModel){
+          criticalResearch=yw2CriticalProbability({
+            loafing:loafingActors.has(target.id),moveCritBonus:actor.moveCritBonus,
+            criticalImmune:target.criticalImmune});
+          critical=rng()*99<criticalResearch.units;
+        }else{
+          // Default unmodified original-inspired rate: 1 in 99.
+          critical=rng()*99<1;
+        }
         let damage;
         if(researchDamageModel){
           const statStage=kind==='attack'
@@ -666,6 +690,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const action={type:'action',turn:clockEvent.action,elapsed:clockEvent.elapsed,pointsElapsed:clockEvent.pointsElapsed,
       actor:actor.id,kind:kind==='technique'&&actor.technique==='heal'?'heal':kind,target:target?.id??null,
       hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,effect,resisted,interruption,winner,
+      ...(researchDamageModel&&hitResearch?{
+        hitResearch:{...hitResearch},
+        ...(criticalResearch?{criticalResearch:{...criticalResearch}}:{})
+      }:{}),
       ...(damageResearch?{damageResearch:{
         ...damageResearch,techniqueElement:kind==='technique'?actor.techniqueElement:'neutral',
         sourceMovePower:kind==='attack'?actor.attackPower:actor.techniquePower,
