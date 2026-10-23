@@ -17,6 +17,9 @@
 .charge-note{font-size:11px;color:#c4b398;margin:7px 0 0}
 .poke-pad{touch-action:none;user-select:none;display:block;width:min(100%,285px,46dvh);aspect-ratio:1;margin:8px auto;border:1px solid #9bcac6;border-radius:50%;background:#17374a;cursor:pointer}
 .poke-count{font-weight:bold;font-size:14px;color:#f3dc98}
+.purify-pad{touch-action:none;user-select:none;display:block;width:min(100%,285px,48dvh);aspect-ratio:1;margin:8px auto;background:#152c45;border:1px solid #9fadd5;border-radius:14px;cursor:crosshair}
+.purify-selection{font-size:11px;color:#dce6e9;background:#213951;padding:5px;border-radius:6px;max-width:100%}
+.purify-selection option{background:#14263a;color:#e4eef5}
 .timeline-panel{margin:8px 0;padding:8px;background:#142536;border:1px solid #55718a;border-radius:9px}
 .timeline-title{font-weight:800;font-size:12px;color:#f4d492}
 .timeline-explain{font-size:10px;color:#bfd0df;line-height:1.5}
@@ -65,11 +68,21 @@
   <p class="charge-note">連続12タップ・妖気吸収量20は研究用の仮値。友情・お金は対戦版に未実装。原作の正確な条件ではありません。</p>
  </section>
 </div>
+<div id="purifyOverlay" class="charge-overlay" hidden>
+ <section class="charge-dialog" role="dialog" aria-modal="true" aria-label="おはらいの操作">
+  <div class="charge-head"><b id="purifyTitle">おはらい</b><button id="purifyCancel">中止する</button></div>
+  <p id="purifyHelp" class="charge-help"></p>
+  <svg id="purifyPad" class="purify-pad" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-label="おはらいタッチ操作エリア"></svg>
+  <div id="purifyCount" class="poke-count"></div>
+  <div class="charge-meter"><i id="purifyMeter"></i></div>
+  <p class="charge-note">原作のおはらいは5種類の操作があり、後衛の悪いとりつきを解除します。必要回数・配置・判定範囲は研究用の仮設定。経験値ボーナスは対人版に未実装です。</p>
+ </section>
+</div>
 <script type="module">
 import {createCombat} from '../engine/combat.mjs';
 const el=id=>document.getElementById(id);
 const makeResearchBattle=()=>createCombat({researchSpecialEffects:true,researchSoulRecoveryMode:'owner-nonattack',researchPresentation:true,researchCounterTiming:true,researchWheelCoalescing:true,researchPokeSoulTransfer:20});
-let battle=makeResearchBattle(),actions=[],last=null,activeChargeSide=null,activePokeSide=null;
+let battle=makeResearchBattle(),actions=[],last=null,activeChargeSide=null,activePokeSide=null,activePurifySide=null;
 const chargeNames={spin:'まわせ！',tap:'打て！',trace:'なぞれ！',align:'あわせろ！'};
 const chargeHelp={
  spin:'円のふちを指でぐるぐる2周回そう',
@@ -117,12 +130,60 @@ function renderPoke(snapshot,side){
   '/'+snapshot.challenge.requiredHits+' 回';
  el('pokeMeter').style.width=(snapshot.challenge.progress*100).toFixed(1)+'%';
 }
+const purifyNames={pop:'つぶせ！',mash:'連打！',rub:'こすれ！',spin:'まわせ！',slash:'斬れ！'};
+const purifyHelp={
+ pop:'紫の玉を全部タップ',
+ mash:'中心の水晶を繰り返しタップ',
+ rub:'中央の霧を指で左右にこする',
+ spin:'リングに沿って指を2周回す',
+ slash:'鎖の左端から右端まで、1本ずつ指で斬る'
+};
+function renderPurification(pending){
+ const overlay=el('purifyOverlay');
+ if(!pending){overlay.hidden=true;return;}
+ overlay.hidden=false;
+ const c=pending.challenge,kind=c.kind;
+ el('purifyTitle').textContent=pending.id+' おはらい／'+purifyNames[kind];
+ el('purifyHelp').textContent=purifyHelp[kind];
+ el('purifyCount').textContent=Math.round(c.progress*100)+'% 完了';
+ el('purifyMeter').style.width=(c.progress*100).toFixed(1)+'%';
+ const bg='<rect width="100" height="100" rx="8" fill="#142b44"/>';
+ let body=bg;
+ if(kind==='pop'){
+  body+=c.popPoints.map(([x,y],i)=>
+   '<circle cx="'+x*100+'" cy="'+y*100+'" r="10" fill="'+(c.popped.includes(i)?'#445568':'#aa79ce')+
+   '" stroke="#ecd1ff" stroke-width="2"/>' ).join('');
+ }else if(kind==='mash'){
+  body+='<circle cx="50" cy="50" r="31" fill="#7755a3" stroke="#e6c7ff" stroke-width="3"/>'+
+   '<text x="50" y="56" text-anchor="middle" fill="white" font-size="13">連打！</text>';
+ }else if(kind==='rub'){
+  body+='<circle cx="50" cy="50" r="35" fill="#7185ad" opacity=".7"/>'+
+   '<path d="M22 48 Q35 25 50 49 T78 50 M22 66 Q45 42 78 65" fill="none" stroke="#d1e4fa" stroke-width="5" stroke-linecap="round"/>';
+ }else if(kind==='spin'){
+  body+='<circle cx="50" cy="50" r="30" fill="none" stroke="#d7b4ef" stroke-width="13" stroke-dasharray="9 6"/>'+
+   '<text x="50" y="55" text-anchor="middle" fill="#e4eaff" font-size="12">回せ！</text>';
+ }else{
+  for(let i=0;i<3;i++){
+   const pair=c.slashPoints[i];
+   const x1=pair[0][0]*100,y1=pair[0][1]*100,x2=pair[1][0]*100,y2=pair[1][1]*100;
+   body+='<path d="M'+x1+' '+y1+' L'+x2+' '+y2+'" stroke="'+(i<c.count?'#5e7895':'#bb8e9b')+
+   '" stroke-width="8" stroke-linecap="round" />'+
+   '<circle cx="'+x1+'" cy="'+y1+'" r="5" fill="#efda94" />';
+  }
+ }
+ el('purifyPad').innerHTML=body;
+}
 function draw(){
  const snap=battle.snapshot();el('count').textContent=snap.clock.turn;
  if(activePokeSide!==null){
   const active=snap.poke.active[activePokeSide];
   if(active)renderPoke(active,activePokeSide);
   else{activePokeSide=null;renderPoke(null,null);}
+ }
+ if(activePurifySide!==null){
+  const active=snap.purification[activePurifySide];
+  if(active)renderPurification(active);
+  else{activePurifySide=null;renderPurification(null);}
  }
  const presentation=snap.presentation;
  const labels={chargeStart:'チャージ開始',specialRelease:'必殺発動',
@@ -187,10 +248,11 @@ function draw(){
    const m=byId.get(id),gauge=soulMap.get(id),selected=snap.pins[1-side]===id,asleep=snap.inspirits[id]?.some(x=>x.effect==='sleep'),powered=snap.inspirits[id]?.some(x=>x.effect==='strength-up');
    html+='<div class="unit '+(m.hp===0?'dead ':'')+(selected?'pinned ':'')+(last===id?'recent':'')+'"><span class="info">'+id+' '+(m.guard?'🛡️':'')+(asleep?' 💤':'')+(powered?' ⬆️':'')+'</span><b>'+esc(m.name)+'</b><div class="hpbar"><i style="width:'+Math.round(m.hp/m.maxHp*100)+'%"></i></div><div class="info">'+m.hp+'/'+m.maxHp+'</div><div class="hpbar soul"><i style="width:'+Math.round(gauge.soul/gauge.capacity*100)+'%"></i></div><div class="info">妖気 '+gauge.soul+'/'+gauge.capacity+'</div><button data-soul="'+id+'">妖気+25</button><button data-special="'+id+'" '+(m.hp===0||snap.guided[side]!==null?'disabled':'')+'>'+(snap.soul.modes[side]==='zero'?'G技':'必殺')+'</button><button data-pin="'+id+'" data-side="'+(1-side)+'" '+(m.hp===0?'disabled':'')+'>'+(snap.soul.modes[1-side]==='zero'?'つつく':selected?'指定解除':'対象に指定')+'</button><button data-sleep="'+id+'" '+(m.hp===0||asleep?'disabled':'')+'>睡眠を付与（実験）</button></div>';
   }
-  html+='</div><div class="bench">'+ring.benchIds.map(id=>{let m=byId.get(id);const needsPurify=snap.inspirits[id]?.some(x=>x.sign==='negative');const meter=soulMap.get(id);return '<span>'+id+' '+esc(m.name)+' HP'+m.hp+'/'+m.maxHp+' 妖気'+meter.soul+'/'+meter.capacity+' <button data-soul="'+id+'">妖気+25</button>'+(needsPurify?' 💤 <button data-purify="'+id+'" data-owner="'+side+'">おはらい</button>':'')+'</span>';}).join('')+'</div><div class="controls"><button data-rotate="'+side+'" data-dir="-1">◀ 左回転</button><button data-rotate="'+side+'" data-dir="1">右回転 ▶</button></div>';
+  html+='</div><div class="bench">'+ring.benchIds.map(id=>{let m=byId.get(id);const needsPurify=snap.inspirits[id]?.some(x=>x.sign==='negative');const meter=soulMap.get(id);return '<span>'+id+' '+esc(m.name)+' HP'+m.hp+'/'+m.maxHp+' 妖気'+meter.soul+'/'+meter.capacity+' <button data-soul="'+id+'">妖気+25</button>'+(needsPurify?' 💤 <button data-purify="'+id+'" data-owner="'+side+'">おはらい操作</button>':'')+'</span>';}).join('')+'</div><div class="controls"><button data-rotate="'+side+'" data-dir="-1">◀ 左回転</button><button data-rotate="'+side+'" data-dir="1">右回転 ▶</button></div>';
   el('team'+side).innerHTML=html;
  }
  el('log').innerHTML=snap.events.slice(-35).reverse().map(x=>{
+  if(x.type==='purification')return '<div>✨ '+esc(x.targetId)+' おはらい成功（'+esc(purifyNames[x.kind])+'・悪いとりつき解除）</div>';
   if(x.type==='poke')return '<div>👆 TEAM '+(x.side===0?'A':'B')+
    ' → '+esc(x.targetId)+' つつき成功 / 妖気吸収 '+x.reward.amount+'（仮）</div>';
   if(x.type==='wheel-fidelity-unknown')return '<div>⚠ 連続'+x.rotations+'回転：原作処理が未確認</div>';
@@ -238,8 +300,11 @@ document.addEventListener('click',event=>{
    battle.applyInspirit({id:btn.dataset.sleep,sign:'negative',effect:'sleep'});
    el('status').textContent='睡眠（実験用）を付与';draw();
  }else if(btn.dataset.purify){
-   const result=battle.purify(Number(btn.dataset.owner),btn.dataset.purify);
-   el('status').textContent=result.ok?'おはらい完了':'おはらい不可: '+result.reason;draw();
+   const side=Number(btn.dataset.owner);
+   const result=battle.beginPurify(side,btn.dataset.purify);
+   if(result.ok)activePurifySide=side;
+   el('status').textContent=result.ok?'おはらい操作開始：'+purifyNames[result.kind]:'おはらい不可: '+result.reason;
+   draw();
  }else if(btn.dataset.rotate!==undefined){battle.rotate(Number(btn.dataset.rotate),Number(btn.dataset.dir));el('status').textContent='回転しました';draw();}
  else if(btn.dataset.pin){
    const side=Number(btn.dataset.side),before=battle.snapshot();
@@ -279,7 +344,7 @@ document.addEventListener('click',event=>{
  }
  else if(btn.id==='one')next(1);
  else if(btn.id==='many')next(20);
- else if(btn.id==='reset'){battle=makeResearchBattle();actions=[];last=null;activeChargeSide=null;activePokeSide=null;el('status').textContent='初期化';draw();}
+ else if(btn.id==='reset'){battle=makeResearchBattle();actions=[];last=null;activeChargeSide=null;activePokeSide=null;activePurifySide=null;el('status').textContent='初期化';draw();}
  }catch(error){el('status').textContent=error.message;}
 });
 draw();
@@ -344,6 +409,43 @@ pokePad.addEventListener('pointerdown',e=>{
   }else if(!result.ok)el('status').textContent='つつき不可：'+result.reason;
   draw();
  }catch(error){el('status').textContent=error.message;draw();}
+});
+let purifyPointer=null;
+const purifyPad=el('purifyPad');
+function sendPurify(event){
+ if(activePurifySide===null)return;
+ try{
+  const result=battle.purifyInput(activePurifySide,event);
+  if(result.completed)el('status').textContent='おはらい成功！ 悪いとりつきを解除';
+  else if(!result.ok)el('status').textContent='おはらい中断：'+result.reason;
+  draw();
+ }catch(error){el('status').textContent='おはらい操作：'+error.message;draw();}
+}
+function purifyCoords(e){
+ const rect=purifyPad.getBoundingClientRect();
+ return {x:(e.clientX-rect.left)/rect.width,y:(e.clientY-rect.top)/rect.height};
+}
+purifyPad.addEventListener('pointerdown',e=>{
+ if(activePurifySide===null||purifyPointer!==null)return;
+ e.preventDefault();purifyPointer=e.pointerId;
+ try{purifyPad.setPointerCapture?.(e.pointerId);}catch{}
+ sendPurify({type:'down',...purifyCoords(e)});
+});
+purifyPad.addEventListener('pointermove',e=>{
+ if(activePurifySide===null||purifyPointer!==e.pointerId)return;
+ e.preventDefault();sendPurify({type:'move',...purifyCoords(e)});
+});
+function releasePurifyPointer(e){
+ if(purifyPointer!==e.pointerId)return;
+ purifyPointer=null;
+ if(activePurifySide!==null)sendPurify({type:'up'});
+}
+purifyPad.addEventListener('pointerup',releasePurifyPointer);
+purifyPad.addEventListener('pointercancel',releasePurifyPointer);
+el('purifyCancel').addEventListener('click',()=>{
+ if(activePurifySide===null)return;
+ battle.cancelPurify(activePurifySide);purifyPointer=null;
+ el('status').textContent='おはらいを中止。とりつきは残ります';draw();
 });
 el('pokeCancel').addEventListener('click',()=>{
  if(activePokeSide===null)return;
