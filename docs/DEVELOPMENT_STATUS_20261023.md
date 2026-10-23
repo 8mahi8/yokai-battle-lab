@@ -156,3 +156,17 @@ See `docs/PHASE4_SPECIAL_EFFECTS_QA_20261023.md` for authoritative evidence, sou
 - **Verified exact GitHub code (commit `859552ca7e44ca5ee06aa2a8172150baebac7be1`): 133/133 Node tests passed, 0 failed, 0 skipped, with headless Chromium ESM loading and real button/pointer interactions including complete no-motion charge and delayed opponent reveal.**
   CI: https://github.com/8mahi8/yokai-battle-lab/actions/runs/39917342500 .
 - Research gap: proper action priority and animation frames, charge/visual/damage hit moment, actual counter-Soultimate interaction, move-by-move timelines and wall-clock slowdown; do not call these verified original mechanics. Actual iPad Safari and two-device online play remain untested. `main`, live Firebase and Google Sites direct-code build remain untouched.
+
+
+---
+
+## 2026-10-23 — Phase 5B Counter Soultimate: actual hit-time HP + dynamic target front (LATEST)
+
+Source/engineering notebook: `docs/PHASE5_COUNTER_HIT_QA_20261023.md`.
+
+- Original competitive report distinguishes (1) charge completed **during opposing Soultimate cut-in** → hit the front held at completion, (2) charge completed after cut-in → generally hit current front about **0.5s after cut-in**, and (3) **2 Endure (我慢) consumptions** → exception selecting the front shown *during cut-in*. Main source: https://note.com/tombow_yw/n/n1e4cf179d2d9 . **Timing and exact Endure frame are observations, not verified 3DS source code.**
+- New isolated `engine/counter-window.mjs` timestamps cut-in, own charge start/finish, opponent frontline rotations and impacts with `completion`, `impact`, `endure-exception` target locks. The fixture assumes original cut-in front for the Endure exception; this specific frame is UNVERIFIED.
+- `engine/combat.mjs` adds opt-in `researchCounterTiming:true` (requires researchPresentation and researchSpecialEffects). Valid counter charges spend Soul upon successful completion but **do not inflict HP until due**. At the computed hit clock, real research HP/KO/winner logic applies to the appropriate front targets; records one `counter-hit`. Cancels, mode switches, and rotation remain connected. Default old combat remains unchanged.
+- `lab/phase2.html`: two visible manual cut-in scenarios, active hit time, current front, locked front and result log. No original-game art or copyrighted sprites.
+- Actual branch verification: Node test suite and Chromium synthetic-touch E2E both passing on https://github.com/8mahi8/yokai-battle-lab/actions/runs/39919485794 (151/151 tests), including HP unchanged during counter charge and affected only after animation gate. Additional once-only/atomic counter regressions were committed later; consult latest green run.
+- Source fidelity gap: independent research virtual clocks only, fixed animation 800ms and ~500ms lag fixture, genuine Endure and move hit frames absent. *No* authoritative networked PvP, school Safari real-device QA or direct Google Sites paste testing. **Neither main nor live Google Sites/Firebase changed.**
