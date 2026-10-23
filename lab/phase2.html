@@ -17,7 +17,7 @@
 .charge-note{font-size:11px;color:#c4b398;margin:7px 0 0}
 @media(max-height:490px){.charge-dialog{max-height:98dvh}.charge-pad{width:min(52vh,240px)}.charge-head b{font-size:15px}}
 @media(max-width:700px){.layout{grid-template-columns:minmax(0,1fr)}}@media(max-height:520px) and (orientation:landscape){body{padding:6px}.board,.panel{padding:6px}.unit{padding:5px}.unit b{margin-top:2px}.team+.team{padding-top:5px;margin-top:5px}.layout{grid-template-columns:minmax(0,1fr) 230px}#log{height:150px}}</style>
-</head><body><main><header><small>ORIGINAL COMBAT RESEARCH</small><h1>輪戦ラボ / Phase 4研究</h1></header><p class="notice">攻撃・妖術・取り憑き・防御の4択と、後衛でのおはらいを研究するBOT試験画面です。原作の戦闘処理を完全に再現したものではありません。必殺技のダメージ・回復は研究用の仮数値です。原作準拠の技効果は未実装。妖気は仮に1行動につき+3（生存中）で増加します。妖気＋25も手動実験用。つつき報酬・本来の妖気回復速度は未実装です。</p><div class="layout"><section class="board"><div class="forecast-title">次の5行動・予測（回転や状態変化で変わります）</div><div class="forecast" id="forecast"></div><div id="team0" class="team"></div><div id="team1" class="team"></div></section><aside class="panel"><div>行動数 <strong id="count">0</strong></div><div class="controls"><button id="one">1行動</button><button id="many">20行動</button><button id="reset">リセット</button></div><div id="status" aria-live="polite">準備完了</div><div id="log" aria-live="polite"></div></aside></div></main>
+</head><body><main><header><small>ORIGINAL COMBAT RESEARCH</small><h1>輪戦ラボ / Phase 4研究</h1></header><p class="notice">攻撃・妖術・取り憑き・防御の4択と、後衛でのおはらいを研究するBOT試験画面です。原作の戦闘処理を完全に再現したものではありません。必殺技のダメージ・回復は研究用の仮数値です。原作準拠の技効果は未実装。妖気回復は対戦研究に基づく暫定処理で、攻撃以外の行動をした本人に行動後+5。攻撃時の回復量は未確定です。妖気＋25も手動実験用。つつき報酬・本来の妖気回復速度は未実装です。</p><div class="layout"><section class="board"><div class="forecast-title">次の5行動・予測（回転や状態変化で変わります）</div><div class="forecast" id="forecast"></div><div id="team0" class="team"></div><div id="team1" class="team"></div></section><aside class="panel"><div>行動数 <strong id="count">0</strong></div><div class="controls"><button id="one">1行動</button><button id="many">20行動</button><button id="reset">リセット</button></div><div id="status" aria-live="polite">準備完了</div><div id="log" aria-live="polite"></div></aside></div></main>
 <div id="chargeOverlay" class="charge-overlay" hidden>
  <section class="charge-dialog" role="dialog" aria-modal="true" aria-label="必殺技のチャージ">
   <div class="charge-head"><b id="chargeTitle">必殺チャージ</b><button id="chargeCancel">中止する</button></div>
@@ -31,7 +31,7 @@
 <script type="module">
 import {createCombat} from '../engine/combat.mjs';
 const el=id=>document.getElementById(id);
-const makeResearchBattle=()=>createCombat({researchSpecialEffects:true,researchSoulGainPerAction:3});
+const makeResearchBattle=()=>createCombat({researchSpecialEffects:true,researchSoulRecoveryMode:'owner-nonattack'});
 let battle=makeResearchBattle(),actions=[],last=null,activeChargeSide=null;
 const chargeNames={spin:'まわせ！',tap:'打て！',trace:'なぞれ！',align:'あわせろ！'};
 const chargeHelp={
