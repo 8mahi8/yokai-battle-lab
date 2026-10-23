@@ -13,6 +13,11 @@ main{width:min(1300px,100%);margin:auto}header{display:flex;align-items:center;j
 .note{border:1px solid #926e43;background:#3a2d25; padding:10px 14px;border-radius:12px;font-size:12px;line-height:1.6;margin-bottom:12px}
 .layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(255px,.65fr);gap:12px}.arena,.panel{background:linear-gradient(145deg,#1c3045,#111e30);border:1px solid var(--line);border-radius:17px;padding:15px;box-shadow:0 8px 20px #0003}.side{padding:6px 0 14px}.side+.side{border-top:1px solid #40536b;padding-top:14px}.sideHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.sideHead b{font-size:16px}.sideHead span{font-size:11px;color:var(--muted)}
 .front{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.unit{position:relative;min-width:0;border:1px solid #53738a;border-radius:12px;min-height:103px;background:linear-gradient(145deg,#253d51,#1b293b);padding:10px;overflow:hidden}.unit.active{border-color:var(--a)}.b .unit.active{border-color:var(--b)}.unit.fired{box-shadow:0 0 0 2px #fcf3c9,0 0 22px #ffd79966}.medal{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;border:2px solid #b0d9e7;background:#244759;color:#f0fdff;font-size:11px;font-weight:900}.b .medal{border-color:#edc58b;background:#493e31}.unit strong{display:block;font-size:12px;margin:7px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.unit small{display:block;color:#adc5d9;font-size:11px}.bench{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.bench span{font-size:11px;background:#101c2d;border:1px solid #35455e;padding:6px 8px;border-radius:8px;color:#acbfd1}.controls{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.btn{min-height:39px;border:1px solid #728ba2;background:#2a425e;border-radius:9px;color:#fff;padding:8px 12px;font-weight:750;font-size:12px}.btn:active{transform:scale(.98)}.btn.primary{background:#7fdecf;color:#102d37;border-color:#7fdecf}.btn:disabled{opacity:.45;cursor:not-allowed}.controlRow{display:flex;gap:7px;flex-wrap:wrap}.metric{padding:10px;background:#101f31;border:1px solid #415776;border-radius:11px;margin-bottom:10px}.metric b{font-size:23px;color:#e6debc}.metric span{display:block;font-size:11px;color:var(--muted)}.feed{max-height:248px;overflow:auto;border:1px solid #2e435b;border-radius:9px;background:#0f1c2d;padding:7px}.entry{font:12px/1.5 ui-monospace,SFMono-Regular,monospace; padding:5px;border-bottom:1px solid #2d4157}.entry:last-child{border:0}.entry em{color:#abdcca;font-style:normal}.footer{color:#a7bdcf;font-size:11px;line-height:1.6;margin-top:10px}
+.priorityLab{border:1px solid #6c8ca2;border-radius:11px;padding:9px;margin:12px 0;background:#162c40}
+.priorityLab .status{font-size:11px;line-height:1.6;color:#cbdced;margin-top:8px}
+.priorityLab button{font-size:11px}
+.priorityLab .forecast{padding:6px;margin-top:7px;background:#0d1d30;border-radius:8px;font-size:11px;color:#d4e9f3;line-height:1.6}
+.priorityLab em{font-style:normal;color:#ffda8c;font-weight:800}
 @media(max-width:750px){.layout{grid-template-columns:1fr}.arena,.panel{padding:12px}.unit{min-height:98px;padding:8px}.front{gap:5px}.flag{font-size:10px}}
 @media(max-height:530px) and (orientation:landscape){body{padding:8px}.note{padding:5px 9px;font-size:10px;margin-bottom:7px}header{margin-bottom:5px}h1{font-size:17px}.arena,.panel{padding:8px}.side{padding:2px 0 7px}.side+.side{padding-top:7px}.sideHead{margin-bottom:4px}.sideHead b{font-size:12px}.unit{min-height:73px;padding:5px}.unit strong{font-size:10px;margin:3px 0 0}.unit small{font-size:9px}.medal{width:24px;height:24px;font-size:9px}.bench{margin-top:4px}.bench span{font-size:9px;padding:3px}.btn{min-height:31px;padding:4px 8px;font-size:11px}.controls{margin-top:5px}.panel h2{margin-bottom:3px}}
 </style>
@@ -30,6 +35,18 @@ main{width:min(1300px,100%);margin:auto}header{display:flex;align-items:center;j
  <div class="metric"><span>実行した行動</span><b id="turn">0</b></div>
  <div class="metric"><span>行動待ちの経過量（暫定モデル）</span><b id="time">0</b></div>
  <div class="controlRow"><button class="btn primary" id="step">1行動進める</button><button class="btn" id="steps">20行動進める</button><button class="btn" id="reset">リセット</button></div>
+ <div class="priorityLab">
+ <h2>初期前衛と閃光魂（行動順研究）</h2>
+ <p class="footer">閃光の順番割り込みは原作の対戦報告に基づく仮説。行動権の減算式と複数閃光の同値判定は未検証です。表示切替で対戦を初期化します。</p>
+ <div class="controlRow">
+  <button class="btn" id="flashToggle">閃光研究 ON</button>
+  <button class="btn" id="flashDeploy">B6を前衛へ</button>
+  <button class="btn" id="matchingToggle">マッチング前衛変更</button>
+  <button class="btn" id="skipPolicy">割込先の待ち：消費</button>
+ </div>
+ <div id="priorityState" class="status"></div>
+ <div id="priorityForecast" class="forecast"></div>
+ </div>
  <h2 style="margin-top:14px">イベントログ</h2><div class="feed" id="feed" aria-live="polite"></div>
  <div id="message" class="footer">サークルを回した直後は約3秒の再操作制限（対戦研究に基づく）があります。</div>
  </aside>
@@ -39,7 +56,17 @@ main{width:min(1300px,100%);margin:auto}header{display:flex;align-items:center;j
 <script type="module">
 import { createBattle } from '../engine/phase1.mjs';
 const $ = id => document.getElementById(id);
-let battle = createBattle(), lastActor = null;
+let flashResearch=false,alternateMatched=false,skipPolicy='consume';
+const makeBattle=()=>createBattle({seed:20261023,
+ rotationCooldownMs:flashResearch?0:3000,
+ openingPriorityResearch:flashResearch?{
+   flashIds:['B6'],
+   registeredFront:alternateMatched
+     ?[['A4','A5','A6'],['B4','B5','B6']]
+     :[['A1','A2','A3'],['B1','B2','B3']],
+   skippedTurnPolicy:skipPolicy
+ }:null});
+let battle = makeBattle(), lastActor = null;
 let events = [];
 const escape = value => String(value).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function draw() {
@@ -53,11 +80,27 @@ function draw() {
   const bench = team.benchIds.map(id=>byId.get(id));
   $('side'+team.side).innerHTML = `
   <div class="sideHead"><b>TEAM ${letter} <span>同一レンタル6体</span></b><span>配置 ${team.offset+1}/6</span></div>
-  <div class="front">${front.map(m=>`<div class="unit active ${lastActor===m.id?'fired':''}"><span class="medal">${m.id}</span><strong>${escape(m.name)}</strong><small>素早さ ${m.speed} / 待ち ${m.wait ?? '—'}</small></div>`).join('')}</div>
+  <div class="front">${front.map(m=>`<div class="unit active ${lastActor===m.id?'fired':''}"><span class="medal">${m.id}</span><strong>${escape(m.name)}</strong><small>素早さ ${m.speed} / 待ち ${m.wait ?? '—'}</small><small>${flashResearch&&m.originalFront?'マッチング時前衛':''}${state.openingPriority?.flashReady.includes(m.id)?' ⚡閃光未使用':''}</small></div>`).join('')}</div>
   <div class="bench">${bench.map(m=>`<span>${m.id} · ${escape(m.name)} · 待ち—</span>`).join('')}</div>
   <div class="controls"><button class="btn" data-side="${team.side}" data-dir="-1">◀ 左回転</button><button class="btn" data-side="${team.side}" data-dir="1">右回転 ▶</button></div>`;
  }
- $('feed').innerHTML = events.slice(-18).reverse().map(e=>`<div class="entry">#${String(e.action).padStart(3,'0')} <em>${e.id}</em> 行動　待ち+${e.cost} / 経過${e.elapsed}</div>`).join('') || '<div class="entry">まだ行動していません</div>';
+ const rights=state.openingPriority;
+ $('flashToggle').textContent=flashResearch?'閃光研究 OFF':'閃光研究 ON';
+ $('flashDeploy').disabled=!flashResearch;
+ $('matchingToggle').disabled=!flashResearch;
+ $('skipPolicy').disabled=!flashResearch;
+ $('matchingToggle').textContent=alternateMatched?'マッチング前衛：後衛側':'マッチング前衛：標準';
+ $('skipPolicy').textContent='割込先の待ち：'+(skipPolicy==='consume'?'消費':'保持');
+ $('priorityState').textContent=rights
+  ?'初期前衛：A '+rights.registeredFront[0].join('・')+
+    ' / B '+rights.registeredFront[1].join('・')+
+    '　閃光未使用：'+(rights.flashReady.join('・')||'なし')+
+    '　※先制の数値補正は未実装'
+  :'研究OFF。従来の初期待機時間モデルで行動します。';
+ const predicted=battle.predict(5);
+ $('priorityForecast').innerHTML='予測5行動：'+predicted.map(x=>
+  '<span>'+escape(x.id)+(x.flashConsumed?' <em>⚡割込</em>':'')+'</span>').join(' → ');
+ $('feed').innerHTML = events.slice(-18).reverse().map(e=>`<div class="entry">#${String(e.action).padStart(3,'0')} <em>${e.id}</em> 行動　待ち+${e.cost} / 経過${e.elapsed}${e.flashConsumed?' ⚡閃光（'+e.skippedId+'の予定行動を置換）':''}</div>`).join('') || '<div class="entry">まだ行動していません</div>';
 }
 function execute(count) { const actions=battle.simulate(count); events.push(...actions); lastActor=actions.at(-1).id; $('message').textContent='研究用行動ロジックで '+count+' 行動進めました。攻撃やダメージは未実装。';draw(); }
 document.body.addEventListener('click',e=>{
@@ -66,9 +109,29 @@ document.body.addEventListener('click',e=>{
   const result=battle.rotate(Number(btn.dataset.side),Number(btn.dataset.dir),performance.now());
   $('message').textContent=result.ok?'サークル交代成功（入ってきた前衛の待ちは再設定）':`回転制限中。あと約${(result.remainingMs/1000).toFixed(1)}秒`;
   draw();
+ } else if(btn.id==='flashToggle'){
+  flashResearch=!flashResearch;battle=makeBattle();events=[];lastActor=null;
+  $('message').textContent=flashResearch?'閃光研究モデルON。B6を前衛に出して1行動試そう':'研究OFF。標準行動順に戻した';draw();
+ } else if(btn.id==='flashDeploy'){
+  if(flashResearch){
+   const result=battle.rotate(1,-1,0);
+   $('message').textContent=result.ok?'B6を前衛に出した。次の1行動で閃光効果を比較':'回転失敗：'+result.reason;
+   draw();
+  }
+ } else if(btn.id==='matchingToggle'){
+  if(flashResearch){
+   alternateMatched=!alternateMatched;battle=makeBattle();events=[];lastActor=null;
+   $('message').textContent='マッチング時の前衛記録を変更（数値補正は未検証）';draw();
+  }
+ } else if(btn.id==='skipPolicy'){
+  if(flashResearch){
+   skipPolicy=skipPolicy==='consume'?'preserve':'consume';
+   battle=makeBattle();events=[];lastActor=null;
+   $('message').textContent='飛ばされた側の待ち時間の仮説を変更';draw();
+  }
  } else if(btn.id==='step') execute(1);
  else if(btn.id==='steps') execute(20);
- else if(btn.id==='reset'){battle=createBattle();events=[];lastActor=null;$('message').textContent='初期状態に戻しました。乱数シードは固定。';draw();}
+ else if(btn.id==='reset'){battle=makeBattle();events=[];lastActor=null;$('message').textContent='初期状態に戻しました。乱数シードは固定。';draw();}
 });
 draw();
 </script>
