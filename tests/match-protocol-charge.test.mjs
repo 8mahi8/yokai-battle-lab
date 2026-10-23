@@ -50,7 +50,7 @@ function solve(match,side,startSeq){
    result=send({type:'up'});
   }
  }else assert.fail('unknown kind '+kind);
- assert.equal(get(),null,'guided charge trial should close on success');
+ assert.equal(get(),undefined,'guided charge trial should close on success');
  assert.equal(result.result.completed,true);
  return {seq,kind,result};
 }
