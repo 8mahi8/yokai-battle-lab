@@ -176,6 +176,11 @@ document.querySelector('#lab').addEventListener('load',()=>{
   if(!pick('#priorityState').textContent.includes('閃光未使用：なし'))throw Error('Flash not spent');
   pick('#matchingToggle').click();
   if(!pick('#priorityState').textContent.includes('A A4・A5・A6'))throw Error('matching time registration not independent');
+  pick('#prebattleOffset').click();
+  if(!pick('#side0').textContent.includes('配置 4/6'))throw Error('prebattle wheel did not switch initial view');
+  pick('#matchingCredit').click();
+  if(!pick('#priorityState').textContent.includes('マッチング登録組だけ開幕待機値'))
+   throw Error('initial-right wait comparison not active');
   pick('#skipPolicy').click();
   if(!pick('#skipPolicy').textContent.includes('保持'))throw Error('skip policy not changeable');
   pick('#flashToggle').click();
