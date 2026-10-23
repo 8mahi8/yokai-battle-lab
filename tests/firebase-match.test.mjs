@@ -114,3 +114,27 @@ test('reject malformed local gesture without consuming input sequence',async()=>
  await tick();
  host.stop();guest.stop();
 });
+
+test('bounded guest FIFO preserves all fast taps, draining only after host ACK',async()=>{
+ const bus=fakeTransport(),acks=[];
+ const host=createFirebaseMatchHost({roomClient:bus.host});
+ const guest=createFirebaseMatchGuest({roomClient:bus.guest,maxQueuedInputs:2,
+  onAck:a=>acks.push(a.clientSeq)});
+ guest.start();await host.start();
+ bus.setDrop(true);
+ assert.equal(guest.enqueue({type:'rotate',direction:1}).queued,false);
+ assert.equal(guest.enqueue({type:'watch',mode:'zero'}).queued,true);
+ assert.equal(guest.enqueue({type:'pin',targetId:null}).queued,true);
+ assert.equal(guest.enqueue({type:'watch',mode:'standard'}).reason,'input_buffer_full');
+ assert.equal(guest.status().queuedInputs,2);
+ assert.equal(host.snapshot().clientSequences[1],1);
+ bus.setDrop(false);
+ bus.replay();await tick();await tick();
+ assert.deepEqual(bus.sent.map(x=>x.clientSeq),[1,2,3]);
+ assert.deepEqual(acks,[1,2,3]);
+ assert.equal(guest.status().queuedInputs,0);
+ assert.equal(guest.status().pendingSequence,null);
+ assert.equal(host.snapshot().clientSequences[1],3);
+ assert.equal(guest.status().revision,3);
+ guest.stop();host.stop();
+});
