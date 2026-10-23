@@ -248,3 +248,18 @@ Full research sources, code, QA and open fidelity gaps: [PHASE8_PURIFY_TOUCH_QA_
 - **Actual CI:** 257/257 tests passed on https://github.com/8mahi8/yokai-battle-lab/actions/runs/39956769749 , plus headless Chromium synthetic PointerEvents executed all five patterns, cancellation, return-to-front interruption and prior battle regression scenarios. Added UI contract tests afterward; check subsequent latest CI before treating new exact totals as confirmed.
 - Reminder: initial rental team **does not contain Flash Soul**. Phase 6 Flash remains separately opt-in and not promoted to default.
 - Remaining: exact original gesture thresholds, school iPad Safari physical-touch QA, source-correct stats, two-peer network session and Google Sites direct embed. No main/Google Sites/Firebase deployment or cost.
+
+
+---
+
+## 2026-10-23 — Phase 9: initial-version attack, technique, hit chance and Inspirit stages (LATEST)
+
+Implementation details, game-data research, QA and unverified assumptions: **[PHASE9_BASIC_DAMAGE_ACCURACY_QA_20261023.md](./PHASE9_BASIC_DAMAGE_ACCURACY_QA_20261023.md)**.
+
+- Rechecked YW2 data-mined single-hit damage formulas and guard, per-element resistance, attack-specific accuracy, critical chances and stat-stage multiplier table against Mt. Wildwood's YW2 pages: https://mtwildwood.net/damage.php?g=yw2 , https://mtwildwood.net/elements.php , https://mtwildwood.net/stat-changes.php?g=yw2 , https://mtwildwood.net/hit-chance.php , https://mtwildwood.net/critical-hits.php .
+- Added `engine/damage-model.mjs`: YW2-inspired neutral Attack/Technique and critical formulas, special critical Defense input, elemental affinity, physical-only guard-break and exact source 17-stage stat table (stage -8 through +8). The `hits` option calculates **one hit of a multi-hit move** but full repeated hit scheduling is NOT yet wired into combat. Strong-up Inspirit effects add their level as research stat stages, clamped +8.
+- Added `engine/hit-model.mjs`: fractional basic speed hit chance 75–98%, normal physical move-specific accuracy multiplier, technique baseline hit chance, one-in-99 critical and +6/99 on Loafing target. Other accuracy/crit modifiers remain undone.
+- Updated `engine/inspirit.mjs` to retain explicit application level 1–4 and `engine/combat.mjs` to validate optional per-renter technique element/resistance/crit-defense/Inspirit level/accuracy/crit immunity/guard-break, with **`researchDamageModel:true` opt-in only**. Default `createCombat()` still uses previous auto battle behavior; separate advanced Flash remains OFF for initial rental.
+- `lab/phase2.html` research view uses **identical six-member original-character rental teams** with intentionally fictional elemental balance fixtures and visible `研究補正` damage log. Never call those elemental affinities original YW2 character data.
+- New source-calculation tests (10), hit/critical tests (5), deterministic combat-damage tests (6) and combat-hit tests (5), covering defensive state, statuses, move accuracy, and many simulated actions/seeds; previous Soultimate, Zero Poke, five Purify touch types, wheel and counter tests stayed green. Code/test milestone reached **286/286 passed**, Chromium research damage display and all previous touch/browser smoke passed on https://github.com/8mahi8/yokai-battle-lab/actions/runs/39960508755 .
+- Original unverified: per-move critical defense, rounding subtleties, full multi-hit actor/hit/time updates, accurate healing, other negative Inspirits, authentic Soul generation, Safari hardware, authoritative online 1v1 and Google Sites single-HTML direct paste. Nothing ready for user school testing or publishing; **main/live Google Sites/Firebase unchanged**.
