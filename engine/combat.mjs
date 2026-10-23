@@ -566,7 +566,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     return pickAction(weights,rng);
   }
   function snapshot(){
-    return {seed,winner,pins:[...pins],clock:clock.snapshot(),squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights]}))),events:events.slice(-80).map(e=>({...e})),soul:soul.snapshot(),
+    return {seed,winner,pins:[...pins],clock:clock.snapshot(),squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights],
+      elementResistances:{...m.elementResistances}}))),events:events.slice(-80).map(e=>({...e})),soul:soul.snapshot(),
       guided:guided.map(g=>g?{token:g.token,id:g.id,kind:g.kind,challenge:g.trial.snapshot()}:null),
       purification:purification.map(p=>p?{id:p.id,challenge:p.trial.snapshot()}:null),
       poke:{active:pokes.map(p=>p?{targetId:p.targetId,challenge:p.trial.snapshot()}:null),
@@ -596,7 +597,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     // A guard lasts until the next time that actor begins an action.
     actor.guard=false;
     const kind=enableLoafing&&rng()*100<actor.loafChance?'loaf':choice(actor);
-    let target=null,amount=0,hit=true,critical=false,effect=null,resisted=false,interruption=null;
+    let target=null,amount=0,hit=true,critical=false,effect=null,resisted=false,interruption=null,damageResearch=null;
     if(kind==='guard'){
       actor.guard=true;
     }else if(kind==='loaf'){
@@ -630,9 +631,31 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       if(hit){
         // YW2 base unmodified critical chance: approximately 1 in 99.
         critical=rng()*99<1;
-        let damage=baseDamage(statuses.has(actor.id,'strength-up')?{...actor,strength:Math.floor(actor.strength*1.10)}:actor,target,kind,critical);
-        if(target.guard) damage=Math.max(1,Math.floor(damage*.5));
-        else {const range=Math.floor(damage/10+1); damage=Math.max(1,Math.min(999,damage+Math.floor(rng()*(2*range+1))-range));}
+        let damage;
+        if(researchDamageModel){
+          const statStage=kind==='attack'
+            ?deriveStrengthStage(statuses.list(actor.id)):0;
+          const elemental=kind==='technique'&&actor.technique==='damage'
+            ?target.elementResistances[actor.techniqueElement]??1:1;
+          damageResearch=calculateOneHit({
+            kind,power:kind==='attack'?actor.attackPower:actor.techniquePower,
+            strength:actor.strength,spirit:actor.spirit,defense:target.defense,
+            criticalDefense:target.criticalDefense,critical,
+            guarded:target.guard,guardBreak:actor.guardBreak,
+            elementMultiplier:elemental,statStage
+          });
+          damage=damageResearch.amount;
+        }else{
+          damage=baseDamage(statuses.has(actor.id,'strength-up')
+            ?{...actor,strength:Math.floor(actor.strength*1.10)}:actor,target,kind,critical);
+          if(target.guard)damage=Math.max(1,Math.floor(damage*.5));
+        }
+        // Stable +/−10% roll applies to unguarded hits, including researched
+        // physical guard-break. Full multi-hit / move accuracy still unmodeled.
+        if(!target.guard||damageResearch?.guardIgnored){
+          const range=Math.floor(damage/10+1);
+          damage=Math.max(1,Math.min(999,damage+Math.floor(rng()*(2*range+1))-range));
+        }
         amount=Math.min(target.hp,damage);
         target.hp-=amount;
         interruption=interruptOnHit(target,amount,critical);
@@ -643,6 +666,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const action={type:'action',turn:clockEvent.action,elapsed:clockEvent.elapsed,pointsElapsed:clockEvent.pointsElapsed,
       actor:actor.id,kind:kind==='technique'&&actor.technique==='heal'?'heal':kind,target:target?.id??null,
       hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,effect,resisted,interruption,winner,
+      ...(damageResearch?{damageResearch:{
+        ...damageResearch,techniqueElement:kind==='technique'?actor.techniqueElement:'neutral',
+        sourceMovePower:kind==='attack'?actor.attackPower:actor.techniquePower,
+        targetId:target?.id??null
+      }}:{}),
       ...(researchOpeningPriority?{priorityKind:clockEvent.priorityKind,
         skippedId:clockEvent.skippedId,flashConsumed:clockEvent.flashConsumed,
         priorityConfidence:'research-fixture'}:{})};
