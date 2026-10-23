@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>輪戦ラボ Phase 4 Research</title>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>輪戦ラボ Phase 4 必殺研究</title>
 <style>:root{color-scheme:dark;font:14px system-ui;background:#101725;color:#e9f3ff}*{box-sizing:border-box}body{margin:0;padding:12px;background:radial-gradient(ellipse at top,#283c54,#101725 75%)}main{max-width:1100px;margin:auto}h1{font-size:22px;margin:5px 0}.notice{font-size:12px;color:#eacba0;line-height:1.5}.layout{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:10px}.board,.panel{padding:12px;background:#1b2c40;border:1px solid #435b72;border-radius:12px}.team+.team{margin-top:12px;padding-top:12px;border-top:1px solid #435b72}.heading{font-weight:800;display:flex;justify-content:space-between}.heading small{color:#acbdce;font-weight:400}.front{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0}.unit{padding:8px;background:#253c50;border:1px solid #53738b;border-radius:9px;min-width:0}.unit.dead{opacity:.45}.unit.pinned{border:2px solid #eed68c}.unit.recent{box-shadow:0 0 0 2px #a5e5c5}.unit b{display:block;margin-top:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hpbar{height:6px;background:#142131;border-radius:5px;overflow:hidden;margin:6px 0}.hpbar i{display:block;height:100%;background:#89dba4}.hpbar.soul i{background:#efbf6c}.info,.bench{color:#bfd0df;font-size:11px}.bench{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.bench span{padding:5px;background:#122133;border-radius:6px}button{font:600 12px system-ui;background:#34526e;color:#fff;border:1px solid #6f90a9;border-radius:8px;padding:7px 9px;cursor:pointer;touch-action:manipulation;min-height:31px;margin:2px}button:focus-visible{outline:2px solid #fff}.unit button{font-size:10px;width:100%;margin:4px 0 0;padding:3px}button:disabled{opacity:.5}.controls{display:flex;flex-wrap:wrap}#log{height:245px;overflow:auto;background:#0d1c2d;border:1px solid #3a536c;border-radius:7px;padding:6px;font-size:11px}#log div{padding:5px;border-bottom:1px solid #344960}#count{font-size:28px;font-weight:900}#status{font-size:12px;min-height:48px;color:#a7dad1;padding-top:9px}.forecast-title{font-size:12px;font-weight:800;color:#c9e4f1;margin:2px 0 6px}
 .board,.panel{min-width:0}.forecast{display:grid;grid-template-columns:repeat(5,minmax(94px,1fr));gap:5px;overflow-x:auto;margin-bottom:11px}
 .forecast .slot{min-width:0;background:#102234;border:1px solid #49657e;border-radius:8px;padding:6px;font-size:11px}
@@ -17,7 +17,7 @@
 .charge-note{font-size:11px;color:#c4b398;margin:7px 0 0}
 @media(max-height:490px){.charge-dialog{max-height:98dvh}.charge-pad{width:min(52vh,240px)}.charge-head b{font-size:15px}}
 @media(max-width:700px){.layout{grid-template-columns:minmax(0,1fr)}}@media(max-height:520px) and (orientation:landscape){body{padding:6px}.board,.panel{padding:6px}.unit{padding:5px}.unit b{margin-top:2px}.team+.team{padding-top:5px;margin-top:5px}.layout{grid-template-columns:minmax(0,1fr) 230px}#log{height:150px}}</style>
-</head><body><main><header><small>ORIGINAL COMBAT RESEARCH</small><h1>輪戦ラボ / Phase 4研究</h1></header><p class="notice">攻撃・妖術・取り憑き・防御の4択と、後衛でのおはらいを研究するBOT試験画面です。原作の戦闘処理を完全に再現したものではありません。妖気＋25は研究用の手動入力で、必殺技の効果・つつき報酬は未実装です。キャラの数値と回復式、行動選択には仮設定があります。</p><div class="layout"><section class="board"><div class="forecast-title">次の5行動・予測（回転や状態変化で変わります）</div><div class="forecast" id="forecast"></div><div id="team0" class="team"></div><div id="team1" class="team"></div></section><aside class="panel"><div>行動数 <strong id="count">0</strong></div><div class="controls"><button id="one">1行動</button><button id="many">20行動</button><button id="reset">リセット</button></div><div id="status" aria-live="polite">準備完了</div><div id="log" aria-live="polite"></div></aside></div></main>
+</head><body><main><header><small>ORIGINAL COMBAT RESEARCH</small><h1>輪戦ラボ / Phase 4研究</h1></header><p class="notice">攻撃・妖術・取り憑き・防御の4択と、後衛でのおはらいを研究するBOT試験画面です。原作の戦闘処理を完全に再現したものではありません。必殺技のダメージ・回復は研究用の仮数値です。原作準拠の技効果は未実装。妖気は仮に1行動につき+3（生存中）で増加します。妖気＋25も手動実験用。つつき報酬・本来の妖気回復速度は未実装です。</p><div class="layout"><section class="board"><div class="forecast-title">次の5行動・予測（回転や状態変化で変わります）</div><div class="forecast" id="forecast"></div><div id="team0" class="team"></div><div id="team1" class="team"></div></section><aside class="panel"><div>行動数 <strong id="count">0</strong></div><div class="controls"><button id="one">1行動</button><button id="many">20行動</button><button id="reset">リセット</button></div><div id="status" aria-live="polite">準備完了</div><div id="log" aria-live="polite"></div></aside></div></main>
 <div id="chargeOverlay" class="charge-overlay" hidden>
  <section class="charge-dialog" role="dialog" aria-modal="true" aria-label="必殺技のチャージ">
   <div class="charge-head"><b id="chargeTitle">必殺チャージ</b><button id="chargeCancel">中止する</button></div>
@@ -31,7 +31,8 @@
 <script type="module">
 import {createCombat} from '../engine/combat.mjs';
 const el=id=>document.getElementById(id);
-let battle=createCombat(),actions=[],last=null,activeChargeSide=null;
+const makeResearchBattle=()=>createCombat({researchSpecialEffects:true,researchSoulGainPerAction:3});
+let battle=makeResearchBattle(),actions=[],last=null,activeChargeSide=null;
 const chargeNames={spin:'まわせ！',tap:'打て！',trace:'なぞれ！',align:'あわせろ！'};
 const chargeHelp={
  spin:'円のふちを指でぐるぐる2周回そう',
@@ -99,7 +100,15 @@ function draw(){
   html+='</div><div class="bench">'+ring.benchIds.map(id=>{let m=byId.get(id);const needsPurify=snap.inspirits[id]?.some(x=>x.sign==='negative');const meter=soulMap.get(id);return '<span>'+id+' '+esc(m.name)+' HP'+m.hp+'/'+m.maxHp+' 妖気'+meter.soul+'/'+meter.capacity+' <button data-soul="'+id+'">妖気+25</button>'+(needsPurify?' 💤 <button data-purify="'+id+'" data-owner="'+side+'">おはらい</button>':'')+'</span>';}).join('')+'</div><div class="controls"><button data-rotate="'+side+'" data-dir="-1">◀ 左回転</button><button data-rotate="'+side+'" data-dir="1">右回転 ▶</button></div>';
   el('team'+side).innerHTML=html;
  }
- el('log').innerHTML=actions.slice(-35).reverse().map(x=>'<div>#'+x.turn+' '+x.actor+' '+({attack:'攻撃',technique:'妖術',heal:'回復',guard:'防御',inspirit:'取り憑き',loaf:'サボり'}[x.kind]||'')+(x.target?' → '+x.target:'')+(x.amount?' '+x.amount+'HP':'')+(x.effect?' ['+({sleep:'睡眠','strength-up':'ちから強化'}[x.effect]||x.effect)+']':'')+(x.resisted?' 耐性で失敗':x.hit===false?' ミス':'')+(x.interruption?.stopped?' ⚡必殺中断':'')+'</div>').join('')||'<div>行動待ち</div>';
+ el('log').innerHTML=snap.events.slice(-35).reverse().map(x=>{
+  if(x.type==='special')return '<div>✨ '+esc(x.actor)+' '+(x.mode==='g-tech'?'G技':'必殺')+
+   '（仮効果） '+x.impacts.map(t=>esc(t.targetId)+(t.kind==='heal'?' +':' -')+t.amount+'HP').join(' / ')+'</div>';
+  return '<div>#'+x.turn+' '+esc(x.actor)+' '+({attack:'攻撃',technique:'妖術',heal:'回復',guard:'防御',inspirit:'取り憑き',loaf:'サボり'}[x.kind]||'')+
+   (x.target?' → '+esc(x.target):'')+(x.amount?' '+x.amount+'HP':'')+
+   (x.effect?' ['+({sleep:'睡眠','strength-up':'ちから強化'}[x.effect]||x.effect)+']':'')+
+   (x.resisted?' 耐性で失敗':x.hit===false?' ミス':'')+
+   (x.interruption?.stopped?' ⚡必殺中断':'')+'</div>';
+ }).join('')||'<div>行動待ち</div>';
  if(snap.winner!==null)el('status').textContent='TEAM '+(snap.winner?'B':'A')+' 勝利！';
 }
 function next(n){
@@ -149,7 +158,7 @@ document.addEventListener('click',event=>{
  }
  else if(btn.id==='one')next(1);
  else if(btn.id==='many')next(20);
- else if(btn.id==='reset'){battle=createCombat();actions=[];last=null;activeChargeSide=null;el('status').textContent='初期化';draw();}
+ else if(btn.id==='reset'){battle=makeResearchBattle();actions=[];last=null;activeChargeSide=null;el('status').textContent='初期化';draw();}
  }catch(error){el('status').textContent=error.message;}
 });
 draw();
@@ -164,7 +173,7 @@ function applyTouch(event){
   const result=battle.chargeInput(activeChargeSide,event);
   if(result.completed){
    el('status').textContent=result.special?.ok
-    ?'必殺チャージ成功！ 妖気消費済（技効果は未実装）'
+    ?'必殺チャージ成功！ 妖気消費済（仮効果：'+(result.special.impacts?.map(x=>x.targetId+(x.kind==='heal'?' +':' -')+x.amount).join('、')||'効果未実装')+'HP）'
     :'チャージ失敗：'+(result.special?.reason||result.reason);
   }
   draw();
