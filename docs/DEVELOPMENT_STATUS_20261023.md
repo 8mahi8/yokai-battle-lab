@@ -129,3 +129,13 @@ See `docs/PHASE4_SPECIAL_EFFECTS_QA_20261023.md` for authoritative evidence, sou
 - **Interrupt consistency:** damaging Soultimates now interrupt opponent charging casters using the same probability evaluator as ordinary attacks, including KO cancellation and no enemy Soul spending on a cancelled charge.
 - **Real GitHub CI:** commit `111e521af1f64c1e0a0a8e71574ba90784f753d0` passed **111/111 Node tests**, 0 failed. Chromium rendered actual branch ESM and automatically completed one touch charge, verifying enemy HP fell and its research special log was emitted, in addition to earlier Soul/sleep/purification/G-mode checks. CI: https://github.com/8mahi8/yokai-battle-lab/actions/runs/39913499508 .
 - Does not represent full original YW2 battle model. Proper special effects, real passive gain under attack, no-motion exploit timing, Poke results, character animation, old iPad Safari, multiplayer and Google Sites direct-embed remain NOT IMPLEMENTED / NOT VERIFIED. `main`, Google Sites public version and live Firebase are unchanged.
+
+
+---
+
+## 2026-10-23 — randomized battle invariants / no-target Soultimate regression
+
+- Added `tests/battle-invariants.test.mjs`: 25 deterministic seeds, up to 180 turns each, including charge/cancel/resolve, KO, reserve rotations and Soul gain. Checks HP and Soul bounds, KO action eligibility, charging actor eligibility, front-line identity and victory consistency.
+- This uncovered a **real runtime crash**: resolving a Soultimate when the opposing front three were all KO'd but reserves were still alive caused `planResearchSpecial` to throw `living and target arrays required` **after** charge resolution. Fixed `engine/special-effects.mjs` so an empty valid frontline yields zero impacts instead of an exception, and added a targeted regression test.
+- GitHub CI: https://github.com/8mahi8/yokai-battle-lab/actions/runs/39914384316 — passing Node tests and actual Chromium render/interaction smoke. No iPad Safari or two-device online test yet.
+- This is a simulator robustness fix, not proof of original-game Soultimate behavior when no enemy front targets exist. Original move target selection and animation timing remain research tasks.
