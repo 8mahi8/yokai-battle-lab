@@ -233,3 +233,18 @@ Research and full QA details: [PHASE7_INITIAL_POKE_QA_20261023.md](./PHASE7_INIT
 - Added unit/integration tests and real headless Chromium synthesized-pointer browser E2E (sleep B1, zero switch, poke B1 twelve times, lab transfer and reuse prevention, Poke B2 cancel). Verified **238/238 passing** at run https://github.com/8mahi8/yokai-battle-lab/actions/runs/39943107156 ; an additional mutually exclusive G/Poke test was added afterward (check latest CI).
 - Still research, not production: exact enemy Soul gain/drain/reward RNG, actual Poke tap thresholds and windows, purify gestures, statuses and attack formulas, physical old Safari iPad + multiplayer network transport + direct embedded Google Sites HTML.
 - User action NOT required at this phase. `main`, published Google Sites and production Firebase unchanged; no paid service used.
+
+
+---
+
+## 2026-10-23 — Phase 8: five touch Purify challenges for initial rental battle (LATEST)
+
+Full research sources, code, QA and open fidelity gaps: [PHASE8_PURIFY_TOUCH_QA_20261023.md](./PHASE8_PURIFY_TOUCH_QA_20261023.md).
+
+- **Original YW2 supports five normal touch purification kinds**: つぶせ / 連打 / こすれ / まわせ / 斬れ. A negatively Inspirited ally must be rotated into the bench and the touch action completed before cure. References: Nintendo's official YW2 manual, https://game8.jp/youkai-watch2/505163 and https://gamepedia.jp/youkai-yw2/archives/1397 .
+- Added pure `engine/purify-input.mjs`: guarded normalized pointer input for five kinds, 0–100% progress, deterministic lab selection, defensive snapshots. Geometry, difficulty and frequency are **research fixtures** until original recordings corroborate them.
+- Combat API now includes `beginPurify`, `purifyInput`, `cancelPurify`. A negative Inspirit remains active until successful completion, and cancelling or returning to frontline interrupts without cleansing. Positive status retained. Same watch cannot run Poke/Soultimate/Purify concurrently. Instant old `purify()` remains only for developer/test backward compatibility and is **not used by player UI**.
+- The real `lab/phase2.html` overlay renders each gesture and uses touch/pointer events. Optional kind selector clearly labelled as research-only. No fake experience rewards in friend PvP.
+- **Actual CI:** 257/257 tests passed on https://github.com/8mahi8/yokai-battle-lab/actions/runs/39956769749 , plus headless Chromium synthetic PointerEvents executed all five patterns, cancellation, return-to-front interruption and prior battle regression scenarios. Added UI contract tests afterward; check subsequent latest CI before treating new exact totals as confirmed.
+- Reminder: initial rental team **does not contain Flash Soul**. Phase 6 Flash remains separately opt-in and not promoted to default.
+- Remaining: exact original gesture thresholds, school iPad Safari physical-touch QA, source-correct stats, two-peer network session and Google Sites direct embed. No main/Google Sites/Firebase deployment or cost.
