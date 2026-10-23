@@ -13,15 +13,33 @@ function validInt(n,label,max=600000){
  return n;
 }
 const clone=x=>JSON.parse(JSON.stringify(x));
-export function createPresentationTimeline({startMs=0,maxLog=256}={}){
+export function createPresentationTimeline({startMs=0,maxLog=256,coalesceRotations=false}={}){
  validInt(startMs,'startMs');
  validInt(maxLog,'maxLog',4096);
  if(maxLog<1)throw new RangeError('maxLog must be >= 1');
+ if(typeof coalesceRotations!=='boolean')throw new TypeError('coalesceRotations must be boolean');
  let now=startMs,blockUntil=now,motionIndex=0,serial=0;
  const motions=[],buffered=[],visible=[],charging=[null,null];
  const blocked=()=>now<blockUntil;
  function reveal(events,shownAt){
   const matched=new Map(),fresh=[];
+  const suppressed=new Set(),lastRotate=new Map(),merged=new Map();
+  // During the same opponent-visibility block, collapse wheel updates with
+  // no auto-action in between. Preserve the FINAL rotate's chronological slot.
+  // An actual ordinary Yo-kai action separates the paired rotations.
+  if(coalesceRotations){
+   for(let i=0;i<events.length;i++){
+    const e=events[i];
+    if(e.kind==='action'){lastRotate.clear();continue;}
+    if(e.kind!=='rotate')continue;
+    if(lastRotate.has(e.side)){
+     const j=lastRotate.get(e.side);
+     suppressed.add(j);
+     merged.set(i,(merged.get(j)||0)+1);
+    }
+    lastRotate.set(e.side,i);
+   }
+  }
   for(let i=0;i<events.length;i++){
    const e=events[i];
    if(e.kind!=='chargeStart')continue;
@@ -33,7 +51,9 @@ export function createPresentationTimeline({startMs=0,maxLog=256}={}){
    const e=events[i];
    if(e.kind==='chargeStart'&&matched.has(i))continue;
    if(e.kind==='chargeCancel'&&matched.has(i))continue;
+   if(suppressed.has(i))continue;
    const item={...e,visibleAt:shownAt,delayed:shownAt>e.at};
+   if(e.kind==='rotate'&&merged.has(i))item.collapsedRotations=merged.get(i);
    if(e.kind==='chargeComplete'){
     item.kind='specialRelease';
     item.hiddenCharge=matched.has(i);
@@ -61,13 +81,18 @@ export function createPresentationTimeline({startMs=0,maxLog=256}={}){
   if(motions.length>maxLog)motions.shift();
   return {...motion,opponentViewBlockedUntil:blockUntil};
  }
- function record({side,kind,token=null,memberId=null,detail=null}={}){
+ function record({side,kind,token=null,memberId=null,detail=null,frontIds=null}={}){
   if(side!==0&&side!==1)throw new RangeError('side must be 0 or 1');
   if(!KINDS.has(kind))throw new RangeError('unsupported presentation action');
   if(memberId!==null&&(typeof memberId!=='string'||!memberId||memberId.length>100))
    throw new TypeError('invalid memberId');
   if(detail!==null&&(typeof detail!=='string'||detail.length>200))
    throw new TypeError('detail must be a short string');
+  if(frontIds!==null){
+   if(kind!=='rotate'||!Array.isArray(frontIds)||frontIds.length!==3||
+      new Set(frontIds).size!==3||frontIds.some(id=>typeof id!=='string'||!id))
+     throw new TypeError('frontIds valid only for rotate and exactly 3 distinct IDs');
+  }
   if(kind.startsWith('charge')){
    if(!Number.isSafeInteger(token)||token<1)throw new RangeError('positive charge token required');
    if(kind==='chargeStart'){
@@ -78,7 +103,8 @@ export function createPresentationTimeline({startMs=0,maxLog=256}={}){
     charging[side]=null;
    }
   }
-  const event={sequence:++serial,at:now,side,kind,token,memberId,detail};
+  const event={sequence:++serial,at:now,side,kind,token,memberId,detail,
+    frontIds:frontIds===null?null:[...frontIds]};
   if(blocked())buffered.push(event);
   else reveal([event],now);
   return {sequence:event.sequence,queued:blocked(),visibleAt:blocked()?blockUntil:now};
