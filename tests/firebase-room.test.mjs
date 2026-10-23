@@ -116,13 +116,13 @@ test('callbacks ignore stale session payloads and unregister on local leave',asy
  const x=setup();await x.host.createRoom({code:'123123'});await x.guest.joinRoom('123123');
  const seen=[];x.guest.subscribeSnapshots(v=>seen.push(v));
  const existing=x.host.active().session;
- x.mem.set(YOKAI_ROOM_ROOT+'/123123/state',{session:'0'.repeat(32),revision:999,state:{revision:999}});
+ x.mem.set(YOKAI_ROOM_ROOT+'/123123/state',{session:'0'.repeat(32),revision:999,stateJson:JSON.stringify({revision:999})});
  assert.equal(seen.length,0);
- x.mem.set(YOKAI_ROOM_ROOT+'/123123/state',{session:existing,revision:1,state:{revision:1}});
- x.mem.set(YOKAI_ROOM_ROOT+'/123123/state',{session:existing,revision:0,state:{revision:0}});
+ x.mem.set(YOKAI_ROOM_ROOT+'/123123/state',{session:existing,revision:1,stateJson:JSON.stringify({revision:1})});
+ x.mem.set(YOKAI_ROOM_ROOT+'/123123/state',{session:existing,revision:0,stateJson:JSON.stringify({revision:0})});
  assert.equal(seen.length,1);
  x.guest.leaveLocal();
- x.mem.set(YOKAI_ROOM_ROOT+'/123123/state',{session:existing,revision:3,state:{revision:3}});
+ x.mem.set(YOKAI_ROOM_ROOT+'/123123/state',{session:existing,revision:3,stateJson:JSON.stringify({revision:3})});
  assert.equal(seen.length,1);
 });
 test('Firebase presence arms onDisconnect before reporting online',async()=>{
