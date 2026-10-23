@@ -67,19 +67,19 @@
           }
         },
         "state": {
-          ".write": "auth !== null && auth.uid === root.child('yokaiRoomsV1/'+$code).child('hostUid').val() && root.child('yokaiRoomsV1/'+$code).child('phase').val() === 'playing' && newData.hasChildren(['session','revision','state']) && newData.child('session').val() === root.child('yokaiRoomsV1/'+$code).child('session').val() && (!data.exists() || (data.child('session').val() === root.child('yokaiRoomsV1/'+$code).child('session').val() && newData.child('revision').val() > data.child('revision').val()))",
-          ".validate": "newData.hasChildren(['session','revision','state']) && newData.child('revision').isNumber() && newData.child('revision').val() >= 0 && newData.child('state/revision').val() === newData.child('revision').val()",
+          ".write": "auth !== null && auth.uid === root.child('yokaiRoomsV1/'+$code).child('hostUid').val() && root.child('yokaiRoomsV1/'+$code).child('phase').val() === 'playing' && newData.hasChildren(['session','revision','stateJson']) && newData.child('session').val() === root.child('yokaiRoomsV1/'+$code).child('session').val() && (!data.exists() || (data.child('session').val() === root.child('yokaiRoomsV1/'+$code).child('session').val() && newData.child('revision').val() > data.child('revision').val()))",
+          ".validate": "newData.hasChildren(['session','revision','stateJson']) && newData.child('revision').isNumber() && newData.child('revision').val() >= 0 && newData.child('stateJson').isString() && newData.child('stateJson').val().length <= 131072",
           "session": {
             ".validate": "newData.isString()"
           },
           "revision": {
             ".validate": "newData.isNumber()"
           },
-          "state": {
-            ".validate": "newData.hasChildren(['version','revision','clientSequences','hash','game'])"
-          },
           "$other": {
             ".validate": false
+          },
+          "stateJson": {
+            ".validate": "newData.isString() && newData.val().length <= 131072"
           }
         },
         "presence": {
