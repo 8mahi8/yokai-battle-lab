@@ -20,6 +20,7 @@ import { createPokeTrial } from './poke-input.mjs';
 import { createPurifyTrial, choosePurifyKind, PURIFY_KINDS } from './purify-input.mjs';
 import {ELEMENTS, validateElementResistances, calculateOneHit, deriveStatStage} from './damage-model.mjs';
 import {calculateTurnInspirit} from './turn-inspirit.mjs';
+import {calculateHeal} from './heal-model.mjs';
 import {yw2HitProbability,yw2CriticalProbability,rollPercent} from './hit-model.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
@@ -107,7 +108,7 @@ export function baseDamage(attacker,target,kind,critical=false) {
 export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0,researchSpecialEffects=false,
   researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false,
   researchWheelCoalescing=false,researchOpeningPriority=null,
-  researchPokeSoulTransfer=0,researchDamageModel=false,researchMultiHit=false,researchTurnInspirits=false}={}) {
+  researchPokeSoulTransfer=0,researchDamageModel=false,researchMultiHit=false,researchTurnInspirits=false,researchHealingVariance=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
   if(typeof researchPresentation!=='boolean')throw new TypeError('researchPresentation must be boolean');
@@ -121,6 +122,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     throw new TypeError('researchTurnInspirits must be boolean');
   if(researchTurnInspirits&&!researchDamageModel)
     throw new RangeError('researchTurnInspirits requires researchDamageModel');
+  if(typeof researchHealingVariance!=='boolean')
+    throw new TypeError('researchHealingVariance must be boolean');
+  if(researchHealingVariance&&!researchDamageModel)
+    throw new RangeError('researchHealingVariance requires researchDamageModel');
   if(!Number.isInteger(researchPokeSoulTransfer)||researchPokeSoulTransfer<0||
     researchPokeSoulTransfer>250)
     throw new RangeError('researchPokeSoulTransfer must be an integer 0..250');
@@ -640,7 +645,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     actor.guard=false;
     const kind=enableLoafing&&rng()*100<actor.loafChance?'loaf':choice(actor);
     let target=null,amount=0,hit=true,critical=false,effect=null,resisted=false,interruption=null,damageResearch=null,
-      hitResearch=null,criticalResearch=null,multiHitDetails=null;
+      hitResearch=null,criticalResearch=null,multiHitDetails=null,healingResearch=null;
     if(kind==='guard'){
       actor.guard=true;
     }else if(kind==='loaf'){
@@ -665,9 +670,20 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       const hurt=livingFront(actor.side).filter(x=>x.hp<x.maxHp).sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp);
       target=hurt[0]??null;
       if(!target)throw new Error('healing selected without injured ally');
-      // PROVISIONAL healing magnitude. YW2 healing formula is not confirmed here.
-      const heal=Math.max(1,Math.floor((actor.techniquePower+actor.spirit)/3));
-      amount=Math.min(target.maxHp-target.hp,heal); target.hp+=amount;
+      if(researchDamageModel){
+        healingResearch=calculateHeal({
+          power:actor.techniquePower,spirit:actor.spirit,
+          spiritStage:deriveStatStage(statuses.list(actor.id),'spirit'),
+          targetHp:target.hp,maxHp:target.maxHp,
+          varianceRoll:researchHealingVariance?rng():null
+        });
+        amount=healingResearch.amount;
+        target.hp=healingResearch.hpAfter;
+      }else{
+        // Provisional legacy base healing magnitude.
+        const heal=Math.max(1,Math.floor((actor.techniquePower+actor.spirit)/3));
+        amount=Math.min(target.maxHp-target.hp,heal);target.hp+=amount;
+      }
     }else{
       const opponents=livingFront(1-actor.side);
       target=opponents.find(m=>m.id===pins[actor.side])??opponents[Math.floor(rng()*opponents.length)];
@@ -746,6 +762,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       actor:actor.id,kind:kind==='technique'&&actor.technique==='heal'?'heal':kind,target:target?.id??null,
       hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,effect,resisted,interruption,winner,
       ...(turnInspirit?{turnInspirit:{...turnInspirit}}:{}),
+      ...(healingResearch?{healingResearch:{...healingResearch}}:{}),
       ...(multiHitDetails?{multiHit:{attempted:multiHitDetails.length,
         planned:kind==='attack'?actor.attackHits:actor.techniqueHits,
         totalDamage:amount,landed:multiHitDetails.filter(x=>x.hit).length,
