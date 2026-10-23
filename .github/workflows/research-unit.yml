@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feat/phase1-action-circle-lab-20261023
+      - feat/phase4-soul-effects-research-20261023
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,6 +23,7 @@ jobs:
           node --check engine/selection.mjs
           node --check engine/inspirit.mjs
           node --check engine/soul.mjs
+          node --check engine/soultimate-effects.mjs
       - name: Run repository tests
         run: node --test tests/*.test.mjs
       - name: Render real browser research UI
