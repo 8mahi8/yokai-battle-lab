@@ -283,6 +283,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   function prepareSoultimate(side,id){
     if(winner!==null)throw new Error('battle finished');
     if(side!==0&&side!==1)throw new RangeError('invalid side');
+    if(pokes[side])return {ok:false,reason:'poke_active'};
     const team=clock.snapshot().teams[side];
     const caster=byId.get(id);
     const clockUnit=team.members.find(m=>m.id===id);
@@ -407,6 +408,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   function beginPoke(side,id){
     if(side!==0&&side!==1)throw new RangeError('invalid side');
     if(pokes[side])return {ok:false,reason:'poke_already_pending'};
+    if(soul.snapshot().pending[side])return {ok:false,reason:'special_charge_active'};
     const eligible=pokeEligibility(side,id);
     if(!eligible.ok)return eligible;
     const trial=createPokeTrial({targetId:id});
