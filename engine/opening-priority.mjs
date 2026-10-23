@@ -27,6 +27,8 @@ function checkIds(ids,label){
 export function createOpeningPriority({
  registeredFront=[['A1','A2','A3'],['B1','B2','B3']],
  flashIds=[],
+ visibleStartOffsets=[0,0],
+ matchingCreditMode='metadata-only',
  skippedTurnPolicy='consume'
 }={}){
  if(!Array.isArray(registeredFront)||registeredFront.length!==2)
@@ -40,6 +42,11 @@ export function createOpeningPriority({
  if(!Array.isArray(flashIds)||new Set(flashIds).size!==flashIds.length||
    flashIds.some(id=>typeof id!=='string'||!/^[AB][1-6]$/.test(id)))
    throw new TypeError('flashIds must contain unique known unit IDs');
+ if(!Array.isArray(visibleStartOffsets)||visibleStartOffsets.length!==2||
+   visibleStartOffsets.some(x=>!Number.isInteger(x)||x<0||x>5))
+   throw new RangeError('visibleStartOffsets must be two ring offsets 0..5');
+ if(matchingCreditMode!=='metadata-only'&&matchingCreditMode!=='initial-wait')
+   throw new RangeError('matchingCreditMode metadata-only/initial-wait required');
  if(skippedTurnPolicy!=='consume'&&skippedTurnPolicy!=='preserve')
   throw new RangeError('skippedTurnPolicy consume/preserve required');
  const originally=new Set(first.flat()),flashReady=new Set(flashIds);
@@ -84,11 +91,13 @@ export function createOpeningPriority({
   return {...entry};
  }
  function snapshot(){
-  return copy({registeredFront:first,flashReady:[...flashReady],flashConsumed:flashIds.filter(x=>!flashReady.has(x)),
+  return copy({registeredFront:first,visibleStartOffsets:[...visibleStartOffsets],matchingCreditMode,
+   flashReady:[...flashReady],flashConsumed:flashIds.filter(x=>!flashReady.has(x)),
    openingPending:[...openingPending],skippedTurnPolicy,chosenTurns,recent:events});
  }
  function fork(){
-  const other=createOpeningPriority({registeredFront:first,flashIds:[...flashReady],skippedTurnPolicy});
+  const other=createOpeningPriority({registeredFront:first,flashIds:[...flashReady],visibleStartOffsets,
+   matchingCreditMode,skippedTurnPolicy});
   // Preview needs only the current flags and no mutation of the source.
   // Prior opening rights spent, but Flash consumed are absent from the fork.
   for(const id of first.flat())if(!openingPending.has(id))other.consumeOpeningForPreview(id);
