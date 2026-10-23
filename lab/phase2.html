@@ -29,6 +29,7 @@
 @media(max-height:490px){.charge-dialog{max-height:98dvh}.charge-pad{width:min(52vh,240px)}.charge-head b{font-size:15px}}
 @media(max-width:700px){.layout{grid-template-columns:minmax(0,1fr)}}@media(max-height:520px) and (orientation:landscape){body{padding:6px}.board,.panel{padding:6px}.unit{padding:5px}.unit b{margin-top:2px}.team+.team{padding-top:5px;margin-top:5px}.layout{grid-template-columns:minmax(0,1fr) 230px}#log{height:150px}}</style>
 </head><body><main><header><small>ORIGINAL COMBAT RESEARCH</small><h1>輪戦ラボ / Phase 4研究</h1></header><p class="notice">攻撃・妖術・取り憑き・防御の4択と、後衛でのおはらいを研究するBOT試験画面です。原作の戦闘処理を完全に再現したものではありません。必殺技のダメージ・回復は研究用の仮数値です。原作準拠の技効果は未実装。妖気回復は対戦研究に基づく暫定処理で、攻撃以外の行動をした本人に行動後+5。攻撃時の回復量は未確定です。妖気＋25も手動実験用。つつき報酬・本来の妖気回復速度は未実装です。</p><div class="layout"><section class="board"><div class="forecast-title">次の5行動・予測（回転や状態変化で変わります）</div><div class="forecast" id="forecast"></div><div id="team0" class="team"></div><div id="team1" class="team"></div></section><aside class="panel"><div>行動数 <strong id="count">0</strong></div><div class="controls"><button id="one">1行動</button><button id="many">20行動</button><button id="reset">リセット</button></div><div id="status" aria-live="polite">準備完了</div>
+<p class="notice" id="elementNotes">属性研究ON：通常攻撃・妖術・ちから強化の補正を戦闘ログに記録。レンタル6体の属性・耐性・とりつき段階はバランス検証用の仮設定で、原作キャラの実数値ではありません。</p>
 <div class="controls"><label for="purifyMode" class="charge-note">おはらい種類固定（研究用）</label>
 <select id="purifyMode" class="purify-selection">
  <option value="">自動で選択</option>
@@ -88,9 +89,24 @@
  </section>
 </div>
 <script type="module">
-import {createCombat} from '../engine/combat.mjs';
+import {createCombat,RENTAL_SQUAD} from '../engine/combat.mjs';
 const el=id=>document.getElementById(id);
-const makeResearchBattle=()=>createCombat({researchSpecialEffects:true,researchSoulRecoveryMode:'owner-nonattack',researchPresentation:true,researchCounterTiming:true,researchWheelCoalescing:true,researchPokeSoulTransfer:20});
+const rentalElements=['fire','neutral','earth','wind','neutral','lightning'];
+// IDENTICAL rental parties for both sides. Type/affinity details are designed
+// for our original characters, NOT sourced individual YW2 character data.
+const elementalRentals=RENTAL_SQUAD.map((m,i)=>({
+ ...m,techniqueElement:rentalElements[i],
+ inspiritLevel:m.inspirit==='strength-up'?2:1,
+ elementResistances:
+   i===0?{wind:.7}:i===2?{fire:1.5}:i===3?{lightning:1.5}:i===5?{earth:.7}:{}
+}));
+const makeResearchBattle=()=>createCombat({
+ teams:[elementalRentals,elementalRentals],researchDamageModel:true,
+ researchSpecialEffects:true,researchSoulRecoveryMode:'owner-nonattack',
+ researchPresentation:true,researchCounterTiming:true,
+ researchWheelCoalescing:true,researchPokeSoulTransfer:20
+});
+const elementNames={neutral:'無',fire:'火',water:'水',lightning:'雷',earth:'土',ice:'氷',wind:'風'};
 let battle=makeResearchBattle(),actions=[],last=null,activeChargeSide=null,activePokeSide=null,activePurifySide=null,purifyPointer=null;
 const chargeNames={spin:'まわせ！',tap:'打て！',trace:'なぞれ！',align:'あわせろ！'};
 const chargeHelp={
@@ -273,6 +289,13 @@ function draw(){
   return '<div>#'+x.turn+' '+esc(x.actor)+' '+({attack:'攻撃',technique:'妖術',heal:'回復',guard:'防御',inspirit:'取り憑き',loaf:'サボり'}[x.kind]||'')+
    (x.target?' → '+esc(x.target):'')+(x.amount?' '+x.amount+'HP':'')+
    (x.effect?' ['+({sleep:'睡眠','strength-up':'ちから強化'}[x.effect]||x.effect)+']':'')+
+   (x.damageResearch
+     ?' [研究補正'+(x.damageResearch.techniqueElement!=='neutral'
+       ?' '+(elementNames[x.damageResearch.techniqueElement]||'?')+
+         '×'+x.damageResearch.elementMultiplier:'')+
+       (x.damageResearch.statStage
+         ?' ちから+'+x.damageResearch.statStage+'段階':'')+
+       (x.damageResearch.guardIgnored?' ガード貫通':'')+']':'')+
    (x.resisted?' 耐性で失敗':x.hit===false?' ミス':'')+
    (x.interruption?.stopped?' ⚡必殺中断':'')+'</div>';
  }).join('')||'<div>行動待ち</div>';
