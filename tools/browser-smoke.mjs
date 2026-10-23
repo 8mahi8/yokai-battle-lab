@@ -138,6 +138,22 @@ document.querySelector('#lab').addEventListener('load',()=>{
   // B1 has rotated to the bench; its HP should decrease there.
   const benchSnapshot=pick('#team1').textContent;
   if(!benchSnapshot.includes('B1'))throw new Error('bench B1 missing');
+  // Four consecutive rotations have no reliable original-game target rule.
+  // The lab must explicitly warn rather than invent and apply HP damage.
+  pick('#reset').click();
+  for(let i=0;i<4;i++)pick('[data-soul="A1"]').click();
+  pick('#cutinStart').click();
+  pick('[data-special="A1"]').click();
+  finishCharge();
+  pick('#wheelThreeDemo').click();
+  if(!pick('#wheelStatus').textContent.includes('原作の命中判定は未確認'))
+   throw new Error('missing visible three-turn uncertainty');
+  const teamBeforeUnknown=pick('#team1').textContent;
+  pick('#advanceMotion').click();
+  if(!pick('#log').textContent.includes('対象未確定のためダメージ保留'))
+   throw new Error('missing unknown counter hit record');
+  if(pick('#team1').textContent!==teamBeforeUnknown)
+   throw new Error('unsourced three-turn guess changed HP');
   result.textContent='QA-PASS';
  }catch(error){result.textContent='QA-FAIL '+error.message;}
 });
@@ -189,7 +205,7 @@ try{
  ],1500);
  console.log('Chromium HTML/ES-module DOM rendered: 2 teams, forecast, Soul and charge controls');
  await renderedDom(rootUrl+'/__browser_smoke__.html','interaction',['QA-PASS'],2500);
- console.log('Chromium interaction passed: Soul, counter hit frames, and paired wheel correction with full touch gesture');
+ console.log('Chromium interaction passed: paired wheel damage and unsourced 3+ uncertainty without HP change');
 }finally{
  await new Promise(resolve=>srv.close(resolve));
  rmSync(tmp,{recursive:true,force:true});
