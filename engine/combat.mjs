@@ -101,6 +101,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const wheel=researchWheelCoalescing
     ?createWheelCoalescing({fronts:clock.snapshot().teams.map(t=>t.frontIds)}):null;
   const pendingCounterEffects=new Map();
+  const uncertainCounterHits=new Map();
   const recordView=event=>{if(presentation)presentation.record(event);};
   function beginPresentationMotion(options){
     if(!presentation)return {ok:false,reason:'presentation_disabled'};
@@ -116,6 +117,17 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         if(!queued)continue;
         pendingCounterEffects.delete(hit.id);
         if(wheel)wheel.finalizeHit(hit.id);
+        const uncertainty=uncertainCounterHits.get(hit.id);
+        if(uncertainty){
+          uncertainCounterHits.delete(hit.id);
+          // Unknown original target semantics for 3+ rotations: NEVER apply
+          // invented HP changes as though they were verified YW2 outcomes.
+          events.push({type:'counter-hit-indeterminate',hitId:hit.id,
+            hitAt:hit.hitAt,frontLock:hit.frontLock,possibleFixtureTargets:[...hit.targetIds],
+            reason:uncertainty.code,rotationCount:uncertainty.rotations,
+            hpApplied:false,model:'research-uncertain'});
+          continue;
+        }
         const applied=applyResearchSpecial({
           side:queued.side,casterId:queued.casterId,
           result:queued.result,targets:hit.targetIds,pinnedId:queued.pinnedId
@@ -216,6 +228,13 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
               original:correction.supersededFront,targetIds:correction.frontIds});
           }
         }
+        if(update.uncertainty){
+          const affected=counter.snapshot().pending.filter(hit=>hit.attackerSide===side);
+          for(const hit of affected)uncertainCounterHits.set(hit.id,update.uncertainty);
+          events.push({type:'wheel-fidelity-unknown',side,
+            rotations:update.groupRotations,affectedHits:affected.map(hit=>hit.id),
+            code:update.uncertainty.code});
+        }
       }
       recordView({side,kind:'rotate',detail:direction===1?'right':'left',frontIds});
       const pending=guided[side];
@@ -310,8 +329,17 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     }
     const planned=counter?counter.completeCharge({side,token}):null;
     if(planned?.ok){
-      if(wheel&&planned.frontLock==='completion')
-        wheel.trackLockedHit({targetSide:planned.attackerSide,hitId:planned.id});
+      if(wheel){
+        const targetSide=planned.attackerSide;
+        const group=wheel.snapshot().groups[targetSide];
+        if(group?.rotations>=3){
+          uncertainCounterHits.set(planned.id,{
+            code:'three-plus-rotations-unverified',side:targetSide,
+            rotations:group.rotations,epoch:wheel.snapshot().epoch});
+        }else if(planned.frontLock==='completion'){
+          wheel.trackLockedHit({targetSide,hitId:planned.id});
+        }
+      }
       pendingCounterEffects.set(planned.id,{side,casterId:caster.id,result,
         pinnedId:pins[side]});
       return {...result,effectStatus:'pending-counter-hit',counter:planned};
@@ -394,7 +422,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       inspirits:Object.fromEntries([...byId.keys()].map(id=>[id,statuses.list(id)])),
       ...(presentation?{presentation:presentation.snapshot()}:{}),
       ...(counter?{counterWindow:counter.snapshot(),counterEffectsPending:pendingCounterEffects.size}:{}),
-      ...(wheel?{wheelCoalescing:wheel.snapshot()}:{})};
+      ...(wheel?{wheelCoalescing:wheel.snapshot(),
+        uncertainCounterHits:[...uncertainCounterHits].map(([hitId,reason])=>({hitId,reason:{...reason}}))}:{})};
   }
   function step(){
     if(winner!==null)return {type:'finished',winner};
