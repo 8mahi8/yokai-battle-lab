@@ -1,0 +1,79 @@
+/**
+ * One-hit YW2 damage & stat-stage RESEARCH calculator.
+ *
+ * Formula: https://mtwildwood.net/damage.php?g=yw2
+ * Stages: https://mtwildwood.net/stat-changes.php?g=yw2
+ *
+ * The exact multi-hit crit/accuracy rolls and per-move affinity parameters
+ * require real-game cross-checks. This is a pure, *one hit* model: it does not
+ * apply HP, choose targets, or generate random rolls itself.
+ */
+export const ELEMENTS=Object.freeze(['neutral','fire','water','lightning','earth','ice','wind']);
+export const STAT_STAGE_MULTIPLIERS=Object.freeze([
+  .1,.15,.2,.3,.4,.55,.7,.85,1,1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8
+]);
+// Source YW2 positive +7 is x1.7 (unlike YW1's x1.8); +8 is x1.8.
+function validNumber(n,name,{min=0,max=999999}={}){
+ if(!Number.isFinite(n)||n<min||n>max)throw new RangeError(name+' out of range');
+ return n;
+}
+export function statStageMultiplier(stage){
+ if(!Number.isInteger(stage)||stage< -8||stage>8)
+  throw new RangeError('stat stage must be -8..8');
+ return STAT_STAGE_MULTIPLIERS[stage+8];
+}
+export function deriveStrengthStage(effects){
+ if(!Array.isArray(effects))throw new TypeError('status effects must be array');
+ let total=0;
+ for(const status of effects){
+  if(status?.effect!=='strength-up'||status.sign!=='positive')continue;
+  const level=status.level??1;
+  if(!Number.isInteger(level)||level<1||level>4)
+   throw new RangeError('Inspirit strength level must be 1..4');
+  total+=level;
+ }
+ return Math.min(8,total);
+}
+export function calculateOneHit({
+ kind,power,strength=0,spirit=0,defense,criticalDefense=defense,
+ hits=1,critical=false,elementMultiplier=1,statStage=0,
+ guarded=false,guardBreak=false
+}={}){
+ if(kind!=='attack'&&kind!=='technique')throw new RangeError('attack or technique required');
+ for(const [name,value] of Object.entries({power,strength,spirit,defense,criticalDefense}))
+  validNumber(value,name);
+ if(!Number.isInteger(hits)||hits<1||hits>20)throw new RangeError('hits must be 1..20');
+ validNumber(elementMultiplier,'elementMultiplier',{min:0.1,max:3});
+ if(typeof critical!=='boolean'||typeof guarded!=='boolean'||typeof guardBreak!=='boolean')
+  throw new TypeError('critical / guarded / guardBreak must be booleans');
+ const multiplier=statStageMultiplier(statStage);
+ const effectiveStat=(kind==='attack'?strength:spirit)*multiplier;
+ const x=power*hits+effectiveStat;
+ // The Wiki's X calculation is per HIT; an all-hit sum is not modeled here.
+ const def=critical?criticalDefense:defense;
+ let raw=kind==='attack'
+  ?(critical?x/1.5-def/10:x/2-def/4)
+  :(critical?x/5+x/2.5-def/14:x/10+x/3-def/7)*elementMultiplier;
+ raw/=hits;
+ // Actual guard-piercing modifiers only belong to physical attacks.
+ const ignoreGuard=guardBreak&&kind==='attack';
+ if(guarded&&!ignoreGuard)raw*=.5;
+ const amount=Math.max(1,Math.min(999,Math.floor(raw)));
+ return {amount,kind,hits,critical,guarded,
+  guardApplied:guarded&&!ignoreGuard,guardIgnored:guarded&&ignoreGuard,
+  elementMultiplier:kind==='technique'?elementMultiplier:1,
+  statStage,statMultiplier:multiplier,
+  confidence:'yw2-wiki-formula-research'};
+}
+export function validateElementResistances(input){
+ if(input===undefined)return {};
+ if(input===null||typeof input!=='object'||Array.isArray(input))
+  throw new TypeError('resistances must be a map of elemental multipliers');
+ const out={};
+ for(const [key,value] of Object.entries(input)){
+  if(!ELEMENTS.includes(key)||key==='neutral')
+   throw new RangeError('unknown elemental resistance key '+key);
+  out[key]=validNumber(value,'resistance '+key,{min:0.1,max:3});
+ }
+ return out;
+}
