@@ -105,7 +105,8 @@ function draw(){
    '<div class="timeline-event '+(e.hiddenCharge?'moment':'')+'">'+
    e.visibleAt+'ms TEAM '+(e.side===0?'A':'B')+' '+
    (e.hiddenCharge?'⚡ノーモーション必殺':labels[e.kind]||e.kind)+
-   (e.memberId?' '+esc(e.memberId):'')+'</div>').join('');
+   (e.memberId?' '+esc(e.memberId):'')+
+   (e.unsourcedThreePlus?' ⚠3回以上の表示規則は仮説':'')+'</div>').join('');
  const counter=snap.counterWindow,cutin=counter.cutin;
  const wheel=snap.wheelCoalescing;
  const frontNames=counter.fronts[1].join(' / ');
