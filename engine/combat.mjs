@@ -47,6 +47,11 @@ function buildMember(source,side,index) {
   if(!ELEMENTS.includes(techniqueElement))throw new RangeError('invalid technique element');
   const elementResistances=validateElementResistances(source.elementResistances);
   if(source.criticalDefense!==undefined)intStat(source.criticalDefense,'criticalDefense');
+  for(const field of ['attackHits','techniqueHits']){
+    if(source[field]!==undefined&&(!Number.isInteger(source[field])||
+       source[field]<1||source[field]>9))
+      throw new RangeError(field+' must be integer 1..9');
+  }
   if(source.inspiritLevel!==undefined){
     intStat(source.inspiritLevel,'inspiritLevel',1);
     if(source.inspiritLevel>4)throw new RangeError('Inspirit level must be 1..4');
@@ -73,6 +78,7 @@ function buildMember(source,side,index) {
     strength:source.strength,spirit:source.spirit,defense:source.defense,criticalDefense:source.criticalDefense??source.defense,
     attackPower:source.attackPower,techniquePower:source.techniquePower,techniqueElement,elementResistances,
     inspiritLevel:source.inspiritLevel??1,guardBreak:source.guardBreak??false,
+    attackHits:source.attackHits??1,techniqueHits:source.techniqueHits??1,
     attackAccuracy:source.attackAccuracy??1,moveCritBonus:source.moveCritBonus??0,
     criticalImmune:source.criticalImmune??false,
     loafChance:source.loafChance??0,inspiritResistance:source.inspiritResistance??20,inspirit:source.inspirit,technique:source.technique,attitude:source.attitude??'neutral',weights:[...source.weights],guard:false,knockouts:0,soultimateRank:source.soultimateRank??1,
@@ -98,13 +104,16 @@ export function baseDamage(attacker,target,kind,critical=false) {
 export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0,researchSpecialEffects=false,
   researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false,
   researchWheelCoalescing=false,researchOpeningPriority=null,
-  researchPokeSoulTransfer=0,researchDamageModel=false}={}) {
+  researchPokeSoulTransfer=0,researchDamageModel=false,researchMultiHit=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
   if(typeof researchPresentation!=='boolean')throw new TypeError('researchPresentation must be boolean');
   if(typeof researchCounterTiming!=='boolean')throw new TypeError('researchCounterTiming must be boolean');
   if(typeof researchWheelCoalescing!=='boolean')throw new TypeError('researchWheelCoalescing must be boolean');
   if(typeof researchDamageModel!=='boolean')throw new TypeError('researchDamageModel must be boolean');
+  if(typeof researchMultiHit!=='boolean')throw new TypeError('researchMultiHit must be boolean');
+  if(researchMultiHit&&!researchDamageModel)
+    throw new RangeError('researchMultiHit requires researchDamageModel');
   if(!Number.isInteger(researchPokeSoulTransfer)||researchPokeSoulTransfer<0||
     researchPokeSoulTransfer>250)
     throw new RangeError('researchPokeSoulTransfer must be an integer 0..250');
@@ -613,7 +622,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     actor.guard=false;
     const kind=enableLoafing&&rng()*100<actor.loafChance?'loaf':choice(actor);
     let target=null,amount=0,hit=true,critical=false,effect=null,resisted=false,interruption=null,damageResearch=null,
-      hitResearch=null,criticalResearch=null;
+      hitResearch=null,criticalResearch=null,multiHitDetails=null;
     if(kind==='guard'){
       actor.guard=true;
     }else if(kind==='loaf'){
@@ -643,56 +652,75 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     }else{
       const opponents=livingFront(1-actor.side);
       target=opponents.find(m=>m.id===pins[actor.side])??opponents[Math.floor(rng()*opponents.length)];
-      if(researchDamageModel){
-        hitResearch=yw2HitProbability({kind,attackerSpeed:actor.speed,targetSpeed:target.speed,
-          moveAccuracy:actor.attackAccuracy});
-        hit=rollPercent(hitResearch.probability,rng());
-      }else hit=rng()*100<hitChance(actor,target);
-      if(hit){
+      const attemptedHits=researchMultiHit
+        ?(kind==='attack'?actor.attackHits:actor.techniqueHits):1;
+      if(researchMultiHit)multiHitDetails=[];
+      hit=false;critical=false;
+      for(let index=0;index<attemptedHits;index++){
+        let landed=false,oneCritical=false,oneDamage=0,oneInterruption=null;
         if(researchDamageModel){
-          criticalResearch=yw2CriticalProbability({
-            loafing:loafingActors.has(target.id),moveCritBonus:actor.moveCritBonus,
-            criticalImmune:target.criticalImmune});
-          critical=rng()*99<criticalResearch.units;
-        }else{
-          // Default unmodified original-inspired rate: 1 in 99.
-          critical=rng()*99<1;
+          hitResearch=yw2HitProbability({kind,attackerSpeed:actor.speed,targetSpeed:target.speed,
+            moveAccuracy:actor.attackAccuracy});
+          landed=rollPercent(hitResearch.probability,rng());
+        }else landed=rng()*100<hitChance(actor,target);
+        if(landed){
+          hit=true;
+          if(researchDamageModel){
+            criticalResearch=yw2CriticalProbability({
+              loafing:loafingActors.has(target.id),moveCritBonus:actor.moveCritBonus,
+              criticalImmune:target.criticalImmune});
+            oneCritical=rng()*99<criticalResearch.units;
+          }else oneCritical=rng()*99<1;
+          critical=critical||oneCritical;
+          let damage;
+          if(researchDamageModel){
+            const statStage=kind==='attack'
+              ?deriveStrengthStage(statuses.list(actor.id)):0;
+            const elemental=kind==='technique'&&actor.technique==='damage'
+              ?target.elementResistances[actor.techniqueElement]??1:1;
+            damageResearch=calculateOneHit({
+              kind,power:kind==='attack'?actor.attackPower:actor.techniquePower,
+              strength:actor.strength,spirit:actor.spirit,defense:target.defense,
+              criticalDefense:target.criticalDefense,critical:oneCritical,
+              guarded:target.guard,guardBreak:actor.guardBreak,
+              elementMultiplier:elemental,statStage,hits:attemptedHits
+            });
+            damage=damageResearch.amount;
+          }else{
+            damage=baseDamage(statuses.has(actor.id,'strength-up')
+              ?{...actor,strength:Math.floor(actor.strength*1.10)}:actor,target,kind,oneCritical);
+            if(target.guard)damage=Math.max(1,Math.floor(damage*.5));
+          }
+          // A separate seeded spread is drawn for each unguarded hit.
+          if(!target.guard||damageResearch?.guardIgnored){
+            const range=Math.floor(damage/10+1);
+            damage=Math.max(1,Math.min(999,damage+Math.floor(rng()*(2*range+1))-range));
+          }
+          oneDamage=Math.min(target.hp,damage);
+          amount+=oneDamage;
+          target.hp-=oneDamage;
+          oneInterruption=interruptOnHit(target,oneDamage,oneCritical);
+          if(oneInterruption?.stopped||!interruption)interruption=oneInterruption??interruption;
+          if(target.hp===0){syncCanAct(target.id);actor.knockouts++;syncPinned();}
         }
-        let damage;
-        if(researchDamageModel){
-          const statStage=kind==='attack'
-            ?deriveStrengthStage(statuses.list(actor.id)):0;
-          const elemental=kind==='technique'&&actor.technique==='damage'
-            ?target.elementResistances[actor.techniqueElement]??1:1;
-          damageResearch=calculateOneHit({
-            kind,power:kind==='attack'?actor.attackPower:actor.techniquePower,
-            strength:actor.strength,spirit:actor.spirit,defense:target.defense,
-            criticalDefense:target.criticalDefense,critical,
-            guarded:target.guard,guardBreak:actor.guardBreak,
-            elementMultiplier:elemental,statStage
-          });
-          damage=damageResearch.amount;
-        }else{
-          damage=baseDamage(statuses.has(actor.id,'strength-up')
-            ?{...actor,strength:Math.floor(actor.strength*1.10)}:actor,target,kind,critical);
-          if(target.guard)damage=Math.max(1,Math.floor(damage*.5));
-        }
-        // Stable +/−10% roll applies to unguarded hits, including researched
-        // physical guard-break. Full multi-hit / move accuracy still unmodeled.
-        if(!target.guard||damageResearch?.guardIgnored){
-          const range=Math.floor(damage/10+1);
-          damage=Math.max(1,Math.min(999,damage+Math.floor(rng()*(2*range+1))-range));
-        }
-        amount=Math.min(target.hp,damage);
-        target.hp-=amount;
-        interruption=interruptOnHit(target,amount,critical);
-        if(target.hp===0){syncCanAct(target.id);actor.knockouts++;syncPinned();}
+        if(multiHitDetails)multiHitDetails.push({
+          index:index+1,hit:landed,critical:oneCritical,
+          amount:oneDamage,targetHpAfter:target.hp,
+          interruption:oneInterruption?{...oneInterruption}:null
+        });
+        if(target.hp===0)break; // remaining hits cannot strike a KO body
       }
     }
     if(squads.some(team=>team.every(member=>member.hp===0)))winner=squads[0].every(m=>m.hp===0)?1:0;
     const action={type:'action',turn:clockEvent.action,elapsed:clockEvent.elapsed,pointsElapsed:clockEvent.pointsElapsed,
       actor:actor.id,kind:kind==='technique'&&actor.technique==='heal'?'heal':kind,target:target?.id??null,
       hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,effect,resisted,interruption,winner,
+      ...(multiHitDetails?{multiHit:{attempted:multiHitDetails.length,
+        planned:kind==='attack'?actor.attackHits:actor.techniqueHits,
+        totalDamage:amount,landed:multiHitDetails.filter(x=>x.hit).length,
+        criticalHits:multiHitDetails.filter(x=>x.critical).length,
+        hits:multiHitDetails.map(x=>({...x,interruption:x.interruption?{...x.interruption}:null})),
+        model:'research-per-hit'}}:{}),
       ...(researchDamageModel&&hitResearch?{
         hitResearch:{...hitResearch},
         ...(criticalResearch?{criticalResearch:{...criticalResearch}}:{})
