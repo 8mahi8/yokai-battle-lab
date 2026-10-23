@@ -1,5 +1,5 @@
 # 妖怪対戦ブラウザゲーム｜最新・正式引き継ぎ（2026-10-24）
-> **この文書が新しいチャットの入口。** 過去の `docs/HANDOFF_20261023.md` は企画初期の内容で、現在の実装状況ではありません。内容が競合する場合、この文書・最新の個別Phase資料・実際のコードとCIを優先してください。
+> **Phase 12追記（2026-10-24）**: `engine/match-relay.mjs` にホスト席分離・ACK再送・遅延snapshot破棄・再接続時seq同期・ハートビート失効の**トランスポート非依存コード**を追加。 `tests/match-relay.test.mjs` を含む **345/345 Nodeテスト合格**、既存のChromium research UI検証も成功（[GitHub Actions](https://github.com/8mahi8/yokai-battle-lab/actions/runs/39985207035)）。詳細は [Phase 12資料](./PHASE12_RELAY_RECOVERY_20261024.md)。**まだ実Supabase接続・2端末オンライン対戦・学校Safari E2Eは未完成**。以下のPhase 11記述は研究実装の土台として読む。main/Googleサイト版は未変更、初期版の閃光魂はOFF。\n\n> **この文書が新しいチャットの入口。** 過去の `docs/HANDOFF_20261023.md` は企画初期の内容で、現在の実装状況ではありません。内容が競合する場合、この文書・最新の個別Phase資料・実際のコードとCIを優先してください。
 
 ## 0. 最初に読む順番
 1. **この資料**：`docs/HANDOFF_LATEST_20261024.md`
