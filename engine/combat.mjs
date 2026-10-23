@@ -1,7 +1,10 @@
-/** Phase 2 deterministic battle research prototype.
- * Combat action selection and damage are modeled from Mt. Wildwood's YW2 pages;
- * original rental stats, weights, heal formula and auto reserve rotation are test fixtures.
- * No online transport, status effects, soul or Soultimate implementation.
+/** Deterministic original-rental battle RESEARCH prototype (Phases 1–9).
+ * Initial battle: seeded automatic actions, front/back wheel, Inspirits, Watch
+ * Zero Poke, five touch Purify modes, Soul/Soultimate/G, and experimental
+ * damage/critical/attribute calculations.
+ * Original rental stats, attitudes, healing, many skill effects and timings
+ * are fixtures. Research advanced mechanics (Flash, counter cut-ins, wheel
+ * coalescing) remain opt-in. NO multiplayer protocol or Google Sites release.
  */
 import { createBattle } from './phase1.mjs';
 import { createInspiritLedger } from './inspirit.mjs';
