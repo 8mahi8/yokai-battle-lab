@@ -34,7 +34,8 @@
  <div class="controls"><button id="cutinStart">B必殺カットイン 800ms</button><button id="cutinEndure">我慢2個・カットイン</button></div>
  <div id="counterStatus" class="timeline-display" aria-live="polite"></div>
  <div class="timeline-explain">連続回転の比較：Bが1回回転 → Aのチャージを完了 → Bがもう1回回転 → 命中時刻まで進める。妖怪の通常行動が挟まらなければ、1回目の配置が判定から除外される研究モデルです。</div>
- <div class="controls"><button id="wheelPairDemo">Bを2回連続回転</button></div>
+ <div class="controls"><button id="wheelPairDemo">Bを2回連続回転</button><button id="wheelThreeDemo">Bを3回連続回転</button></div>
+ <div class="timeline-explain">3回以上は原作の判定資料が不足。研究画面では不明と表示し、未確認の命中先にHPダメージを与えません。</div>
  <div id="wheelStatus" class="timeline-display" aria-live="polite"></div>
 </div>
 <div id="log" aria-live="polite"></div></aside></div></main>
@@ -117,9 +118,13 @@ function draw(){
     ' / '+(pending.targetIds?esc(pending.targetIds.join('、')):'命中時の前衛')+'</div>':'')+
   hits.map(h=>'<div class="timeline-event moment">命中 '+h.resolvedAt+'ms : '+esc(h.targetIds.join('、'))+' ('+esc(h.frontLock)+')</div>').join('');
  const corrections=snap.events.filter(e=>e.type==='wheel-target-correction').slice(-3);
+ const unresolved=snap.events.filter(e=>e.type==='counter-hit-indeterminate').slice(-2);
+ const isUnknown=(wheel.groups[1]?.rotations??0)>=3 || snap.uncertainCounterHits.some(x=>x.reason.side===1);
  el('wheelStatus').innerHTML=
   '<div>Bサークルの現在配置：'+esc(wheel.physical[1].join('・'))+
   ' / 連続回転 '+(wheel.groups[1]?.rotations??0)+'回</div>'+
+  (isUnknown?'<div class="timeline-event moment">⚠ 3回以上の連続回転：原作の命中判定は未確認。仮のHP処理を保留します。</div>':'')+
+  (unresolved.length?unresolved.reverse().map(e=>'<div class="timeline-event moment">⚠ 結果未確定：'+e.hitAt+'ms、'+e.rotationCount+'回転（HP変更なし）</div>').join(''):'')+
   (corrections.length
     ?corrections.reverse().map(e=>'<div class="timeline-event moment">中間配置を除外 → '+esc(e.targetIds.join('・'))+
       ' を命中対象に補正 (判定 #'+e.hitId+')</div>').join('')
@@ -151,6 +156,8 @@ function draw(){
   el('team'+side).innerHTML=html;
  }
  el('log').innerHTML=snap.events.slice(-35).reverse().map(x=>{
+  if(x.type==='wheel-fidelity-unknown')return '<div>⚠ 連続'+x.rotations+'回転：原作処理が未確認</div>';
+  if(x.type==='counter-hit-indeterminate')return '<div>⚠ 対象未確定のためダメージ保留（'+x.rotationCount+'回転）</div>';
   if(x.type==='wheel-target-correction')return '<div>↺ 連続回転：命中対象を '+esc(x.targetIds.join('・'))+' に補正</div>';
   if(x.type==='counter-hit')return '<div>🎯カウンター命中 '+x.hitAt+'ms / '+esc(x.targets.join('・'))+'</div>';
   if(x.type==='special')return '<div>✨ '+esc(x.actor)+' '+(x.mode==='g-tech'?'G技':'必殺')+
@@ -208,9 +215,13 @@ document.addEventListener('click',event=>{
    }
    draw();
  }
- else if(btn.id==='wheelPairDemo'){
-   battle.rotate(1,1);battle.rotate(1,1);
-   el('status').textContent='Bの連続回転2回を実行（通常行動なし）';draw();
+ else if(btn.id==='wheelPairDemo'||btn.id==='wheelThreeDemo'){
+   const count=btn.id==='wheelPairDemo'?2:3;
+   for(let i=0;i<count;i++)battle.rotate(1,1);
+   el('status').textContent=count===3
+     ?'Bを3回連続回転：原作未確認。関連する命中HPを仮定しません'
+     :'Bの連続回転2回を実行（通常行動なし）';
+   draw();
  }
  else if(btn.id==='cutinStart'||btn.id==='cutinEndure'){
    const result=battle.beginCounterCutin({attackerSide:1,durationMs:800,
