@@ -91,6 +91,27 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const charging=pending?.casterId===id;
     clock.setCanAct(id,member.hp>0&&!statuses.has(id,'sleep')&&!charging);
   }
+  /** Damage from BOTH normal and special moves can interrupt a charge.
+   * Source: mtwildwood.net/soultimate-charge.php; move bonuses remain TODO.
+   */
+  function interruptOnHit(target,damage,critical=false){
+    const side=target.side;
+    const pending=soul.snapshot().pending[side];
+    if(!pending||pending.casterId!==target.id||damage<=0)return null;
+    const chance=chargeInterruptChance({damage,maxHp:target.maxHp,
+      hitsTaken:chargeHits[side],critical});
+    const stopped=target.hp===0||rng()*100<chance;
+    const result={target:target.id,chance,stopped,
+      reason:target.hp===0?'caster_ko':stopped?'hit_interruption':'charge_continues'};
+    if(stopped){
+      soul.resolve({side,token:pending.token,frontIds:clock.snapshot().teams[side].frontIds,
+        success:false,alive:target.hp>0});
+      guided[side]=null;
+      chargeHits[side]=0;
+      syncCanAct(target.id);
+    }else chargeHits[side]++;
+    return result;
+  }
   /** Experimental injection: not an auto AI Inspirit move; hit/resistance unimplemented. */
   function applyInspirit({id,sign,effect,source=null,duration=null}={}){
     if(winner!==null)throw new Error('battle finished');
@@ -166,9 +187,14 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       allies:livingFront(side),enemies:livingFront(1-side),
       powerMultiplier:result.powerMultiplier,pinnedId:pins[side]
     });
+    const interruptions=[];
     for(const impact of impacts){
       const target=byId.get(impact.targetId);
       target.hp=impact.hpAfter;
+      if(impact.kind==='damage'){
+        const changed=interruptOnHit(target,impact.amount,false);
+        if(changed)interruptions.push(changed);
+      }
       if(impact.predictedKO){
         caster.knockouts++;
         syncCanAct(target.id);
@@ -178,9 +204,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(squads.some(team=>team.every(member=>member.hp===0)))
       winner=squads[0].every(m=>m.hp===0)?1:0;
     const entry={type:'special',mode:result.kind,actor:caster.id,
-      impacts:impacts.map(x=>({...x})),winner,model:'research-fixture'};
+      impacts:impacts.map(x=>({...x})),interruptions,winner,model:'research-fixture'};
     events.push(entry);
-    return {...result,effectStatus:'research-fixture',impacts:entry.impacts,winner};
+    return {...result,effectStatus:'research-fixture',impacts:entry.impacts,interruptions,winner};
   }
   /** Player-facing touch charge: challenge selected deterministically per accepted attempt. */
   function beginGuidedCharge(side,id){
@@ -294,24 +320,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         else {const range=Math.floor(damage/10+1); damage=Math.max(1,Math.min(999,damage+Math.floor(rng()*(2*range+1))-range));}
         amount=Math.min(target.hp,damage);
         target.hp-=amount;
-        // A charge can be interrupted by an incoming hit. The probability
-        // comes from the published YW2 formula; move bonus defaults to zero.
-        const chargeSide=target.side;
-        const pendingCharge=soul.snapshot().pending[chargeSide];
-        if(pendingCharge?.casterId===target.id){
-          const chance=chargeInterruptChance({damage:amount,maxHp:target.maxHp,
-            hitsTaken:chargeHits[chargeSide],critical});
-          const stopped=target.hp===0||rng()*100<chance;
-          interruption={target:target.id,chance,stopped,reason:target.hp===0?'caster_ko':stopped?'hit_interruption':'charge_continues'};
-          if(stopped){
-            soul.resolve({side:chargeSide,token:pendingCharge.token,
-              frontIds:clock.snapshot().teams[chargeSide].frontIds,
-              success:false,alive:target.hp>0});
-            guided[chargeSide]=null;
-            chargeHits[chargeSide]=0;
-            syncCanAct(target.id);
-          }else chargeHits[chargeSide]++;
-        }
+        interruption=interruptOnHit(target,amount,critical);
         if(target.hp===0){syncCanAct(target.id);actor.knockouts++;syncPinned();}
       }
     }
