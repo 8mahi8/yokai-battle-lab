@@ -16,6 +16,16 @@ export function chargeInterruptChance({damage,maxHp,hitsTaken=0,critical=false,m
  return Math.max(0,Math.min(100,base+10*damage/maxHp+moveBonus+(critical?10:0)));
 }
 
+/** YW1–3 documented Rank 1–4 Soultimate Soul costs.
+ * https://www.mtwildwood.net/soultimates.php (Charge / Soul points needed)
+ * These are Soultimate move ranks, not Yo-kai character ranks.
+ */
+export const SOULTIMATE_CHARGE_BY_RANK = Object.freeze({1:100,2:150,3:200,4:250});
+export function soulCapacityForRank(rank){
+ if(!Number.isInteger(rank)||rank<1||rank>4)throw new RangeError('Soultimate rank 1..4 required');
+ return SOULTIMATE_CHARGE_BY_RANK[rank];
+}
+
 export function createSoulSystem({teams} = {}) {
   if (!Array.isArray(teams) || teams.length !== 2 ||
       teams.some(team => !Array.isArray(team) || team.length !== 6)) {
@@ -26,7 +36,8 @@ export function createSoulSystem({teams} = {}) {
     if (!entry || typeof entry.id !== 'string' || !entry.id || units.has(entry.id)) {
       throw new TypeError('all member ids must be distinct, nonempty strings');
     }
-    const capacity = entry.capacity ?? 100; // normalized fixture, NOT real YW2 capacity
+    const capacity = entry.capacity ?? (entry.soultimateRank === undefined?100:soulCapacityForRank(entry.soultimateRank));
+    // Capacity=100 without a provided rank remains the original rental-fixture default.
     const soul = entry.soul ?? 0;
     if (!Number.isInteger(capacity) || capacity <= 0 || !Number.isInteger(soul) || soul < 0 || soul > capacity) {
       throw new RangeError('soul/capacity must be valid integers');
