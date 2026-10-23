@@ -84,6 +84,49 @@ async function main(){
   unsubscribe();hostClient.leaveLocal();guestClient.leaveLocal();
   console.log('EMULATOR MATCH PASS real two-client creation, join, command, snapshot');tests++;
 
+  // Complete Phase 13B host/guest battle bridge using independent REAL SDK
+  // authenticated clients, room Rules, ordered input and battle ACK snapshots.
+  const {createFirebaseMatchHost,createFirebaseMatchGuest}=
+   await import('../network/firebase-match.mjs');
+  const hostB=createFirebaseRoomClient({database:a,uid:'alpha',randomBytes});
+  const guestB=createFirebaseRoomClient({database:b,uid:'bravo',randomBytes});
+  assert.equal((await hostB.createRoom({code:'654322'})).ok,true);
+  assert.equal((await guestB.joinRoom('654322')).ok,true);
+  assert.equal((await hostB.startRoom()).ok,true);
+  const bridgeErrors=[],ackEvents=[],guestSnapshots=[];
+  const protocolB=createMatchProtocol({battleOptions:{seed:212}});
+  const hostMatch=createFirebaseMatchHost({roomClient:hostB,protocol:protocolB,
+   onError:e=>bridgeErrors.push('host '+e.message)});
+  const guestMatch=createFirebaseMatchGuest({roomClient:guestB,
+   onSnapshot:s=>guestSnapshots.push(s),onAck:a=>ackEvents.push(a),
+   onError:e=>bridgeErrors.push('guest '+e.message)});
+  guestMatch.start();
+  assert.equal((await hostMatch.start()).ok,true);
+  const spin=async(predicate,label)=>{
+   for(let i=0;i<125&&!predicate();i++)await new Promise(r=>setTimeout(r,40));
+   assert.ok(predicate(),label);
+  };
+  await spin(()=>guestMatch.status().revision===0,'guest gets initial state');
+  assert.equal(guestMatch.submit({type:'rotate',direction:1}).ok,true);
+  await spin(()=>guestMatch.status().acked===1,'rotate is acknowledged by host snapshot');
+  assert.equal(guestMatch.status().pendingSequence,null);
+  assert.equal(ackEvents.length,1);
+  assert.equal(guestSnapshots.at(-1).game.clock.teams[1].frontIds[0],'B2');
+  assert.equal(guestMatch.submit({type:'pin',targetId:null}).ok,true);
+  await spin(()=>guestMatch.status().acked===2,'clear pin acknowledged');
+  assert.equal(ackEvents.length,2);
+  assert.equal(hostMatch.snapshot().clientSequences[1],2);
+  assert.equal(hostMatch.submit({type:'watch',mode:'zero'}).accepted,true);
+  await spin(()=>guestMatch.status().revision===3,'guest sees host watch mode');
+  assert.equal(hostMatch.advanceAuto().ok,true);
+  await spin(()=>guestMatch.status().revision===4,'guest sees host-advanced turn');
+  assert.equal(guestSnapshots.at(-1).game.winner,null);
+  assert.deepEqual(bridgeErrors,[]);
+  guestMatch.stop();hostMatch.stop();
+  hostB.leaveLocal();guestB.leaveLocal();
+  console.log('EMULATOR BRIDGE PASS guest 2 ACKs, host command, host-only auto tick');
+  tests++;
+
   console.log('EMULATOR RULES PASS '+tests+' permission checks');
  }finally{await env.cleanup();}
 }
