@@ -135,9 +135,9 @@ test('Firebase presence arms onDisconnect before reporting online',async()=>{
  assert.ok(acts.includes('set'));
  assert.ok(acts.indexOf('disconnect-arm')<acts.indexOf('set'));
  assert.equal(x.mem.get(YOKAI_ROOM_ROOT+'/121212/presence/host'),true);
- assert.deepEqual(online,[true]);
+ assert.deepEqual(online,[false,true]);
  x.mem.set('.info/connected',false);
- assert.deepEqual(online,[true,false]);
+ assert.deepEqual(online,[false,true,false]);
 });
 test('only host publishes match state and unattached client cannot send',async()=>{
  const x=setup();await x.host.createRoom({code:'202020'});
