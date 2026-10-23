@@ -55,6 +55,7 @@ document.querySelector('#lab').addEventListener('load',()=>{
    pad.dispatchEvent(new doc.defaultView.PointerEvent(type,{bubbles:true,cancelable:true,
     pointerId:21,pointerType:'touch',clientX:r.left+x*r.width,clientY:r.top+y*r.height}));
   }
+  function finishCharge(){
   const kind=pick('#chargeTitle').textContent;
   if(kind.includes('打て')){
     for(let i=0;i<6;i++){
@@ -89,6 +90,8 @@ document.querySelector('#lab').addEventListener('load',()=>{
    }
   }else throw new Error('charge type missing: '+kind);
   if(!pick('#chargeOverlay').hidden)throw new Error('touch charge did not finish: '+kind);
+  }
+  finishCharge();
   const endHp=Number(pick('#team1 .unit').getElementsByClassName('info')[1].textContent.split('/')[0]);
   if(endHp>=initialHp)throw new Error('special did not deal HP damage: '+initialHp+' -> '+endHp);
   if(!pick('#log').textContent.includes('仮効果'))throw new Error('special action missing from log');
@@ -96,6 +99,23 @@ document.querySelector('#lab').addEventListener('load',()=>{
   if(pick('#visibility').textContent.includes('ノーモーション'))throw new Error('opponent saw special before animation unlock');
   pick('#advanceMotion').click();
   if(!pick('#visibility').textContent.includes('ノーモーション必殺'))throw new Error('opponent did not see no-motion release after animation');
+  // Second independent browser scenario: actual counter hit must be delayed.
+  pick('#reset').click();
+  for(let i=0;i<4;i++)pick('[data-soul="A1"]').click();
+  pick('#cutinStart').click();
+  if(!pick('#counterStatus').textContent.includes('カットイン'))throw new Error('counter cutin did not appear');
+  const hpBefore=Number(pick('#team1 .unit').getElementsByClassName('info')[1].textContent.split('/')[0]);
+  pick('[data-special="A1"]').click();
+  finishCharge();
+  if(!pick('#status').textContent.includes('命中は'))throw new Error('counter hit did not queue');
+  const hpCharging=Number(pick('#team1 .unit').getElementsByClassName('info')[1].textContent.split('/')[0]);
+  if(hpCharging!==hpBefore)throw new Error('counter caused early HP damage');
+  pick('[data-rotate="1"][data-dir="1"]').click();
+  pick('#advanceMotion').click();
+  if(!pick('#log').textContent.includes('カウンター命中'))throw new Error('counter hit missing from battle log');
+  if(!pick('#counterStatus').textContent.includes('命中'))throw new Error('counter hit window missing from UI');
+  const hpAfter=Number(pick('#team1 .unit').getElementsByClassName('info')[1].textContent.split('/')[0]);
+  if(hpAfter>=hpBefore)throw new Error('locked front did not receive deferred counter damage');
   result.textContent='QA-PASS';
  }catch(error){result.textContent='QA-FAIL '+error.message;}
 });
@@ -147,7 +167,7 @@ try{
  ],1500);
  console.log('Chromium HTML/ES-module DOM rendered: 2 teams, forecast, Soul and charge controls');
  await renderedDom(rootUrl+'/__browser_smoke__.html','interaction',['QA-PASS'],2500);
- console.log('Chromium interactive smoke passed: Soul, cancel, sleep/purify, G tech, full gesture, and no-motion opponent gate');
+ console.log('Chromium interactive smoke passed: Soul, no-motion gate, real touch gesture, and deferred counter HP after cutin');
 }finally{
  await new Promise(resolve=>srv.close(resolve));
  rmSync(tmp,{recursive:true,force:true});
