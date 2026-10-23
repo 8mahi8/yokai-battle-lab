@@ -48,7 +48,7 @@ test('each hit uses the source formula based on divided offensive stat',()=>{
   if(act.type!=='action')break;
   if(act.kind==='attack'&&act.hit&&!act.critical){
    assert.equal(act.damageResearch.hits,3);
-   assert.equal(act.damageResearch.amount,25);
+   assert.equal(act.damageResearch.amount,Math.floor((30+100/3)/2-80/4));
    return;
   }
  }
