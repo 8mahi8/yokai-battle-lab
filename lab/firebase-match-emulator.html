@@ -55,8 +55,9 @@ function showState(s){
 }
 function action(intent){
  try{
-  const result=match.submit(intent);
+  const result=seat===1?match.enqueue(intent):match.submit(intent);
   if(!result.ok)say('操作未送信: '+(result.reason||'unknown')+' / '+JSON.stringify(match.status()));
+  else if(result.queued)say('入力を端末内で順番待ち '+result.position+' 件（ホストACK待ち）。');
   else say('送信番号 '+(result.clientSeq??result.revision??'host')+' / ACK待ち。');
  }catch(e){say('操作エラー: '+e.message);}
 }
