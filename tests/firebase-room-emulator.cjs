@@ -42,12 +42,48 @@ async function main(){
   await deny('foreign session rejected',b.ref(path+'/inputs/guest').set({...input,clientSeq:2,session:'f'.repeat(32)}));
   await deny('unknown action rejected',b.ref(path+'/inputs/guest').set({...input,clientSeq:2,intent:{type:'setHP'}}));
   await pass('guest second command',b.ref(path+'/inputs/guest').set({...input,clientSeq:2,intent:{type:'watch',mode:'zero'}}));
-  const state={session,revision:0,state:{version:1,revision:0,clientSequences:[0,0],hash:'abdc',game:{clock:1}}};
+  const state={session,revision:0,stateJson:JSON.stringify({version:1,revision:0,clientSequences:[0,0],hash:'abdc',game:{clock:1,winner:null}})};
   await deny('guest cannot publish authoritative state',b.ref(path+'/state').set(state));
   await pass('host publishes initial state',a.ref(path+'/state').set(state));
   await deny('host cannot replay revision',a.ref(path+'/state').set(state));
   await deny('host cannot change room session',a.ref(path+'/session').set('f'.repeat(32)));
   await deny('host cannot mutate other-game namespace',a.ref('rooms/12345').set(true));
+
+  // Real Firebase compat SDK clients, real Security Rules, real RTDB events,
+  // and the actual battle protocol: NOT a mocked in-memory database.
+  const {createFirebaseRoomClient}=await import('../network/firebase-room.mjs');
+  const {createMatchProtocol}=await import('../engine/match-protocol.mjs');
+  const randomBytes=n=>new Uint8Array(n).fill(3);
+  const hostClient=createFirebaseRoomClient({database:a,uid:'alpha',randomBytes});
+  const guestClient=createFirebaseRoomClient({database:b,uid:'bravo',randomBytes});
+  const newCode='654321';
+  const created=await hostClient.createRoom({code:newCode});
+  assert.equal(created.ok,true,'host creation must transact through SDK');
+  const joined=await guestClient.joinRoom(newCode);
+  assert.equal(joined.ok,true,'guest seat must be claimed by real SDK transaction');
+  assert.equal((await hostClient.startRoom()).ok,true,'host start must be authorized');
+  const received=[];
+  const unsubscribe=hostClient.subscribeInputs(v=>received.push(v));
+  assert.equal((await guestClient.sendIntent(1,{type:'rotate',direction:1})).ok,true);
+  for(let i=0;i<50&&received.length===0;i++)await new Promise(r=>setTimeout(r,40));
+  assert.equal(received.length,1,'host receives guest input via actual RTDB listener');
+  const match=createMatchProtocol({battleOptions:{seed:212}});
+  const ack=match.dispatch(1,received[0].clientSeq,received[0].intent);
+  assert.equal(ack.accepted,true);
+  const observed=new Promise((resolve,reject)=>{
+   const handle=setTimeout(()=>reject(Error('snapshot not delivered by RTDB SDK')),7000);
+   const stop=guestClient.subscribeSnapshots(packet=>{
+    clearTimeout(handle);stop();resolve(packet);
+   });
+  });
+  assert.equal((await hostClient.publishSnapshot(match.snapshot())).ok,true);
+  const packet=await observed;
+  assert.equal(packet.revision,1);
+  assert.equal(packet.state.game.winner,null,'RTDB must preserve winner=null');
+  assert.equal(packet.state.game.clock.teams[1].frontIds[0],'B2');
+  unsubscribe();hostClient.leaveLocal();guestClient.leaveLocal();
+  console.log('EMULATOR MATCH PASS real two-client creation, join, command, snapshot');tests++;
+
   console.log('EMULATOR RULES PASS '+tests+' permission checks');
  }finally{await env.cleanup();}
 }
