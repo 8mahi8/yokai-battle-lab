@@ -180,10 +180,12 @@ export function createFirebaseMatchGuest({roomClient,onSnapshot=()=>{},onAck=()=
   if(!started||revision<0)return {ok:false,reason:'awaiting_initial_state'};
   if(pending)return {ok:false,reason:'pending_ack',clientSeq:pending.clientSeq};
   const normalized=normalizeMatchCommand(1,intent);
-  pending={clientSeq:acked+1,intent:normalized};
-  // A Firebase write may finish before/after the battle snapshot ACK.
-  void deliver(pending);
-  return {ok:true,clientSeq:pending.clientSeq};
+  const command={clientSeq:acked+1,intent:normalized};
+  pending=command;
+  // Some transports can deliver and ACK synchronously, clearing pending
+  // before submit() returns. Keep the sequence on the local command object.
+  void deliver(command);
+  return {ok:true,clientSeq:command.clientSeq};
  }
  function retry(){
   check();
