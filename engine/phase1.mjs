@@ -151,9 +151,14 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
     return { ...event };
   }
 
-  /** Side-effect-free tentative order preview: assumes no rotation, KO or status changes. */
-  function predict(count = 5) {
+  /** Side-effect-free tentative order preview: assumes no rotation, KO or status changes.
+   * Optional actionWait models the scheduler's post-action wait multiplier,
+   * NOT move-specific animation or charge timing.
+   */
+  function predict(count = 5, actionWait = 3) {
     if (!Number.isInteger(count) || count < 0 || count > 30) throw new RangeError('count 0..30');
+    if (!Number.isInteger(actionWait) || actionWait < 0 || actionWait > 10)
+      throw new RangeError('actionWait must be 0..10');
     const active = frontlineAll().filter(m => m.canAct && Number.isFinite(m.wait))
       .map(m => ({ id: m.id, cost: m.cost, wait: m.wait }));
     const events = [];
@@ -166,9 +171,9 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
       const current = frontlineAll().find(m => m.id === actor.id);
       events.push({
         id: actor.id, pointsUntil: sinceNow, waitBefore: current.wait,
-        normalWait: actor.cost, assumedActionWait: 3, confidence: 'research-model'
+        normalWait: actor.cost, assumedActionWait: actionWait, confidence: 'research-model'
       });
-      actor.wait = actor.cost;
+      actor.wait = actor.cost * actionWait / 3;
     }
     return events;
   }
