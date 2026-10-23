@@ -18,7 +18,8 @@ import { createCounterWindow } from './counter-window.mjs';
 import { createWheelCoalescing } from './wheel-coalescing.mjs';
 import { createPokeTrial } from './poke-input.mjs';
 import { createPurifyTrial, choosePurifyKind, PURIFY_KINDS } from './purify-input.mjs';
-import {ELEMENTS, validateElementResistances, calculateOneHit, deriveStrengthStage} from './damage-model.mjs';
+import {ELEMENTS, validateElementResistances, calculateOneHit, deriveStatStage} from './damage-model.mjs';
+import {calculateTurnInspirit} from './turn-inspirit.mjs';
 import {yw2HitProbability,yw2CriticalProbability,rollPercent} from './hit-model.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
@@ -67,7 +68,9 @@ function buildMember(source,side,index) {
     throw new TypeError('criticalImmune must be a boolean');
   if(source.guardBreak!==undefined&&typeof source.guardBreak!=='boolean')
     throw new TypeError('guardBreak must be a boolean');
- if(!['sleep','strength-up'].includes(source.inspirit))throw new TypeError('unsupported Inspirit');
+ if(!['sleep','strength-up','strength-down','defense-down','spirit-down',
+  'hp-loss','hp-regen'].includes(source.inspirit))
+    throw new TypeError('unsupported Inspirit');
  if(source.loafChance!==undefined){
     intStat(source.loafChance,'loafChance');
     if(source.loafChance>100)throw new RangeError('loafChance > 100');
@@ -104,7 +107,7 @@ export function baseDamage(attacker,target,kind,critical=false) {
 export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0,researchSpecialEffects=false,
   researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false,
   researchWheelCoalescing=false,researchOpeningPriority=null,
-  researchPokeSoulTransfer=0,researchDamageModel=false,researchMultiHit=false}={}) {
+  researchPokeSoulTransfer=0,researchDamageModel=false,researchMultiHit=false,researchTurnInspirits=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
   if(typeof researchPresentation!=='boolean')throw new TypeError('researchPresentation must be boolean');
@@ -114,6 +117,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   if(typeof researchMultiHit!=='boolean')throw new TypeError('researchMultiHit must be boolean');
   if(researchMultiHit&&!researchDamageModel)
     throw new RangeError('researchMultiHit requires researchDamageModel');
+  if(typeof researchTurnInspirits!=='boolean')
+    throw new TypeError('researchTurnInspirits must be boolean');
+  if(researchTurnInspirits&&!researchDamageModel)
+    throw new RangeError('researchTurnInspirits requires researchDamageModel');
   if(!Number.isInteger(researchPokeSoulTransfer)||researchPokeSoulTransfer<0||
     researchPokeSoulTransfer>250)
     throw new RangeError('researchPokeSoulTransfer must be an integer 0..250');
@@ -130,6 +137,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const source=teams??[RENTAL_SQUAD,RENTAL_SQUAD];
   if(!Array.isArray(source)||source.length!==2||!source.every(x=>Array.isArray(x)&&x.length===6))throw new TypeError('requires two rosters of six');
   const squads=source.map((team,side)=>team.map((member,i)=>buildMember(member,side,i)));
+  if(!researchTurnInspirits&&squads.flat().some(m=>
+    !['sleep','strength-up'].includes(m.inspirit)))
+    throw new RangeError('advanced rental Inspirits require researchTurnInspirits');
   const byId=new Map(squads.flat().map(x=>[x.id,x]));
   const soul=createSoulSystem({teams:squads.map(team=>team.map(m=>({id:m.id,capacity:m.soulCapacity})))});
  const statuses=createInspiritLedger([...byId.keys()]);
@@ -241,9 +251,17 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   function applyInspirit({id,sign,effect,source=null,duration=null,level=1}={}){
     if(winner!==null)throw new Error('battle finished');
     if(!byId.has(id))throw new RangeError('unknown member');
-    if(!['sleep','strength-up','research-marker'].includes(effect))throw new RangeError('effect not modeled');
-    if(effect==='strength-up'&&sign!=='positive')throw new RangeError('strength-up is positive');
-    if(effect==='sleep'&&sign!=='negative')throw new RangeError('sleep is negative');
+    if(!['sleep','strength-up','research-marker','strength-down','defense-down',
+      'spirit-down','hp-loss','hp-regen'].includes(effect))
+      throw new RangeError('effect not modeled');
+    const positive=['strength-up','hp-regen','research-marker'];
+    if(positive.includes(effect)&&sign!=='positive'&&effect!=='research-marker')
+      throw new RangeError('positive effect requires positive sign');
+    if(!positive.includes(effect)&&sign!=='negative')
+      throw new RangeError('negative effect requires negative sign');
+    if(!researchTurnInspirits&&
+      !['sleep','strength-up','research-marker'].includes(effect))
+      throw new RangeError('advanced Inspirit requires researchTurnInspirits');
     if(effect==='sleep'&&duration!==null)throw new RangeError('sleep owner-turn duration is unsupported');
     const result=statuses.apply({id,sign,effect,source,duration,level});
     syncCanAct(id);return result;
@@ -630,7 +648,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       // approximation. Source confirms loafing can trigger Zero Poke.
       loafingActors.add(actor.id);
     }else if(kind==='inspirit'){
-      const sign=actor.inspirit==='sleep'?'negative':'positive';
+      const sign=['sleep','strength-down','defense-down','spirit-down','hp-loss']
+        .includes(actor.inspirit)?'negative':'positive';
       const group=sign==='negative'?livingFront(1-actor.side):livingFront(actor.side);
       const candidates=group.filter(x=>!statuses.has(x.id,actor.inspirit));
       if(!candidates.length)throw new Error('Inspirit selected without eligible target');
@@ -674,8 +693,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
           critical=critical||oneCritical;
           let damage;
           if(researchDamageModel){
-            const statStage=kind==='attack'
-              ?deriveStrengthStage(statuses.list(actor.id)):0;
+            const statStage=deriveStatStage(statuses.list(actor.id),
+              kind==='attack'?'strength':'spirit');
+            const defenseStage=deriveStatStage(statuses.list(target.id),'defense');
             const elemental=kind==='technique'&&actor.technique==='damage'
               ?target.elementResistances[actor.techniqueElement]??1:1;
             damageResearch=calculateOneHit({
@@ -683,7 +703,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
               strength:actor.strength,spirit:actor.spirit,defense:target.defense,
               criticalDefense:target.criticalDefense,critical:oneCritical,
               guarded:target.guard,guardBreak:actor.guardBreak,
-              elementMultiplier:elemental,statStage,hits:attemptedHits
+              elementMultiplier:elemental,statStage,defenseStage,hits:attemptedHits
             });
             damage=damageResearch.amount;
           }else{
@@ -711,10 +731,21 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         if(target.hp===0)break; // remaining hits cannot strike a KO body
       }
     }
+    let turnInspirit=null;
+    if(researchTurnInspirits&&actor.hp>0){
+      const next=calculateTurnInspirit({
+        statuses:statuses.list(actor.id),currentHp:actor.hp,maxHp:actor.maxHp});
+      if(next.amount>0){
+        actor.hp=next.hpAfter;
+        if(actor.hp===0){syncCanAct(actor.id);syncPinned();}
+        turnInspirit={id:actor.id,...next};
+      }
+    }
     if(squads.some(team=>team.every(member=>member.hp===0)))winner=squads[0].every(m=>m.hp===0)?1:0;
     const action={type:'action',turn:clockEvent.action,elapsed:clockEvent.elapsed,pointsElapsed:clockEvent.pointsElapsed,
       actor:actor.id,kind:kind==='technique'&&actor.technique==='heal'?'heal':kind,target:target?.id??null,
       hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,effect,resisted,interruption,winner,
+      ...(turnInspirit?{turnInspirit:{...turnInspirit}}:{}),
       ...(multiHitDetails?{multiHit:{attempted:multiHitDetails.length,
         planned:kind==='attack'?actor.attackHits:actor.techniqueHits,
         totalDamage:amount,landed:multiHitDetails.filter(x=>x.hit).length,
@@ -734,6 +765,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         skippedId:clockEvent.skippedId,flashConsumed:clockEvent.flashConsumed,
         priorityConfidence:'research-fixture'}:{})};
     events.push(action);
+    if(turnInspirit)events.push({type:'turn-inspirit',turn:clockEvent.action,
+      actor:actor.id,...turnInspirit});
     recordView({side:actor.side,kind:'action',memberId:actor.id,detail:action.kind});
     if(researchSoulGainPerAction>0){for(const member of squads.flat())if(member.hp>0)soul.addSoul(member.id,researchSoulGainPerAction);}
     if(researchSoulRecoveryMode==='owner-nonattack'){
