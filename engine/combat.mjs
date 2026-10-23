@@ -12,6 +12,7 @@ import { soulCapacityForRank } from './soul.mjs';
 import { validateSpecialSpec, planResearchSpecial } from './special-effects.mjs';
 import { createPresentationTimeline } from './presentation-timeline.mjs';
 import { createCounterWindow } from './counter-window.mjs';
+import { createWheelCoalescing } from './wheel-coalescing.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
   {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5]},
@@ -65,11 +66,15 @@ export function baseDamage(attacker,target,kind,critical=false) {
   return Math.max(1,Math.min(999,Math.floor(amount)));
 }
 export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0,researchSpecialEffects=false,
-  researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false}={}) {
+  researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false,
+  researchWheelCoalescing=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
   if(typeof researchPresentation!=='boolean')throw new TypeError('researchPresentation must be boolean');
   if(typeof researchCounterTiming!=='boolean')throw new TypeError('researchCounterTiming must be boolean');
+  if(typeof researchWheelCoalescing!=='boolean')throw new TypeError('researchWheelCoalescing must be boolean');
+  if(researchWheelCoalescing&&!researchCounterTiming)
+    throw new RangeError('wheel pairing research requires counter timing research');
   if(researchCounterTiming&&(!researchPresentation||!researchSpecialEffects))
     throw new RangeError('counter timing requires researchPresentation and researchSpecialEffects');
   if(!['none','owner-nonattack'].includes(researchSoulRecoveryMode))
@@ -90,9 +95,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const chargeHits=[0,0];
   // Opponent-visible animation is a SEPARATE research clock; no mapping from
   // phase1.pointsElapsed to wall-clock milliseconds is claimed here.
-  const presentation=researchPresentation?createPresentationTimeline():null;
+  const presentation=researchPresentation?createPresentationTimeline({coalesceRotations:researchWheelCoalescing}):null;
   const counter=researchCounterTiming
     ?createCounterWindow({fronts:clock.snapshot().teams.map(team=>team.frontIds)}):null;
+  const wheel=researchWheelCoalescing
+    ?createWheelCoalescing({fronts:clock.snapshot().teams.map(t=>t.frontIds)}):null;
   const pendingCounterEffects=new Map();
   const recordView=event=>{if(presentation)presentation.record(event);};
   function beginPresentationMotion(options){
@@ -108,6 +115,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         const queued=pendingCounterEffects.get(hit.id);
         if(!queued)continue;
         pendingCounterEffects.delete(hit.id);
+        if(wheel)wheel.finalizeHit(hit.id);
         const applied=applyResearchSpecial({
           side:queued.side,casterId:queued.casterId,
           result:queued.result,targets:hit.targetIds,pinnedId:queued.pinnedId
@@ -127,8 +135,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(!Number.isSafeInteger(durationMs)||durationMs<1||durationMs>60000)
       throw new RangeError('research cutin duration must be 1..60000ms');
     const started=counter.beginCutin({attackerSide,durationMs,enduresSpent});
-    if(started.ok)presentation.beginMotion({durationMs,kind:'soultimate-cutin',
+    if(started.ok){
+      if(wheel)wheel.actionBoundary();
+      presentation.beginMotion({durationMs,kind:'soultimate-cutin',
       actorId:clock.snapshot().teams[attackerSide].frontIds[0]});
+    }
     return started;
   }
   let winner=null;
@@ -187,8 +198,20 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const result=clock.rotate(side,direction,0);
     if(result.ok){
       syncPinned();
-      if(counter)counter.setFront({side,ids:clock.snapshot().teams[side].frontIds});
-      recordView({side,kind:'rotate',detail:direction===1?'right':'left'});
+      const frontIds=clock.snapshot().teams[side].frontIds;
+      if(counter)counter.setFront({side,ids:frontIds});
+      if(wheel){
+        const update=wheel.rotate({side,frontIds});
+        for(const correction of update.corrections){
+          const revised=counter.revisePendingTarget({hitId:correction.hitId,
+            targetIds:correction.frontIds,reason:correction.reason});
+          if(revised.ok){
+            events.push({type:'wheel-target-correction',hitId:correction.hitId,side,
+              original:correction.supersededFront,targetIds:correction.frontIds});
+          }
+        }
+      }
+      recordView({side,kind:'rotate',detail:direction===1?'right':'left',frontIds});
       const pending=guided[side];
       if(pending&&!clock.snapshot().teams[side].frontIds.includes(pending.id)){
         cancelGuidedCharge(side);
@@ -281,6 +304,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     }
     const planned=counter?counter.completeCharge({side,token}):null;
     if(planned?.ok){
+      if(wheel&&planned.frontLock==='completion')
+        wheel.trackLockedHit({targetSide:planned.attackerSide,hitId:planned.id});
       pendingCounterEffects.set(planned.id,{side,casterId:caster.id,result,
         pinnedId:pins[side]});
       return {...result,effectStatus:'pending-counter-hit',counter:planned};
@@ -337,7 +362,15 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     for(let side=0;side<2;side++){
       for(let tries=0;tries<6&&!livingFront(side).length&&squads[side].some(m=>m.hp>0);tries++){
         const moved=clock.rotate(side,1,0);
-        if(moved.ok&&counter)counter.setFront({side,ids:clock.snapshot().teams[side].frontIds});
+        if(moved.ok&&counter){
+          const frontIds=clock.snapshot().teams[side].frontIds;
+          counter.setFront({side,ids:frontIds});
+          if(wheel){
+            wheel.actionBoundary();
+            wheel.rotate({side,frontIds});
+            wheel.actionBoundary();
+          }
+        }
       }
     }
     syncPinned();
@@ -354,7 +387,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       guided:guided.map(g=>g?{token:g.token,id:g.id,kind:g.kind,challenge:g.trial.snapshot()}:null),
       inspirits:Object.fromEntries([...byId.keys()].map(id=>[id,statuses.list(id)])),
       ...(presentation?{presentation:presentation.snapshot()}:{}),
-      ...(counter?{counterWindow:counter.snapshot(),counterEffectsPending:pendingCounterEffects.size}:{})};
+      ...(counter?{counterWindow:counter.snapshot(),counterEffectsPending:pendingCounterEffects.size}:{}),
+      ...(wheel?{wheelCoalescing:wheel.snapshot()}:{})};
   }
   function step(){
     if(winner!==null)return {type:'finished',winner};
@@ -364,6 +398,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(!pending.teams.some(team=>team.frontIds.some(id=>team.members.find(m=>m.id===id)?.canAct)))
       return {type:'awaiting_rotation',reason:'all_front_units_unable_to_act',fronts:pending.teams.map(t=>t.frontIds)};
     const clockEvent=clock.step();
+    if(wheel)wheel.actionBoundary();
     const actor=byId.get(clockEvent.id);
     // A guard lasts until the next time that actor begins an action.
     actor.guard=false;
