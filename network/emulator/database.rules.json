@@ -40,7 +40,7 @@
             "intent": {
               ".validate": "newData.hasChild('type')",
               "type": {
-                ".validate": "newData.isString() && ['rotate','pin','watch','chargeStart','chargeInput','chargeCancel','purifyStart','purifyInput','purifyCancel','pokeStart','pokeInput','pokeCancel'].includes(newData.val())"
+                ".validate": "newData.isString() && (newData.val() === 'rotate' || newData.val() === 'pin' || newData.val() === 'watch' || newData.val() === 'chargeStart' || newData.val() === 'chargeInput' || newData.val() === 'chargeCancel' || newData.val() === 'purifyStart' || newData.val() === 'purifyInput' || newData.val() === 'purifyCancel' || newData.val() === 'pokeStart' || newData.val() === 'pokeInput' || newData.val() === 'pokeCancel')"
               },
               "direction": {
                 ".validate": "newData.isNumber() && (newData.val() === 1 || newData.val() === -1)"
