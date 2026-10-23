@@ -26,7 +26,7 @@ button:focus-visible{outline:3px solid #f5ce78}
 <body>
 <main>
 <h1>1vs1 操作順序ラボ</h1>
-<p class="notice">これは<strong>1台のブラウザ内で2人分の操作を再現する通信プロトコルの実験</strong>です。実際のオンラインルーム、Googleサイト版、学校iPadでの通信対戦ではありません。閃光魂、開発者用の妖気注入、本番サーバーへの書き込みはありません。</p>
+<p class="notice">これは<strong>1台のブラウザ内で2人分の操作を再現する通信プロトコルの実験</strong>です。同じ操作番号の再送では二重実行せず、以前の結果を返します。実際のオンラインルーム、Googleサイト版、学校iPadでの通信対戦ではありません。閃光魂、開発者用の妖気注入、本番サーバーへの書き込みはありません。</p>
 <div class="bar"><button id="autoStep">サーバー側で1行動進める</button><button id="autoTwenty">20行動</button><button id="replay">全操作の再現検証</button><button id="reset">実験リセット</button></div>
 <div class="meta" id="meta"></div><div id="status" aria-live="polite">実験待機</div>
 <div class="panels">
