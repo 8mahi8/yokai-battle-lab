@@ -143,8 +143,21 @@ export function createFirebaseRoomClient({database,uid,randomBytes=defaultRandom
   const first=parseRoom((await ref.once('value')).val());
   if(first.session!==session||!first.guestUid)
    return {ok:false,reason:'guest_not_ready'};
-  const t=await ref.child('phase').transaction(before=>before==='lobby'?'playing':undefined,
-   undefined,false);
+  // Firebase may invoke a transaction updater with null while hydrating its
+  // local cache, even if the parent room was just read. Prime the exact ref,
+  // then use the inspected phase as a fallback for that optimistic first call.
+  const phaseRef=ref.child('phase');
+  await phaseRef.once('value');
+  let t;
+  try{
+   t=await phaseRef.transaction(before=>
+    (before===null?first.phase:before)==='lobby'?'playing':undefined,
+    undefined,false);
+  }catch(error){
+   const current=(await phaseRef.once('value')).val();
+   if(current!=='lobby')return {ok:false,reason:'start_rejected'};
+   throw error;
+  }
   return {ok:t.committed,reason:t.committed?null:'start_rejected'};
  }
  async function sendIntent(clientSeq,intent){
