@@ -158,9 +158,38 @@ document.querySelector('#lab').addEventListener('load',()=>{
  }catch(error){result.textContent='QA-FAIL '+error.message;}
 });
 </script></body></html>`;
+const priorityQaHtml=String.raw`<!doctype html><html lang="ja"><meta charset="utf-8"><title>Flash opening priority UI QA</title>
+<body><strong id="result">PRIORITY-PENDING</strong><iframe id="lab" src="/lab/phase1.html"></iframe>
+<script>
+const result=document.querySelector('#result');
+document.querySelector('#lab').addEventListener('load',()=>{
+ try{
+  const doc=document.querySelector('#lab').contentDocument;
+  const pick=sel=>{const el=doc.querySelector(sel);if(!el)throw Error('Missing '+sel);return el;};
+  if(!pick('#priorityState').textContent.includes('研究OFF'))throw Error('default mode is not legacy');
+  pick('#flashToggle').click();
+  if(!pick('#priorityState').textContent.includes('閃光未使用：B6'))throw Error('one use Flash not initialized');
+  pick('#flashDeploy').click();
+  if(!pick('#priorityForecast').textContent.includes('B6'))throw Error('Flash not forecast');
+  pick('#step').click();
+  if(!pick('#feed').textContent.includes('⚡閃光'))throw Error('Flash did not intercept a turn');
+  if(!pick('#priorityState').textContent.includes('閃光未使用：なし'))throw Error('Flash not spent');
+  pick('#matchingToggle').click();
+  if(!pick('#priorityState').textContent.includes('A A4・A5・A6'))throw Error('matching time registration not independent');
+  pick('#skipPolicy').click();
+  if(!pick('#skipPolicy').textContent.includes('保持'))throw Error('skip policy not changeable');
+  pick('#flashToggle').click();
+  if(!pick('#priorityState').textContent.includes('研究OFF'))throw Error('unable to reset legacy mode');
+  result.textContent='PRIORITY-PASS';
+ }catch(e){result.textContent='PRIORITY-FAIL '+e.message;}
+});
+</script></body></html>`;
 const srv=createServer(async(req,res)=>{
  try{
   const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
+  if(pathname==='/__priority_smoke__.html'){
+   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(priorityQaHtml);return;
+  }
   if(pathname==='/__browser_smoke__.html'){
    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(qaHtml);return;
   }
@@ -206,6 +235,8 @@ try{
  console.log('Chromium HTML/ES-module DOM rendered: 2 teams, forecast, Soul and charge controls');
  await renderedDom(rootUrl+'/__browser_smoke__.html','interaction',['QA-PASS'],2500);
  console.log('Chromium interaction passed: paired wheel damage and unsourced 3+ uncertainty without HP change');
+ await renderedDom(rootUrl+'/__priority_smoke__.html','priority',['PRIORITY-PASS'],2500);
+ console.log('Chromium Flash opening-priority UI passed: toggles, matching front, one-use interception and forecast');
 }finally{
  await new Promise(resolve=>srv.close(resolve));
  rmSync(tmp,{recursive:true,force:true});
