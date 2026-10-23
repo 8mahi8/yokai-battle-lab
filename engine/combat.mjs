@@ -122,6 +122,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   function beginCounterCutin({attackerSide,durationMs,enduresSpent=0}={}){
     if(!counter)return {ok:false,reason:'counter_timing_disabled'};
     if(winner!==null)throw new Error('battle finished');
+    // Validate the narrower presentation clock range BEFORE updating the
+    // counter state, preventing a half-started cutin on invalid requests.
+    if(!Number.isSafeInteger(durationMs)||durationMs<1||durationMs>60000)
+      throw new RangeError('research cutin duration must be 1..60000ms');
     const started=counter.beginCutin({attackerSide,durationMs,enduresSpent});
     if(started.ok)presentation.beginMotion({durationMs,kind:'soultimate-cutin',
       actorId:clock.snapshot().teams[attackerSide].frontIds[0]});
