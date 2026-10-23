@@ -1,6 +1,6 @@
 {
   "database": {
-    "rules": "network/emulator/database.rules.json"
+    "rules": "database.rules.json"
   },
   "emulators": {
     "database": {
