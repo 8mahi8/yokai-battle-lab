@@ -12,7 +12,7 @@ test('browser laboratory ES-module source parses in Node without npm dependencie
 });
 test('browser laboratory imports an existing engine path',()=>{
  const html=readFileSync(new URL('../lab/phase2.html',import.meta.url),'utf8');
- assert.match(html,/import \{createCombat\} from '\.\.\/engine\/combat\.mjs'/);
+ assert.match(html,/import \{createCombat(?:,RENTAL_SQUAD)?\} from '\.\.\/engine\/combat\.mjs'/);
  assert.equal(existsSync(new URL('../engine/combat.mjs',import.meta.url)),true);
 });
 test('Soul research controls have both visible affordances and handlers',()=>{
