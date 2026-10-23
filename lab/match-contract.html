@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>1vs1 通信順序研究｜妖怪対戦</title>
+<style>
+:root{color-scheme:dark;--bg:#102135;--panel:#19334c;--ink:#e7f2fd;--line:#41627d}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;margin:0;padding:12px}
+main{max-width:970px;margin:0 auto}h1{font-size:21px;margin:3px 0}h2{font-size:16px;margin:0 0 8px}
+.notice{border:1px solid #ae9863;border-radius:9px;padding:8px;background:#302c23;color:#f8e3af;font-size:12px}
+.bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:9px 0}
+button{touch-action:manipulation;cursor:pointer;background:#28517a;color:#fff;border:1px solid #6d95bc;padding:9px 11px;border-radius:8px;font-size:13px;min-height:39px}
+button:focus-visible{outline:3px solid #f5ce78}
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px;min-width:0}
+.units{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:8px 0}
+.unit{background:#183047;padding:6px;border:1px solid #6387a1;border-radius:6px;font-size:12px;overflow-wrap:anywhere}
+.unit.bench{opacity:.6}small{color:#b8cedf;display:block}strong{font-size:14px}
+.control{display:flex;flex-wrap:wrap;gap:5px}#history{font-size:12px;background:#152b43;border-radius:7px;padding:8px;max-height:190px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+#status{min-height:36px;padding:6px;border-radius:6px;background:#203d56}
+.meta{font-variant-numeric:tabular-nums;font-size:12px;color:#c6ddec}
+@media(max-width:600px){.panels{grid-template-columns:1fr}.unit{font-size:11px}}
+</style>
+</head>
+<body>
+<main>
+<h1>1vs1 操作順序ラボ</h1>
+<p class="notice">これは<strong>1台のブラウザ内で2人分の操作を再現する通信プロトコルの実験</strong>です。実際のオンラインルーム、Googleサイト版、学校iPadでの通信対戦ではありません。閃光魂、開発者用の妖気注入、本番サーバーへの書き込みはありません。</p>
+<div class="bar"><button id="autoStep">サーバー側で1行動進める</button><button id="autoTwenty">20行動</button><button id="replay">全操作の再現検証</button><button id="reset">実験リセット</button></div>
+<div class="meta" id="meta"></div><div id="status" aria-live="polite">実験待機</div>
+<div class="panels">
+<section class="panel" id="side0"><h2>プレイヤーA</h2><div id="team0"></div><div class="control">
+<button data-side="0" data-command="rotate" data-direction="-1">左回転</button>
+<button data-side="0" data-command="rotate" data-direction="1">右回転</button>
+<button data-side="0" data-command="watch">零式/標準</button>
+<button data-side="0" data-command="pin">相手先頭にピン</button>
+<button data-side="0" data-command="retransmit">直前の操作を再送</button>
+</div><small id="sequence0"></small></section>
+<section class="panel" id="side1"><h2>プレイヤーB</h2><div id="team1"></div><div class="control">
+<button data-side="1" data-command="rotate" data-direction="-1">左回転</button>
+<button data-side="1" data-command="rotate" data-direction="1">右回転</button>
+<button data-side="1" data-command="watch">零式/標準</button>
+<button data-side="1" data-command="pin">相手先頭にピン</button>
+<button data-side="1" data-command="retransmit">直前の操作を再送</button>
+</div><small id="sequence1"></small></section>
+</div>
+<h2 style="margin-top:12px">ホストが確定した操作履歴（最新12件）</h2>
+<div id="history" aria-live="polite"></div>
+</main>
+<script type="module">
+import {createMatchProtocol,replayMatchJournal} from '../engine/match-protocol.mjs';
+const el=id=>document.getElementById(id);
+const html=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','&':'&amp;',"'":'&#39;'}[c]));
+let match=createMatchProtocol({battleOptions:{seed:12345,researchSoulRecoveryMode:'owner-nonattack'}});
+let sent=[0,0],last=[null,null];
+function render(){
+ const state=match.snapshot(),game=state.game;
+ el('meta').textContent='確定revision '+state.revision+' / 状態指紋 '+state.hash+
+  ' / 通常自動行動 '+game.clock.turn+' / 勝者 '+(game.winner===null?'未決定':game.winner===0?'A':'B');
+ for(let side=0;side<2;side++){
+  const clockwise=game.clock.teams[side];
+  const members=game.squads[side],meter=game.soul.teams[side];
+  el('team'+side).innerHTML='<small>モード '+(game.soul.modes[side]==='zero'?'零式':'標準')+
+   ' / 前衛 '+clockwise.frontIds.join('・')+'</small>'+
+   '<div class="units">'+members.map(m=>{
+    const idx=clockwise.frontIds.includes(m.id);
+    const p=meter.find(x=>x.id===m.id);
+    return '<div class="unit'+(idx?'':' bench')+'"><strong>'+html(m.id)+'</strong>'+
+      '<small>'+html(m.name)+'</small><small>HP '+m.hp+'/'+m.maxHp+'</small>'+
+      '<small>妖気 '+p.soul+'/'+p.capacity+'</small></div>';
+   }).join('')+'</div>';
+  el('sequence'+side).textContent='操作番号 '+state.clientSequences[side]+' (次回 '+(sent[side]+1)+')';
+ }
+ const log=match.exportJournal().entries;
+ el('history').textContent=log.slice(-12).reverse().map(e=>
+  '#'+e.revision+' '+(e.kind==='auto'?'サーバー/自動行動':
+   'プレイヤー'+(e.side===0?'A':'B')+' seq'+e.clientSeq+' '+e.command.type)+
+  ' → '+(e.result.ok===false?'拒否 '+e.result.reason:e.result.type==='action'
+   ?'行動 '+e.result.actor+' '+e.result.kind:'反映済')+' ['+e.hash+']'
+ ).join('\n')||'まだ操作はありません';
+}
+function execute(side,command){
+ const seq=sent[side]+1;
+ const result=match.dispatch(side,seq,command);
+ if(result.accepted){sent[side]=seq;last[side]={seq,command};}
+ el('status').textContent='プレイヤー'+(side===0?'A':'B')+
+  ' seq'+seq+' '+command.type+' → '+(result.ok?'受理':'拒否 '+(result.result?.reason||result.reason))+
+  ' / revision '+(result.revision??'変更なし');
+ render();
+}
+document.addEventListener('click',event=>{
+ const btn=event.target.closest('button');if(!btn)return;
+ try{
+  if(btn.id==='autoStep'||btn.id==='autoTwenty'){
+   const count=btn.id==='autoStep'?1:20;
+   let lastAction=null;
+   for(let i=0;i<count;i++){
+    const r=match.advanceAuto();
+    if(!r.ok)throw Error(r.reason);
+    lastAction=r.result;
+    if(lastAction.type==='finished'||lastAction.type==='awaiting_rotation')break;
+   }
+   el('status').textContent='サーバーが確定：'+(lastAction?.actor||lastAction?.type||'')+
+     ' / '+(lastAction?.kind||'')+'。操作順は送信時刻でなくホストの受信順です。';
+  }else if(btn.id==='replay'){
+   const r=replayMatchJournal(match.exportJournal());
+   el('status').textContent=r.ok?'再現一致：revision '+r.revision+' / '+r.hash:
+    '再現不一致：'+r.reason+' / '+r.index;
+  }else if(btn.id==='reset'){
+   match=createMatchProtocol({battleOptions:{seed:12345,researchSoulRecoveryMode:'owner-nonattack'}});
+   sent=[0,0];last=[null,null];el('status').textContent='初期状態に戻しました';
+  }else if(btn.dataset.command){
+   const side=Number(btn.dataset.side),kind=btn.dataset.command;
+   if(kind==='retransmit'){
+    const previous=last[side];
+    if(!previous){el('status').textContent='再送できる操作はまだありません';return;}
+    const result=match.dispatch(side,previous.seq,previous.command);
+    el('status').textContent='再送：'+(result.duplicate?'重複ACKのみ・操作二重実行なし':'警告 '+result.reason);
+   }else if(kind==='rotate')execute(side,{type:'rotate',direction:Number(btn.dataset.direction)});
+   else if(kind==='watch')execute(side,{type:'watch',
+    mode:match.snapshot().game.soul.modes[side]==='zero'?'standard':'zero'});
+   else if(kind==='pin'){
+    const target=match.snapshot().game.clock.teams[1-side].frontIds[0];
+    execute(side,{type:'pin',targetId:target});
+   }
+  }
+  render();
+ }catch(error){el('status').textContent='検証エラー：'+error.message;}
+});
+render();
+</script>
+</body>
+</html>
