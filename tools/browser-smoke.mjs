@@ -44,6 +44,52 @@ document.querySelector('#lab').addEventListener('load',()=>{
   pick('[data-special="A1"]').click();
   if(pick('#chargeOverlay').hidden)throw new Error('G charge did not open');
   pick('#chargeCancel').click();
+  pick('[data-watch="0"]').click(); // switch back to standard
+  const initialHp=Number(pick('#team1 .unit').getElementsByClassName('info')[1].textContent.split('/')[0]);
+  pick('[data-special="A1"]').click();
+  const pad=pick('#chargePad');
+  function gesture(type,x,y){
+   const r=pad.getBoundingClientRect();
+   pad.dispatchEvent(new doc.defaultView.PointerEvent(type,{bubbles:true,cancelable:true,
+    pointerId:21,pointerType:'touch',clientX:r.left+x*r.width,clientY:r.top+y*r.height}));
+  }
+  const kind=pick('#chargeTitle').textContent;
+  if(kind.includes('打て')){
+    for(let i=0;i<6;i++){
+     const orb=pad.querySelector('circle[r="7"]');
+     if(!orb)throw new Error('tap orb missing');
+     const x=Number(orb.getAttribute('cx'))/100,y=Number(orb.getAttribute('cy'))/100;
+     gesture('pointerdown',x,y);gesture('pointerup',x,y);
+    }
+  }else if(kind.includes('まわせ')){
+   gesture('pointerdown',.8,.5);
+   for(let i=1;i<=120;i++){
+    const a=i*2*Math.PI/40;
+    gesture('pointermove',.5+.3*Math.cos(a),.5+.3*Math.sin(a));
+   }
+   gesture('pointerup',.8,.5);
+  }else if(kind.includes('なぞれ')){
+   for(let i=0;i<3;i++){
+    const poly=pad.querySelector('polyline');
+    if(!poly)throw new Error('trace path missing');
+    const points=poly.getAttribute('points').split(' ').map(p=>p.split(',').map(Number).map(v=>v/100));
+    gesture('pointerdown',points[0][0],points[0][1]);
+    for(const p of points.slice(1))gesture('pointermove',p[0],p[1]);
+    gesture('pointerup',points[points.length-1][0],points[points.length-1][1]);
+   }
+  }else if(kind.includes('あわせろ')){
+   for(let i=0;i<3;i++){
+    const marker=[...pad.querySelectorAll('text')].find(t=>t.getAttribute('fill')==='#ffdb77');
+    if(!marker)throw new Error('clock number missing');
+    const angle=-Math.PI/2+Number(marker.textContent)*Math.PI/6;
+    const x=.5+.32*Math.cos(angle),y=.5+.32*Math.sin(angle);
+    gesture('pointerdown',.5,.18);gesture('pointermove',x,y);gesture('pointerup',x,y);
+   }
+  }else throw new Error('charge type missing: '+kind);
+  if(!pick('#chargeOverlay').hidden)throw new Error('touch charge did not finish: '+kind);
+  const endHp=Number(pick('#team1 .unit').getElementsByClassName('info')[1].textContent.split('/')[0]);
+  if(endHp>=initialHp)throw new Error('special did not deal HP damage: '+initialHp+' -> '+endHp);
+  if(!pick('#log').textContent.includes('仮効果'))throw new Error('special action missing from log');
   result.textContent='QA-PASS';
  }catch(error){result.textContent='QA-FAIL '+error.message;}
 });
