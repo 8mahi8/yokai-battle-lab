@@ -62,9 +62,14 @@ export function baseDamage(attacker,target,kind,critical=false) {
     :(critical?total/5+total/2.5-target.defense/14:total/10+total/3-target.defense/7);
   return Math.max(1,Math.min(999,Math.floor(amount)));
 }
-export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0,researchSpecialEffects=false}={}) {
+export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0,researchSpecialEffects=false,
+  researchSoulRecoveryMode='none'}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
+  if(!['none','owner-nonattack'].includes(researchSoulRecoveryMode))
+    throw new RangeError('unsupported researchSoulRecoveryMode');
+  if(researchSoulRecoveryMode!=='none'&&researchSoulGainPerAction!==0)
+    throw new RangeError('choose only one experimental Soul recovery mode');
   if(!Number.isInteger(researchSoulGainPerAction)||researchSoulGainPerAction<0||researchSoulGainPerAction>10000)throw new RangeError('invalid experimental Soul gain');
   const source=teams??[RENTAL_SQUAD,RENTAL_SQUAD];
   if(!Array.isArray(source)||source.length!==2||!source.every(x=>Array.isArray(x)&&x.length===6))throw new TypeError('requires two rosters of six');
@@ -316,6 +321,14 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,effect,resisted,interruption,winner};
     events.push(action);
     if(researchSoulGainPerAction>0){for(const member of squads.flat())if(member.hp>0)soul.addSoul(member.id,researchSoulGainPerAction);}
+    if(researchSoulRecoveryMode==='owner-nonattack'){
+      // Empirical YW2 research: non-attacking Yo-kai restore ~5 Soul AFTER
+      // THEIR OWN turn. The exact recovery for attacks / damaging Techniques
+      // has not been verified; this intentionally doesn't guess it.
+      const didNotAttack=kind==='guard'||kind==='loaf'||kind==='inspirit'||
+        (kind==='technique'&&actor.technique==='heal');
+      if(didNotAttack && actor.hp>0)soul.addSoul(actor.id,5);
+    }
     const expired=statuses.tick({actorId:actor.id});
     for(const item of expired)syncCanAct(item.id);
     return {...action};
