@@ -22,6 +22,24 @@ export function statStageMultiplier(stage){
   throw new RangeError('stat stage must be -8..8');
  return STAT_STAGE_MULTIPLIERS[stage+8];
 }
+export function deriveStatStage(effects,stat){
+ if(!Array.isArray(effects))throw new TypeError('status effects must be array');
+ if(!['strength','spirit','defense'].includes(stat))
+  throw new RangeError('unknown stat stage');
+ const up=stat+'-up',down=stat+'-down';
+ let total=0;
+ for(const status of effects){
+  if(status?.effect!==up&&status?.effect!==down)continue;
+  if((status.effect===up&&status.sign!=='positive')||
+     (status.effect===down&&status.sign!=='negative'))
+   throw new RangeError('stage status sign mismatch');
+  const level=status.level??1;
+  if(!Number.isInteger(level)||level<1||level>4)
+   throw new RangeError('stage level must be 1..4');
+  total+=(status.effect===up?1:-1)*level;
+ }
+ return Math.max(-8,Math.min(8,total));
+}
 export function deriveStrengthStage(effects){
  if(!Array.isArray(effects))throw new TypeError('status effects must be array');
  let total=0;
