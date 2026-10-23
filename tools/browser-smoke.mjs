@@ -200,6 +200,10 @@ document.querySelector('#lab').addEventListener('load',()=>{
   pick('#many').click();
   if(!pick('#log').textContent.includes('研究補正'))
    throw Error('damage modifiers not visible for played attacks');
+  if(!pick('#elementNotes').textContent.includes('複数回攻撃'))
+   throw Error('research multihit fixture not disclosed');
+  if(!pick('#log').textContent.includes('連続'))
+   throw Error('multi-hit individual roll summary not visible');
   if(doc.querySelectorAll('#team0 .unit').length!==3||doc.querySelectorAll('#team1 .unit').length!==3)
    throw Error('three front members on each side not rendered');
   result.textContent='DAMAGE-PASS';
