@@ -184,6 +184,28 @@ document.querySelector('#lab').addEventListener('load',()=>{
  }catch(error){result.textContent='QA-FAIL '+error.message;}
 });
 </script></body></html>`;
+const damageQaHtml=String.raw`<!doctype html><html lang="ja"><meta charset="utf-8"><title>YW2 damage research browser QA</title>
+<body><strong id="result">DAMAGE-PENDING</strong><iframe id="lab" src="/lab/phase2.html"></iframe>
+<script>
+const result=document.querySelector('#result');
+document.querySelector('#lab').addEventListener('load',()=>{
+ try{
+  const doc=document.querySelector('#lab').contentDocument;
+  const pick=sel=>{const x=doc.querySelector(sel);if(!x)throw Error('missing '+sel);return x;};
+  if(!pick('#elementNotes').textContent.includes('仮設定'))
+   throw Error('fixture elemental modifiers not disclosed');
+  if(!pick('#team0').textContent.includes('あかねこ')||
+     !pick('#team1').textContent.includes('あかねこ'))
+   throw Error('not the same rental characters on both sides');
+  pick('#many').click();
+  if(!pick('#log').textContent.includes('研究補正'))
+   throw Error('damage modifiers not visible for played attacks');
+  if(doc.querySelectorAll('#team0 .unit').length!==3||doc.querySelectorAll('#team1 .unit').length!==3)
+   throw Error('three front members on each side not rendered');
+  result.textContent='DAMAGE-PASS';
+ }catch(error){result.textContent='DAMAGE-FAIL '+error.message;}
+});
+</script></body></html>`;
 const purifyQaHtml=String.raw`<!doctype html><html lang="ja"><meta charset="utf-8"><title>Purification browser QA</title>
 <body><strong id="result">PURIFY-PENDING</strong><iframe id="lab" src="/lab/phase2.html"></iframe>
 <script>
@@ -287,6 +309,9 @@ document.querySelector('#lab').addEventListener('load',()=>{
 const srv=createServer(async(req,res)=>{
  try{
   const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
+  if(pathname==='/__damage_smoke__.html'){
+   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(damageQaHtml);return;
+  }
   if(pathname==='/__purify_smoke__.html'){
    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(purifyQaHtml);return;
   }
@@ -338,6 +363,8 @@ try{
  console.log('Chromium HTML/ES-module DOM rendered: 2 teams, forecast, Soul and charge controls');
  await renderedDom(rootUrl+'/__browser_smoke__.html','interaction',['QA-PASS'],2500);
  console.log('Chromium interaction passed: counter wheel QA plus real Zero Poke tap meter, Soul transfer and cancellation');
+ await renderedDom(rootUrl+'/__damage_smoke__.html','damage',['DAMAGE-PASS'],2500);
+ console.log('Chromium YW2 research damage browser QA passed: shared rental roster, modifier labels and played attacks');
  await renderedDom(rootUrl+'/__purify_smoke__.html','purify',['PURIFY-PASS'],4000);
  console.log('Chromium purification pointer QA passed: all five gestures, cancel and benched-only status clearing');
  await renderedDom(rootUrl+'/__priority_smoke__.html','priority',['PRIORITY-PASS'],2500);
