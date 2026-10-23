@@ -11,7 +11,7 @@ function complete(trial){
   trial.input({type:'down',x:.45,y:.5});
   for(let i=0;i<40;i++)trial.input({type:'move',x:i%2?.55:.45,y:.5});
  }else if(snap.kind==='spin'){
-  for(let i=0;i<=54;i++){
+  for(let i=0;i<=115;i++){
    const a=Math.PI*2*i/50;
    const event={type:i===0?'down':'move',x:.5+.3*Math.cos(a),y:.5+.3*Math.sin(a)};
    trial.input(event);
