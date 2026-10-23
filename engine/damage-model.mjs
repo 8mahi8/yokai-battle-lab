@@ -54,7 +54,7 @@ export function deriveStrengthStage(effects){
 }
 export function calculateOneHit({
  kind,power,strength=0,spirit=0,defense,criticalDefense=defense,
- hits=1,critical=false,elementMultiplier=1,statStage=0,
+ hits=1,critical=false,elementMultiplier=1,statStage=0,defenseStage=0,
  guarded=false,guardBreak=false
 }={}){
  if(kind!=='attack'&&kind!=='technique')throw new RangeError('attack or technique required');
@@ -71,7 +71,7 @@ export function calculateOneHit({
  // E.g. 3-hit Attack: (Power + STR/3)/2 - DEF/4.
  // See individual original YW2 move pages (Firewig, Lava Lord).
  const x=power+effectiveStat/hits;
- const def=critical?criticalDefense:defense;
+ const def=(critical?criticalDefense:defense)*statStageMultiplier(defenseStage);
  let raw=kind==='attack'
   ?(critical?x/1.5-def/10:x/2-def/4)
   :(critical?x/5+x/2.5-def/14:x/10+x/3-def/7)*elementMultiplier;
@@ -83,6 +83,7 @@ export function calculateOneHit({
   guardApplied:guarded&&!ignoreGuard,guardIgnored:guarded&&ignoreGuard,
   elementMultiplier:kind==='technique'?elementMultiplier:1,
   statStage,statMultiplier:multiplier,
+  defenseStage,defenseMultiplier:statStageMultiplier(defenseStage),
   confidence:'yw2-wiki-formula-research'};
 }
 export function validateElementResistances(input){
