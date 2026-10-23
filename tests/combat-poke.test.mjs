@@ -126,3 +126,17 @@ test('feature is default-off and invalid experimental transfer amounts rejected'
  for(const val of [-1,251,1.5,'20',NaN])
   assert.throws(()=>createCombat({researchPokeSoulTransfer:val}));
 });
+
+test('one Watch cannot run Poke and Soultimate mini-games simultaneously',()=>{
+ const g=createCombat();
+ g.setWatchMode(0,'zero');
+ g.applyInspirit({id:'B1',sign:'negative',effect:'sleep'});
+ for(const id of ['A6','A1','A2'])g.giveSoul(id,100);
+ const special=g.prepareSoultimate(0,'A1');assert.equal(special.ok,true);
+ assert.equal(g.beginPoke(0,'B1').reason,'special_charge_active');
+ assert.equal(g.resolveSoultimate(0,special.token,false).reason,'charge_cancelled');
+ assert.equal(g.beginPoke(0,'B1').ok,true);
+ assert.equal(g.prepareSoultimate(0,'A1').reason,'poke_active');
+ assert.equal(g.cancelPoke(0).ok,true);
+ assert.equal(g.prepareSoultimate(0,'A1').ok,true);
+});
