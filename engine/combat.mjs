@@ -84,6 +84,27 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const charging=pending?.casterId===id;
     clock.setCanAct(id,member.hp>0&&!statuses.has(id,'sleep')&&!charging);
   }
+  /** Same interruption decision for auto attacks and provisional specials.
+   * The per-move bonus and immunity remain unmodeled fixture defaults.
+   */
+  function interruptChargingCaster(target,damage,critical=false){
+    const side=target.side;
+    const pending=soul.snapshot().pending[side];
+    if(pending?.casterId!==target.id)return null;
+    const chance=chargeInterruptChance({
+      damage,maxHp:target.maxHp,hitsTaken:chargeHits[side],critical
+    });
+    const stopped=target.hp===0||rng()*100<chance;
+    const result={target:target.id,chance,stopped,
+      reason:target.hp===0?'caster_ko':stopped?'hit_interruption':'charge_continues'};
+    if(stopped){
+      soul.resolve({side,token:pending.token,frontIds:clock.snapshot().teams[side].frontIds,
+        success:false,alive:target.hp>0});
+      guided[side]=null;chargeHits[side]=0;
+      syncCanAct(target.id);
+    }else chargeHits[side]++;
+    return result;
+  }
   /** Experimental injection: not an auto AI Inspirit move; hit/resistance unimplemented. */
   function applyInspirit({id,sign,effect,source=null,duration=null}={}){
     if(winner!==null)throw new Error('battle finished');
@@ -176,7 +197,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       // The regular attack/technique base is a source-informed approximation, NOT
       // a proven formula for this special; accuracy and damage variance likewise.
       const hit=rng()*100<hitChance(caster,target);
-      let damage=0;
+      let damage=0,interruption=null;
       if(hit){
         const base=soultimateBaseHit({power:spec.power,strength:caster.strength,
           spirit:caster.spirit,defense:target.defense,method:spec.method,multiplier:chargeResult.powerMultiplier});
@@ -185,20 +206,15 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         if(target.guard)damage=Math.max(1,Math.floor(damage*.5));
         damage=Math.min(damage,target.hp);
         target.hp-=damage;
+        interruption=interruptChargingCaster(target,damage,false);
         if(target.hp===0){
-          // A KO ends any pending charge for the target without double-spending Soul.
-          const enemyPending=soul.snapshot().pending[target.side];
-          if(enemyPending?.casterId===target.id){
-            soul.resolve({side:target.side,token:enemyPending.token,frontIds:clock.snapshot().teams[target.side].frontIds,success:false,alive:false});
-            guided[target.side]=null;
-            chargeHits[target.side]=0;
-          }
           syncCanAct(target.id);
           caster.knockouts++;
           syncPinned();
         }
       }
-      effects.push({target:target.id,kind:'damage',hit,amount:damage,remainingHp:target.hp});
+      effects.push({target:target.id,kind:'damage',hit,amount:damage,remainingHp:target.hp,
+        interruption});
     }
     if(squads.some(team=>team.every(member=>member.hp===0)))
       winner=squads[0].every(member=>member.hp===0)?1:0;
@@ -321,24 +337,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         else {const range=Math.floor(damage/10+1); damage=Math.max(1,Math.min(999,damage+Math.floor(rng()*(2*range+1))-range));}
         amount=Math.min(target.hp,damage);
         target.hp-=amount;
-        // A charge can be interrupted by an incoming hit. The probability
-        // comes from the published YW2 formula; move bonus defaults to zero.
-        const chargeSide=target.side;
-        const pendingCharge=soul.snapshot().pending[chargeSide];
-        if(pendingCharge?.casterId===target.id){
-          const chance=chargeInterruptChance({damage:amount,maxHp:target.maxHp,
-            hitsTaken:chargeHits[chargeSide],critical});
-          const stopped=target.hp===0||rng()*100<chance;
-          interruption={target:target.id,chance,stopped,reason:target.hp===0?'caster_ko':stopped?'hit_interruption':'charge_continues'};
-          if(stopped){
-            soul.resolve({side:chargeSide,token:pendingCharge.token,
-              frontIds:clock.snapshot().teams[chargeSide].frontIds,
-              success:false,alive:target.hp>0});
-            guided[chargeSide]=null;
-            chargeHits[chargeSide]=0;
-            syncCanAct(target.id);
-          }else chargeHits[chargeSide]++;
-        }
+        interruption=interruptChargingCaster(target,amount,critical);
         if(target.hp===0){syncCanAct(target.id);actor.knockouts++;syncPinned();}
       }
     }
