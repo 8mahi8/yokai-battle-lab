@@ -184,6 +184,39 @@ document.querySelector('#lab').addEventListener('load',()=>{
  }catch(error){result.textContent='QA-FAIL '+error.message;}
 });
 </script></body></html>`;
+const contractQaHtml=String.raw`<!doctype html><html lang="ja"><meta charset="utf-8"><title>Host command contract browser QA</title>
+<body><strong id="result">CONTRACT-PENDING</strong><iframe id="lab" src="/lab/match-contract.html"></iframe>
+<script>
+const result=document.querySelector('#result');
+document.querySelector('#lab').addEventListener('load',()=>{
+ try{
+  const doc=document.querySelector('#lab').contentDocument;
+  const pick=sel=>{const x=doc.querySelector(sel);if(!x)throw Error('missing '+sel);return x;};
+  if(!pick('#meta').textContent.includes('revision 0'))throw Error('initial revision wrong');
+  if(!pick('#team0').textContent.includes('レンタル 01'))throw Error('original rental absent');
+  pick('#side0 [data-command="rotate"][data-direction="1"]').click();
+  if(!pick('#team0').textContent.includes('前衛 A2・A3・A4'))throw Error('seat A right rotation not applied');
+  pick('#side1 [data-command="rotate"][data-direction="-1"]').click();
+  if(!pick('#team1').textContent.includes('前衛 B6・B1・B2'))throw Error('seat B left rotation not applied');
+  const before=pick('#meta').textContent;
+  pick('#side0 [data-command="retransmit"]').click();
+  if(pick('#meta').textContent!==before)throw Error('duplicate changed committed revision');
+  if(!pick('#status').textContent.includes('操作二重実行なし'))throw Error('duplicate ACK indicator missing');
+  pick('#autoStep').click();
+  if(!pick('#history').textContent.includes('サーバー/自動行動'))throw Error('host auto action missing');
+  pick('#side0 [data-command="watch"]').click();
+  pick('#side0 [data-command="pin"]').click();
+  if(!pick('#status').textContent.includes('拒否'))throw Error('Watch Zero illegal pin not rejected');
+  if(!pick('#meta').textContent.includes('revision 5'))throw Error('reject did not advance host ordering');
+  pick('#replay').click();
+  if(!pick('#status').textContent.includes('再現一致'))throw Error('journal replay diverged');
+  pick('#reset').click();
+  if(!pick('#meta').textContent.includes('revision 0'))throw Error('research room reset failed');
+  if(!pick('#history').textContent.includes('まだ操作はありません'))throw Error('journal was not cleared on reset');
+  result.textContent='CONTRACT-PASS';
+ }catch(error){result.textContent='CONTRACT-FAIL '+error.message;}
+});
+</script></body></html>`;
 const damageQaHtml=String.raw`<!doctype html><html lang="ja"><meta charset="utf-8"><title>YW2 damage research browser QA</title>
 <body><strong id="result">DAMAGE-PENDING</strong><iframe id="lab" src="/lab/phase2.html"></iframe>
 <script>
@@ -313,6 +346,9 @@ document.querySelector('#lab').addEventListener('load',()=>{
 const srv=createServer(async(req,res)=>{
  try{
   const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
+  if(pathname==='/__contract_smoke__.html'){
+   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(contractQaHtml);return;
+  }
   if(pathname==='/__damage_smoke__.html'){
    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(damageQaHtml);return;
   }
@@ -367,6 +403,8 @@ try{
  console.log('Chromium HTML/ES-module DOM rendered: 2 teams, forecast, Soul and charge controls');
  await renderedDom(rootUrl+'/__browser_smoke__.html','interaction',['QA-PASS'],2500);
  console.log('Chromium interaction passed: counter wheel QA plus real Zero Poke tap meter, Soul transfer and cancellation');
+ await renderedDom(rootUrl+'/__contract_smoke__.html','contract',['CONTRACT-PASS'],2500);
+ console.log('Chromium research host contract passed: real two-seat controls, duplicate ACK, host tick, invalid PIN and replay');
  await renderedDom(rootUrl+'/__damage_smoke__.html','damage',['DAMAGE-PASS'],2500);
  console.log('Chromium YW2 research damage browser QA passed: shared rental roster, modifier labels and played attacks');
  await renderedDom(rootUrl+'/__purify_smoke__.html','purify',['PURIFY-PASS'],4000);
