@@ -48,13 +48,15 @@ export function calculateOneHit({
   throw new TypeError('critical / guarded / guardBreak must be booleans');
  const multiplier=statStageMultiplier(statStage);
  const effectiveStat=(kind==='attack'?strength:spirit)*multiplier;
- const x=power*hits+effectiveStat;
- // The Wiki's X calculation is per HIT; an all-hit sum is not modeled here.
+ // Each hit gets the full per-hit move Power and only 1/Hits of the
+ // attacker's stat.  DEF is subtracted IN FULL for EACH hit, not divided.
+ // E.g. 3-hit Attack: (Power + STR/3)/2 - DEF/4.
+ // See individual original YW2 move pages (Firewig, Lava Lord).
+ const x=power+effectiveStat/hits;
  const def=critical?criticalDefense:defense;
  let raw=kind==='attack'
   ?(critical?x/1.5-def/10:x/2-def/4)
   :(critical?x/5+x/2.5-def/14:x/10+x/3-def/7)*elementMultiplier;
- raw/=hits;
  // Actual guard-piercing modifiers only belong to physical attacks.
  const ignoreGuard=guardBreak&&kind==='attack';
  if(guarded&&!ignoreGuard)raw*=.5;
