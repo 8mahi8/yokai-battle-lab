@@ -8,6 +8,8 @@ import { createInspiritLedger } from './inspirit.mjs';
 import { actionWeights, pickAction } from './selection.mjs';
 import { createSoulSystem, chargeInterruptChance } from './soul.mjs';
 import { chooseChargeKind, createChargeTrial } from './charge-input.mjs';
+import { soulCapacityForRank } from './soul.mjs';
+import { validateSpecialSpec, planResearchSpecial } from './special-effects.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
   {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5]},
@@ -29,6 +31,7 @@ function intStat(value, label, min=0) {
 function buildMember(source,side,index) {
   for(const key of ['speed','maxHp','strength','spirit','defense','attackPower','techniquePower']) intStat(source[key],key,key==='speed'||key==='maxHp'?1:0);
   if(source.soulCapacity!==undefined)intStat(source.soulCapacity,'soulCapacity',1);
+  if(source.soultimateRank!==undefined)soulCapacityForRank(source.soultimateRank);
   if(source.inspiritResistance!==undefined){intStat(source.inspiritResistance,'inspiritResistance');if(source.inspiritResistance>100)throw new RangeError('resistance > 100');}
  if(!['sleep','strength-up'].includes(source.inspirit))throw new TypeError('unsupported Inspirit');
  if(source.loafChance!==undefined){
@@ -39,7 +42,13 @@ function buildMember(source,side,index) {
   if(!Array.isArray(source.weights)||source.weights.length!==4||source.weights.some(x=>!Number.isInteger(x)||x<0)||source.weights.reduce((a,b)=>a+b,0)!==100)throw new TypeError('invalid weights');
   return {id:(side===0?'A':'B')+(index+1),name:source.name||'Unit '+(index+1),side,maxHp:source.maxHp,hp:source.maxHp,speed:source.speed,
     strength:source.strength,spirit:source.spirit,defense:source.defense,attackPower:source.attackPower,techniquePower:source.techniquePower,
-    loafChance:source.loafChance??0,inspiritResistance:source.inspiritResistance??20,inspirit:source.inspirit,technique:source.technique,attitude:source.attitude??'neutral',weights:[...source.weights],guard:false,knockouts:0,soulCapacity:source.soulCapacity??100};
+    loafChance:source.loafChance??0,inspiritResistance:source.inspiritResistance??20,inspirit:source.inspirit,technique:source.technique,attitude:source.attitude??'neutral',weights:[...source.weights],guard:false,knockouts:0,soultimateRank:source.soultimateRank??1,
+    soulCapacity:source.soulCapacity??soulCapacityForRank(source.soultimateRank??1),
+    special:validateSpecialSpec(source.special??(
+      source.technique==='heal'
+        ? {kind:'heal',scope:'front',power:75}
+        : {kind:'damage',scope:'front',power:100,damageKind:'attack'}
+    ))};
 }
 export function hitChance(attacker,target) {
   return Math.floor(Math.max(75,Math.min(98,98+(attacker.speed-target.speed)/5)));
@@ -53,8 +62,9 @@ export function baseDamage(attacker,target,kind,critical=false) {
     :(critical?total/5+total/2.5-target.defense/14:total/10+total/3-target.defense/7);
   return Math.max(1,Math.min(999,Math.floor(amount)));
 }
-export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0}={}) {
+export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0,researchSpecialEffects=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
+  if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
   if(!Number.isInteger(researchSoulGainPerAction)||researchSoulGainPerAction<0||researchSoulGainPerAction>10000)throw new RangeError('invalid experimental Soul gain');
   const source=teams??[RENTAL_SQUAD,RENTAL_SQUAD];
   if(!Array.isArray(source)||source.length!==2||!source.every(x=>Array.isArray(x)&&x.length===6))throw new TypeError('requires two rosters of six');
@@ -142,8 +152,30 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(guided[side]?.token===token)guided[side]=null;
     chargeHits[side]=0;
     if(pending&&pending.token===token)syncCanAct(pending.casterId);
-    // Only charge + resource consumption are implemented; actual special-move effects aren't.
-    return result.ok?{...result,effectStatus:'unimplemented'}:result;
+    if(!result.ok)return result;
+    if(!researchSpecialEffects)return {...result,effectStatus:'unimplemented'};
+    // RESEARCH ONLY. All numeric special powers are fixture values until verified
+    // for a specific YW2 move. Mode changes the power input, not final HP delta.
+    const impacts=planResearchSpecial({
+      spec:caster.special,caster,
+      allies:livingFront(side),enemies:livingFront(1-side),
+      powerMultiplier:result.powerMultiplier,pinnedId:pins[side]
+    });
+    for(const impact of impacts){
+      const target=byId.get(impact.targetId);
+      target.hp=impact.hpAfter;
+      if(impact.predictedKO){
+        caster.knockouts++;
+        syncCanAct(target.id);
+      }
+    }
+    syncPinned();
+    if(squads.some(team=>team.every(member=>member.hp===0)))
+      winner=squads[0].every(m=>m.hp===0)?1:0;
+    const entry={type:'special',mode:result.kind,actor:caster.id,
+      impacts:impacts.map(x=>({...x})),winner,model:'research-fixture'};
+    events.push(entry);
+    return {...result,effectStatus:'research-fixture',impacts:entry.impacts,winner};
   }
   /** Player-facing touch charge: challenge selected deterministically per accepted attempt. */
   function beginGuidedCharge(side,id){
