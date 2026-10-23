@@ -115,3 +115,18 @@ Source-backed implementation: `engine/charge-input.mjs`, `engine/combat.mjs`, `e
 - Complete reference ledger and explicit fixture values: `docs/PHASE4_CHARGE_INPUT_QA_20261023.md`.
 
 **Still out of scope / blocked:** real Soultimate attack/heal effects, exact recharge mechanics, in-game animations with overlapping tactical events and no-motion charge, Poke resolution, full original-rule fidelity, multiplayer sessions and production-ready single HTML Google Sites embedding. None of these should be described as complete. main and the published Google Sites version remain unchanged.
+
+
+---
+
+## 2026-10-23 — Isolated Soul recovery and special effects continuation (latest on THIS branch)
+
+- **Branch:** `feat/phase4-soul-effects-research-20261023`. Created from `feat/phase1-action-circle-lab-20261023` commit `5fee7a3c...` because that parent branch was modified concurrently. Do not silently overwrite or merge concurrent feature work.
+- `engine/soultimate-effects.mjs`: isolated original-rental move validation, observed nonattack recovery (+5 after *that actor's* turn, only experimental), temporary physical/magical special damage and healing formulas explicitly labeled as research hypotheses.
+- `engine/combat.mjs`: `observedSoulRecovery` and `enableResearchSoultimateEffects` flags (both off by default); per-actor Soul; original rental attack/heal Soultimates; full Soul cost, target damage/heal, KO, opponent charge interruption, outcome log. Honors YW2 Soul grade capacities in the earlier parent rank implementation.
+- `lab/phase2.html`: enables the experimental features in the local browser research UI only; shows actual target HP differences after successful touch charge, and `妖気+5` after eligible individual actions.
+- `tools/browser-smoke.mjs`: after the prior DOM and button-click checks, now dispatches synthetic PointerEvents through a complete charge and validates the log of resulting experimental HP effect. This checks browser wiring, **not actual iPad touch latency or feel**.
+- GitHub Actions on our branch: **101/101 PASS**, **0 failed**, **0 skipped**. Chromium rendered DOM + automated interaction smoke succeeded. Verified https://github.com/8mahi8/yokai-battle-lab/actions/runs/39913340191
+- Detailed research ledger, exact sources, provisional assumptions, and remaining blockers in `docs/PHASE4B_SOUL_EFFECTS_QA_20261023.md`.
+
+**Note:** The parent feature branch continued evolving independently and now also includes an alternative special-effects and actor-Soul implementation (`engine/special-effects.mjs`). These are **parallel candidates, not merged**. Review differences and combine tests rather than copy-pasting both into one engine. Do not touch `main` or the school Google Sites published HTML without user approval.
