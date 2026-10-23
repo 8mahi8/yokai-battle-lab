@@ -170,3 +170,18 @@ Source/engineering notebook: `docs/PHASE5_COUNTER_HIT_QA_20261023.md`.
 - `lab/phase2.html`: two visible manual cut-in scenarios, active hit time, current front, locked front and result log. No original-game art or copyrighted sprites.
 - Actual branch verification: Node test suite and Chromium synthetic-touch E2E both passing on https://github.com/8mahi8/yokai-battle-lab/actions/runs/39919485794 (151/151 tests), including HP unchanged during counter charge and affected only after animation gate. Additional once-only/atomic counter regressions were committed later; consult latest green run.
 - Source fidelity gap: independent research virtual clocks only, fixed animation 800ms and ~500ms lag fixture, genuine Endure and move hit frames absent. *No* authoritative networked PvP, school Safari real-device QA or direct Google Sites paste testing. **Neither main nor live Google Sites/Firebase changed.**
+
+
+---
+
+## 2026-10-23 — Phase 5C: paired wheel-rotation targeting / no-motion display QA (LATEST)
+
+Details and source ledger: **[PHASE5_WHEEL_PAIR_QA_20261023.md](./PHASE5_WHEEL_PAIR_QA_20261023.md)**.
+
+- Competitive source https://note.com/uzoumzou_nanoha/n/n2fb6ae41559c reports: two wheel rotations with no intervening ordinary Yo-kai action can suppress the **intermediate front** as a Soultimate targeting candidate. This is **player-observed behavior**, NOT a disassembled game-source fact.
+- Added `engine/wheel-coalescing.mjs` and `researchWheelCoalescing:true` (optional, requires counter research). First rotation tracked; if special charge completes between the first and second rotation, a second rotation can correct **the pending early counter target IDs** to the original front, but **never after the damage has resolved**. A special completed after both rotations still targets the final front. An ordinary auto action clears grouping.
+- The opponent presentation timeline has optional `coalesceRotations` and shows only the final rotation within a hidden animation block, separated by actual auto-action events; payload includes the visible front.
+- `engine/counter-window.mjs` supports one validated `revisePendingTarget`. **Fixed a real boundary bug**: a wheel movement at a timestamp-due counter hit could previously silently erase that hit before HP was applied. `setFront` now rejects due hits until dispatched, while `combat.rotate` and `combat.step` first drain due hits using zero-time advance.
+- Research lab shows rotation count, actual physical front, correction event and manual two-turn demo; synthetic pointer E2E verifies a charge completed BETWEEN the two wheel changes, then the original front takes HP at the due hit while the intermediate pose is not shown to the opponent.
+- **Confirmed on GitHub Actions (before doc-only commits): 180/180 unit tests passed, zero failures, plus the real Chromium render/gesture/opponent-gate smoke test**, https://github.com/8mahi8/yokai-battle-lab/actions/runs/39921476753 .
+- **Key uncertainties remain:** exact original wheel-pair frame boundary, 3+ consecutive rotations, whether real hit timing uses cut-in start vs end, real Endure mechanics, authentic networking and school iPad Safari. Nothing here warrants release. Keep main and published Google Sites unchanged.
