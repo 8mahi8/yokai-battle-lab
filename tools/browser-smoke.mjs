@@ -116,6 +116,28 @@ document.querySelector('#lab').addEventListener('load',()=>{
   if(!pick('#counterStatus').textContent.includes('命中'))throw new Error('counter hit window missing from UI');
   const hpAfter=Number(pick('#team1 .unit').getElementsByClassName('info')[1].textContent.split('/')[0]);
   if(hpAfter>=hpBefore)throw new Error('locked front did not receive deferred counter damage');
+  // Third browser scenario: charge completes BETWEEN two hidden wheel turns.
+  // The paired-turn mechanic suppresses the intermediate front for targets.
+  pick('#reset').click();
+  for(let i=0;i<4;i++)pick('[data-soul="A1"]').click();
+  pick('#cutinStart').click();
+  pick('[data-rotate="1"][data-dir="1"]').click(); // provisional B2-B3-B4
+  const hpOriginal=Number(pick('#team1 .unit').getElementsByClassName('info')[1].textContent.split('/')[0]);
+  pick('[data-special="A1"]').click();
+  finishCharge();
+  if(!pick('#counterStatus').textContent.includes('B2、B3、B4'))throw new Error('first turn target not provisionally locked');
+  pick('[data-rotate="1"][data-dir="1"]').click(); // now B3-B4-B5; correct to B1-B2-B3
+  if(!pick('#wheelStatus').textContent.includes('中間配置を除外'))throw new Error('wheel-pair correction not shown');
+  if(!pick('#counterStatus').textContent.includes('B1、B2、B3'))throw new Error('target window not corrected');
+  if(pick('#visibility').textContent.includes('ノーモーション'))throw new Error('paired-turn release appeared before unlock');
+  pick('#advanceMotion').click();
+  if(!pick('#visibility').textContent.includes('ノーモーション必殺'))throw new Error('paired-turn no-motion not revealed');
+  const counterLog=pick('#log').textContent;
+  if(!counterLog.includes('カウンター命中')||!counterLog.includes('B1・B2・B3'))
+   throw new Error('paired-turn hit was not delivered to original frontline');
+  // B1 has rotated to the bench; its HP should decrease there.
+  const benchSnapshot=pick('#team1').textContent;
+  if(!benchSnapshot.includes('B1'))throw new Error('bench B1 missing');
   result.textContent='QA-PASS';
  }catch(error){result.textContent='QA-FAIL '+error.message;}
 });
@@ -167,7 +189,7 @@ try{
  ],1500);
  console.log('Chromium HTML/ES-module DOM rendered: 2 teams, forecast, Soul and charge controls');
  await renderedDom(rootUrl+'/__browser_smoke__.html','interaction',['QA-PASS'],2500);
- console.log('Chromium interactive smoke passed: Soul, no-motion gate, real touch gesture, and deferred counter HP after cutin');
+ console.log('Chromium interaction passed: Soul, counter hit frames, and paired wheel correction with full touch gesture');
 }finally{
  await new Promise(resolve=>srv.close(resolve));
  rmSync(tmp,{recursive:true,force:true});
