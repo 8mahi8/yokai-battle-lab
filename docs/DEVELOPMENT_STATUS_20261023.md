@@ -139,3 +139,20 @@ See `docs/PHASE4_SPECIAL_EFFECTS_QA_20261023.md` for authoritative evidence, sou
 - This uncovered a **real runtime crash**: resolving a Soultimate when the opposing front three were all KO'd but reserves were still alive caused `planResearchSpecial` to throw `living and target arrays required` **after** charge resolution. Fixed `engine/special-effects.mjs` so an empty valid frontline yields zero impacts instead of an exception, and added a targeted regression test.
 - GitHub CI: https://github.com/8mahi8/yokai-battle-lab/actions/runs/39914384316 — passing Node tests and actual Chromium render/interaction smoke. No iPad Safari or two-device online test yet.
 - This is a simulator robustness fix, not proof of original-game Soultimate behavior when no enemy front targets exist. Original move target selection and animation timing remain research tasks.
+
+
+---
+
+## 2026-10-23: opponent-visible motion timeline / no-motion research (LATEST)
+
+**Milestone:** `docs/PHASE5_MOTION_PRESENTATION_QA_20261023.md`.
+
+- The source-reported competitive “no-motion Soultimate” is a **visibility and animation overlap effect**, NOT zero charging duration. Delayed opponent wheel/charge changes have now been modeled as a separate independent research presentation clock.
+- `engine/presentation-timeline.mjs`: deterministic animation visibility lock, compressed chargeStart/chargeComplete into a no-motion release when the pair finishes within the same lock, unaffected normal slow charge, cancellation semantics, overlapping animation extension, independent side/token consistency, bounded defensive snapshots.
+- `engine/combat.mjs`: opt-in `researchPresentation:true`, actual guided charge and cancellation, watch changes, rotation, normal action and hit interruption events bridged to a presentation-only clock. New research methods `beginPresentationMotion({durationMs,...})` and `advancePresentation(ms)`. DEFAULT behavior remains off. No wallclock conversion from the normal turn-point scheduler.
+- `engine/phase1.mjs`: prediction `predict(count, actionWait)` now has 0..10 wait parameter mirroring `step(actionWait)` in the unmodified scheduler.
+- `lab/phase2.html`: added a panel for explicitly fictional motion length and opponent-visible events. Timing experiment with 1000ms animation, 250ms/1000ms advance, no-motion marker after charge completed within the block.
+- Source: https://note.com/tombow_yw/n/n1e4cf179d2d9 ; cross-check: https://note.com/uzoumzou_nanoha/n/n2fb6ae41559c .
+- **Verified exact GitHub code (commit `859552ca7e44ca5ee06aa2a8172150baebac7be1`): 133/133 Node tests passed, 0 failed, 0 skipped, with headless Chromium ESM loading and real button/pointer interactions including complete no-motion charge and delayed opponent reveal.**
+  CI: https://github.com/8mahi8/yokai-battle-lab/actions/runs/39917342500 .
+- Research gap: proper action priority and animation frames, charge/visual/damage hit moment, actual counter-Soultimate interaction, move-by-move timelines and wall-clock slowdown; do not call these verified original mechanics. Actual iPad Safari and two-device online play remain untested. `main`, live Firebase and Google Sites direct-code build remain untouched.
