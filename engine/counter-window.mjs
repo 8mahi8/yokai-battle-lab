@@ -121,7 +121,11 @@ export function createCounterWindow({fronts=[['A1','A2','A3'],['B1','B2','B3']],
   const other=current[1-side];
   if(next.some(id=>other.includes(id)))
    throw new TypeError('a unit cannot appear on two teams');
-  flush();
+  // A due hit must be explicitly drained via advance(0) FIRST. Silently
+  // calling flush() here discards HP effects in the combat integration because
+  // only advance() dispatches its returned hit records to the damage engine.
+  if(pending.some(item=>item.hitAt<=now))
+   return {ok:false,reason:'hit_due_resolve_first'};
   current[side]=next;
   return {ok:true,side,frontIds:[...next],at:now};
  }
