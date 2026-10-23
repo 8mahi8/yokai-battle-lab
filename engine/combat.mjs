@@ -15,6 +15,7 @@ import { createCounterWindow } from './counter-window.mjs';
 import { createWheelCoalescing } from './wheel-coalescing.mjs';
 import { createPokeTrial } from './poke-input.mjs';
 import { createPurifyTrial, choosePurifyKind, PURIFY_KINDS } from './purify-input.mjs';
+import {ELEMENTS, validateElementResistances, calculateOneHit, deriveStrengthStage} from './damage-model.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
   {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5]},
@@ -38,6 +39,16 @@ function buildMember(source,side,index) {
   if(source.soulCapacity!==undefined)intStat(source.soulCapacity,'soulCapacity',1);
   if(source.soultimateRank!==undefined)soulCapacityForRank(source.soultimateRank);
   if(source.inspiritResistance!==undefined){intStat(source.inspiritResistance,'inspiritResistance');if(source.inspiritResistance>100)throw new RangeError('resistance > 100');}
+  const techniqueElement=source.techniqueElement??'neutral';
+  if(!ELEMENTS.includes(techniqueElement))throw new RangeError('invalid technique element');
+  const elementResistances=validateElementResistances(source.elementResistances);
+  if(source.criticalDefense!==undefined)intStat(source.criticalDefense,'criticalDefense');
+  if(source.inspiritLevel!==undefined){
+    intStat(source.inspiritLevel,'inspiritLevel',1);
+    if(source.inspiritLevel>4)throw new RangeError('Inspirit level must be 1..4');
+  }
+  if(source.guardBreak!==undefined&&typeof source.guardBreak!=='boolean')
+    throw new TypeError('guardBreak must be a boolean');
  if(!['sleep','strength-up'].includes(source.inspirit))throw new TypeError('unsupported Inspirit');
  if(source.loafChance!==undefined){
     intStat(source.loafChance,'loafChance');
@@ -46,7 +57,9 @@ function buildMember(source,side,index) {
   if(!['damage','heal'].includes(source.technique))throw new TypeError('technique must be damage/heal');
   if(!Array.isArray(source.weights)||source.weights.length!==4||source.weights.some(x=>!Number.isInteger(x)||x<0)||source.weights.reduce((a,b)=>a+b,0)!==100)throw new TypeError('invalid weights');
   return {id:(side===0?'A':'B')+(index+1),name:source.name||'Unit '+(index+1),side,maxHp:source.maxHp,hp:source.maxHp,speed:source.speed,
-    strength:source.strength,spirit:source.spirit,defense:source.defense,attackPower:source.attackPower,techniquePower:source.techniquePower,
+    strength:source.strength,spirit:source.spirit,defense:source.defense,criticalDefense:source.criticalDefense??source.defense,
+    attackPower:source.attackPower,techniquePower:source.techniquePower,techniqueElement,elementResistances,
+    inspiritLevel:source.inspiritLevel??1,guardBreak:source.guardBreak??false,
     loafChance:source.loafChance??0,inspiritResistance:source.inspiritResistance??20,inspirit:source.inspirit,technique:source.technique,attitude:source.attitude??'neutral',weights:[...source.weights],guard:false,knockouts:0,soultimateRank:source.soultimateRank??1,
     soulCapacity:source.soulCapacity??soulCapacityForRank(source.soultimateRank??1),
     special:validateSpecialSpec(source.special??(
@@ -70,12 +83,13 @@ export function baseDamage(attacker,target,kind,critical=false) {
 export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0,researchSpecialEffects=false,
   researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false,
   researchWheelCoalescing=false,researchOpeningPriority=null,
-  researchPokeSoulTransfer=0}={}) {
+  researchPokeSoulTransfer=0,researchDamageModel=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
   if(typeof researchPresentation!=='boolean')throw new TypeError('researchPresentation must be boolean');
   if(typeof researchCounterTiming!=='boolean')throw new TypeError('researchCounterTiming must be boolean');
   if(typeof researchWheelCoalescing!=='boolean')throw new TypeError('researchWheelCoalescing must be boolean');
+  if(typeof researchDamageModel!=='boolean')throw new TypeError('researchDamageModel must be boolean');
   if(!Number.isInteger(researchPokeSoulTransfer)||researchPokeSoulTransfer<0||
     researchPokeSoulTransfer>250)
     throw new RangeError('researchPokeSoulTransfer must be an integer 0..250');
@@ -200,14 +214,14 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     return result;
   }
   /** Experimental injection: not an auto AI Inspirit move; hit/resistance unimplemented. */
-  function applyInspirit({id,sign,effect,source=null,duration=null}={}){
+  function applyInspirit({id,sign,effect,source=null,duration=null,level=1}={}){
     if(winner!==null)throw new Error('battle finished');
     if(!byId.has(id))throw new RangeError('unknown member');
     if(!['sleep','strength-up','research-marker'].includes(effect))throw new RangeError('effect not modeled');
     if(effect==='strength-up'&&sign!=='positive')throw new RangeError('strength-up is positive');
     if(effect==='sleep'&&sign!=='negative')throw new RangeError('sleep is negative');
     if(effect==='sleep'&&duration!==null)throw new RangeError('sleep owner-turn duration is unsupported');
-    const result=statuses.apply({id,sign,effect,source,duration});
+    const result=statuses.apply({id,sign,effect,source,duration,level});
     syncCanAct(id);return result;
   }
   /** Debug shortcut retained only to preserve legacy engine tests.
@@ -601,7 +615,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       // Resistance formula is cross-version research; unit resistance is a TEST fixture.
       resisted=sign==='negative'&&rng()*100<target.inspiritResistance;
       hit=!resisted;
-      if(hit)applyInspirit({id:target.id,sign,effect,source:actor.id});
+      if(hit)applyInspirit({id:target.id,sign,effect,source:actor.id,level:actor.inspiritLevel});
     }else if(kind==='technique'&&actor.technique==='heal'){
       const hurt=livingFront(actor.side).filter(x=>x.hp<x.maxHp).sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp);
       target=hurt[0]??null;
