@@ -63,29 +63,40 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
   // Optional study, never silently used in school/default combat.
   const openingPriority=openingPriorityResearch===null
     ?null:createOpeningPriority(openingPriorityResearch);
-  const matched=new Set(openingPriority?.snapshot().registeredFront.flat()??[]);
+  const researchSetup=openingPriority?.snapshot()??null;
+  const matched=new Set(researchSetup?.registeredFront.flat()??[]);
   const random = seededRandom(seed);
-  const data = (teams || [baseRental, baseRental]).map((roster, side) => ({
+  const data = (teams || [baseRental, baseRental]).map((roster, side) => {
+    const visibleOffset=researchSetup?.visibleStartOffsets[side]??0;
+    const creditModel=researchSetup?.matchingCreditMode==='initial-wait';
+    return {
     side,
-    offset: 0,
+    offset: visibleOffset,
     lastRotateAt: -Infinity,
     members: roster.map((source, index) => {
       const cost = waitCostFromSpeed(source.speed);
-      const opening = index < 3;
+      const opening = (index-visibleOffset+6)%6 < 3;
+      const id=`${side === 0 ? 'A' : 'B'}${index + 1}`;
+      const wasRegistered=matched.has(id);
       const [low, high] = initialWaitRange(source.speed);
+      const researchedOpeningWait=creditModel&&wasRegistered
+        ?low+Math.floor(random()*(high-low+1)):null;
       return {
-        id: `${side === 0 ? 'A' : 'B'}${index + 1}`,
+        id,
         name: source.name || `Unit ${index + 1}`,
         speed: source.speed,
         cost,
         // Working hypothesis: lower debt means an earlier action.
-        wait: opening ? low + Math.floor(random() * (high - low + 1)) : null,
+        wait: opening ? (creditModel
+          ? (wasRegistered?researchedOpeningWait:cost)
+          : low + Math.floor(random() * (high - low + 1))) : null,
+        ...(creditModel?{researchedOpeningWait}:{}) ,
         acted: 0,
-        originalFront: openingPriority?matched.has(`${side===0?'A':'B'}${index+1}`):opening,
+        originalFront: openingPriority?wasRegistered:opening,
         canAct: true
       };
     })
-  }));
+  };});
   const history = [];
   let pointsElapsed = 0;
   let turn = 0;
@@ -120,7 +131,15 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
     team.offset = (team.offset + direction + 6) % 6;
     const newFront = new Set(frontline(team)), rotatedIn=[], rotatedOut=[];
     for(const m of oldFront) if(!newFront.has(m)) {m.wait=null;rotatedOut.push(m.id);}
-    for(const m of newFront) if(!oldFront.has(m)) {m.wait=m.canAct?m.cost:null;rotatedIn.push(m.id);}
+    for(const m of newFront) if(!oldFront.has(m)) {
+      // Experimental alternative: a matching-time first-front member brought
+      // back BEFORE any action may retain a sampled opening wait. Original
+      // preservation after real actions remains unresolved and is not guessed.
+      const credit=researchSetup?.matchingCreditMode==='initial-wait'&&
+        turn===0&&m.originalFront&&m.acted===0;
+      m.wait=m.canAct?(credit?m.researchedOpeningWait:m.cost):null;
+      rotatedIn.push(m.id);
+    }
     team.lastRotateAt = atMs;
     return { ok: true, side, offset: team.offset, frontIds: frontline(team).map(x => x.id),rotatedIn,rotatedOut };
   }
@@ -133,7 +152,11 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
     if (unit.canAct === allowed) return;
     unit.canAct = allowed;
     if (!allowed) unit.wait = null;
-    else if (frontline(side).includes(unit)) unit.wait = unit.cost;
+    else if (frontline(side).includes(unit)){
+      const credit=researchSetup?.matchingCreditMode==='initial-wait'&&
+        turn===0&&unit.originalFront&&unit.acted===0;
+      unit.wait=credit?unit.researchedOpeningWait:unit.cost;
+    }
   }
 
   function step(actionWait = 3) {
