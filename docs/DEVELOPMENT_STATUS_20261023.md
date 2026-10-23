@@ -216,3 +216,20 @@ Detailed source and implementation ledger: **[PHASE6_OPENING_FLASH_QA_20261023.m
 - `lab/phase1.html`: Flash ON/OFF, deploy B6, original matching-front toggle, prebattle half-turn, matching initial-wait comparison, and skipped-turn wait policy, with one-use Flash badge, next-five forecast and labeled assumptions.
 - New tests `opening-priority` 7, `phase1-opening-flash` 8, `combat-opening-flash` 6, `opening-priority-ui` 2 and `opening-match-offset` 6. **222/222 tests PASS; zero fail/skip** in actual GitHub CI at https://github.com/8mahi8/yokai-battle-lab/actions/runs/39929586534 . Real headless Chromium exercised both the new Phase 1 matching/Flash UI and previous Phase 4/5 battle interactions.
 - **Important unsourced gaps:** correct Flash point subtraction and skip compensation, initial-front advantage surviving after others already act, multiple simultaneous Flash ordering, no-action infinite Flash exploit and proper source-frame timing. No physical old iPad Safari or network peer match tested. Remains research-only. `main`, published Google Sites and production Firebase unchanged.
+
+
+---
+
+## 2026-10-23 — Phase 7: initial-version fundamentals restored; Watch Zero Poke usable (LATEST)
+
+Research and full QA details: [PHASE7_INITIAL_POKE_QA_20261023.md](./PHASE7_INITIAL_POKE_QA_20261023.md).
+
+- **Confirmed scope:** Original launch's shared six-rental team **does not include Flash Soul**. Phase 6 Flash remains available only as a separate research experiment, default OFF. Development has returned to the initial necessary combat controls.
+- Nintendo's official YW2 manual confirms Zero Watch Poke replaces Target/Pin, works on **Loafing or Inspirited** enemies, requires rapid tapping to fill a gauge, and can give rewards including draining enemy Soul. Source: https://csassets.nintendo.com/noaext/image/private/t_KA_PDF/manual-3DS-Yo-Kai_Watch_2_Fleshy_Souls .
+- `engine/poke-input.mjs`: touch input meter, target circle, progress/completion validation; **12 hits / generous circle are research fixtures**, not reconstructed 3DS values.
+- `engine/combat.mjs`: begin / tap / cancel Poke command, one successful Poke per enemy per side, interrupted attempts cancel on watch change or target rotating away, living enemy and active negative Inspirit/Loaf status gating. Loaf vulnerability until next own action remains **a hypothesis**. Poke and charge minigames cannot overlap on the same side.
+- Unverified Poke reward numbers remain **OFF by default**. Lab-only `researchPokeSoulTransfer:20` drains at most 20 Soul from the affected foe to the first living own front ally, respecting Soul availability/capacity. This particular amount, recipient and fixed outcome are NOT original YW2 facts; friendship and money rewards are omitted for initial 1v1.
+- `lab/phase2.html`: Watch Zero enemy buttons now open real pointer-tap Poke overlay, with progress bar, cancel and lab-only Soul-transfer feedback; default Watch Pin and G-tech continue to work.
+- Added unit/integration tests and real headless Chromium synthesized-pointer browser E2E (sleep B1, zero switch, poke B1 twelve times, lab transfer and reuse prevention, Poke B2 cancel). Verified **238/238 passing** at run https://github.com/8mahi8/yokai-battle-lab/actions/runs/39943107156 ; an additional mutually exclusive G/Poke test was added afterward (check latest CI).
+- Still research, not production: exact enemy Soul gain/drain/reward RNG, actual Poke tap thresholds and windows, purify gestures, statuses and attack formulas, physical old Safari iPad + multiplayer network transport + direct embedded Google Sites HTML.
+- User action NOT required at this phase. `main`, published Google Sites and production Firebase unchanged; no paid service used.
