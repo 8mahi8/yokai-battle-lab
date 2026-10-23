@@ -184,6 +184,75 @@ document.querySelector('#lab').addEventListener('load',()=>{
  }catch(error){result.textContent='QA-FAIL '+error.message;}
 });
 </script></body></html>`;
+const purifyQaHtml=String.raw`<!doctype html><html lang="ja"><meta charset="utf-8"><title>Purification browser QA</title>
+<body><strong id="result">PURIFY-PENDING</strong><iframe id="lab" src="/lab/phase2.html"></iframe>
+<script>
+const result=document.querySelector('#result');
+document.querySelector('#lab').addEventListener('load',()=>{
+ try{
+  const doc=document.querySelector('#lab').contentDocument;
+  const pick=sel=>{const el=doc.querySelector(sel);if(!el)throw Error('missing '+sel);return el;};
+  const pad=pick('#purifyPad');
+  const fire=(type,x,y,id=7)=>{
+   const rect=pad.getBoundingClientRect();
+   pad.dispatchEvent(new doc.defaultView.PointerEvent(type,{
+    bubbles:true,cancelable:true,pointerType:'touch',pointerId:id,
+    clientX:rect.left+rect.width*x,clientY:rect.top+rect.height*y
+   }));
+  };
+  const tap=(x,y)=>{fire('pointerdown',x,y);fire('pointerup',x,y);};
+  function complete(kind){
+   if(kind==='pop'){
+    for(const [x,y] of [[.29,.27],[.70,.26],[.51,.53],[.29,.75],[.73,.73]])tap(x,y);
+   }else if(kind==='mash'){
+    for(let i=0;i<14;i++)tap(.5,.5);
+   }else if(kind==='rub'){
+    fire('pointerdown',.4,.5);
+    for(let i=0;i<55;i++)fire('pointermove',i%2?.55:.4,.5);
+    fire('pointerup',.4,.5);
+   }else if(kind==='spin'){
+    for(let i=0;i<115;i++){
+     const a=2*Math.PI*i/50;
+     fire(i===0?'pointerdown':'pointermove',.5+.3*Math.cos(a),.5+.3*Math.sin(a));
+    }
+    fire('pointerup',.8,.5);
+   }else if(kind==='slash'){
+    const pairs=[[[.2,.25],[.8,.37]],[[.2,.47],[.8,.59]],[[.2,.69],[.8,.81]]];
+    for(const [start,end] of pairs){
+     fire('pointerdown',start[0],start[1]);
+     fire('pointermove',end[0],end[1]);
+     fire('pointerup',end[0],end[1]);
+    }
+   }
+  }
+  const init=(kind)=>{
+   pick('#reset').click();
+   pick('#purifyMode').value=kind;
+   pick('[data-sleep="A1"]').click();
+   pick('[data-rotate="0"][data-dir="1"]').click();
+   if(!pick('[data-purify="A1"]'))throw Error('bench purge command not rendered');
+   pick('[data-purify="A1"]').click();
+   if(pick('#purifyOverlay').hidden)throw Error('purify panel missing '+kind);
+   if(!pick('[data-purify="A1"]'))throw Error('status cleared BEFORE gesture '+kind);
+  };
+  for(const kind of ['pop','mash','rub','spin','slash']){
+   init(kind);complete(kind);
+   if(!pick('#purifyOverlay').hidden)throw Error('purify did not complete '+kind+' '+pick('#purifyCount').textContent);
+   if(pick('[data-purify="A1"]'))throw Error('status not removed after purge '+kind);
+   if(!pick('#log').textContent.includes('おはらい成功'))throw Error('purify success not recorded '+kind);
+  }
+  init('mash');
+  for(let i=0;i<6;i++)tap(.5,.5);
+  pick('#purifyCancel').click();
+  if(!pick('#purifyOverlay').hidden)throw Error('purify cancellation did not close');
+  if(!pick('[data-purify="A1"]'))throw Error('purify cancel wrongly removed status');
+  init('rub');
+  pick('[data-rotate="0"][data-dir="-1"]').click();
+  if(!pick('#purifyOverlay').hidden)throw Error('returning to front failed to cancel');
+  result.textContent='PURIFY-PASS';
+ }catch(e){result.textContent='PURIFY-FAIL '+e.message;}
+});
+</script></body></html>`;
 const priorityQaHtml=String.raw`<!doctype html><html lang="ja"><meta charset="utf-8"><title>Flash opening priority UI QA</title>
 <body><strong id="result">PRIORITY-PENDING</strong><iframe id="lab" src="/lab/phase1.html"></iframe>
 <script>
@@ -218,6 +287,9 @@ document.querySelector('#lab').addEventListener('load',()=>{
 const srv=createServer(async(req,res)=>{
  try{
   const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
+  if(pathname==='/__purify_smoke__.html'){
+   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(purifyQaHtml);return;
+  }
   if(pathname==='/__priority_smoke__.html'){
    res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(priorityQaHtml);return;
   }
@@ -266,6 +338,8 @@ try{
  console.log('Chromium HTML/ES-module DOM rendered: 2 teams, forecast, Soul and charge controls');
  await renderedDom(rootUrl+'/__browser_smoke__.html','interaction',['QA-PASS'],2500);
  console.log('Chromium interaction passed: counter wheel QA plus real Zero Poke tap meter, Soul transfer and cancellation');
+ await renderedDom(rootUrl+'/__purify_smoke__.html','purify',['PURIFY-PASS'],4000);
+ console.log('Chromium purification pointer QA passed: all five gestures, cancel and benched-only status clearing');
  await renderedDom(rootUrl+'/__priority_smoke__.html','priority',['PRIORITY-PASS'],2500);
  console.log('Chromium Flash opening-priority UI passed: toggles, matching front, one-use interception and forecast');
 }finally{
