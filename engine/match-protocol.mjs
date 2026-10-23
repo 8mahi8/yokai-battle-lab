@@ -128,7 +128,10 @@ function checkOptions(options){
 }
 export function createMatchProtocol({battleOptions={}}={}){
  checkOptions(battleOptions);
- const options=clone(battleOptions);
+ // The no-attack +5 owner-turn recovery is the one Soul-gain amount
+ // supported by direct YW2 player experiments. Attacking gain remains
+ // UNSOURCED and is not invented in the initial network contract.
+ const options=clone({researchSoulRecoveryMode:'owner-nonattack',...battleOptions});
  function newBattle(){return createCombat(options);}
  const game=newBattle();
  let revision=0;
