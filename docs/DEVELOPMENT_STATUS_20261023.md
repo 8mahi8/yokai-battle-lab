@@ -115,3 +115,17 @@ Source-backed implementation: `engine/charge-input.mjs`, `engine/combat.mjs`, `e
 - Complete reference ledger and explicit fixture values: `docs/PHASE4_CHARGE_INPUT_QA_20261023.md`.
 
 **Still out of scope / blocked:** real Soultimate attack/heal effects, exact recharge mechanics, in-game animations with overlapping tactical events and no-motion charge, Poke resolution, full original-rule fidelity, multiplayer sessions and production-ready single HTML Google Sites embedding. None of these should be described as complete. main and the published Google Sites version remain unchanged.
+
+
+---
+
+## 2026-10-23 afternoon — Phase 4 rank costs / working special effects (LATEST)
+
+See `docs/PHASE4_SPECIAL_EFFECTS_QA_20261023.md` for authoritative evidence, source ranking, QA and open problems.
+
+- **New source-backed Soul capacity table:** Soultimate charge rank 1/2/3/4 => 100/150/200/250 points, independently configurable per rental member and overridable for unknown special cases. This is the **Soultimate move rank**, not a character-rank shorthand.
+- **Research-only usable special effects:** Pure planner `engine/special-effects.mjs` supports single/multi-target one-hit neutral damage and front-line ally healing. With `researchSpecialEffects:true`, completing regular Soultimate or G-tech now makes actual HP changes, KO and winner updates; match logs reflect each target. Original move-specific power, targets, healing and special effects still UNVERIFIED. The default simulation remains unchanged unless this opt-in flag is used.
+- **Stronger research-based Soul income:** `researchSoulRecoveryMode:'owner-nonattack'` grants **5 to the acting member only** after certain nonattack actions, based on a YW2 player's experiments. Attack-time gain remains an explicit unknown and currently 0 *only in the lab*, not an asserted original rule. This replaces the former every-global-action +3 toy model in the UI. Debug `researchSoulGainPerAction` remains available separately.
+- **Interrupt consistency:** damaging Soultimates now interrupt opponent charging casters using the same probability evaluator as ordinary attacks, including KO cancellation and no enemy Soul spending on a cancelled charge.
+- **Real GitHub CI:** commit `111e521af1f64c1e0a0a8e71574ba90784f753d0` passed **111/111 Node tests**, 0 failed. Chromium rendered actual branch ESM and automatically completed one touch charge, verifying enemy HP fell and its research special log was emitted, in addition to earlier Soul/sleep/purification/G-mode checks. CI: https://github.com/8mahi8/yokai-battle-lab/actions/runs/39913499508 .
+- Does not represent full original YW2 battle model. Proper special effects, real passive gain under attack, no-motion exploit timing, Poke results, character animation, old iPad Safari, multiplayer and Google Sites direct-embed remain NOT IMPLEMENTED / NOT VERIFIED. `main`, Google Sites public version and live Firebase are unchanged.
