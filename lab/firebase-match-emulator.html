@@ -76,6 +76,8 @@ async function initialize(){
   databaseURL:'https://demo-yokai-lab-default-rtdb.firebaseio.com',projectId:'demo-yokai-lab'});
  firebase.auth().useEmulator('http://127.0.0.1:9099',{disableWarnings:true});
  db=firebase.database();db.useEmulator('127.0.0.1',9000);
+ // Each tab must own an independent anonymous UID, even under one origin.
+ await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE);
  const credential=await firebase.auth().signInAnonymously();
  uid=credential.user.uid;
  room=createFirebaseRoomClient({database:db,uid,onError:e=>say('Firebase: '+e.message)});
