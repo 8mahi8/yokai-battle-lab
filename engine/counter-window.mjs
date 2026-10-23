@@ -99,11 +99,13 @@ export function createCounterWindow({fronts=[['A1','A2','A3'],['B1','B2','B3']],
  }
  function setFront({side,ids}={}){
   sideOK(side);
-  flush();
-  current[side]=copyFront(ids);
-  if(current.flat().length!==new Set(current.flat()).size)
+  const next=copyFront(ids);
+  const other=current[1-side];
+  if(next.some(id=>other.includes(id)))
    throw new TypeError('a unit cannot appear on two teams');
-  return {ok:true,side,frontIds:[...current[side]],at:now};
+  flush();
+  current[side]=next;
+  return {ok:true,side,frontIds:[...next],at:now};
  }
  return {snapshot,beginCutin,beginCharge,cancelCharge,completeCharge,advance,setFront};
 }
