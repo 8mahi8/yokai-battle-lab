@@ -10,6 +10,7 @@ import { createSoulSystem, chargeInterruptChance } from './soul.mjs';
 import { chooseChargeKind, createChargeTrial } from './charge-input.mjs';
 import { soulCapacityForRank } from './soul.mjs';
 import { validateSpecialSpec, planResearchSpecial } from './special-effects.mjs';
+import { createPresentationTimeline } from './presentation-timeline.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
   {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5]},
@@ -63,9 +64,10 @@ export function baseDamage(attacker,target,kind,critical=false) {
   return Math.max(1,Math.min(999,Math.floor(amount)));
 }
 export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0,researchSpecialEffects=false,
-  researchSoulRecoveryMode='none'}={}) {
+  researchSoulRecoveryMode='none',researchPresentation=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
+  if(typeof researchPresentation!=='boolean')throw new TypeError('researchPresentation must be boolean');
   if(!['none','owner-nonattack'].includes(researchSoulRecoveryMode))
     throw new RangeError('unsupported researchSoulRecoveryMode');
   if(researchSoulRecoveryMode!=='none'&&researchSoulGainPerAction!==0)
@@ -82,6 +84,18 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const pins=[null,null], events=[];
   const guided=[null,null];
   const chargeHits=[0,0];
+  // Opponent-visible animation is a SEPARATE research clock; no mapping from
+  // phase1.pointsElapsed to wall-clock milliseconds is claimed here.
+  const presentation=researchPresentation?createPresentationTimeline():null;
+  const recordView=event=>{if(presentation)presentation.record(event);};
+  function beginPresentationMotion(options){
+    if(!presentation)return {ok:false,reason:'presentation_disabled'};
+    return presentation.beginMotion(options);
+  }
+  function advancePresentation(ms){
+    if(!presentation)return {ok:false,reason:'presentation_disabled'};
+    return presentation.advance(ms);
+  }
   let winner=null;
   const front=(side)=>clock.snapshot().teams[side].frontIds.map(id=>byId.get(id));
   const livingFront=(side)=>front(side).filter(x=>x.hp>0);
@@ -108,6 +122,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         success:false,alive:target.hp>0});
       guided[side]=null;
       chargeHits[side]=0;
+      recordView({side,kind:'chargeCancel',token:pending.token,memberId:pending.casterId,detail:'interrupted'});
       syncCanAct(target.id);
     }else chargeHits[side]++;
     return result;
@@ -136,6 +151,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const result=clock.rotate(side,direction,0);
     if(result.ok){
       syncPinned();
+      recordView({side,kind:'rotate',detail:direction===1?'right':'left'});
       const pending=guided[side];
       if(pending&&!clock.snapshot().teams[side].frontIds.includes(pending.id)){
         cancelGuidedCharge(side);
@@ -148,10 +164,12 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(winner!==null)throw new Error('battle finished');
     const old=soul.snapshot().pending[side];
     const result=soul.setMode(side,mode);
+    if(old)recordView({side,kind:'chargeCancel',token:old.token,memberId:old.casterId,detail:'mode_changed'});
     guided[side]=null;
     if(old)syncCanAct(old.casterId);
     chargeHits[side]=0;
     if(mode==='zero')pins[side]=null; // original Watch Zero replaces Pin with Poke
+    recordView({side,kind:'watchMode',detail:mode});
     return result;
   }
   function giveSoul(id,amount){
@@ -166,7 +184,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const clockUnit=team.members.find(m=>m.id===id);
     if(caster&&clockUnit&&!clockUnit.canAct)return {ok:false,reason:'caster_unable_to_act'};
     const result=soul.prepare({side,casterId:id,frontIds:team.frontIds,alive:!!caster&&caster.hp>0});
-    if(result.ok){chargeHits[side]=0;syncCanAct(id);}
+    if(result.ok){chargeHits[side]=0;syncCanAct(id);
+      recordView({side,kind:'chargeStart',token:result.token,memberId:id});}
     return result;
   }
   function resolveSoultimate(side,token,success){
@@ -177,7 +196,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const result=soul.resolve({side,token,success,frontIds:clock.snapshot().teams[side].frontIds,alive:!!caster&&caster.hp>0});
     if(guided[side]?.token===token)guided[side]=null;
     chargeHits[side]=0;
-    if(pending&&pending.token===token)syncCanAct(pending.casterId);
+    if(pending&&pending.token===token){
+      syncCanAct(pending.casterId);
+      recordView({side,kind:result.ok?'chargeComplete':'chargeCancel',
+        token,memberId:pending.casterId,detail:result.ok?result.kind:result.reason});
+    }
     if(!result.ok)return result;
     if(!researchSpecialEffects)return {...result,effectStatus:'unimplemented'};
     // RESEARCH ONLY. All numeric special powers are fixture values until verified
@@ -269,7 +292,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   function snapshot(){
     return {seed,winner,pins:[...pins],clock:clock.snapshot(),squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights]}))),events:events.slice(-80).map(e=>({...e})),soul:soul.snapshot(),
       guided:guided.map(g=>g?{token:g.token,id:g.id,kind:g.kind,challenge:g.trial.snapshot()}:null),
-      inspirits:Object.fromEntries([...byId.keys()].map(id=>[id,statuses.list(id)]))};
+      inspirits:Object.fromEntries([...byId.keys()].map(id=>[id,statuses.list(id)])),
+      ...(presentation?{presentation:presentation.snapshot()}:{})};
   }
   function step(){
     if(winner!==null)return {type:'finished',winner};
@@ -329,6 +353,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       actor:actor.id,kind:kind==='technique'&&actor.technique==='heal'?'heal':kind,target:target?.id??null,
       hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,effect,resisted,interruption,winner};
     events.push(action);
+    recordView({side:actor.side,kind:'action',memberId:actor.id,detail:action.kind});
     if(researchSoulGainPerAction>0){for(const member of squads.flat())if(member.hp>0)soul.addSoul(member.id,researchSoulGainPerAction);}
     if(researchSoulRecoveryMode==='owner-nonattack'){
       // Empirical YW2 research: non-attacking Yo-kai restore ~5 Soul AFTER
@@ -353,5 +378,6 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   }
   return {snapshot,step,simulate,rotate,pin,applyInspirit,purify,preview:clock.predict,
     setWatchMode,giveSoul,prepareSoultimate,resolveSoultimate,pokeEligibility,
-    beginGuidedCharge,chargeInput,cancelGuidedCharge};
+    beginGuidedCharge,chargeInput,cancelGuidedCharge,
+    beginPresentationMotion,advancePresentation};
 }
