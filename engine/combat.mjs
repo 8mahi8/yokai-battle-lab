@@ -14,6 +14,7 @@ import { createPresentationTimeline } from './presentation-timeline.mjs';
 import { createCounterWindow } from './counter-window.mjs';
 import { createWheelCoalescing } from './wheel-coalescing.mjs';
 import { createPokeTrial } from './poke-input.mjs';
+import { createPurifyTrial, choosePurifyKind, PURIFY_KINDS } from './purify-input.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
   {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5]},
@@ -101,6 +102,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const guided=[null,null];
   const chargeHits=[0,0];
   const pokes=[null,null],pokedTargets=[new Set(),new Set()];
+  const purification=[null,null];
+  let purificationSerial=0;
   // Loaf vulnerability is provisional until that unit's next action.
   const loafingActors=new Set();
   // Opponent-visible animation is a SEPARATE research clock; no mapping from
@@ -207,12 +210,67 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const result=statuses.apply({id,sign,effect,source,duration});
     syncCanAct(id);return result;
   }
+  /** Debug shortcut retained only to preserve legacy engine tests.
+   * Player UI must use beginPurify + purifyInput. This function deliberately
+   * does not count as a successful gesture for gameplay.
+   */
   function purify(side,id){
     if(winner!==null)throw new Error('battle finished');
     if(![0,1].includes(side))throw new RangeError('invalid side');
     const result=statuses.purify({id,side,benchIds:clock.snapshot().teams[side].benchIds});
-    if(result.ok)syncCanAct(id);
+    if(result.ok){
+      if(purification[side]?.id===id)purification[side]=null;
+      syncCanAct(id);
+    }
     return result;
+  }
+  function beginPurify(side,id,{kind=null}={}){
+    if(side!==0&&side!==1)throw new RangeError('invalid side');
+    if(winner!==null)return {ok:false,reason:'battle_finished'};
+    if(purification[side])return {ok:false,reason:'purify_already_pending'};
+    if(pokes[side]||soul.snapshot().pending[side])
+      return {ok:false,reason:'other_touch_action_pending'};
+    const bench=clock.snapshot().teams[side].benchIds;
+    if(!byId.has(id)||byId.get(id).side!==side)
+      return {ok:false,reason:'not_your_member'};
+    if(!bench.includes(id))return {ok:false,reason:'must_be_on_bench'};
+    if(byId.get(id).hp<=0)return {ok:false,reason:'member_ko'};
+    if(!statuses.list(id).some(x=>x.sign==='negative'))
+      return {ok:false,reason:'no_negative_inspirit'};
+    const selected=kind??choosePurifyKind(purificationSerial);
+    if(!PURIFY_KINDS.includes(selected))throw new RangeError('invalid purification kind');
+    const trial=createPurifyTrial({kind:selected,seed:purificationSerial});
+    purificationSerial++;
+    purification[side]={id,trial};
+    return {ok:true,id,kind:selected,challenge:trial.snapshot()};
+  }
+  function purifyInput(side,event){
+    if(side!==0&&side!==1)throw new RangeError('invalid side');
+    const pending=purification[side];
+    if(!pending)return {ok:false,reason:'no_active_purification'};
+    const bench=clock.snapshot().teams[side].benchIds;
+    if(winner!==null||!bench.includes(pending.id)||
+       byId.get(pending.id).hp<=0||
+       !statuses.list(pending.id).some(x=>x.sign==='negative')){
+      purification[side]=null;
+      return {ok:false,reason:'purification_target_no_longer_valid'};
+    }
+    const challenge=pending.trial.input(event);
+    if(!challenge.completed)return {ok:true,completed:false,challenge};
+    const result=purify(side,pending.id);
+    purification[side]=null;
+    if(!result.ok)return {ok:false,reason:result.reason};
+    events.push({type:'purification',side,targetId:pending.id,
+      kind:challenge.kind,removed:result.removed.map(x=>({...x})),
+      model:'research-gesture',bonusExperience:'unimplemented'});
+    return {ok:true,completed:true,challenge,removed:result.removed,
+      bonusExperience:'unimplemented'};
+  }
+  function cancelPurify(side){
+    if(side!==0&&side!==1)throw new RangeError('invalid side');
+    if(!purification[side])return {ok:false,reason:'no_active_purification'};
+    purification[side]=null;
+    return {ok:true,cancelled:true};
   }
   function syncPinned(){ for(let side=0;side<2;side++)if(pins[side]&&!livingFront(1-side).some(m=>m.id===pins[side]))pins[side]=null; }
   function rotate(side,direction){
@@ -226,10 +284,13 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const result=clock.rotate(side,direction,0);
     if(result.ok){
       syncPinned();
-      // Rotating a target out of the enemy front cancels an unfinished poke.
+      // Changes of lineups cancel stale manual touch gestures: a Poke target
+      // leaves the enemy frontline, or a Purification subject returns to front.
       for(let i=0;i<2;i++){
         if(pokes[i]&&!clock.snapshot().teams[1-i].frontIds.includes(pokes[i].targetId))
           pokes[i]=null;
+        if(purification[i]&&!clock.snapshot().teams[i].benchIds.includes(purification[i].id))
+          purification[i]=null;
       }
       const frontIds=clock.snapshot().teams[side].frontIds;
       if(counter)counter.setFront({side,ids:frontIds});
@@ -270,6 +331,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     }
     guided[side]=null;
     pokes[side]=null;
+    purification[side]=null;
     if(old)syncCanAct(old.casterId);
     chargeHits[side]=0;
     if(mode==='zero')pins[side]=null; // original Watch Zero replaces Pin with Poke
@@ -284,6 +346,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(winner!==null)throw new Error('battle finished');
     if(side!==0&&side!==1)throw new RangeError('invalid side');
     if(pokes[side])return {ok:false,reason:'poke_active'};
+    if(purification[side])return {ok:false,reason:'purification_active'};
     const team=clock.snapshot().teams[side];
     const caster=byId.get(id);
     const clockUnit=team.members.find(m=>m.id===id);
@@ -408,6 +471,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   function beginPoke(side,id){
     if(side!==0&&side!==1)throw new RangeError('invalid side');
     if(pokes[side])return {ok:false,reason:'poke_already_pending'};
+    if(purification[side])return {ok:false,reason:'purification_active'};
     if(soul.snapshot().pending[side])return {ok:false,reason:'special_charge_active'};
     const eligible=pokeEligibility(side,id);
     if(!eligible.ok)return eligible;
@@ -490,6 +554,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   function snapshot(){
     return {seed,winner,pins:[...pins],clock:clock.snapshot(),squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights]}))),events:events.slice(-80).map(e=>({...e})),soul:soul.snapshot(),
       guided:guided.map(g=>g?{token:g.token,id:g.id,kind:g.kind,challenge:g.trial.snapshot()}:null),
+      purification:purification.map(p=>p?{id:p.id,challenge:p.trial.snapshot()}:null),
       poke:{active:pokes.map(p=>p?{targetId:p.targetId,challenge:p.trial.snapshot()}:null),
         used:pokedTargets.map(set=>[...set]),loafing:[...loafingActors],
         rewardFixture:researchPokeSoulTransfer},
@@ -591,7 +656,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     }
     return result;
   }
-  return {snapshot,step,simulate,rotate,pin,applyInspirit,purify,preview:clock.predict,
+  return {snapshot,step,simulate,rotate,pin,applyInspirit,purify,
+    beginPurify,purifyInput,cancelPurify,preview:clock.predict,
     setWatchMode,giveSoul,prepareSoultimate,resolveSoultimate,pokeEligibility,
     beginPoke,pokeInput,cancelPoke,beginGuidedCharge,chargeInput,cancelGuidedCharge,
     beginPresentationMotion,advancePresentation,beginCounterCutin};
