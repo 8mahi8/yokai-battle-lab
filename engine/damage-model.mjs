@@ -10,9 +10,9 @@
  */
 export const ELEMENTS=Object.freeze(['neutral','fire','water','lightning','earth','ice','wind']);
 export const STAT_STAGE_MULTIPLIERS=Object.freeze([
-  .1,.15,.2,.3,.4,.55,.7,.85,1,1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8
+  .1,.15,.2,.3,.4,.55,.7,.85,1,1.1,1.2,1.3,1.4,1.5,1.6,1.8,2
 ]);
-// Source YW2 positive +7 is x1.7 (unlike YW1's x1.8); +8 is x1.8.
+// Source YW2 stages +7 and +8 are ×1.8 and ×2; lower negatives differ from YW1.
 function validNumber(n,name,{min=0,max=999999}={}){
  if(!Number.isFinite(n)||n<min||n>max)throw new RangeError(name+' out of range');
  return n;
