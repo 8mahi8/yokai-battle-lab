@@ -53,7 +53,10 @@ export function createPresentationTimeline({startMs=0,maxLog=256,coalesceRotatio
    if(e.kind==='chargeCancel'&&matched.has(i))continue;
    if(suppressed.has(i))continue;
    const item={...e,visibleAt:shownAt,delayed:shownAt>e.at};
-   if(e.kind==='rotate'&&merged.has(i))item.collapsedRotations=merged.get(i);
+   if(e.kind==='rotate'&&merged.has(i)){
+    item.collapsedRotations=merged.get(i);
+    if(item.collapsedRotations>=2)item.unsourcedThreePlus=true;
+   }
    if(e.kind==='chargeComplete'){
     item.kind='specialRelease';
     item.hiddenCharge=matched.has(i);
