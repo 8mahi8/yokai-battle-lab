@@ -82,7 +82,10 @@ test('a semantically invalid but well-shaped command consumes sequence and repla
  assert.equal(first.ok,false);
  assert.equal(first.result.reason,'soul_not_full');
  auto(m,170);
- assert.equal(issue(m,0,1,{type:'chargeStart',id:'A1'}).reason,'stale_sequence');
+ const originalRetry=issue(m,0,1,{type:'chargeStart',id:'A1'});
+ assert.equal(originalRetry.duplicate,true,'exact retransmit gets its original denied ACK');
+ assert.equal(originalRetry.result.reason,'soul_not_full');
+ assert.equal(issue(m,0,1,{type:'rotate',direction:1}).reason,'sequence_conflict');
  assert.equal(replayMatchJournal(m.exportJournal()).ok,true);
 });
 test('switching to Watch Zero forbids a normal target pin while still allowing wheel commands',()=>{
