@@ -27,8 +27,10 @@ export function planResearchSpecial({spec,caster,allies,enemies,powerMultiplier=
  const rule=validateSpecialSpec(spec);
  if(!caster||!Number.isFinite(caster.strength)||!Number.isFinite(caster.spirit))
   throw new TypeError('valid caster stats required');
- if(!Array.isArray(allies)||!Array.isArray(enemies)||!allies.length||!enemies.length)
-  throw new TypeError('living and target arrays required');
+ if(!Array.isArray(allies)||!Array.isArray(enemies))
+  throw new TypeError('allies and enemies arrays required');
+ // A side may temporarily have zero living front-line targets while reserves
+ // are still alive. A finished special then has no valid target, not a crash.
  for(const member of [...allies,...enemies])checkCombatant(member);
  if(!Number.isFinite(powerMultiplier)||powerMultiplier<1||powerMultiplier>10)
   throw new RangeError('invalid G power multiplier');
