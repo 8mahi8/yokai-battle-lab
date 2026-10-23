@@ -15,6 +15,8 @@
 .charge-meter{height:10px;background:#0c1c2b;border-radius:10px;overflow:hidden;border:1px solid #466278}
 .charge-meter i{display:block;height:100%;background:#e6c575;width:0}
 .charge-note{font-size:11px;color:#c4b398;margin:7px 0 0}
+.poke-pad{touch-action:none;user-select:none;display:block;width:min(100%,285px,46dvh);aspect-ratio:1;margin:8px auto;border:1px solid #9bcac6;border-radius:50%;background:#17374a;cursor:pointer}
+.poke-count{font-weight:bold;font-size:14px;color:#f3dc98}
 .timeline-panel{margin:8px 0;padding:8px;background:#142536;border:1px solid #55718a;border-radius:9px}
 .timeline-title{font-weight:800;font-size:12px;color:#f4d492}
 .timeline-explain{font-size:10px;color:#bfd0df;line-height:1.5}
@@ -49,11 +51,25 @@
   <p class="charge-note">入力条件・図形は研究用の仮設定。原作そのものの判定を保証しません。</p>
  </section>
 </div>
+<div id="pokeOverlay" class="charge-overlay" hidden>
+ <section class="charge-dialog" role="dialog" aria-modal="true" aria-label="つつく">
+  <div class="charge-head"><b>零式・つつく（研究）</b><button id="pokeCancel">中止する</button></div>
+  <p class="charge-help">敵の身体を連続でタップしてゲージをいっぱいにしよう。</p>
+  <svg id="pokePad" class="poke-pad" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-label="つつくタッチエリア">
+    <circle cx="50" cy="50" r="39" fill="#467f83" stroke="#f1db94" stroke-width="2"/>
+    <circle cx="50" cy="50" r="13" fill="#8bc8c5" opacity=".8"/>
+    <text x="50" y="56" font-size="10" fill="#102534" text-anchor="middle">つつく！</text>
+  </svg>
+  <div id="pokeCount" class="poke-count">0/12</div>
+  <div class="charge-meter"><i id="pokeMeter"></i></div>
+  <p class="charge-note">連続12タップ・妖気吸収量20は研究用の仮値。友情・お金は対戦版に未実装。原作の正確な条件ではありません。</p>
+ </section>
+</div>
 <script type="module">
 import {createCombat} from '../engine/combat.mjs';
 const el=id=>document.getElementById(id);
-const makeResearchBattle=()=>createCombat({researchSpecialEffects:true,researchSoulRecoveryMode:'owner-nonattack',researchPresentation:true,researchCounterTiming:true,researchWheelCoalescing:true});
-let battle=makeResearchBattle(),actions=[],last=null,activeChargeSide=null;
+const makeResearchBattle=()=>createCombat({researchSpecialEffects:true,researchSoulRecoveryMode:'owner-nonattack',researchPresentation:true,researchCounterTiming:true,researchWheelCoalescing:true,researchPokeSoulTransfer:20});
+let battle=makeResearchBattle(),actions=[],last=null,activeChargeSide=null,activePokeSide=null;
 const chargeNames={spin:'まわせ！',tap:'打て！',trace:'なぞれ！',align:'あわせろ！'};
 const chargeHelp={
  spin:'円のふちを指でぐるぐる2周回そう',
@@ -93,8 +109,21 @@ function renderCharge(challenge){
  }
  el('chargePad').innerHTML=body;
 }
+function renderPoke(snapshot,side){
+ const overlay=el('pokeOverlay');
+ if(side===null||!snapshot){overlay.hidden=true;return;}
+ overlay.hidden=false;
+ el('pokeCount').textContent=snapshot.targetId+' / '+snapshot.challenge.hits+
+  '/'+snapshot.challenge.requiredHits+' 回';
+ el('pokeMeter').style.width=(snapshot.challenge.progress*100).toFixed(1)+'%';
+}
 function draw(){
  const snap=battle.snapshot();el('count').textContent=snap.clock.turn;
+ if(activePokeSide!==null){
+  const active=snap.poke.active[activePokeSide];
+  if(active)renderPoke(active,activePokeSide);
+  else{activePokeSide=null;renderPoke(null,null);}
+ }
  const presentation=snap.presentation;
  const labels={chargeStart:'チャージ開始',specialRelease:'必殺発動',
   chargeCancel:'チャージ中止',rotate:'サークル回転',watchMode:'零式切替',action:'通常行動'};
@@ -156,12 +185,14 @@ function draw(){
   let html='<div class="heading">TEAM '+(side?'B':'A')+'<small>リング位置 '+(ring.offset+1)+' / '+(snap.soul.modes[side]==='zero'?'零式':'通常')+'</small></div><div class="controls"><button data-watch="'+side+'">'+(snap.soul.modes[side]==='zero'?'通常へ切替':'零式へ切替')+'</button>'+(snap.guided[side]?'<button data-cancel="'+side+'">チャージ中止</button>':'')+'</div><div class="front">';
   for(const id of ring.frontIds){
    const m=byId.get(id),gauge=soulMap.get(id),selected=snap.pins[1-side]===id,asleep=snap.inspirits[id]?.some(x=>x.effect==='sleep'),powered=snap.inspirits[id]?.some(x=>x.effect==='strength-up');
-   html+='<div class="unit '+(m.hp===0?'dead ':'')+(selected?'pinned ':'')+(last===id?'recent':'')+'"><span class="info">'+id+' '+(m.guard?'🛡️':'')+(asleep?' 💤':'')+(powered?' ⬆️':'')+'</span><b>'+esc(m.name)+'</b><div class="hpbar"><i style="width:'+Math.round(m.hp/m.maxHp*100)+'%"></i></div><div class="info">'+m.hp+'/'+m.maxHp+'</div><div class="hpbar soul"><i style="width:'+Math.round(gauge.soul/gauge.capacity*100)+'%"></i></div><div class="info">妖気 '+gauge.soul+'/'+gauge.capacity+'</div><button data-soul="'+id+'">妖気+25</button><button data-special="'+id+'" '+(m.hp===0||snap.guided[side]!==null?'disabled':'')+'>'+(snap.soul.modes[side]==='zero'?'G技':'必殺')+'</button><button data-pin="'+id+'" data-side="'+(1-side)+'" '+(m.hp===0?'disabled':'')+'>'+(snap.soul.modes[1-side]==='zero'?'つつき条件確認':selected?'指定解除':'対象に指定')+'</button><button data-sleep="'+id+'" '+(m.hp===0||asleep?'disabled':'')+'>睡眠を付与（実験）</button></div>';
+   html+='<div class="unit '+(m.hp===0?'dead ':'')+(selected?'pinned ':'')+(last===id?'recent':'')+'"><span class="info">'+id+' '+(m.guard?'🛡️':'')+(asleep?' 💤':'')+(powered?' ⬆️':'')+'</span><b>'+esc(m.name)+'</b><div class="hpbar"><i style="width:'+Math.round(m.hp/m.maxHp*100)+'%"></i></div><div class="info">'+m.hp+'/'+m.maxHp+'</div><div class="hpbar soul"><i style="width:'+Math.round(gauge.soul/gauge.capacity*100)+'%"></i></div><div class="info">妖気 '+gauge.soul+'/'+gauge.capacity+'</div><button data-soul="'+id+'">妖気+25</button><button data-special="'+id+'" '+(m.hp===0||snap.guided[side]!==null?'disabled':'')+'>'+(snap.soul.modes[side]==='zero'?'G技':'必殺')+'</button><button data-pin="'+id+'" data-side="'+(1-side)+'" '+(m.hp===0?'disabled':'')+'>'+(snap.soul.modes[1-side]==='zero'?'つつく':selected?'指定解除':'対象に指定')+'</button><button data-sleep="'+id+'" '+(m.hp===0||asleep?'disabled':'')+'>睡眠を付与（実験）</button></div>';
   }
   html+='</div><div class="bench">'+ring.benchIds.map(id=>{let m=byId.get(id);const needsPurify=snap.inspirits[id]?.some(x=>x.sign==='negative');const meter=soulMap.get(id);return '<span>'+id+' '+esc(m.name)+' HP'+m.hp+'/'+m.maxHp+' 妖気'+meter.soul+'/'+meter.capacity+' <button data-soul="'+id+'">妖気+25</button>'+(needsPurify?' 💤 <button data-purify="'+id+'" data-owner="'+side+'">おはらい</button>':'')+'</span>';}).join('')+'</div><div class="controls"><button data-rotate="'+side+'" data-dir="-1">◀ 左回転</button><button data-rotate="'+side+'" data-dir="1">右回転 ▶</button></div>';
   el('team'+side).innerHTML=html;
  }
  el('log').innerHTML=snap.events.slice(-35).reverse().map(x=>{
+  if(x.type==='poke')return '<div>👆 TEAM '+(x.side===0?'A':'B')+
+   ' → '+esc(x.targetId)+' つつき成功 / 妖気吸収 '+x.reward.amount+'（仮）</div>';
   if(x.type==='wheel-fidelity-unknown')return '<div>⚠ 連続'+x.rotations+'回転：原作処理が未確認</div>';
   if(x.type==='counter-hit-indeterminate')return '<div>⚠ 対象未確定のためダメージ保留（'+x.rotationCount+'回転）</div>';
   if(x.type==='wheel-target-correction')return '<div>↺ 連続回転：命中対象を '+esc(x.targetIds.join('・'))+' に補正</div>';
@@ -213,8 +244,9 @@ document.addEventListener('click',event=>{
  else if(btn.dataset.pin){
    const side=Number(btn.dataset.side),before=battle.snapshot();
    if(before.soul.modes[side]==='zero'){
-     const result=battle.pokeEligibility(side,btn.dataset.pin);
-     el('status').textContent=result.ok?'つつき可能（報酬・アクション未実装）':'つつき不可：'+result.reason;
+     const result=battle.beginPoke(side,btn.dataset.pin);
+     if(result.ok)activePokeSide=side;
+     el('status').textContent=result.ok?'つつく開始。敵を12回タップしよう':'つつき不可：'+result.reason;
    }else{
      battle.pin(side,before.pins[side]===btn.dataset.pin?null:btn.dataset.pin);
      el('status').textContent='対象を更新';
@@ -247,7 +279,7 @@ document.addEventListener('click',event=>{
  }
  else if(btn.id==='one')next(1);
  else if(btn.id==='many')next(20);
- else if(btn.id==='reset'){battle=makeResearchBattle();actions=[];last=null;activeChargeSide=null;el('status').textContent='初期化';draw();}
+ else if(btn.id==='reset'){battle=makeResearchBattle();actions=[];last=null;activeChargeSide=null;activePokeSide=null;el('status').textContent='初期化';draw();}
  }catch(error){el('status').textContent=error.message;}
 });
 draw();
@@ -296,6 +328,26 @@ el('chargeAdvanceMotion').addEventListener('click',()=>{
   battle.advancePresentation(1000);
   el('status').textContent='演出時間を+1000ms進めた';draw();
  }
+});
+const pokePad=el('pokePad');
+pokePad.addEventListener('pointerdown',e=>{
+ if(activePokeSide===null)return;
+ e.preventDefault();
+ const r=pokePad.getBoundingClientRect();
+ const coords={type:'tap',x:(e.clientX-r.left)/r.width,y:(e.clientY-r.top)/r.height};
+ try{
+  const result=battle.pokeInput(activePokeSide,coords);
+  if(result.completed){
+   el('status').textContent=result.reward.kind==='research-soul-transfer'
+    ?'つつき成功！ 妖気'+result.reward.amount+'吸収（仮設定）'
+    :'つつき成功！ 報酬は未確定';
+  }else if(!result.ok)el('status').textContent='つつき不可：'+result.reason;
+  draw();
+ }catch(error){el('status').textContent=error.message;draw();}
+});
+el('pokeCancel').addEventListener('click',()=>{
+ if(activePokeSide===null)return;
+ battle.cancelPoke(activePokeSide);el('status').textContent='つつきを中止';draw();
 });
 el('chargeCancel').addEventListener('click',()=>{
  if(activeChargeSide===null)return;
