@@ -195,6 +195,12 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   function syncPinned(){ for(let side=0;side<2;side++)if(pins[side]&&!livingFront(1-side).some(m=>m.id===pins[side]))pins[side]=null; }
   function rotate(side,direction){
     if(winner!==null)throw new Error('battle finished');
+    // Drain a hit whose scheduled timestamp is already due, BEFORE applying
+    // a later wheel input. Otherwise setFront could erase its queued HP impact.
+    if(counter){
+      advancePresentation(0);
+      if(winner!==null)throw new Error('battle finished');
+    }
     const result=clock.rotate(side,direction,0);
     if(result.ok){
       syncPinned();
@@ -392,6 +398,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   }
   function step(){
     if(winner!==null)return {type:'finished',winner};
+    if(counter){
+      advancePresentation(0);
+      if(winner!==null)return {type:'finished',winner};
+    }
     ensureFront();
     const pending=clock.snapshot();
     if(![0,1].every(s=>livingFront(s).length))return {type:'awaiting_rotation',fronts:pending.teams.map(t=>t.frontIds)};
