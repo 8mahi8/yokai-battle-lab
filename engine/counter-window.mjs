@@ -93,6 +93,24 @@ export function createCounterWindow({fronts=[['A1','A2','A3'],['B1','B2','B3']],
   if(hits.length>100)hits.splice(0,hits.length-100);
   return ready.map(clone);
  }
+ /** Experimental correction when two rotations in one no-auto-action window
+  * supersede the first. Only a still-pending completion-locked hit can be revised;
+  * resolving an attack in the past is never permitted.
+  */
+ function revisePendingTarget({hitId,targetIds,reason='wheel-pair'}={}){
+  positiveSafe(hitId,'hitId');
+  const ids=copyFront(targetIds);
+  if(typeof reason!=='string'||!reason||reason.length>100)
+   throw new TypeError('invalid correction reason');
+  const p=pending.find(item=>item.id===hitId);
+  if(!p)return {ok:false,reason:'hit_not_pending'};
+  if(p.hitAt<=now)return {ok:false,reason:'hit_due_or_elapsed'};
+  if(p.frontLock!=='completion')return {ok:false,reason:'target_not_completion_locked'};
+  if(p.targetCorrection)return {ok:false,reason:'already_corrected'};
+  p.targetCorrection={reason,at:now,previous:[...p.targetIds]};
+  p.targetIds=ids;
+  return {ok:true,id:hitId,targetIds:[...ids],previous:[...p.targetCorrection.previous]};
+ }
  function advance(ms){
   positiveSafe(ms,'advance',true);
   now+=ms;return flush();
@@ -107,5 +125,5 @@ export function createCounterWindow({fronts=[['A1','A2','A3'],['B1','B2','B3']],
   current[side]=next;
   return {ok:true,side,frontIds:[...next],at:now};
  }
- return {snapshot,beginCutin,beginCharge,cancelCharge,completeCharge,advance,setFront};
+ return {snapshot,beginCutin,beginCharge,cancelCharge,completeCharge,revisePendingTarget,advance,setFront};
 }
