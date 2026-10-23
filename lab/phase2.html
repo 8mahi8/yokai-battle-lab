@@ -184,7 +184,9 @@ const chargePad=el('chargePad');
 chargePad.addEventListener('pointerdown',e=>{
  if(activeChargeSide===null)return;
  if(pointerId!==null)return;
- e.preventDefault();pointerId=e.pointerId;if(chargePad.setPointerCapture)chargePad.setPointerCapture(e.pointerId);
+ e.preventDefault();pointerId=e.pointerId;
+ try{if(chargePad.setPointerCapture)chargePad.setPointerCapture(e.pointerId);}catch{}
+ // Synthetic PointerEvents in automated browser QA may have no real active capture.
  applyTouch({type:'down',...normalizedPointer(e)});
 });
 chargePad.addEventListener('pointermove',e=>{
