@@ -29,6 +29,10 @@
  <div class="timeline-explain">演出開始後、チャージを終えてから時間を進めると、ノーモーション条件を観察できます。ミリ秒は実験用で原作の測定値ではありません。</div>
  <div class="controls"><button id="motionDemo">別の技の演出 1000ms</button><button id="advancePartial">+250ms</button><button id="advanceMotion">+1000ms</button></div>
  <div id="visibility" class="timeline-display" aria-live="polite"></div>
+ <div class="timeline-title">カウンター必殺・当たる前衛（研究）</div>
+ <div class="timeline-explain">相手Bのカットイン中にAの必殺をチャージ。完了が早いとその時点のB前衛、遅いと終了約0.5秒後のB前衛を攻撃する仮モデルです。我慢2個の例外も試せます。</div>
+ <div class="controls"><button id="cutinStart">B必殺カットイン 800ms</button><button id="cutinEndure">我慢2個・カットイン</button></div>
+ <div id="counterStatus" class="timeline-display" aria-live="polite"></div>
 </div>
 <div id="log" aria-live="polite"></div></aside></div></main>
 <div id="chargeOverlay" class="charge-overlay" hidden>
@@ -44,7 +48,7 @@
 <script type="module">
 import {createCombat} from '../engine/combat.mjs';
 const el=id=>document.getElementById(id);
-const makeResearchBattle=()=>createCombat({researchSpecialEffects:true,researchSoulRecoveryMode:'owner-nonattack',researchPresentation:true});
+const makeResearchBattle=()=>createCombat({researchSpecialEffects:true,researchSoulRecoveryMode:'owner-nonattack',researchPresentation:true,researchCounterTiming:true});
 let battle=makeResearchBattle(),actions=[],last=null,activeChargeSide=null;
 const chargeNames={spin:'まわせ！',tap:'打て！',trace:'なぞれ！',align:'あわせろ！'};
 const chargeHelp={
@@ -98,6 +102,16 @@ function draw(){
    e.visibleAt+'ms TEAM '+(e.side===0?'A':'B')+' '+
    (e.hiddenCharge?'⚡ノーモーション必殺':labels[e.kind]||e.kind)+
    (e.memberId?' '+esc(e.memberId):'')+'</div>').join('');
+ const counter=snap.counterWindow,cutin=counter.cutin;
+ const frontNames=counter.fronts[1].join(' / ');
+ const pending=counter.pending[0];
+ const hits=counter.hits.slice(-2).reverse();
+ el('counterStatus').innerHTML=
+  '<div>B前衛: '+esc(frontNames)+'</div>'+
+  (cutin?'<div>カットイン '+cutin.startedAt+'–'+cutin.endsAt+'ms / 我慢'+cutin.enduresSpent+'個</div>':'<div>カットイン未開始</div>')+
+  (pending?'<div>カウンター命中予定: '+pending.hitAt+'ms / '+esc(pending.frontLock)+
+    ' / '+(pending.targetIds?esc(pending.targetIds.join('、')):'命中時の前衛')+'</div>':'')+
+  hits.map(h=>'<div class="timeline-event moment">命中 '+h.resolvedAt+'ms : '+esc(h.targetIds.join('、'))+' ('+esc(h.frontLock)+')</div>').join('');
  if(activeChargeSide!==null){
   const active=snap.guided[activeChargeSide];
   if(active)renderCharge(active.challenge);
@@ -125,6 +139,7 @@ function draw(){
   el('team'+side).innerHTML=html;
  }
  el('log').innerHTML=snap.events.slice(-35).reverse().map(x=>{
+  if(x.type==='counter-hit')return '<div>🎯カウンター命中 '+x.hitAt+'ms / '+esc(x.targets.join('・'))+'</div>';
   if(x.type==='special')return '<div>✨ '+esc(x.actor)+' '+(x.mode==='g-tech'?'G技':'必殺')+
    '（仮効果） '+x.impacts.map(t=>esc(t.targetId)+(t.kind==='heal'?' +':' -')+t.amount+'HP').join(' / ')+'</div>';
   return '<div>#'+x.turn+' '+esc(x.actor)+' '+({attack:'攻撃',technique:'妖術',heal:'回復',guard:'防御',inspirit:'取り憑き',loaf:'サボり'}[x.kind]||'')+
@@ -180,6 +195,14 @@ document.addEventListener('click',event=>{
    }
    draw();
  }
+ else if(btn.id==='cutinStart'||btn.id==='cutinEndure'){
+   const result=battle.beginCounterCutin({attackerSide:1,durationMs:800,
+     enduresSpent:btn.id==='cutinEndure'?2:0});
+   el('status').textContent=result.ok
+     ?'TEAM Bの必殺カットイン開始。TEAM Aの妖気を満タンにして必殺を試そう'
+     :'カットイン不可: '+result.reason;
+   draw();
+ }
  else if(btn.id==='motionDemo'){
    const motion=battle.beginPresentationMotion({durationMs:1000,kind:'inspirit',actorId:'research'});
    el('status').textContent='他の技の演出を開始 ('+motion.endsAt+'msまで)';draw();
@@ -205,7 +228,9 @@ function applyTouch(event){
   const result=battle.chargeInput(activeChargeSide,event);
   if(result.completed){
    el('status').textContent=result.special?.ok
-    ?'必殺チャージ成功！ 妖気消費済（仮効果：'+(result.special.impacts?.map(x=>x.targetId+(x.kind==='heal'?' +':' -')+x.amount).join('、')||'効果未実装')+'HP）'
+    ?(result.special.effectStatus==='pending-counter-hit'
+       ?'カウンター必殺のチャージ成功。妖気消費済、命中は'+result.special.counter.hitAt+'msに判定'
+       :'必殺チャージ成功！ 妖気消費済（仮効果：'+(result.special.impacts?.map(x=>x.targetId+(x.kind==='heal'?' +':' -')+x.amount).join('、')||'効果未実装')+'HP）')
     :'チャージ失敗：'+(result.special?.reason||result.reason);
   }
   draw();
