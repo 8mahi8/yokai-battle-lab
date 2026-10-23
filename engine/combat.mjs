@@ -11,6 +11,7 @@ import { chooseChargeKind, createChargeTrial } from './charge-input.mjs';
 import { soulCapacityForRank } from './soul.mjs';
 import { validateSpecialSpec, planResearchSpecial } from './special-effects.mjs';
 import { createPresentationTimeline } from './presentation-timeline.mjs';
+import { createCounterWindow } from './counter-window.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
   {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5]},
@@ -64,10 +65,13 @@ export function baseDamage(attacker,target,kind,critical=false) {
   return Math.max(1,Math.min(999,Math.floor(amount)));
 }
 export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0,researchSpecialEffects=false,
-  researchSoulRecoveryMode='none',researchPresentation=false}={}) {
+  researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
   if(typeof researchPresentation!=='boolean')throw new TypeError('researchPresentation must be boolean');
+  if(typeof researchCounterTiming!=='boolean')throw new TypeError('researchCounterTiming must be boolean');
+  if(researchCounterTiming&&(!researchPresentation||!researchSpecialEffects))
+    throw new RangeError('counter timing requires researchPresentation and researchSpecialEffects');
   if(!['none','owner-nonattack'].includes(researchSoulRecoveryMode))
     throw new RangeError('unsupported researchSoulRecoveryMode');
   if(researchSoulRecoveryMode!=='none'&&researchSoulGainPerAction!==0)
@@ -87,6 +91,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   // Opponent-visible animation is a SEPARATE research clock; no mapping from
   // phase1.pointsElapsed to wall-clock milliseconds is claimed here.
   const presentation=researchPresentation?createPresentationTimeline():null;
+  const counter=researchCounterTiming
+    ?createCounterWindow({fronts:clock.snapshot().teams.map(team=>team.frontIds)}):null;
+  const pendingCounterEffects=new Map();
   const recordView=event=>{if(presentation)presentation.record(event);};
   function beginPresentationMotion(options){
     if(!presentation)return {ok:false,reason:'presentation_disabled'};
@@ -94,7 +101,31 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   }
   function advancePresentation(ms){
     if(!presentation)return {ok:false,reason:'presentation_disabled'};
-    return presentation.advance(ms);
+    const visible=presentation.advance(ms);
+    if(counter){
+      const due=counter.advance(ms);
+      for(const hit of due){
+        const queued=pendingCounterEffects.get(hit.id);
+        if(!queued)continue;
+        pendingCounterEffects.delete(hit.id);
+        const applied=applyResearchSpecial({
+          side:queued.side,casterId:queued.casterId,
+          result:queued.result,targets:hit.targetIds,pinnedId:queued.pinnedId
+        });
+        // Record the counter hit separately from the already-visible release.
+        events.push({type:'counter-hit',hitAt:hit.hitAt,frontLock:hit.frontLock,
+          casterId:queued.casterId,targets:[...hit.targetIds],impacts:applied.impacts.map(x=>({...x}))});
+      }
+    }
+    return visible;
+  }
+  function beginCounterCutin({attackerSide,durationMs,enduresSpent=0}={}){
+    if(!counter)return {ok:false,reason:'counter_timing_disabled'};
+    if(winner!==null)throw new Error('battle finished');
+    const started=counter.beginCutin({attackerSide,durationMs,enduresSpent});
+    if(started.ok)presentation.beginMotion({durationMs,kind:'soultimate-cutin',
+      actorId:clock.snapshot().teams[attackerSide].frontIds[0]});
+    return started;
   }
   let winner=null;
   const front=(side)=>clock.snapshot().teams[side].frontIds.map(id=>byId.get(id));
@@ -122,6 +153,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         success:false,alive:target.hp>0});
       guided[side]=null;
       chargeHits[side]=0;
+      if(counter)counter.cancelCharge({side,token:pending.token});
       recordView({side,kind:'chargeCancel',token:pending.token,memberId:pending.casterId,detail:'interrupted'});
       syncCanAct(target.id);
     }else chargeHits[side]++;
@@ -151,6 +183,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const result=clock.rotate(side,direction,0);
     if(result.ok){
       syncPinned();
+      if(counter)counter.setFront({side,ids:clock.snapshot().teams[side].frontIds});
       recordView({side,kind:'rotate',detail:direction===1?'right':'left'});
       const pending=guided[side];
       if(pending&&!clock.snapshot().teams[side].frontIds.includes(pending.id)){
@@ -164,7 +197,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(winner!==null)throw new Error('battle finished');
     const old=soul.snapshot().pending[side];
     const result=soul.setMode(side,mode);
-    if(old)recordView({side,kind:'chargeCancel',token:old.token,memberId:old.casterId,detail:'mode_changed'});
+    if(old){
+      if(counter)counter.cancelCharge({side,token:old.token});
+      recordView({side,kind:'chargeCancel',token:old.token,memberId:old.casterId,detail:'mode_changed'});
+    }
     guided[side]=null;
     if(old)syncCanAct(old.casterId);
     chargeHits[side]=0;
@@ -185,30 +221,21 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(caster&&clockUnit&&!clockUnit.canAct)return {ok:false,reason:'caster_unable_to_act'};
     const result=soul.prepare({side,casterId:id,frontIds:team.frontIds,alive:!!caster&&caster.hp>0});
     if(result.ok){chargeHits[side]=0;syncCanAct(id);
+      if(counter)counter.beginCharge({side,token:result.token});
       recordView({side,kind:'chargeStart',token:result.token,memberId:id});}
     return result;
   }
-  function resolveSoultimate(side,token,success){
-    if(winner!==null)throw new Error('battle finished');
-    if(side!==0&&side!==1)throw new RangeError('invalid side');
-    const pending=soul.snapshot().pending[side];
-    const caster=pending?byId.get(pending.casterId):null;
-    const result=soul.resolve({side,token,success,frontIds:clock.snapshot().teams[side].frontIds,alive:!!caster&&caster.hp>0});
-    if(guided[side]?.token===token)guided[side]=null;
-    chargeHits[side]=0;
-    if(pending&&pending.token===token){
-      syncCanAct(pending.casterId);
-      recordView({side,kind:result.ok?'chargeComplete':'chargeCancel',
-        token,memberId:pending.casterId,detail:result.ok?result.kind:result.reason});
-    }
-    if(!result.ok)return result;
-    if(!researchSpecialEffects)return {...result,effectStatus:'unimplemented'};
-    // RESEARCH ONLY. All numeric special powers are fixture values until verified
-    // for a specific YW2 move. Mode changes the power input, not final HP delta.
+  /** Internal research-only HP resolution. Optional target IDs are frozen at a
+   * cut-in hit window; these members may now be benched, which is intentional.
+   * Normal specials continue to target the current live front.
+   */
+  function applyResearchSpecial({side,casterId,result,targets=null,pinnedId=null}={}){
+    const caster=byId.get(casterId);
+    const enemies=targets?targets.map(id=>byId.get(id)).filter(m=>m&&m.hp>0):livingFront(1-side);
     const impacts=planResearchSpecial({
       spec:caster.special,caster,
-      allies:livingFront(side),enemies:livingFront(1-side),
-      powerMultiplier:result.powerMultiplier,pinnedId:pins[side]
+      allies:livingFront(side),enemies,
+      powerMultiplier:result.powerMultiplier,pinnedId
     });
     const interruptions=[];
     for(const impact of impacts){
@@ -229,7 +256,33 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const entry={type:'special',mode:result.kind,actor:caster.id,
       impacts:impacts.map(x=>({...x})),interruptions,winner,model:'research-fixture'};
     events.push(entry);
-    return {...result,effectStatus:'research-fixture',impacts:entry.impacts,interruptions,winner};
+    return {effectStatus:'research-fixture',impacts:entry.impacts,interruptions,winner};
+  }
+  function resolveSoultimate(side,token,success){
+    if(winner!==null)throw new Error('battle finished');
+    if(side!==0&&side!==1)throw new RangeError('invalid side');
+    const pending=soul.snapshot().pending[side];
+    const caster=pending?byId.get(pending.casterId):null;
+    const result=soul.resolve({side,token,success,frontIds:clock.snapshot().teams[side].frontIds,alive:!!caster&&caster.hp>0});
+    if(guided[side]?.token===token)guided[side]=null;
+    chargeHits[side]=0;
+    if(pending&&pending.token===token){
+      syncCanAct(pending.casterId);
+      recordView({side,kind:result.ok?'chargeComplete':'chargeCancel',
+        token,memberId:pending.casterId,detail:result.ok?result.kind:result.reason});
+    }
+    if(!result.ok){
+      if(counter&&pending)counter.cancelCharge({side,token});
+      return result;
+    }
+    const planned=counter?counter.completeCharge({side,token}):null;
+    if(planned?.ok){
+      pendingCounterEffects.set(planned.id,{side,casterId:caster.id,result,
+        pinnedId:pins[side]});
+      return {...result,effectStatus:'pending-counter-hit',counter:planned};
+    }
+    if(!researchSpecialEffects)return {...result,effectStatus:'unimplemented'};
+    return {...result,...applyResearchSpecial({side,casterId:caster.id,result,pinnedId:pins[side]})};
   }
   /** Player-facing touch charge: challenge selected deterministically per accepted attempt. */
   function beginGuidedCharge(side,id){
@@ -278,7 +331,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   function ensureFront(){
     if(!autoRotateReserves)return;
     for(let side=0;side<2;side++){
-      for(let tries=0;tries<6&&!livingFront(side).length&&squads[side].some(m=>m.hp>0);tries++)clock.rotate(side,1,0);
+      for(let tries=0;tries<6&&!livingFront(side).length&&squads[side].some(m=>m.hp>0);tries++){
+        const moved=clock.rotate(side,1,0);
+        if(moved.ok&&counter)counter.setFront({side,ids:clock.snapshot().teams[side].frontIds});
+      }
     }
     syncPinned();
   }
@@ -293,7 +349,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     return {seed,winner,pins:[...pins],clock:clock.snapshot(),squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights]}))),events:events.slice(-80).map(e=>({...e})),soul:soul.snapshot(),
       guided:guided.map(g=>g?{token:g.token,id:g.id,kind:g.kind,challenge:g.trial.snapshot()}:null),
       inspirits:Object.fromEntries([...byId.keys()].map(id=>[id,statuses.list(id)])),
-      ...(presentation?{presentation:presentation.snapshot()}:{})};
+      ...(presentation?{presentation:presentation.snapshot()}:{}),
+      ...(counter?{counterWindow:counter.snapshot(),counterEffectsPending:pendingCounterEffects.size}:{})};
   }
   function step(){
     if(winner!==null)return {type:'finished',winner};
@@ -379,5 +436,5 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   return {snapshot,step,simulate,rotate,pin,applyInspirit,purify,preview:clock.predict,
     setWatchMode,giveSoul,prepareSoultimate,resolveSoultimate,pokeEligibility,
     beginGuidedCharge,chargeInput,cancelGuidedCharge,
-    beginPresentationMotion,advancePresentation};
+    beginPresentationMotion,advancePresentation,beginCounterCutin};
 }
