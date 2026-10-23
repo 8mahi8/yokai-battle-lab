@@ -4,6 +4,7 @@
  * Pure event-driven scheduling. No browser, timer, network, RNG library or sprites.
  */
 
+import {createOpeningPriority} from './opening-priority.mjs';
 
 // YW2 first-action wait table, derived from the 94 YW2/YW3 speed rows
 // at https://www.mtwildwood.net/turn-order.php; ranges are inclusive.
@@ -50,12 +51,19 @@ const baseRental = [
   { name: 'レンタル 06', speed: 151 }
 ];
 
-export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000 } = {}) {
+export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000, openingPriorityResearch = null } = {}) {
   if (!Number.isInteger(seed)) throw new TypeError('seed must be an integer');
   if (!Number.isFinite(rotationCooldownMs) || rotationCooldownMs < 0) throw new RangeError('invalid rotation cooldown');
   if (teams !== undefined && (!Array.isArray(teams) || teams.length !== 2 ||
       !teams.every(t => Array.isArray(t) && t.length === 6))) throw new TypeError('requires two teams of six');
 
+  if(openingPriorityResearch!==null&&(typeof openingPriorityResearch!=='object'||
+    Array.isArray(openingPriorityResearch)))
+    throw new TypeError('openingPriorityResearch must be an object or null');
+  // Optional study, never silently used in school/default combat.
+  const openingPriority=openingPriorityResearch===null
+    ?null:createOpeningPriority(openingPriorityResearch);
+  const matched=new Set(openingPriority?.snapshot().registeredFront.flat()??[]);
   const random = seededRandom(seed);
   const data = (teams || [baseRental, baseRental]).map((roster, side) => ({
     side,
@@ -73,7 +81,7 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
         // Working hypothesis: lower debt means an earlier action.
         wait: opening ? low + Math.floor(random() * (high - low + 1)) : null,
         acted: 0,
-        originalFront: opening,
+        originalFront: openingPriority?matched.has(`${side===0?'A':'B'}${index+1}`):opening,
         canAct: true
       };
     })
@@ -97,7 +105,8 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
         benchIds: [3, 4, 5].map(n => team.members[(team.offset + n) % 6].id),
         members: team.members.map(member => ({ ...member }))
       })),
-      recentActions: history.slice(-30).map(event => ({ ...event }))
+      recentActions: history.slice(-30).map(event => ({ ...event })),
+      ...(openingPriority?{openingPriority:openingPriority.snapshot()}:{})
     };
   }
 
@@ -137,15 +146,29 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
     const delta = Math.min(...active.map(x => x.wait));
     for (const unit of active) unit.wait = Math.max(0, unit.wait - delta);
     pointsElapsed += delta;
-    const winner = active.find(x => x.wait === 0);
+    const scheduled = active.find(x => x.wait === 0);
+    const decision = openingPriority?.choose({
+      frontIds:active.map(x=>x.id),waits:active.map(x=>x.wait),
+      scheduledId:scheduled.id
+    });
+    const winner = decision?active.find(x=>x.id===decision.actorId):scheduled;
+    // "Flash replaces the next planned action" is player-observed. Whether
+    // the skipped unit's debt resets is UNVERIFIED; both hypotheses are
+    // explicit options and only affect this opt-in research configuration.
+    if(decision?.skippedId&&decision.skippedTurnPolicy==='consume')
+      scheduled.wait=scheduled.cost*actionWait/3;
     winner.acted += 1;
     winner.wait = winner.cost * actionWait / 3;
+    if(decision)openingPriority.commit(decision);
     const event = {
       action: ++turn, id: winner.id, name: winner.name,
       speed: winner.speed, cost: winner.cost, actionWait,
       elapsed: delta, pointsElapsed,
       frontA: frontline(data[0]).map(x => x.id),
-      frontB: frontline(data[1]).map(x => x.id)
+      frontB: frontline(data[1]).map(x => x.id),
+      ...(decision?{priorityKind:decision.kind,
+        originalScheduledId:scheduled.id,skippedId:decision.skippedId,
+        flashConsumed:decision.consumedFlash,priorityConfidence:'research-fixture'}:{})
     };
     history.push(event);
     return { ...event };
@@ -162,18 +185,30 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
     const active = frontlineAll().filter(m => m.canAct && Number.isFinite(m.wait))
       .map(m => ({ id: m.id, cost: m.cost, wait: m.wait }));
     const events = [];
+    const previewPriority=openingPriority?.fork();
     let sinceNow = 0;
     for (let n = 0; n < count && active.length; n++) {
       const delta = Math.min(...active.map(m => m.wait));
       for (const member of active) member.wait = Math.max(0, member.wait - delta);
-      const actor = active.find(m => m.wait === 0);
+      const scheduled=active.find(m=>m.wait===0);
+      const decision=previewPriority?.choose({
+        frontIds:active.map(x=>x.id),waits:active.map(x=>x.wait),
+        scheduledId:scheduled.id
+      });
+      const actor=decision?active.find(m=>m.id===decision.actorId):scheduled;
+      if(decision?.skippedId&&decision.skippedTurnPolicy==='consume')
+        scheduled.wait=scheduled.cost*actionWait/3;
       sinceNow += delta;
       const current = frontlineAll().find(m => m.id === actor.id);
       events.push({
         id: actor.id, pointsUntil: sinceNow, waitBefore: current.wait,
-        normalWait: actor.cost, assumedActionWait: actionWait, confidence: 'research-model'
+        normalWait: actor.cost, assumedActionWait: actionWait, confidence: 'research-model',
+        ...(decision?{priorityKind:decision.kind,
+          originalScheduledId:scheduled.id,skippedId:decision.skippedId,
+          flashConsumed:decision.consumedFlash}:{})
       });
       actor.wait = actor.cost * actionWait / 3;
+      if(decision)previewPriority.commit(decision);
     }
     return events;
   }
