@@ -67,12 +67,13 @@ export function baseDamage(attacker,target,kind,critical=false) {
 }
 export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0,researchSpecialEffects=false,
   researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false,
-  researchWheelCoalescing=false}={}) {
+  researchWheelCoalescing=false,researchOpeningPriority=null}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
   if(typeof researchPresentation!=='boolean')throw new TypeError('researchPresentation must be boolean');
   if(typeof researchCounterTiming!=='boolean')throw new TypeError('researchCounterTiming must be boolean');
   if(typeof researchWheelCoalescing!=='boolean')throw new TypeError('researchWheelCoalescing must be boolean');
+  if(researchOpeningPriority!==null&&(typeof researchOpeningPriority!=='object'||Array.isArray(researchOpeningPriority)))throw new TypeError('invalid researchOpeningPriority');
   if(researchWheelCoalescing&&!researchCounterTiming)
     throw new RangeError('wheel pairing research requires counter timing research');
   if(researchCounterTiming&&(!researchPresentation||!researchSpecialEffects))
@@ -88,7 +89,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const byId=new Map(squads.flat().map(x=>[x.id,x]));
   const soul=createSoulSystem({teams:squads.map(team=>team.map(m=>({id:m.id,capacity:m.soulCapacity})))});
  const statuses=createInspiritLedger([...byId.keys()]);
-  const clock=createBattle({seed,teams:squads.map(t=>t.map(m=>({name:m.name,speed:m.speed}))),rotationCooldownMs:0});
+  const clock=createBattle({seed,teams:squads.map(t=>t.map(m=>({name:m.name,speed:m.speed}))),rotationCooldownMs:0,
+    openingPriorityResearch:researchOpeningPriority});
   const rng=seededRandom(seed ^ 0xA365E91F);
   const pins=[null,null], events=[];
   const guided=[null,null];
@@ -486,7 +488,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(squads.some(team=>team.every(member=>member.hp===0)))winner=squads[0].every(m=>m.hp===0)?1:0;
     const action={type:'action',turn:clockEvent.action,elapsed:clockEvent.elapsed,pointsElapsed:clockEvent.pointsElapsed,
       actor:actor.id,kind:kind==='technique'&&actor.technique==='heal'?'heal':kind,target:target?.id??null,
-      hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,effect,resisted,interruption,winner};
+      hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,effect,resisted,interruption,winner,
+      ...(researchOpeningPriority?{priorityKind:clockEvent.priorityKind,
+        skippedId:clockEvent.skippedId,flashConsumed:clockEvent.flashConsumed,
+        priorityConfidence:'research-fixture'}:{})};
     events.push(action);
     recordView({side:actor.side,kind:'action',memberId:actor.id,detail:action.kind});
     if(researchSoulGainPerAction>0){for(const member of squads.flat())if(member.hp>0)soul.addSoul(member.id,researchSoulGainPerAction);}
