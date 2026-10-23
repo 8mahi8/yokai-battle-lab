@@ -44,6 +44,58 @@ document.querySelector('#lab').addEventListener('load',()=>{
   pick('[data-special="A1"]').click();
   if(pick('#chargeOverlay').hidden)throw new Error('G charge did not open');
   pick('#chargeCancel').click();
+
+  // DOM-driven synthetic PointerEvents exercise the browser wiring for the
+  // selected challenge. This is not a substitute for real touchscreen input.
+  pick('[data-watch="0"]').click(); // zero -> standard
+  pick('[data-special="A1"]').click();
+  if(pick('#chargeOverlay').hidden)throw new Error('special touch layer was not opened');
+  const pad=pick('#chargePad');
+  pad.setPointerCapture=()=>{}; // synthetic dispatch has no physical pointer handle
+  const win=doc.defaultView;
+  const touch=(type,x,y)=>{
+   const rect=pad.getBoundingClientRect();
+   const e=new win.PointerEvent('pointer'+type,{
+    bubbles:true,pointerId:314,pointerType:'touch',isPrimary:true,
+    clientX:rect.left+rect.width*x,clientY:rect.top+rect.height*y
+   });
+   pad.dispatchEvent(e);
+  };
+  const kind=pick('#chargeTitle').textContent;
+  if(kind.startsWith('打て')){
+   for(let i=0;i<6;i++){
+    const circle=pick('#chargePad circle[r="7"]');
+    const x=Number(circle.getAttribute('cx'))/100,y=Number(circle.getAttribute('cy'))/100;
+    touch('down',x,y);touch('up',x,y);
+   }
+  }else if(kind.startsWith('なぞれ')){
+   for(let repetition=0;repetition<3;repetition++){
+    const poly=pick('#chargePad polyline');
+    const points=poly.getAttribute('points').split(' ').map(x=>x.split(',').map(v=>Number(v)/100));
+    touch('down',points[0][0],points[0][1]);
+    for(const p of points.slice(1))touch('move',p[0],p[1]);
+    touch('up',points[points.length-1][0],points[points.length-1][1]);
+   }
+  }else if(kind.startsWith('あわせろ')){
+   for(let repetition=0;repetition<3;repetition++){
+    const line=pick('#chargePad line'),hi=pick('#chargePad text[fill="#ffdb77"]');
+    const x=Number(line.getAttribute('x2'))/100,y=Number(line.getAttribute('y2'))/100;
+    const number=Number(hi.textContent);
+    const angle=-Math.PI/2+number*Math.PI/6;
+    const targetX=.5+.32*Math.cos(angle),targetY=.5+.32*Math.sin(angle);
+    touch('down',x,y);touch('move',targetX,targetY);touch('up',targetX,targetY);
+   }
+  }else if(kind.startsWith('まわせ')){
+    touch('down',.8,.5);
+    for(let i=1;i<=125;i++){
+      const a=i*Math.PI*2/40;
+      touch('move',.5+.3*Math.cos(a),.5+.3*Math.sin(a));
+    }
+    touch('up',.8,.5);
+  }else throw new Error('unknown charge gesture kind: '+kind);
+  if(!pick('#chargeOverlay').hidden)throw new Error('touch charge failed to complete: '+kind);
+  if(!pick('#log').textContent.includes('✨'))throw new Error('successful charge did not log real fixture effect');
+  if(!pick('#team1').textContent.includes('HP'))throw new Error('target squad UI missing after charge');
   result.textContent='QA-PASS';
  }catch(error){result.textContent='QA-FAIL '+error.message;}
 });
