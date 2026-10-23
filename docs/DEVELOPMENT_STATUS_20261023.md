@@ -185,3 +185,19 @@ Details and source ledger: **[PHASE5_WHEEL_PAIR_QA_20261023.md](./PHASE5_WHEEL_P
 - Research lab shows rotation count, actual physical front, correction event and manual two-turn demo; synthetic pointer E2E verifies a charge completed BETWEEN the two wheel changes, then the original front takes HP at the due hit while the intermediate pose is not shown to the opponent.
 - **Confirmed on GitHub Actions (before doc-only commits): 180/180 unit tests passed, zero failures, plus the real Chromium render/gesture/opponent-gate smoke test**, https://github.com/8mahi8/yokai-battle-lab/actions/runs/39921476753 .
 - **Key uncertainties remain:** exact original wheel-pair frame boundary, 3+ consecutive rotations, whether real hit timing uses cut-in start vs end, real Endure mechanics, authentic networking and school iPad Safari. Nothing here warrants release. Keep main and published Google Sites unchanged.
+
+
+---
+
+## 2026-10-23 — Phase 5D: 3+ wheel unknown-state handling + action boundary verification (LATEST)
+
+Primary research and technical evidence: [PHASE5_THREE_PLUS_ROTATIONS_QA_20261023.md](./PHASE5_THREE_PLUS_ROTATIONS_QA_20261023.md).
+
+- **External research boundary:** Competitive sources describe exactly TWO wheel turns without an intervening Yo-kai automatic action (intermediate front gets ignored), but provide no trustworthy reproducible rule for THREE or MORE consecutive rotations. Original-turn priority and Flash Soul research suggest an action boundary is important but its precise scheduling remains unsettled: https://note.com/uzoumzou_nanoha/n/n2fb6ae41559c , https://note.com/tombow_yw/n/n1e4cf179d2d9 and https://note.com/ricosama0726/n/n14710bbe446c .
+- **Code updated:** `engine/wheel-coalescing.mjs` records and returns `three-plus-rotations-unverified` from the third turn onward, with immutable bounded uncertainty history. Existing sourced TWO-turn candidate-target correction remains intact.
+- `engine/combat.mjs`: in the **opt-in research mode**, delayed counter hits touched by 3+ rotations are classified `counter-hit-indeterminate`, not applied as speculative HP/KO/winner changes. This is an *unknown-result flag*, NOT an assertion that YW2 cancels an attack. Other-team moves do not contaminate the target-side result; an action boundary resets wheel-pair grouping without retrospectively inventing target evidence.
+- `engine/presentation-timeline.mjs`: tags aggregated 3+ hidden turns `unsourcedThreePlus:true` so an experimental coalesced render is never presented as verified original behavior.
+- `lab/phase2.html`: new B three-turn experiment button, clear unverified-warning display, hit-time candidate vs actual HP difference, and no-damage indeterminate results.
+- Tests: `tests/wheel-three-plus.test.mjs` (7), `tests/combat-wheel-action-boundaries.test.mjs` (3), `tests/rotation-three-plus-visibility.test.mjs` (3), plus real Chromium synthetic-pointer two-vs-three-turn E2E assertions.
+- **Actual GitHub CI:** `193/193` tests passed with **0 fail / 0 skip**, and real Chromium render + interactive branch ESM and button/touch tests passed on https://github.com/8mahi8/yokai-battle-lab/actions/runs/39926638836 . Docs-only commits after this run should be checked against their own workflow result.
+- Original 3DS split-video comparison needed before implementing 3+ targeting. Source-backed initial action rights and Flash Soul consumption also need isolated research before scheduler changes. No user action needed yet; **main, live Google Sites version and production Firebase remain unchanged**.
