@@ -1,4 +1,6 @@
 # 妖怪対戦ブラウザゲーム｜最新・正式引き継ぎ（2026-10-24）
+> **Phase 13A実装（2026-10-24）**: [Firebase room adapter & SDK QA](./PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md) を追加。実Firebase互換SDK+匿名認証テストコンテキスト+ローカルRTDB Emulatorを用い、6桁ルーム作成→2人参加→ゲスト回転入力→ホスト戦闘エンジン処理→ゲスト戦況受信まで接続テスト成功。Security Rulesは28項目の許可/拒否検査と実SDK統合1件、計29チェック成功（[CI](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40037975858)）。Node単体テストは **355/355合格**。本物のFirebaseクラウドと学校iPad/Google Sitesは**未接続**。全モデルの初期閃光魂OFF、費用0円、main/既存Googleサイト版は不変。最新Chromium CIは一度ブラウザ起動タイムアウトがあるので、再実行結果を確認すること。
+
 > **Phase 13の外部資料・横断リポジトリ調査（2026-10-24）**: Firebase公式資料に加え、BRAWL・小国戦線III・3Dサッカー・LEMON CLASHの通信コードとQA記録を確認。接続世代・ACK長時間未解決・ゲスト最新snapshotだけ適用・RTDB Security Rules / Emulatorの設計を [Phase 13比較資料](./PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md) に保存。**これは調査フェーズでありFirebase実接続・新規ルーム・本番ルール変更は未実施**。実装前に公式原典と他repoの最新版を再検証する。
 
 > **Phase 12追記（2026-10-24）**: `engine/match-relay.mjs` にホスト席分離・ACK再送・遅延snapshot破棄・再接続時seq同期・ハートビート失効の**トランスポート非依存コード**を追加。 `tests/match-relay.test.mjs` を含む **345/345 Nodeテスト合格**、既存のChromium research UI検証も成功（[GitHub Actions](https://github.com/8mahi8/yokai-battle-lab/actions/runs/39985207035)）。詳細は [Phase 12資料](./PHASE12_RELAY_RECOVERY_20261024.md)。**まだ実Supabase接続・2端末オンライン対戦・学校Safari E2Eは未完成**。以下のPhase 11記述は研究実装の土台として読む。main/Googleサイト版は未変更、初期版の閃光魂はOFF。
@@ -7,12 +9,13 @@
 
 ## 0. 最初に読む順番
 1. **この資料**：`docs/HANDOFF_LATEST_20261024.md`
-2. **Phase 13外部資料・既存ゲーム比較**：[`docs/PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md`](./PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md)
-3. **Phase 12通信基盤**：[`docs/PHASE12_RELAY_RECOVERY_20261024.md`](./PHASE12_RELAY_RECOVERY_20261024.md)
-4. **Phase 11対戦コマンド**：[`docs/PHASE11_MATCH_PROTOCOL_QA_20261023.md`](./PHASE11_MATCH_PROTOCOL_QA_20261023.md)
-5. **Phase 10基本戦闘**：[`docs/PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md`](./PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md)
-6. **歴史・各Phaseリンク**：[`docs/DEVELOPMENT_STATUS_20261023.md`](./DEVELOPMENT_STATUS_20261023.md)
-7. **実際のコード**：`engine/combat.mjs`・`engine/match-protocol.mjs`・`lab/phase2.html`・`lab/match-contract.html`・各 `tests/*.test.mjs`。
+2. **Phase 13A実装とSDKテスト**：[`docs/PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md`](./PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md)
+3. **Phase 13外部資料・既存ゲーム比較**：[`docs/PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md`](./PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md)
+4. **Phase 12通信基盤**：[`docs/PHASE12_RELAY_RECOVERY_20261024.md`](./PHASE12_RELAY_RECOVERY_20261024.md)
+5. **Phase 11対戦コマンド**：[`docs/PHASE11_MATCH_PROTOCOL_QA_20261023.md`](./PHASE11_MATCH_PROTOCOL_QA_20261023.md)
+6. **Phase 10基本戦闘**：[`docs/PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md`](./PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md)
+7. **歴史・各Phaseリンク**：[`docs/DEVELOPMENT_STATUS_20261023.md`](./DEVELOPMENT_STATUS_20261023.md)
+8. **実際のコード**：`engine/combat.mjs`・`engine/match-protocol.mjs`・`lab/phase2.html`・`lab/match-contract.html`・各 `tests/*.test.mjs`。
 
 **Repository**: https://github.com/8mahi8/yokai-battle-lab  
 **開発ブランチ**: `feat/phase1-action-circle-lab-20261023`  
