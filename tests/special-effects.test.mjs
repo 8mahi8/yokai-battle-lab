@@ -60,3 +60,11 @@ test('damage cannot push target below zero',()=>{
  assert.deepEqual(out.map(x=>x.hpAfter),[0,0]);
  assert.ok(out.every(x=>x.predictedKO));
 });
+
+test('empty enemy frontline with living reserves is an empty impact plan, not a crash',()=>{
+ const spec={kind:'damage',scope:'front',power:100,damageKind:'attack'};
+ assert.deepEqual(planResearchSpecial({spec,caster:actor,allies,enemies:[]}),[]);
+ const heal={kind:'heal',scope:'front',power:50};
+ assert.deepEqual(planResearchSpecial({spec:heal,caster:actor,allies:[],enemies:foes}),[]);
+ assert.throws(()=>planResearchSpecial({spec,caster:actor,allies:null,enemies:foes}));
+});
