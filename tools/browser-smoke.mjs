@@ -45,6 +45,8 @@ document.querySelector('#lab').addEventListener('load',()=>{
   if(pick('#chargeOverlay').hidden)throw new Error('G charge did not open');
   pick('#chargeCancel').click();
   pick('[data-watch="0"]').click(); // switch back to standard
+  pick('#motionDemo').click();
+  if(!pick('#visibility').textContent.includes('演出中'))throw new Error('presentation lock not opened');
   const initialHp=Number(pick('#team1 .unit').getElementsByClassName('info')[1].textContent.split('/')[0]);
   pick('[data-special="A1"]').click();
   const pad=pick('#chargePad');
@@ -90,6 +92,10 @@ document.querySelector('#lab').addEventListener('load',()=>{
   const endHp=Number(pick('#team1 .unit').getElementsByClassName('info')[1].textContent.split('/')[0]);
   if(endHp>=initialHp)throw new Error('special did not deal HP damage: '+initialHp+' -> '+endHp);
   if(!pick('#log').textContent.includes('仮効果'))throw new Error('special action missing from log');
+  if(!pick('#visibility').textContent.includes('演出中'))throw new Error('opponent animation ended before manual advance');
+  if(pick('#visibility').textContent.includes('ノーモーション'))throw new Error('opponent saw special before animation unlock');
+  pick('#advanceMotion').click();
+  if(!pick('#visibility').textContent.includes('ノーモーション必殺'))throw new Error('opponent did not see no-motion release after animation');
   result.textContent='QA-PASS';
  }catch(error){result.textContent='QA-FAIL '+error.message;}
 });
@@ -137,11 +143,11 @@ try{
  const rootUrl='http://127.0.0.1:'+address.port;
  await renderedDom(rootUrl+'/lab/phase2.html','render',[
   'data-special="A1"','data-special="B1"','class="slot"',
-  'data-watch="0"','data-soul="A1"','id="chargePad"'
+  'data-watch="0"','data-soul="A1"','id="chargePad"','id="visibility"'
  ],1500);
  console.log('Chromium HTML/ES-module DOM rendered: 2 teams, forecast, Soul and charge controls');
  await renderedDom(rootUrl+'/__browser_smoke__.html','interaction',['QA-PASS'],2500);
- console.log('Chromium interactive smoke passed: Soul buttons, Soultimate cancel, sleep/purify, G charge');
+ console.log('Chromium interactive smoke passed: Soul, cancel, sleep/purify, G tech, full gesture, and no-motion opponent gate');
 }finally{
  await new Promise(resolve=>srv.close(resolve));
  rmSync(tmp,{recursive:true,force:true});
