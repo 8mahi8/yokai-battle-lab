@@ -154,6 +154,32 @@ document.querySelector('#lab').addEventListener('load',()=>{
    throw new Error('missing unknown counter hit record');
   if(pick('#team1').textContent!==teamBeforeUnknown)
    throw new Error('unsourced three-turn guess changed HP');
+  // Watch Zero's essential Poke command: vulnerable foe, 12 actual pointer
+  // taps, research-only Soul transfer and one successful Poke per target.
+  pick('#reset').click();
+  pick('[data-watch="0"]').click();
+  pick('[data-soul="B1"]').click();pick('[data-soul="B1"]').click();
+  pick('[data-sleep="B1"]').click();
+  pick('[data-pin="B1"]').click();
+  if(pick('#pokeOverlay').hidden)throw new Error('Poke UI failed to open');
+  const poke=pick('#pokePad'),pr=poke.getBoundingClientRect();
+  for(let i=0;i<12;i++){
+   poke.dispatchEvent(new doc.defaultView.PointerEvent('pointerdown',{
+    bubbles:true,cancelable:true,pointerId:i+100,pointerType:'touch',
+    clientX:pr.left+pr.width/2,clientY:pr.top+pr.height/2
+   }));
+  }
+  if(!pick('#pokeOverlay').hidden)throw new Error('Poke meter did not finish');
+  if(!pick('#log').textContent.includes('つつき成功'))throw new Error('Poke success omitted from log');
+  if(!pick('#team0').textContent.includes('妖気 20/100'))throw new Error('Poke lab reward did not credit A1');
+  if(!pick('#team1').textContent.includes('妖気 30/100'))throw new Error('Poke lab reward did not drain B1');
+  pick('[data-pin="B1"]').click();
+  if(!pick('#status').textContent.includes('already_poked'))throw new Error('Poke target was not spent once');
+  pick('[data-sleep="B2"]').click();
+  pick('[data-pin="B2"]').click();
+  if(pick('#pokeOverlay').hidden)throw new Error('second Poke did not open');
+  pick('#pokeCancel').click();
+  if(!pick('#pokeOverlay').hidden)throw new Error('Poke cancellation failed');
   result.textContent='QA-PASS';
  }catch(error){result.textContent='QA-FAIL '+error.message;}
 });
@@ -239,7 +265,7 @@ try{
  ],1500);
  console.log('Chromium HTML/ES-module DOM rendered: 2 teams, forecast, Soul and charge controls');
  await renderedDom(rootUrl+'/__browser_smoke__.html','interaction',['QA-PASS'],2500);
- console.log('Chromium interaction passed: paired wheel damage and unsourced 3+ uncertainty without HP change');
+ console.log('Chromium interaction passed: counter wheel QA plus real Zero Poke tap meter, Soul transfer and cancellation');
  await renderedDom(rootUrl+'/__priority_smoke__.html','priority',['PRIORITY-PASS'],2500);
  console.log('Chromium Flash opening-priority UI passed: toggles, matching front, one-use interception and forecast');
 }finally{
