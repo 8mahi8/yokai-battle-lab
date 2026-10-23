@@ -7,6 +7,8 @@
 export const ACTION_KINDS = Object.freeze(['attack','technique','inspirit','guard']);
 const below = (members,limit) => members.some(m=>m.hp/m.maxHp<limit);
 const allAbove = (members,limit) => members.every(m=>m.hp/m.maxHp>=limit);
+const NEGATIVE_INSPIRITS=new Set(['sleep','strength-down','defense-down','spirit-down','hp-loss']);
+const POSITIVE_INSPIRITS=new Set(['strength-up','hp-regen']);
 
 export function actionWeights(actor,{allies,enemies,enemyPin=null,negativeCounts={},positiveCounts={}}={}){
  if(!Array.isArray(actor.weights)||actor.weights.length!==4||actor.weights.some(n=>!Number.isFinite(n)||n<0))
@@ -35,13 +37,14 @@ export function actionWeights(actor,{allies,enemies,enemyPin=null,negativeCounts
  const relevant=enemyPin?enemies.filter(e=>e.id===enemyPin):enemies;
  const haveNegative = relevant.length && relevant.every(e=>(negativeCounts[e.id]??0)>=1);
  const havePositive = allies.every(e=>(positiveCounts[e.id]??0)>=1);
- if(!attitudeRuleApplied && actor.inspirit==='sleep' && haveNegative)w[2]*=.3;
- if(!attitudeRuleApplied && actor.inspirit==='strength-up' && havePositive)w[2]*=.3;
+ if(!attitudeRuleApplied && NEGATIVE_INSPIRITS.has(actor.inspirit) && haveNegative)w[2]*=.3;
+ if(!attitudeRuleApplied && POSITIVE_INSPIRITS.has(actor.inspirit) && havePositive)w[2]*=.3;
  // Healing technique is not permitted when every alive ally is full.
  if(healer&&allies.every(x=>x.hp===x.maxHp))w[1]=0;
- const eligible=actor.inspirit==='sleep'
+ const eligible=NEGATIVE_INSPIRITS.has(actor.inspirit)
   ? enemies.some(m=>(negativeCounts[m.id]??0)===0)
-  :actor.inspirit==='strength-up' ? allies.some(m=>(positiveCounts[m.id]??0)===0):false;
+  :POSITIVE_INSPIRITS.has(actor.inspirit)
+    ? allies.some(m=>(positiveCounts[m.id]??0)===0):false;
  if(!eligible)w[2]=0;
  if(w.every(x=>x===0))w[0]=1;
  return w;
