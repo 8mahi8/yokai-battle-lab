@@ -19,6 +19,7 @@ const validSession=s=>typeof s==='string'&&/^[a-f0-9]{32}$/.test(s);
 const validSeq=n=>Number.isSafeInteger(n)&&n>0;
 const validRev=n=>Number.isSafeInteger(n)&&n>=0;
 const MAX_PACKET=2048;
+const MAX_STATE_BYTES=131072;
 
 function secureHex(randomBytes,size){
  const a=randomBytes(size);
@@ -171,7 +172,12 @@ export function createFirebaseRoomClient({database,uid,randomBytes=defaultRandom
   if(seat!==0)throw new Error('only host publishes state');
   if(!plain(snapshot)||!validRev(snapshot.revision)||!Array.isArray(snapshot.clientSequences))
    throw new TypeError('invalid match snapshot');
-  const payload={session,revision:snapshot.revision,state:clone(snapshot)};
+  // RTDB removes null-valued object children, which would corrupt battle
+  // snapshots (winner=null, pin=null). A JSON string preserves their meaning.
+  const stateJson=JSON.stringify(snapshot);
+  if(new TextEncoder().encode(stateJson).length>MAX_STATE_BYTES)
+   throw new RangeError('state exceeds research transport limit');
+  const payload={session,revision:snapshot.revision,stateJson};
   const ref=roomRef().child('state');
   const t=await ref.transaction(previous=>{
    if(previous&&previous.session===session&&previous.revision>=payload.revision)
@@ -205,8 +211,11 @@ export function createFirebaseRoomClient({database,uid,randomBytes=defaultRandom
    if(epoch!==joinEpoch)return;
    const p=snap.val();
    if(!plain(p)||p.session!==currentSession||!validRev(p.revision)||
-    !plain(p.state)||p.state.revision!==p.revision||p.revision<=last)return;
-   last=p.revision;handler(clone(p));
+    typeof p.stateJson!=='string'||p.revision<=last)return;
+   let state;
+   try{state=JSON.parse(p.stateJson);}catch(_){return;}
+   if(!plain(state)||state.revision!==p.revision)return;
+   last=p.revision;handler({session:p.session,revision:p.revision,state});
   });
  }
  /**
