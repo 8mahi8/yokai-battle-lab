@@ -93,9 +93,17 @@ export function createFirebaseRoomClient({database,uid,randomBytes=defaultRandom
   for(let i=0;i<attempts;i++){
    const candidate=code===null?makeRoomCode(randomBytes):code;
    const ref=database.ref(YOKAI_ROOM_ROOT+'/'+candidate);
+   // Prime Firebase's local transaction cache; an occupied code is not an
+   // unexpected permissions error just because the first updater saw null.
+   if((await ref.once('value')).val()!==null)continue;
    // Never mutate external state in a retryable transaction callback.
    const seed=makeRoomSeed(uid,randomBytes,now());
-   const txn=await ref.transaction(before=>before===null?clone(seed):undefined,undefined,false);
+   let txn;
+   try{txn=await ref.transaction(before=>before===null?clone(seed):undefined,undefined,false);}
+   catch(error){
+    if((await ref.once('value')).val()!==null)continue;
+    throw error;
+   }
    if(txn.committed){
     roomCode=candidate;seat=0;session=seed.session;epoch++;
     return {ok:true,code:candidate,seat,session};
@@ -111,8 +119,15 @@ export function createFirebaseRoomClient({database,uid,randomBytes=defaultRandom
   if(first.phase!=='lobby'||first.hostUid===uid)
    return {ok:false,reason:'room_not_joinable'};
   if(first.guestUid&&first.guestUid!==uid)return {ok:false,reason:'room_full'};
-  const txn=await ref.child('guestUid').transaction(before=>
-   before===null?uid:before===uid?uid:undefined,undefined,false);
+  let txn;
+  try{txn=await ref.child('guestUid').transaction(before=>
+   before===null?uid:before===uid?uid:undefined,undefined,false);}
+  catch(error){
+   const current=(await ref.once('value')).val();
+   if(current?.guestUid&&current.guestUid!==uid)
+    return {ok:false,reason:'room_full'};
+   throw error;
+  }
   if(!txn.committed)return {ok:false,reason:'room_full'};
   // Do not accept a stale pre-transaction room or foreign room generation.
   const latest=parseRoom((await ref.once('value')).val());
@@ -133,16 +148,20 @@ export function createFirebaseRoomClient({database,uid,randomBytes=defaultRandom
  }
  async function sendIntent(clientSeq,intent){
   if(seat===null)throw new Error('not in a room');
-  const command={type:'command',clientSeq,intent};
+  // RTDB deletes null children: reserve a wire sentinel for "clear pin".
+  // The host must decode this marker before dispatching to match-protocol.
+  const wireIntent=intent?.type==='pin'&&intent.targetId===null?
+   {...intent,targetId:'__clear__'}:intent;
+  const command={type:'command',clientSeq,intent:wireIntent};
   if(!validSeq(clientSeq)||!plain(intent)||packetSize(command)>MAX_PACKET)
    throw new TypeError('invalid or oversized command');
   const ref=roomRef().child('inputs/'+(seat===0?'host':'guest'));
-  const payload={session,clientSeq,intent:clone(intent)};
+  const payload={session,clientSeq,intent:clone(wireIntent)};
   const t=await ref.transaction(previous=>{
    if(previous && previous.session===session){
     if(previous.clientSeq>clientSeq)return undefined;
     if(previous.clientSeq===clientSeq)
-     return JSON.stringify(previous.intent)===JSON.stringify(intent)?previous:undefined;
+     return JSON.stringify(previous.intent)===JSON.stringify(wireIntent)?previous:undefined;
    }
    return payload;
   },undefined,false);
@@ -171,7 +190,11 @@ export function createFirebaseRoomClient({database,uid,randomBytes=defaultRandom
    const p=snap.val();
    if(!plain(p)||p.session!==currentSession||!validSeq(p.clientSeq)||p.clientSeq<=last)
     return;
-   last=p.clientSeq;handler(clone(p));
+   last=p.clientSeq;
+   const decoded=clone(p);
+   if(decoded.intent?.type==='pin'&&decoded.intent.targetId==='__clear__')
+    decoded.intent.targetId=null;
+   handler(decoded);
   });
  }
  function subscribeSnapshots(handler){
