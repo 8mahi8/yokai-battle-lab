@@ -122,15 +122,17 @@ export function createFirebaseMatchHost({roomClient,protocol=createMatchProtocol
  * retried with the SAME number and intent, never renumbered.
  */
 export function createFirebaseMatchGuest({roomClient,onSnapshot=()=>{},onAck=()=>{},
- onError=()=>{},writeTimeoutMs=6000}={}){
+ onError=()=>{},writeTimeoutMs=6000,maxQueuedInputs=48}={}){
  validateRoom(roomClient,1);
  assertCallbacks(onSnapshot,onError);
  if(typeof onAck!=='function')throw new TypeError('onAck must be a function');
  if(!Number.isFinite(writeTimeoutMs)||writeTimeoutMs<100)
   throw new RangeError('invalid write timeout');
+ if(!Number.isSafeInteger(maxQueuedInputs)||maxQueuedInputs<1||maxQueuedInputs>256)
+  throw new RangeError('invalid input queue capacity');
  const initialSession=roomClient.active().session;
  let stopped=false,started=false,unsub=null,revision=-1,acked=0;
- let pending=null,attempt=0,latestState=null;
+ let pending=null,attempt=0,latestState=null,queue=[];
  function check(){
   const room=validateRoom(roomClient,1);
   if(stopped||room.session!==initialSession)throw new Error('guest session changed');
@@ -156,6 +158,28 @@ export function createFirebaseMatchGuest({roomClient,onSnapshot=()=>{},onAck=()=
    return {ok:false,reason:error.message||String(error)};
   }finally{clearTimeout(timeoutId);}
  }
+ function sendNormalized(intent){
+  const command={clientSeq:acked+1,intent};
+  pending=command;
+  // Some transports deliver and ACK immediately; never reread pending here.
+  void deliver(command);
+  return {ok:true,queued:false,clientSeq:command.clientSeq};
+ }
+ function flushQueue(){
+  if(!stopped&&started&&revision>=0&&!pending&&queue.length){
+   const next=queue.shift();
+   sendNormalized(next);
+  }
+ }
+ function enqueue(intent){
+  check();
+  if(!started||revision<0)return {ok:false,reason:'awaiting_initial_state'};
+  const normalized=normalizeMatchCommand(1,intent);
+  if(!pending&&!queue.length)return sendNormalized(normalized);
+  if(queue.length>=maxQueuedInputs)return {ok:false,reason:'input_buffer_full'};
+  queue.push(normalized);
+  return {ok:true,queued:true,position:queue.length};
+ }
  function start(){
   check();
   if(started)throw new Error('guest session already started');
@@ -172,6 +196,8 @@ export function createFirebaseMatchGuest({roomClient,onSnapshot=()=>{},onAck=()=
     onAck({clientSeq:received.clientSeq,revision,accepted:true});
    }
    onSnapshot(clone(state));
+   // Drain exactly one input per authoritative ACK, preserving tap order.
+   flushQueue();
   });
   return {ok:true};
  }
@@ -179,21 +205,15 @@ export function createFirebaseMatchGuest({roomClient,onSnapshot=()=>{},onAck=()=
   check();
   if(!started||revision<0)return {ok:false,reason:'awaiting_initial_state'};
   if(pending)return {ok:false,reason:'pending_ack',clientSeq:pending.clientSeq};
-  const normalized=normalizeMatchCommand(1,intent);
-  const command={clientSeq:acked+1,intent:normalized};
-  pending=command;
-  // Some transports can deliver and ACK synchronously, clearing pending
-  // before submit() returns. Keep the sequence on the local command object.
-  void deliver(command);
-  return {ok:true,clientSeq:command.clientSeq};
+  return sendNormalized(normalizeMatchCommand(1,intent));
  }
  function retry(){
   check();
   if(!pending)return Promise.resolve({ok:false,reason:'no_pending_command'});
   return deliver(pending);
  }
- function stop(){stopped=true;unsub?.();unsub=null;}
+ function stop(){stopped=true;queue=[];unsub?.();unsub=null;}
  function status(){return {started,stopped,revision,acked,pendingSequence:pending?.clientSeq??null,
-  lastState:latestState===null?null:clone(latestState)};}
- return {start,submit,retry,stop,status};
+  queuedInputs:queue.length,lastState:latestState===null?null:clone(latestState)};}
+ return {start,submit,enqueue,retry,stop,status};
 }
