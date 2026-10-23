@@ -19,7 +19,7 @@ function finish(g,side,kind){
   touch('down',.4,.5);
   for(let i=0;i<50;i++)touch('move',i%2?.55:.4,.5);
  }else if(kind==='spin'){
-  for(let i=0;i<54;i++){
+  for(let i=0;i<115;i++){
    const a=Math.PI*2*i/50;
    touch(i===0?'down':'move',.5+.3*Math.cos(a),.5+.3*Math.sin(a));
   }
