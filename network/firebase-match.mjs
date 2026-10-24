@@ -221,6 +221,9 @@ export function createFirebaseMatchGuest({roomClient,onSnapshot=()=>{},onAck=()=
       verdict.applied:null;
     onAck({clientSeq:received.clientSeq,revision,accepted:true,
       applied,commandType:received.intent.type,
+      ...(matched&&received.intent.type==='chargeInput'&&
+         typeof verdict.completed==='boolean'?
+        {completed:verdict.completed}:{}),
       ...(matched&&verdict.reason?{reason:verdict.reason}:{}),
       ...(matched&&Number.isFinite(verdict.remainingMs)?
        {remainingMs:verdict.remainingMs}:{})});
