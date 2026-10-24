@@ -400,36 +400,65 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  }
  function handleClick(event){
   const b=event.target.closest('button');if(!b||!element.contains(b)||!view)return;
-  const oldSide=activeSeat;
   if(b.dataset.seat!==undefined){
    if(fixedSeat!==null)return;
-   activeSeat=Number(b.dataset.seat);selection=null;render(wireState);return;
+   activeSeat=Number(b.dataset.seat);selection=null;commandMode=null;
+   battleDrawCache=null;render(wireState);return;
   }
   if(b.dataset.unit){
    const clicked=b.dataset.unit;
    if(clicked.startsWith(activeSeat===0?'A':'B')){
-    selection=clicked;render(wireState);alert('選択: '+view.teams[activeSeat].members.find(m=>m.id===clicked)?.name);
+    const ally=view.teams[activeSeat].members.find(m=>m.id===clicked);
+    if(!ally)return;
+    selection=clicked;
+    if(commandMode==='charge'){
+     if(!ally.front||ally.ko){alert('必殺技は前衛の生存妖怪を選択してね');render(wireState);return;}
+     commandMode=null;command({type:'chargeStart',id:clicked});
+    }else if(commandMode==='purify'){
+     if(ally.front||ally.ko){alert('おはらいは後衛の生存妖怪を選択してね');render(wireState);return;}
+     commandMode=null;command({type:'purifyStart',id:clicked});
+    }else alert('選択: '+ally.name);
+    render(wireState);
    }else{
     const enemy=view.teams[1-activeSeat].members.find(m=>m.id===clicked);
-    if(!enemy?.front||enemy.ko){alert('相手前衛の生存妖怪を選んでね');return;}
+    if(!enemy?.front||enemy.ko){alert('生存中の敵前衛を選択してね');return;}
+    if(commandMode!=='target'){alert('「'+(view.activeMode==='zero'?'つつく':'ねらう')+'」を押して敵を選んでね');return;}
+    commandMode=null;
     if(view.activeMode==='zero')command({type:'pokeStart',targetId:clicked});
     else command({type:'pin',targetId:clicked});
+    render(wireState);
    }
    return;
   }
-  if(b.dataset.rotate!==undefined)command({type:'rotate',direction:Number(b.dataset.rotate)});
-  else if(b.dataset.act==='watch')command({type:'watch',mode:view.activeMode==='zero'?'standard':'zero'});
-  else if(b.dataset.act==='pin-clear')command({type:'pin',targetId:null});
-  else if(b.dataset.act==='charge')command({type:'chargeStart',id:selection||view.teams[activeSeat].frontIds[0]});
-  else if(b.dataset.act==='purify')command({type:'purifyStart',id:selection||view.teams[activeSeat].benchIds[0]});
-  else if(b.dataset.act==='cancel'&&view.gesture)command({type:CANCEL_KIND[view.gesture.kind]});
-  else if(b.dataset.step!==undefined){
+  if(b.dataset.rotate!==undefined){
+   commandMode=null;
+   command({type:'rotate',direction:Number(b.dataset.rotate)});
+   render(wireState);
+  }else if(b.dataset.act==='watch'){
+   commandMode=null;
+   command({type:'watch',mode:view.activeMode==='zero'?'standard':'zero'});
+   render(wireState);
+  }else if(b.dataset.act==='target'){
+   commandMode=commandMode==='target'?null:'target';
+   render(wireState);
+  }else if(b.dataset.act==='charge'){
+   commandMode=commandMode==='charge'?null:'charge';
+   render(wireState);
+  }else if(b.dataset.act==='purify'){
+   commandMode=commandMode==='purify'?null:'purify';
+   render(wireState);
+  }else if(b.dataset.act==='mode-cancel'){
+   commandMode=null;render(wireState);
+  }else if(b.dataset.act==='pin-clear'){
+   commandMode=null;command({type:'pin',targetId:null});render(wireState);
+  }else if(b.dataset.act==='cancel'&&view.gesture){
+   command({type:CANCEL_KIND[view.gesture.kind]});
+  }else if(b.dataset.step!==undefined){
    try{
     const result=onStep(activeSeat);
     if(result?.ok===false)alert('進行不可: '+result.reason);
    }catch(error){onError(error);alert(error.message);}
   }
-  if(activeSeat!==oldSide&&wireState)render(wireState);
  }
  function onDown(event){
   if(!view?.gesture||event.button!==0)return;
