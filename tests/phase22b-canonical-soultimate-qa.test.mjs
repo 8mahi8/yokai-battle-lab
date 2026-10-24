@@ -17,10 +17,10 @@ import {soultimateReadiness} from '../ui/soultimate-ready.mjs';
  * Original G-tech ring-neighbor full gauge requirement:
  * https://gamepedia.jp/youkai-yw2/archives/1873
  */
-const guardRoster=()=>RENTAL_SQUAD.map(u=>({...u,soulCapacity:5,
+const guardRoster=(capacity=5)=>RENTAL_SQUAD.map(u=>({...u,soulCapacity:capacity,
   weights:[0,0,0,100]}));
-const make=(seed=1)=>createMatchProtocol({battleOptions:{
-  seed,teams:[guardRoster(),guardRoster()],
+const make=(seed=1,capacity=5)=>createMatchProtocol({battleOptions:{
+  seed,teams:[guardRoster(capacity),guardRoster(capacity)],
   rotationCooldownMs:0,researchSpecialEffects:false
 }});
 const meter=(m,id)=>m.snapshot().game.soul.teams.flat().find(u=>u.id===id);
@@ -162,20 +162,59 @@ test('22B host G-tech needs both permanent ring neighbors and spends exactly thr
   assert.equal(click(m,0,1,{type:'rotate',direction:-1}).ok,true);
   assert.deepEqual(m.snapshot().game.clock.teams[0].frontIds,['A6','A1','A2']);
   autoUntil(m,()=>['A6','A1','A2'].every(id=>meter(m,id).soul===5));
-  assert.equal(click(m,0,2,{type:'watch',mode:'zero'}).ok,true);
+  // Restore the original frontline so A6 goes BACK to reserve. G requires
+  // the permanent ring neighbor's full Soul even when offscreen/in reserve.
+  assert.equal(click(m,0,2,{type:'rotate',direction:1}).ok,true);
+  assert.deepEqual(m.snapshot().game.clock.teams[0].frontIds,['A1','A2','A3']);
+  assert.ok(m.snapshot().game.clock.teams[0].benchIds.includes('A6'));
+  assert.equal(click(m,0,3,{type:'watch',mode:'zero'}).ok,true);
   const projection=soultimateReadiness(m.snapshot().game,0);
   assert.equal(projection.A1.ready,true);
   assert.deepEqual(projection.A1.consumers,['A6','A1','A2']);
   assert.equal(unit(makeStageView(m.snapshot(),0),'A1').specialReady,true);
-  const begun=click(m,0,3,{type:'chargeStart',id:'A1'});
+  const begun=click(m,0,4,{type:'chargeStart',id:'A1'});
   assert.equal(begun.ok,true);
   assert.equal(begun.result.mode,'zero');
   assert.deepEqual(begun.result.consumers,['A6','A1','A2']);
-  const result=gestureDrive(m,0,begun,3);
+  const result=gestureDrive(m,0,begun,4);
   assert.equal(result.last.special.kind,'g-tech');
   assert.deepEqual(result.last.special.consumers,['A6','A1','A2']);
   for(const id of ['A6','A1','A2'])assert.equal(meter(m,id).soul,0,id);
   assert.equal(meter(m,'A3').soul,0);
   assert.equal(unit(makeStageView(m.snapshot(),0),'A1').specialReady,false);
+  assert.equal(replayMatchJournal(m.exportJournal()).ok,true);
+});
+
+test('22B full 100-point rental gauge is earned by normal owner actions before host charges',()=>{
+  const m=make(2,100);
+  autoUntil(m,()=>meter(m,'A1').soul===100,600);
+  assert.equal(unit(makeStageView(m.snapshot(),0),'A1').specialReady,true);
+  const begin=click(m,0,1,{type:'chargeStart',id:'A1'});
+  assert.equal(begin.ok,true);
+  const done=gestureDrive(m,0,begin,1);
+  assert.equal(done.kind,'tap');
+  assert.equal(done.last.special.kind,'soultimate');
+  assert.equal(meter(m,'A1').soul,0);
+  assert.equal(replayMatchJournal(m.exportJournal()).ok,true);
+});
+
+test('22B two online seats may finish their own charge, with Soul costs isolated and replay deterministic',()=>{
+  const m=make(2);
+  autoUntil(m,()=>meter(m,'A1').soul===5&&meter(m,'B1').soul===5);
+  const a=click(m,0,1,{type:'chargeStart',id:'A1'});
+  const b=click(m,1,1,{type:'chargeStart',id:'B1'});
+  assert.equal(a.ok,true);assert.equal(b.ok,true);
+  assert.equal(makeStageView(m.snapshot(),0).gesture.id,'A1');
+  assert.equal(makeStageView(m.snapshot(),1).gesture.id,'B1');
+  const aDone=gestureDrive(m,0,a,1);
+  assert.equal(meter(m,'A1').soul,0);
+  assert.equal(meter(m,'B1').soul,5,'A completion must not affect B');
+  assert.equal(makeStageView(m.snapshot(),1).gesture.id,'B1');
+  const bDone=gestureDrive(m,1,b,1);
+  assert.equal(aDone.last.special.kind,'soultimate');
+  assert.equal(bDone.last.special.kind,'soultimate');
+  assert.equal(meter(m,'B1').soul,0);
+  assert.equal(makeStageView(m.snapshot(),0).gesture,null);
+  assert.equal(makeStageView(m.snapshot(),1).gesture,null);
   assert.equal(replayMatchJournal(m.exportJournal()).ok,true);
 });
