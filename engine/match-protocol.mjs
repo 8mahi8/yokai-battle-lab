@@ -232,6 +232,13 @@ export function createMatchProtocol({battleOptions={},hostNowMs=()=>performance.
     lastCommandOutcomes:lastReceipt.map(last=>last?{
       clientSeq:last.receipt.clientSeq,commandType:last.commandType,
       applied:last.receipt.result?.ok!==false,
+      // Phase22C: transport ACK alone never means the Soultimate fired.
+      // Only the authoritative result of the FINAL valid touch may state
+      // that charge input completed. Do not invent success for old/unknown
+      // receipts, non-charge commands or rejected gestures.
+      ...(last.commandType==='chargeInput'&&
+         typeof last.receipt.result?.completed==='boolean'?
+        {completed:last.receipt.result.completed}:{}),
       ...(last.receipt.result?.reason?{reason:last.receipt.result.reason}:{}),
       ...(Number.isFinite(last.receipt.result?.remainingMs)?
         {remainingMs:last.receipt.result.remainingMs}:{})
