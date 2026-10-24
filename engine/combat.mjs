@@ -105,7 +105,7 @@ export function baseDamage(attacker,target,kind,critical=false) {
     :(critical?total/5+total/2.5-target.defense/14:total/10+total/3-target.defense/7);
   return Math.max(1,Math.min(999,Math.floor(amount)));
 }
-export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0,researchSpecialEffects=false,
+export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,rotationCooldownMs=0,researchSoulGainPerAction=0,researchSpecialEffects=false,
   researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false,
   researchWheelCoalescing=false,researchOpeningPriority=null,
   researchPokeSoulTransfer=0,researchDamageModel=false,researchMultiHit=false,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false}={}) {
@@ -158,7 +158,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const byId=new Map(squads.flat().map(x=>[x.id,x]));
   const soul=createSoulSystem({teams:squads.map(team=>team.map(m=>({id:m.id,capacity:m.soulCapacity})))});
  const statuses=createInspiritLedger([...byId.keys()]);
-  const clock=createBattle({seed,teams:squads.map(t=>t.map(m=>({name:m.name,speed:m.speed}))),rotationCooldownMs:0,
+  const clock=createBattle({seed,teams:squads.map(t=>t.map(m=>({name:m.name,speed:m.speed}))),rotationCooldownMs,
     openingPriorityResearch:researchOpeningPriority});
   const rng=seededRandom(seed ^ 0xA365E91F);
   const pins=[null,null], events=[];
@@ -346,7 +346,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     return {ok:true,cancelled:true};
   }
   function syncPinned(){ for(let side=0;side<2;side++)if(pins[side]&&!livingFront(1-side).some(m=>m.id===pins[side]))pins[side]=null; }
-  function rotate(side,direction){
+  function rotate(side,direction,atMs=0){
     if(winner!==null)throw new Error('battle finished');
     // Drain a hit whose scheduled timestamp is already due, BEFORE applying
     // a later wheel input. Otherwise setFront could erase its queued HP impact.
@@ -354,7 +354,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       advancePresentation(0);
       if(winner!==null)throw new Error('battle finished');
     }
-    const result=clock.rotate(side,direction,0);
+    const result=clock.rotate(side,direction,atMs);
     if(result.ok){
       syncPinned();
       // Changes of lineups cancel stale manual touch gestures: a Poke target
