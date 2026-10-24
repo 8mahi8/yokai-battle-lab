@@ -194,7 +194,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   }else if(kind==='pop'&&Array.isArray(challenge.popPoints)){
    points=challenge.popPoints.map(([px,py],i)=>'<span class="mb-touch-target" style="left:'+(px*100)+'%;top:'+(py*100)+'%;opacity:'+(challenge.popped?.includes(i)?'.2':'1')+'"></span>').join('');
   }else if(kind==='trace'&&Array.isArray(challenge.path)){
-   points=challenge.path.map(([px,py],i)=>'<span class="mb-trace-target" style="left:'+(px*100)+'%;top:'+(py*100)+'%;opacity:'+(i<challenge.pathIndex?.5:1)+'"></span>').join('');
+   points=challenge.path.map(([px,py],i)=>'<span class="mb-trace-target" style="left:'+(px*100)+'%;top:'+(py*100)+'%;opacity:'+(i<(challenge.pathIndex??0)?0.45:1)+'"></span>').join('');
   }else points='<span class="mb-touch-guideline">'+(kind==='spin'?'↻':kind==='rub'?'↔':kind==='slash'?'⤳':kind==='align'?'↕':'✦')+'</span>';
   $('mb-touch-points').innerHTML=points;
  }
