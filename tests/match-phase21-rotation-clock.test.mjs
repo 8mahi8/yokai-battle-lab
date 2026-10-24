@@ -67,11 +67,11 @@ test('3s online research option uses host timestamps and replays both successful
  delete tampered.entries[0].hostRotationAtMs;
  assert.equal(replayMatchJournal(tampered).reason,'invalid_replay_host_time');
 });
-test('default live contract retains old 0ms research setting, no timing hidden in user commands',()=>{
- const m=createMatchProtocol({hostNowMs:()=>{
-  throw Error('clock must not be read when cooldown is unconfigured');
+test('explicit legacy 0ms research setting remains, with no timing hidden in user commands',()=>{
+ const m=createMatchProtocol({battleOptions:{rotationCooldownMs:0},hostNowMs:()=>{
+  throw Error('clock must not be read when cooldown explicitly disabled');
  }});
- assert.equal(m.exportJournal().initialOptions.rotationCooldownMs,undefined);
+ assert.equal(m.exportJournal().initialOptions.rotationCooldownMs,0);
  assert.equal(m.dispatch(0,1,{type:'rotate',direction:1}).result.ok,true);
  assert.equal(m.dispatch(0,2,{type:'rotate',direction:1}).result.ok,true);
  assert.equal(replayMatchJournal(m.exportJournal()).ok,true);
@@ -85,4 +85,22 @@ test('invalid trusted monotonic time cannot advance sequence, journal or wheel',
  assert.equal(m.dispatch(0,1,{type:'rotate',direction:1}).reason,'invalid_host_clock');
  assert.deepEqual(m.snapshot(),old);
  assert.equal(m.exportJournal().entries.length,0);
+});
+
+test('real default 1v1 now enforces official-rule three-second wheel lock per player',()=>{
+ let clockMs=2000;
+ const match=createMatchProtocol({hostNowMs:()=>clockMs});
+ assert.equal(match.exportJournal().initialOptions.rotationCooldownMs,3000);
+ assert.equal(match.dispatch(0,1,{type:'rotate',direction:1}).result.ok,true);
+ clockMs=2100;
+ const next=match.dispatch(0,2,{type:'rotate',direction:1});
+ assert.equal(next.result.ok,false);
+ assert.equal(next.result.reason,'cooldown');
+ assert.equal(next.result.remainingMs,2900);
+ assert.deepEqual(match.snapshot().lastCommandOutcomes[0],{
+  clientSeq:2,commandType:'rotate',applied:false,reason:'cooldown',remainingMs:2900
+ });
+ clockMs=5000;
+ assert.equal(match.dispatch(0,3,{type:'rotate',direction:1}).result.ok,true);
+ assert.equal(replayMatchJournal(match.exportJournal()).ok,true);
 });
