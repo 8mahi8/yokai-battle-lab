@@ -110,6 +110,31 @@ export function makeStageView(state,side=0){
   side,teams,gesture,events:live,forecast:state.forecast||[],
   activeMode:roster.mode,pin:roster.pin,clientSequences:state.clientSequences||[0,0]};
 }
+/**
+ * Presentation-only selectable IDs. The authoritative battle engine always
+ * validates the actual move (including Soul, Poke status and action timing).
+ * This is only a visual affordance, never gameplay permission.
+ */
+export function matchSelectionHints(view,mode){
+ if(!view||![null,'charge','purify','target'].includes(mode))
+  throw new TypeError('invalid battle selection state');
+ if(mode===null)return {own:[],enemy:[],message:''};
+ const own=view.teams[view.side],opponent=view.teams[1-view.side];
+ if(mode==='charge'){
+  return {own:own.members.filter(m=>m.front&&!m.ko).map(m=>m.id),
+   enemy:[],message:'わざ：前衛の妖怪を選ぼう'};
+ }
+ if(mode==='purify'){
+  const ownIds=own.members.filter(m=>!m.front&&!m.ko&&m.negative).map(m=>m.id);
+  return {own:ownIds,enemy:[],message:ownIds.length?
+   'おはらい：悪いとりつきを受けた後衛を選ぼう':
+   'おはらいが必要な後衛はいません'};
+ }
+ return {own:[],enemy:opponent.members.filter(m=>m.front&&!m.ko).map(m=>m.id),
+  message:own.mode==='zero'?'つつく：相手の前衛を選ぼう（とりつき等の条件が必要）':
+    'ねらう：相手の前衛を選ぼう'};
+}
+
 export function createMatchStage({element,onAction,onStep=()=>{},
  seat=null,onError=()=>{}}={}){
  if(!element||typeof element.addEventListener!=='function')throw new TypeError('root DOM element required');
@@ -133,7 +158,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   <div class="mb-disclaimer">妖怪ウォッチ2の上下画面の構成を参考にした研究UI。キャラと背景はオリジナル。技の数値・演出は調整中。</div>
   <div class="mb-dualscreen">
    <section class="mb-upper-screen" aria-label="上画面：戦闘フィールド">
-    <div class="mb-screen-caption">BATTLE FIELD <span>上画面 / 前衛3体ずつ</span></div>
+    <div class="mb-screen-caption">BATTLE FIELD <span id="mb-choice-status" role="status">上画面 / 前衛3体ずつ</span></div>
     <div class="mb-battle-backdrop">
      <div class="mb-scenery mb-scenery-back" aria-hidden="true"></div>
      <div class="mb-foe-line" id="mb-foe-line"></div>
@@ -219,13 +244,16 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   const chunks=t.members.map(unit=>{
    const pos=SLOTS[unit.slot];
    const selected=selection===unit.id&&t.side===activeSeat?' mb-selected':'';
+   const choice=commandMode&&t.side===activeSeat&&matchSelectionHints(view,commandMode).own.includes(unit.id)
+    ?' mb-choice-eligible':'';
    const pinned=t.side!==activeSeat&&unit.id===view.teams[activeSeat].pin?' mb-pinned':'';
    const disabled=unit.ko?' mb-ko':'';
    const animated=flash?.actor===unit.id?' mb-acting':flash?.target===unit.id
     ?(flash.kind==='heal'?' mb-healed':' mb-hit'):'';
    const benched=unit.front?'':' mb-bench';
+   const ineligible=commandMode&&t.side===activeSeat&&!choice?' mb-choice-ineligible':'';
    const name=escapeHTML(unit.name);
-   return '<button type="button" data-unit="'+unit.id+'" class="mb-creature'+selected+pinned+disabled+animated+benched+
+   return '<button type="button" data-unit="'+unit.id+'" class="mb-creature'+selected+pinned+disabled+animated+benched+choice+ineligible+
     '" style="--x:'+pos.x+'%;--y:'+pos.y+'%" aria-label="'+name+(unit.front?' 前衛':' 後衛')+'">'+
     renderSpiritPortrait(unit.id)+
     '<span class="mb-name">'+name+'</span>'+
@@ -250,10 +278,13 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const actor=flash?.actor===id?' mb-acting':'';
    const target=flash?.target===id?(flash.kind==='heal'?' mb-healed':' mb-hit'):'';
    const pinned=!isOwn&&view.teams[activeSeat].pin===id?' mb-pinned':'';
+   const candidate=!isOwn&&commandMode==='target'&&!unit.ko?' mb-choice-eligible':'';
+   const tonedDown=!isOwn&&commandMode==='target'&&unit.ko?' mb-choice-ineligible':'';
    const ko=unit.ko?' mb-ko':'';
    const status=unit.negative?'<span class="mb-condition-icon" aria-label="悪いとりつき">⚠</span>':'';
    return '<button type="button" data-unit="'+id+'" class="mb-fighter'+
-    actor+target+pinned+ko+'" aria-label="'+name+(isOwn?' 味方前衛':' 敵前衛')+'">'+
+    actor+target+pinned+ko+candidate+tonedDown+'" aria-label="'+name+
+    (isOwn?' 味方前衛':' 敵前衛')+(candidate?' 選択可能':'')+'">'+
     '<span class="mb-fighter-sprite">'+renderSpiritPortrait(id)+'</span>'+
     '<span class="mb-fighter-meta"><strong>'+name+'</strong>'+
     '<span class="mb-bars"><i style="width:'+pct(unit.hp,unit.maxHp)+'%"></i></span>'+
@@ -332,7 +363,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   $('mb-team0').hidden=activeSeat!==0;
   $('mb-team1').hidden=activeSeat!==1;
   const fieldKey=JSON.stringify({side:activeSeat,own:view.teams[activeSeat],
-   enemy:view.teams[1-activeSeat],flash});
+   enemy:view.teams[1-activeSeat],flash,commandMode});
   if(fieldKey!==battleDrawCache){
    $('mb-foe-line').innerHTML=frontlineHTML(view.teams[1-activeSeat],false);
    $('mb-ally-line').innerHTML=frontlineHTML(view.teams[activeSeat],true);
@@ -342,7 +373,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   // The SVG cards must not be torn down for each tiny touch update.
   for(let index=0;index<2;index++){
    const key=JSON.stringify({team:view.teams[index],seat:activeSeat,selection,
-    ownerPin:view.teams[activeSeat].pin,flash});
+    ownerPin:view.teams[activeSeat].pin,flash,commandMode});
    if(key!==teamDrawCache[index]){
     $('mb-team'+index).innerHTML=teamHTML(view.teams[index]);
     teamDrawCache[index]=key;
@@ -370,13 +401,16 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   $('mb-charge').classList.toggle('mb-command-active',commandMode==='charge');
   $('mb-purify').classList.toggle('mb-command-active',commandMode==='purify');
   $('mb-target').classList.toggle('mb-command-active',commandMode==='target');
+  $('mb-choice-status').textContent=commandMode?matchSelectionHints(view,commandMode).message:
+   '上画面 / 前衛3体ずつ';
+  $('mb-upper-screen').dataset.selecting=commandMode??'';
+  for(const [name,modeName] of [['mb-charge','charge'],['mb-purify','purify'],['mb-target','target']]){
+   $(''+name).setAttribute('aria-pressed',String(commandMode===modeName));
+  }
   $('mb-mode-cancel').disabled=commandMode===null;
-  $('mb-mode-hint').textContent=commandMode==='charge'
-   ?'必殺技：前衛の妖怪をサークルから選択'
-   :commandMode==='purify'?'おはらい：後衛の妖怪をサークルから選択'
-   :commandMode==='target'?(own.mode==='zero'?'つつく：上画面の敵を選択':'ねらう：上画面の敵を選択')
-   :own.mode==='zero'?'零式モード：Gわざは研究中。つつくは選択可能'
-   :'サークルを回して前衛3体を入れ替えよう';
+  $('mb-mode-hint').textContent=commandMode?matchSelectionHints(view,commandMode).message:
+    own.mode==='zero'?'零式モード：つつくは条件がそろった敵に使用'
+    :'サークルを回して前衛3体を入れ替えよう';
   $('mb-activity').textContent=recentMessage;
   $('mb-feed-list').innerHTML=feedHTML();
   $('mb-revision').textContent='REV '+view.revision+' / A '+view.clientSequences[0]+' ・ B '+view.clientSequences[1];
@@ -415,7 +449,10 @@ export function createMatchStage({element,onAction,onStep=()=>{},
      if(!ally.front||ally.ko){alert('必殺技は前衛の生存妖怪を選択してね');render(wireState);return;}
      commandMode=null;command({type:'chargeStart',id:clicked});
     }else if(commandMode==='purify'){
-     if(ally.front||ally.ko){alert('おはらいは後衛の生存妖怪を選択してね');render(wireState);return;}
+     if(ally.front||ally.ko||!ally.negative){
+      alert('おはらいは悪いとりつきを受けた後衛に使えます');
+      render(wireState);return;
+     }
      commandMode=null;command({type:'purifyStart',id:clicked});
     }else alert('選択: '+ally.name);
     render(wireState);
