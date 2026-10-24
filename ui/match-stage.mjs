@@ -537,9 +537,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   if(Math.hypot(event.clientX-centerX,event.clientY-centerY)<radius*.22)return;
   wheelPointer={id:event.pointerId,seat:activeSeat,centerX,centerY,radius,
    startAngle:wheelAngle(event.clientX,event.clientY,centerX,centerY),
-   latestDelta:0,direction:0};
-  // Capture on a STABLE ancestor: a host snapshot may redraw the wheel.
-  try{element.setPointerCapture(event.pointerId);}catch(_){}
+   latestDelta:0,direction:0,captured:false};
+  // Do NOT capture at pointerdown: ordinary medal taps must retain their
+  // original button click target on iPad Safari. Capture only after a drag.
  }
  function onWheelMove(event){
   const p=wheelPointer;
@@ -550,6 +550,11 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   p.latestDelta=gesture.delta;p.direction=gesture.direction;
   if(Math.abs(gesture.delta)>Math.PI/15){
    event.preventDefault();
+   if(!p.captured){
+    p.captured=true;
+    // Capture a stable ancestor only after angular intent is established.
+    try{element.setPointerCapture(event.pointerId);}catch(_){}
+   }
    const wheel=element.querySelector('#mb-team'+activeSeat+' .mb-wheel');
    if(wheel){
     wheel.classList.add('mb-wheel-dragging');
