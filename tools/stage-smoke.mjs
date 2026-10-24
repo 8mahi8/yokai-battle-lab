@@ -27,6 +27,19 @@ document.getElementById('frame').addEventListener('load',()=>{
   const check=(condition,message)=>{if(!condition)throw Error(message);};
   check(pick('#battle-stage').dataset.stageReady==='true','ESM stage not ready');
   check(root.querySelectorAll('.mb-creature').length===12,'not 12 original rental creatures');
+  check(root.querySelectorAll('.mb-character-art:not(.mb-mini-art)').length===12,
+   'all 12 original SVG characters must render in battle');
+  check(root.querySelectorAll('.mb-mini-art').length===5,'forecast must reuse SVG portraits');
+  const aDesigns=[...root.querySelectorAll('#mb-team0 .mb-character-art')].map(x=>x.dataset.design);
+  const bDesigns=[...root.querySelectorAll('#mb-team1 .mb-character-art')].map(x=>x.dataset.design);
+  check(new Set(aDesigns).size===6,'characters are not visually distinguishable');
+  check(JSON.stringify(aDesigns)===JSON.stringify(bDesigns),'rentals differ between two seats');
+  check(root.querySelectorAll('.mb-creature image,.mb-creature img,.mb-creature filter').length===0,
+   'original art must be local filter-free vectors');
+  const firstArt=pick('#mb-team0 [data-unit="A1"] .mb-character-art');
+  const firstBox=firstArt.getBoundingClientRect();
+  check(firstBox.width>=40&&firstBox.width<=60&&firstBox.height>=40,
+   'portrait is not readable at intended iPad card size');
   check(root.querySelectorAll('.mb-next').length===5,'missing 5 predicted actions');
   check(pick('#mb-turn').textContent==='0','wrong starting turn');
   const panel=pick('#mb-team0');
