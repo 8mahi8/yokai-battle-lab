@@ -33,6 +33,7 @@ import {createFirebaseRoomClient} from '../network/firebase-room.mjs';
 import {createFirebaseMatchHost,createFirebaseMatchGuest} from '../network/firebase-match.mjs';
 import {createMatchProtocol} from '../engine/match-protocol.mjs';
 import {createMatchStage} from '../ui/match-stage.mjs';
+import {matchAckMessage} from '../ui/match-feedback.mjs';
 const $=id=>document.getElementById(id);
 let database,room,match,stage=null,seat=null;
 let localConnected=false,peerConnected=null;
@@ -111,7 +112,7 @@ $('connect').addEventListener('click',async()=>{
   const phase=(await database.ref('yokaiRoomsV1/'+room.active().roomCode+'/phase').once('value')).val();
   if(phase!=='playing')throw Error('ホストがまだ開始していません');
   match=createFirebaseMatchGuest({roomClient:room,onSnapshot:state=>{stage.render(state);updatePresence();},
-   onError:err,onAck:e=>{info('入力 '+e.clientSeq+' をホストが確定しました。');updatePresence();}});
+   onError:err,onAck:e=>{info(matchAckMessage(e));updatePresence();}});
   match.start();$('connect').disabled=true;info('ゲスト接続。最初の戦況を待っています。');updatePresence();}
  catch(error){err(error);}
 });
