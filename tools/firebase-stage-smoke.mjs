@@ -48,6 +48,9 @@ async function until(predicate,label){
  await until(()=>el(host,'battle-stage')?.dataset.stageReady==='true','host stage');
  el(guest,'connect').click();
  await until(()=>el(guest,'battle-stage')?.dataset.stageReady==='true','guest stage');
+ await until(()=>el(host,'link-state')?.textContent==='相手と接続中'&&
+  el(guest,'link-state')?.textContent==='相手と接続中',
+  'both devices report peer presence');
  if(doc(host).querySelectorAll('.mb-creature').length!==12||
     doc(guest).querySelectorAll('.mb-creature').length!==12)
   throw Error('battle stage lost 6v6 rental rosters');
@@ -64,7 +67,21 @@ async function until(predicate,label){
  el(host,'mb-step').click();
  await until(()=>Number(el(guest,'mb-turn')?.textContent)===1,'guest receives authoritative time advance');
  if(doc(host).querySelector('#mb-turn').textContent!=='1')throw Error('host turn not 1');
- result.textContent='FIREBASE-STAGE-PASS two real authenticated SDK iframes create join rotate host sync and turn';
+ // Drop the guest transport. The server should run the guest's registered
+ // onDisconnect(false), host must pause controls, then guest reconnects.
+ guest.contentWindow.firebase.database().goOffline();
+ await until(()=>el(host,'link-state')?.textContent==='相手が切断','host sees actual peer drop');
+ const turnBefore=Number(el(host,'mb-turn').textContent);
+ el(host,'mb-step').click();
+ if(Number(el(host,'mb-turn').textContent)!==turnBefore)
+  throw Error('host advanced battle while guest offline');
+ guest.contentWindow.firebase.database().goOnline();
+ await until(()=>el(host,'link-state')?.textContent==='相手と接続中'&&
+  el(guest,'link-state')?.textContent==='相手と接続中','peer reconnected');
+ el(host,'mb-step').click();
+ await until(()=>Number(el(guest,'mb-turn')?.textContent)===turnBefore+1,
+  'battle resumes on same host engine after guest transport reconnect');
+ result.textContent='FIREBASE-STAGE-PASS room sync, actual guest disconnect, host pause, transport resume';
 })().catch(e=>{result.textContent='FIREBASE-STAGE-FAIL '+(e.stack||e.message)});
 </script></body></html>`;
 const srv=createServer(async(req,res)=>{
