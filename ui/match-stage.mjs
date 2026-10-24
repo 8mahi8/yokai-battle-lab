@@ -166,7 +166,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     <h1>輪戦 <span>—</span> サークルバトル</h1></div></div>
    <div class="mb-state"><span id="mb-connection" class="mb-online">LOCAL</span><span>行動 <b id="mb-turn">0</b></span></div>
   </header>
-  <div class="mb-disclaimer">妖怪ウォッチ2の上下画面の構成を参考にした研究UI。キャラと背景はオリジナル。技の数値・演出は調整中。</div>
+  <div class="mb-disclaimer">妖怪ウォッチ2対戦の再現研究中。キャラはオリジナル。必殺技の威力・技ごとの効果は研究用仮値で、原作再現は未完了。</div>
   <div class="mb-dualscreen">
    <section class="mb-upper-screen" aria-label="上画面：戦闘フィールド">
     <div class="mb-screen-caption">BATTLE FIELD <span id="mb-choice-status" role="status">上画面 / 前衛3体ずつ</span></div>
