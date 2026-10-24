@@ -26,6 +26,8 @@ jobs:
           sudo apt-get install -y -qq fonts-noto-cjk
       - name: Render and interact in real Chromium
         run: node tools/stage-smoke.mjs
+      - name: Verify actual PointerEvents across 10 touch trials
+        run: node tools/gesture-stage-smoke.mjs
       - name: Preserve actual stage screenshot for visual review
         if: always()
         uses: actions/upload-artifact@v4
