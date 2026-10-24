@@ -78,6 +78,33 @@ button:focus-visible{outline:3px solid #ffe5a9;outline-offset:2px}
 .mb-avatar-6{background:radial-gradient(circle at 39% 25%,#c5e9ec,#528c9e 85%);border-color:#a2d3d8}
 .mb-eyes:before,.mb-eyes:after{content:"";position:absolute;width:5px;height:8px;background:#212735;border-radius:50%;top:16px}
 .mb-eyes:before{left:11px}.mb-eyes:after{right:10px}
+/* Phase15 original vector familar roster. The SVG root (not individual
+   SVG path transforms) is animated for older WebKit compatibility. Only three
+   front-row units per team animate at a time; bench and forecasts stay still. */
+.mb-character-art{display:block;flex:none;width:47px;height:47px;max-width:100%;overflow:visible;pointer-events:none;
+  -webkit-transform-origin:center center;transform-origin:center center}
+.mb-creature:not(.mb-bench):not(.mb-ko) .mb-character-art{animation:mb-idle 3.8s ease-in-out infinite}
+.mb-creature:nth-child(2n) .mb-character-art{animation-delay:-1.3s}
+.mb-creature:nth-child(3n) .mb-character-art{animation-delay:-2.5s}
+@keyframes mb-idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+.mb-creature.mb-acting .mb-character-art{animation:mb-strike .7s cubic-bezier(.18,.75,.28,1) both}
+.mb-creature.mb-hit .mb-character-art{animation:mb-recoil .7s ease-out both}
+.mb-creature.mb-healed .mb-character-art{animation:mb-lift .7s ease-out both}
+@keyframes mb-strike{0%,100%{transform:translateX(0) scale(1)}30%{transform:translateX(5px) scale(1.13)}60%{transform:translateX(-2px) scale(.97)}}
+@keyframes mb-recoil{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px) rotate(-8deg)}50%{transform:translateX(3px) rotate(5deg)}}
+@keyframes mb-lift{0%,100%{transform:translateY(0)}40%{transform:translateY(-6px) scale(1.07)}}
+.mb-next-avatar{overflow:hidden;padding:1px}
+.mb-next-avatar .mb-mini-art{width:26px;height:26px;max-width:unset;flex:none}
+.mb-side1 .mb-character-art{transform:scaleX(-1)}
+/* Short-lived combat FX take precedence; no continuous compositor layers
+   or costly blur/filter effects on the moving portrait shapes. */
+@media(prefers-reduced-motion:reduce){
+ .mb-creature:not(.mb-bench):not(.mb-ko) .mb-character-art,
+ .mb-creature.mb-acting .mb-character-art,
+ .mb-creature.mb-hit .mb-character-art,
+ .mb-creature.mb-healed .mb-character-art{animation:none!important}
+}
+
 .mb-name{max-width:100%;font-weight:800;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:1px 0}
 .mb-bars{display:block;width:90%;height:5px;background:#0c1824;border-radius:6px;overflow:hidden;margin-bottom:3px}
 .mb-bars i{display:block;background:linear-gradient(90deg,#53c9a4,#b1f1b0);height:100%;border-radius:6px}
