@@ -57,3 +57,74 @@ export function comparePublishedRechargeEvidence(){
         confidence:'original-player-experiment-unreplicated'};
     }));
 }
+
+
+/**
+ * If a full bar of capacity C was reached on action T from zero by a
+ * CONSTANT amount r on each of the owner's actions, then
+ *            C/T <= r < C/(T-1)  (T >= 2).
+ * The boundaries are mathematically exact rational numbers. This does
+ * NOT assume the earlier integer-floor candidate model, nor imply that
+ * an original 3DS gauge actually follows constant increments.
+ */
+export function constantRecoveryInterval(capacity,turnsToFull){
+  if(!Number.isSafeInteger(capacity)||capacity<=0||
+     !Number.isSafeInteger(turnsToFull)||turnsToFull<=0)
+    throw new RangeError('positive safe integer capacity and turns required');
+  return {
+    lowerInclusive:{numerator:capacity,denominator:turnsToFull},
+    upperExclusive:turnsToFull===1?null:
+      {numerator:capacity,denominator:turnsToFull-1},
+    originalParityVerified:false
+  };
+}
+
+const fractionCompare=(a,b)=>{
+  // Actual research data are small; separately validate safe products to
+  // avoid presenting precision-corrupted comparisons for extended fixtures.
+  const l=a.numerator*b.denominator,r=b.numerator*a.denominator;
+  if(!Number.isSafeInteger(l)||!Number.isSafeInteger(r))
+    throw new RangeError('unsafe rational comparison');
+  return Math.sign(l-r);
+};
+
+/**
+ * Exposes WHEN two observations with identical stated capacity and Soul
+ * count cannot share one constant per-owner-turn rate, even if fractional.
+ * This is evidence of an unresolved input condition, differing behavior,
+ * observation error, or a nonconstant progression — not proof which one.
+ */
+export function compareSameCapacityRateIntervals(){
+  const buckets=new Map();
+  for(const item of SOUL_RECHARGE_SOURCE_CASES){
+    item.turnsToFull.forEach((turnsToFull,adjacentRecoverySouls)=>{
+      const key=item.capacity+':'+adjacentRecoverySouls;
+      if(!buckets.has(key))buckets.set(key,[]);
+      buckets.get(key).push({kind:item.kind,capacity:item.capacity,
+        adjacentRecoverySouls,turnsToFull});
+    });
+  }
+  const output=[];
+  for(const [key,records] of buckets){
+    if(records.length<2)continue;
+    const intervals=records.map(record=>({
+      ...record,...constantRecoveryInterval(record.capacity,record.turnsToFull)
+    }));
+    let maxLower=intervals[0].lowerInclusive;
+    let minUpper=intervals[0].upperExclusive;
+    for(const interval of intervals.slice(1)){
+      if(fractionCompare(interval.lowerInclusive,maxLower)>0)
+        maxLower=interval.lowerInclusive;
+      if(minUpper===null||(interval.upperExclusive!==null&&
+        fractionCompare(interval.upperExclusive,minUpper)<0))
+        minUpper=interval.upperExclusive;
+    }
+    const compatible=minUpper===null||fractionCompare(maxLower,minUpper)<0;
+    output.push({key,capacity:records[0].capacity,
+      adjacentRecoverySouls:records[0].adjacentRecoverySouls,
+      compatible,lowerInclusive:maxLower,upperExclusive:minUpper,
+      observations:records,
+      limitation:'Assumes comparable starting empty gauge, full-threshold and constant recovery per owner action, without unmeasured triggers.'});
+  }
+  return output;
+}
