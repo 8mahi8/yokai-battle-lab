@@ -171,7 +171,6 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    <section class="mb-upper-screen" aria-label="上画面：戦闘フィールド">
     <div class="mb-screen-caption">BATTLE FIELD <span id="mb-choice-status" role="status">上画面 / 前衛3体ずつ</span></div>
     <div class="mb-battle-backdrop">
-     <div id="mb-special-flare" class="mb-special-flare" hidden aria-hidden="true"><span id="mb-special-title"></span></div>
      <div class="mb-scenery mb-scenery-back" aria-hidden="true"></div>
      <div id="mb-special-flare" class="mb-special-flare" hidden aria-hidden="true"><span id="mb-special-title"></span></div>
      <div class="mb-foe-line" id="mb-foe-line"></div>
