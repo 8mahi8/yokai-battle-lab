@@ -115,6 +115,14 @@ document.getElementById('frame').addEventListener('load',()=>{
   pick('#battle-stage').dispatchEvent(pointer('pointermove',cx+radius,cy+radius,83));
   pick('#battle-stage').dispatchEvent(pointer('pointercancel',cx+radius,cy+radius,83));
   check(record()===tiny,'pointercancel must not submit a rotation');
+  const medal=pick('#mb-team0 [data-unit="A6"]');
+  const box=medal.getBoundingClientRect(),tapX=box.left+box.width/2,tapY=box.top+box.height/2;
+  medal.dispatchEvent(pointer('pointerdown',tapX,tapY,84));
+  medal.dispatchEvent(pointer('pointerup',tapX,tapY,84));
+  medal.click();
+  check(pick('#mb-selected').textContent.includes('くろがね'),
+   'normal medal tap must remain selectable immediately after a wheel drag');
+  check(record()===tiny,'medal selection must not secretly rotate or advance the battle');
 
   pick('#mb-watch').click();
   check(pick('#mb-watch').textContent.includes('標準ウォッチ'),'standard -> zero watch toggle failed');
