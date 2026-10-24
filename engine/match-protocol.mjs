@@ -131,12 +131,19 @@ export function createMatchProtocol({battleOptions={}}={}){
  // The no-attack +5 owner-turn recovery is the one Soul-gain amount
  // supported by direct YW2 player experiments. Attacking gain remains
  // UNSOURCED and is not invented in the initial network contract.
- // Original game specials MUST have an impact in actual battles. The six
- // original rental characters have no official YW2 move/HP data, therefore
- // their numbers and per-move targeting remain an explicitly labeled research
- // fixture, NOT a claim of original per-move fidelity. Keep the opt-out for
- // source-parity research and locked test fixtures.
+ // Phase20 source-audited integration:
+ // Standard attack/technique HP now uses the Phase9 YW2 formula study, while
+ // Phase10 processes separate hit/critical/interruption rolls when the
+ // configured rental move actually has N>1 hits. Both have been independently
+ // researched and tested. Exact move power, hit chance modifiers, individual
+ // rental stats and ±random rounding are NOT guaranteed original parity.
+ //
+ // Keep speculative own-turn HP-loss 5% scaling, healing base/variance and
+ // incomplete no-motion counter windows disabled. Allow explicit overrides
+ // for controlled legacy comparisons and seeded journal reproduction.
+ // Soultimates remain separately flagged research-fixture (not original moves).
  const options=clone({researchSoulRecoveryMode:'owner-nonattack',
+   researchDamageModel:true,researchMultiHit:true,
    researchSpecialEffects:true,...battleOptions});
  function newBattle(){return createCombat(options);}
  const game=newBattle();
