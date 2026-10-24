@@ -31,6 +31,14 @@ document.getElementById('frame').addEventListener('load',()=>{
   check(pick('#mb-turn').textContent==='0','wrong starting turn');
   const panel=pick('#mb-team0');
   check(Number.parseFloat(getComputedStyle(panel).minHeight)>=290,'battle stage has no layout');
+  for(const team of root.querySelectorAll('.mb-team')){
+   const boundary=team.getBoundingClientRect();
+   for(const card of team.querySelectorAll('.mb-creature')){
+    const box=card.getBoundingClientRect();
+    check(box.top>=boundary.top+2&&box.bottom<=boundary.bottom-2,
+     'a wheel creature card is clipped by its team panel: '+card.dataset.unit);
+   }
+  }
   pick('#mb-team1 [data-unit="B1"]').click();
   check(pick('#mb-team1 [data-unit="B1"]').classList.contains('mb-pinned'),'enemy pin did not follow canonical protocol');
   pick('[data-rotate="1"]').click();
