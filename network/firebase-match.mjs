@@ -39,12 +39,15 @@ export function createFirebaseMatchHost({roomClient,protocol=createMatchProtocol
  assertCallbacks(onSnapshot,onError);
  if(!protocol||['dispatch','snapshot','advanceAuto'].some(k=>typeof protocol[k]!=='function'))
   throw new TypeError('match protocol required');
+ if(typeof roomClient.readPublishedSnapshot!=='function')
+  throw new TypeError('room adapter must provide authoritative preflight check');
  const initialSession=roomClient.active().session;
- let started=false,stopped=false,unsub=null,busy=null,dirty=true;
+ let started=false,stopped=false,fenced=false,unsub=null,busy=null,dirty=true;
  let lastPublished=-1,processedGuest=0;
  function check(){
   const room=validateRoom(roomClient,0);
-  if(stopped||room.session!==initialSession)throw new Error('host session changed');
+  if(stopped||fenced||room.session!==initialSession)
+   throw new Error(fenced?'existing_authoritative_state':'host session changed');
  }
  async function publish(){
   check();
@@ -55,8 +58,16 @@ export function createFirebaseMatchHost({roomClient,protocol=createMatchProtocol
     const state=protocol.snapshot();
     try{
      const receipt=await roomClient.publishSnapshot(state);
-     if(!receipt.ok&&receipt.reason!=='stale_snapshot')
+     if(!receipt.ok){
+      if(receipt.reason==='stale_snapshot'){
+       // An old host can never restart by pretending to be a new game.
+       // Publishing revision 0 after another host's revision >0 must fence
+       // this in-memory engine, not silently report success.
+       fenced=true;started=false;unsub?.();unsub=null;
+       throw new Error('existing_authoritative_state');
+      }
       throw new Error('snapshot publish rejected: '+receipt.reason);
+     }
      lastPublished=Math.max(lastPublished,state.revision);
     }catch(error){
      dirty=true;onError(error);return {ok:false,error:String(error)};
@@ -76,6 +87,14 @@ export function createFirebaseMatchHost({roomClient,protocol=createMatchProtocol
  async function start(){
   check();
   if(started)throw new Error('host session already started');
+  // A reload cannot restore the random state, event journal or timer.
+  // Refuse to run a new engine against the room's existing session.
+  const existing=await roomClient.readPublishedSnapshot();
+  check();
+  if(existing!==null){
+   fenced=true;
+   return {ok:false,reason:'existing_authoritative_state',revision:existing.revision};
+  }
   started=true;
   const baseline=protocol.snapshot();
   processedGuest=baseline.clientSequences[1];
@@ -109,7 +128,7 @@ export function createFirebaseMatchHost({roomClient,protocol=createMatchProtocol
   return result;
  }
  function stop(){stopped=true;unsub?.();unsub=null;}
- function status(){return {started,stopped,revision:protocol.snapshot().revision,
+ function status(){return {started,stopped,fenced,revision:protocol.snapshot().revision,
   lastPublished,guestSequence:processedGuest,dirty};}
  return {start,submit,advanceAuto,retryPublish:publish,stop,status,
   snapshot:()=>clone(protocol.snapshot())};
