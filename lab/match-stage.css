@@ -26,6 +26,20 @@ button:focus-visible{outline:3px solid #ffe5a9;outline-offset:2px}
 .mb-next-avatar.mb-b{background:#ab6981}
 .mb-next strong{font-size:11px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mb-next small{font-size:9px;color:#9aacc1;display:block}
+
+.mb-action-label{margin-top:8px;border-top:1px solid #425467;padding-top:7px;color:#d5e7ed;font-size:11px;min-height:22px}
+.mb-creature.mb-acting{animation:mb-acting .72s ease-out}
+.mb-creature.mb-hit{animation:mb-hit .72s ease-out}
+.mb-creature.mb-healed{animation:mb-healed .72s ease-out}
+.mb-floating-number{position:absolute;left:50%;top:0;z-index:5;transform:translateX(-50%);
+ color:#ffe7b8;font-size:15px;font-weight:900;text-shadow:0 2px 5px #071422;
+ white-space:nowrap;pointer-events:none;animation:mb-number .72s ease-out forwards}
+.mb-healed .mb-floating-number{color:#b1f7c9}
+@keyframes mb-acting{0%{filter:brightness(1.6);box-shadow:0 0 0 5px #d1bb8299}100%{filter:brightness(1);box-shadow:0 3px 11px #050d1a99}}
+@keyframes mb-hit{0%{filter:brightness(1.8);box-shadow:0 0 0 5px #ef7c8399}100%{filter:brightness(1);box-shadow:0 3px 11px #050d1a99}}
+@keyframes mb-healed{0%{filter:brightness(1.5);box-shadow:0 0 0 5px #75e9b488}100%{filter:brightness(1);box-shadow:0 3px 11px #050d1a99}}
+@keyframes mb-number{0%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-27px)}}
+
 .mb-empty{color:#aab8c9;font-size:12px}
 .mb-arena{display:grid;grid-template-columns:minmax(0,1fr) 42px minmax(0,1fr);align-items:stretch;gap:4px}
 .mb-team{position:relative;overflow:hidden;min-width:0;background:linear-gradient(163deg,#1e3851,#142537 62%,#182433);border:1px solid #416279;border-radius:20px;min-height:334px;padding:10px}
@@ -115,4 +129,4 @@ button:focus-visible{outline:3px solid #ffe5a9;outline-offset:2px}
  .mb-arena{grid-template-columns:minmax(0,1fr) 30px minmax(0,1fr)}
  .mb-bottom{margin-top:6px}.mb-actions,.mb-feed{padding:7px}
  .mb-control-grid{margin-top:6px;gap:4px}}
-@media(prefers-reduced-motion:reduce){.mb-creature{transition:none}}
+@media(prefers-reduced-motion:reduce){.mb-creature{transition:none}.mb-creature.mb-acting,.mb-creature.mb-hit,.mb-creature.mb-healed,.mb-floating-number{animation:none}}
