@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {SOUL_RECHARGE_SOURCE_CASES,comparePublishedRechargeEvidence,predictResearchRecharge}
+import {SOUL_RECHARGE_SOURCE_CASES,comparePublishedRechargeEvidence,predictResearchRecharge,
+  constantRecoveryInterval,compareSameCapacityRateIntervals}
   from '../engine/phase21d-soul-rate-evidence.mjs';
 import {createMatchProtocol,replayMatchJournal} from '../engine/match-protocol.mjs';
 import {RENTAL_SQUAD} from '../engine/combat.mjs';
@@ -77,4 +78,39 @@ test('21D-B: online rental host still omits experimental adjacent Soul equipment
   assert.equal(gauges.find(x=>x.id===step.result.actor).soul,5);
   assert.ok(gauges.filter(x=>x.id!==step.result.actor).every(x=>x.soul===0));
   assert.equal(replayMatchJournal(match.exportJournal()).ok,true);
+});
+
+test('21D-B interval proof: first full on turn 13 implies 10 <= rate < 130/12',()=>{
+  assert.deepEqual(constantRecoveryInterval(130,13),{
+    lowerInclusive:{numerator:130,denominator:13},
+    upperExclusive:{numerator:130,denominator:12},
+    originalParityVerified:false
+  });
+  assert.deepEqual(constantRecoveryInterval(130,14).upperExclusive,{
+    numerator:130,denominator:13
+  });
+  // Exactly 10 works for 13 turns, but cannot produce first full on 14.
+});
+
+test('21D-B two reported 130-capacity outcomes have no common constant-rate interval with two Souls',()=>{
+  const groups=compareSameCapacityRateIntervals();
+  assert.equal(groups.length,3,'only capacity=130 has two independent grade rows');
+  assert.deepEqual(groups.map(g=>[g.adjacentRecoverySouls,g.compatible]),[
+    [0,true],[1,true],[2,false]
+  ]);
+  const uncertain=groups[2];
+  assert.equal(uncertain.capacity,130);
+  assert.deepEqual(uncertain.observations.map(v=>[v.kind,v.turnsToFull]),
+    [['g3-soul',13],['g2-power',14]]);
+  assert.deepEqual(uncertain.lowerInclusive,{numerator:130,denominator:13});
+  assert.deepEqual(uncertain.upperExclusive,{numerator:130,denominator:13});
+  assert.match(uncertain.limitation,/starting empty gauge/);
+});
+
+test('21D-B constant-rate bounds do not pretend to establish frame rounding or arbitrary grade exceptions',()=>{
+  assert.equal(constantRecoveryInterval(100,1).upperExclusive,null);
+  for(const values of [[0,2],[100,0],[-1,2],[100,1.5],[100,NaN],[100,Infinity]])
+    assert.throws(()=>constantRecoveryInterval(...values));
+  const result=compareSameCapacityRateIntervals();
+  assert.ok(result.every(g=>g.observations.every(x=>x.capacity===g.capacity)));
 });
