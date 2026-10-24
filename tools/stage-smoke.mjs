@@ -50,6 +50,15 @@ document.getElementById('frame').addEventListener('load',()=>{
   check(!pick('#mb-team0').hidden&&pick('#mb-team1').hidden,'show only own wheel, not two competing circles');
   check(root.querySelectorAll('.mb-watch-command').length===4,'four original corner commands absent');
   check(pick('.mb-command-item').disabled,'PvP battle items must not be usable');
+  pick('#mb-charge').click();
+  check(pick('#mb-charge').classList.contains('mb-command-active'),
+   'soultimate must require selecting a wheel medal');
+  pick('#mb-mode-cancel').click();
+  check(!pick('#mb-charge').classList.contains('mb-command-active'),'command cancel failed');
+  pick('#mb-purify').click();
+  check(pick('#mb-purify').classList.contains('mb-command-active'),
+   'purify must require a reserve medal selection');
+  pick('#mb-mode-cancel').click();
   for(const team of root.querySelectorAll('.mb-team:not([hidden])')){
    const boundary=team.getBoundingClientRect();
    for(const card of team.querySelectorAll('.mb-creature')){
@@ -68,6 +77,7 @@ document.getElementById('frame').addEventListener('load',()=>{
   check(pick('#mb-revision').textContent.includes('REV 2'),'game revision did not advance after pin and rotation');
   pick('#mb-watch').click();
   check(pick('#mb-watch').textContent.includes('標準ウォッチ'),'standard -> zero watch toggle failed');
+  check(pick('#mb-target').textContent.includes('つつく'),'zero mode should swap target into poke');
   pick('#mb-step').click();
   check(Number(pick('#mb-turn').textContent)===1,'actual automatic battle action failed');
   check(!pick('#mb-action-label').textContent.includes('待機中'),'canonical actor summary not shown');
@@ -156,6 +166,22 @@ try{
  if(galleryExit!==0||!existsSync(galleryShot))
   throw new Error('Character gallery image capture failed: '+galleryError.slice(-400));
  console.log('SCREENSHOT-READY phase15-character-gallery.png');
+ const ipad=path.join(root,'phase16-ipad-landscape-preview.png');
+ const ipadChild=spawn(browser,[
+  '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+  '--no-first-run','--disable-extensions','--hide-scrollbars',
+  '--user-data-dir='+path.join(tmp,'ipad'),
+  '--window-size=1024,768','--virtual-time-budget=2200',
+  '--screenshot='+ipad,'http://127.0.0.1:'+server.address().port+'/lab/match-stage.html'
+ ],{stdio:['ignore','pipe','pipe']});
+ let ipadError='';
+ ipadChild.stderr.on('data',b=>ipadError+=String(b).slice(0,2000));
+ const ipadTimeout=setTimeout(()=>ipadChild.kill('SIGKILL'),18000);
+ const ipadExit=await new Promise(resolve=>ipadChild.on('close',resolve));
+ clearTimeout(ipadTimeout);
+ if(ipadExit!==0||!existsSync(ipad))
+  throw new Error('iPad-class landscape preview capture failed: '+ipadError.slice(-400));
+ console.log('SCREENSHOT-READY phase16-ipad-landscape-preview.png');
 }finally{
  await new Promise(resolve=>server.close(resolve));
  rmSync(tmp,{recursive:true,force:true});
