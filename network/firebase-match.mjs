@@ -212,7 +212,18 @@ export function createFirebaseMatchGuest({roomClient,onSnapshot=()=>{},onAck=()=
    latestState=clone(state);
    if(pending&&seq>=pending.clientSeq){
     const received=pending;pending=null;
-    onAck({clientSeq:received.clientSeq,revision,accepted:true});
+    const verdict=state.lastCommandOutcomes?.[1];
+    const matched=verdict?.clientSeq===received.clientSeq;
+    // ack means the authoritative host consumed this sequence. A legal
+    // command may nonetheless fail its game rule (e.g. wheel cooldown).
+    // Never call a missing / stale verdict successful.
+    const applied=matched&&typeof verdict.applied==='boolean'?
+      verdict.applied:null;
+    onAck({clientSeq:received.clientSeq,revision,accepted:true,
+      applied,commandType:received.intent.type,
+      ...(matched&&verdict.reason?{reason:verdict.reason}:{}),
+      ...(matched&&Number.isFinite(verdict.remainingMs)?
+       {remainingMs:verdict.remainingMs}:{})});
    }
    onSnapshot(clone(state));
    // Drain exactly one input per authoritative ACK, preserving tap order.
