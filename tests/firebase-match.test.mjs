@@ -195,15 +195,42 @@ test('Phase21 opt-in three-second host wheel lock survives guest Firebase bridge
   'guest transport cannot bypass the authoritative three-second cooldown');
  assert.equal(protocol.exportJournal().entries[1].result.reason,'cooldown');
  assert.equal(acks.length,2,'guest receives revision even when host rejected the rule action');
+ assert.equal(acks[0].applied,true);
+ assert.equal(acks[1].applied,false,'transport ACK cannot imply valid rotation');
+ assert.equal(acks[1].reason,'cooldown');
+ assert.equal(acks[1].remainingMs,2550);
+ assert.equal(acks[1].accepted,true,'host still consumed command sequence');
+ assert.equal(protocol.snapshot().lastCommandOutcomes[1].applied,false);
  assert.equal(protocol.exportJournal().entries[1].hostRotationAtMs,1450);
  hostMs=4000;
  assert.equal(guest.submit({type:'rotate',direction:1}).ok,true);
  await tick();
  assert.equal(host.snapshot().game.clock.teams[1].frontIds[0],'B3');
  assert.equal(acks.length,3);
+ assert.equal(acks[2].applied,true);
  assert.deepEqual(bus.latest().state.game.clock.teams[1].frontIds,
   host.snapshot().game.clock.teams[1].frontIds);
  assert.equal(replayMatchJournal(protocol.exportJournal()).ok,true);
  assert.deepEqual(errors,[]);
+ guest.stop();host.stop();
+});
+
+test('old or truncated host snapshot never yields a false-positive guest success ACK',async()=>{
+ const bus=fakeTransport(),acks=[];
+ const host=createFirebaseMatchHost({roomClient:bus.host});
+ const guest=createFirebaseMatchGuest({roomClient:bus.guest,
+  onAck:a=>acks.push(a)});
+ guest.start();await host.start();await tick();
+ bus.setDrop(true);
+ assert.equal(guest.submit({type:'rotate',direction:1}).ok,true);
+ await tick();
+ assert.equal(host.snapshot().revision,1);
+ const oldPacket=bus.latest();
+ delete oldPacket.state.lastCommandOutcomes;
+ bus.state(oldPacket);
+ assert.equal(acks.length,1);
+ assert.equal(acks[0].accepted,true);
+ assert.equal(acks[0].applied,null,'unknown receipt must not be labeled successful');
+ assert.equal(acks[0].reason,undefined);
  guest.stop();host.stop();
 });
