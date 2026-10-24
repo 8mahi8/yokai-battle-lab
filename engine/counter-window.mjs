@@ -46,6 +46,10 @@ export function createCounterWindow({fronts=[['A1','A2','A3'],['B1','B2','B3']],
    // When that face changes in the window, a start-of-cutin freeze
    // is not an original-confirmed rule. Keep this ambiguity explicit.
    frontChangedDuringCutin:false,
+   // Research timestamps ONLY: preserve visible faces for comparing
+   // actual captured 3DS frames without guessing the lock instant.
+   cutinFrontlineTimeline:[{at:now,frontIds:[...current[attackerSide]]}],
+   historyTruncated:false,
    counterToken:null,counterStartedAt:null};
   return {ok:true,cutin:clone(cutin)};
  }
@@ -76,7 +80,10 @@ export function createCounterWindow({fronts=[['A1','A2','A3'],['B1','B2','B3']],
     cutin.frontChangedDuringCutin;
   const uncertainty=ambiguousEndureFront?
     {code:'two-endures-cutin-front-lock-time-unverified',
-     explanation:'The opponent changed its front during the cut-in; the source does not identify the freeze frame.'}:null;
+     explanation:'The opponent changed its front during the cut-in; the source does not identify the freeze frame.',
+     // Time offsets are virtual lab units, not measured original 3DS frames.
+     cutinFrontlineTimeline:clone(cutin.cutinFrontlineTimeline),
+     historyTruncated:cutin.historyTruncated}:null;
   // Keep frontAtStart ONLY as a plausible research candidate, never as a
   // verified damage target if the opponent rotated during the cut-in.
   const targetIds=lock?(completedDuringCutin?[...current[cutin.attackerSide]]:[...cutin.frontAtStart]):null;
@@ -138,8 +145,12 @@ export function createCounterWindow({fronts=[['A1','A2','A3'],['B1','B2','B3']],
   if(pending.some(item=>item.hitAt<=now))
    return {ok:false,reason:'hit_due_resolve_first'};
   if(cutin&&side===cutin.attackerSide&&now>=cutin.startedAt&&now<cutin.endsAt&&
-     next.some((id,i)=>id!==current[side][i]))
+     next.some((id,i)=>id!==current[side][i])){
     cutin.frontChangedDuringCutin=true;
+    if(cutin.cutinFrontlineTimeline.length<64)
+      cutin.cutinFrontlineTimeline.push({at:now,frontIds:[...next]});
+    else cutin.historyTruncated=true;
+  }
   current[side]=next;
   return {ok:true,side,frontIds:[...next],at:now};
  }
