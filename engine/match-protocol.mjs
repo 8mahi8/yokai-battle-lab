@@ -205,7 +205,7 @@ export function createMatchProtocol({battleOptions={},hostNowMs=()=>performance.
    ...(hostRotationAtMs===null?{}:{hostRotationAtMs})});
   const receipt={ok:result.ok!==false,accepted:true,side,clientSeq,
     revision:event.revision,hash:event.hash,result:clone(result)};
-  lastReceipt[side]={commandJson:raw,receipt:clone(receipt)};
+  lastReceipt[side]={commandJson:raw,commandType:command.type,receipt:clone(receipt)};
   return clone(receipt);
  }
  function advanceAuto(){
@@ -221,6 +221,16 @@ export function createMatchProtocol({battleOptions={},hostNowMs=()=>performance.
   // Model-based next-action forecast for both browser seats. These values are
   // provisional and may change after rotation, KO or status effects.
   return clone({version:VERSION,revision,clientSequences:sequence,
+    // A revision is a transport ACK, not proof the rule action succeeded.
+    // Each side only needs its latest result: guests use stop-and-wait, so
+    // a rejected wheel rotation cannot silently look successful.
+    lastCommandOutcomes:lastReceipt.map(last=>last?{
+      clientSeq:last.receipt.clientSeq,commandType:last.commandType,
+      applied:last.receipt.result?.ok!==false,
+      ...(last.receipt.result?.reason?{reason:last.receipt.result.reason}:{}),
+      ...(Number.isFinite(last.receipt.result?.remainingMs)?
+        {remainingMs:last.receipt.result.remainingMs}:{})
+    }:null),
     hash:stateFingerprint(game.snapshot()),forecast:game.preview(5),game:game.snapshot()});
  }
  function exportJournal(){return clone({version:VERSION,initialOptions:options,
