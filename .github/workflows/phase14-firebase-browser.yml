@@ -10,6 +10,7 @@ on:
       - 'lab/firebase-match-stage.html'
       - 'lab/match-stage.css'
       - 'tools/firebase-stage-smoke.mjs'
+      - 'tools/firebase-charge-smoke.mjs'
       - '.github/workflows/phase14-firebase-browser.yml'
   workflow_dispatch:
 permissions:
@@ -30,4 +31,4 @@ jobs:
       - name: Prepare isolated local emulator
         run: npm install --no-save --package-lock=false firebase-tools@14.24.0 @firebase/rules-unit-testing@4.0.1
       - name: Verify both rules and real Chromium two-auth browser integration
-        run: ./node_modules/.bin/firebase emulators:exec --only auth,database --project demo-yokai-lab --config network/emulator/firebase.json "node tests/firebase-room-emulator.cjs && node tools/firebase-stage-smoke.mjs"
+        run: ./node_modules/.bin/firebase emulators:exec --only auth,database --project demo-yokai-lab --config network/emulator/firebase.json "node tests/firebase-room-emulator.cjs && node tools/firebase-stage-smoke.mjs && node tools/firebase-charge-smoke.mjs"
