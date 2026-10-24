@@ -230,6 +230,8 @@
  background:#2c5e82e8;border:1px solid #ffdfa0;border-radius:6px;
  font-size:10px;font-weight:800;text-shadow:0 1px 2px #24304a;
  box-shadow:0 0 0 2px #fff1c12a}
+.mb-upper-screen[data-target-kind="poke"] .mb-foe-line .mb-fighter.mb-choice-eligible:before{
+ content:'つつく？';background:#66518bee;border-color:#d4bae9}
 .mb-upper-screen[data-selecting="target"] .mb-foe-line .mb-fighter.mb-choice-eligible{
  border-radius:12px;outline:2px solid #ffe1a5;outline-offset:-3px;
  background:#f2e1a41c}
