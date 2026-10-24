@@ -186,8 +186,10 @@ export function createMatchProtocol({battleOptions={}}={}){
   return {ok:true,revision:event.revision,hash:event.hash,result:clone(outcome)};
  }
  function snapshot(){
+  // Model-based next-action forecast for both browser seats. These values are
+  // provisional and may change after rotation, KO or status effects.
   return clone({version:VERSION,revision,clientSequences:sequence,
-    hash:stateFingerprint(game.snapshot()),game:game.snapshot()});
+    hash:stateFingerprint(game.snapshot()),forecast:game.preview(5),game:game.snapshot()});
  }
  function exportJournal(){return clone({version:VERSION,initialOptions:options,
   entries:journal,hash:stateFingerprint(game.snapshot())});}
