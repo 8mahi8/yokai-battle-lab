@@ -67,3 +67,59 @@ test('21D-C PvP host rejects research-only Poke transfer and direct reward injec
     assert.equal(game.dispatch(0,1,command).reason,'invalid_command');
   assert.deepEqual(game.snapshot(),baseline);
 });
+
+
+function prepareRealHostPoke({rotationCooldownMs=0}={}){
+  const m=createMatchProtocol({battleOptions:{
+    seed:1042,teams:[attackers,defenders],rotationCooldownMs
+  }});
+  let targetId=null;
+  for(let i=0;i<18;i++){
+    const ev=m.advanceAuto();
+    assert.equal(ev.ok,true,JSON.stringify(ev));
+    if(ev.result.kind==='inspirit'&&ev.result.actor.startsWith('A')&&
+       ev.result.hit&&ev.result.target?.startsWith('B')){
+      targetId=ev.result.target;
+      break;
+    }
+  }
+  assert.ok(targetId);
+  assert.equal(m.dispatch(0,1,{type:'watch',mode:'zero'}).ok,true);
+  assert.equal(m.dispatch(0,2,{type:'pokeStart',targetId}).ok,true);
+  return {m,targetId};
+}
+
+test('21D-C2: enemy host wheel rotation ends stale Poke without spending one-use eligibility',()=>{
+  const {m,targetId}=prepareRealHostPoke();
+  assert.equal(m.snapshot().game.poke.active[0].targetId,targetId);
+  let sideSeq=0;
+  // Three +1 rotations move the old front entirely to the back.
+  for(let i=0;i<3;i++){
+    const r=m.dispatch(1,++sideSeq,{type:'rotate',direction:1});
+    assert.equal(r.ok,true,JSON.stringify(r));
+  }
+  assert.equal(m.snapshot().game.poke.active[0],null);
+  assert.equal(m.snapshot().game.poke.used[0].includes(targetId),false);
+  const stale=m.dispatch(0,3,{type:'pokeInput',gesture:{type:'tap',x:.5,y:.5}});
+  assert.equal(stale.accepted,true);
+  assert.equal(stale.result.reason,'no_active_poke');
+  for(let i=0;i<3;i++){
+    assert.equal(m.dispatch(1,++sideSeq,{type:'rotate',direction:1}).ok,true);
+  }
+  assert.ok(m.snapshot().game.clock.teams[1].frontIds.includes(targetId));
+  assert.equal(m.dispatch(0,4,{type:'pokeStart',targetId}).ok,true,
+    'Poke was cancelled, not consumed');
+  assert.equal(replayMatchJournal(m.exportJournal()).ok,true);
+});
+
+test('21D-C2: Zero->normal Watch cancels Poke and never silently consumes the target',()=>{
+  const {m,targetId}=prepareRealHostPoke();
+  assert.equal(m.dispatch(0,3,{type:'watch',mode:'standard'}).ok,true);
+  assert.equal(m.snapshot().game.poke.active[0],null);
+  assert.equal(m.snapshot().game.poke.used[0].includes(targetId),false);
+  assert.equal(m.dispatch(0,4,{type:'pokeStart',targetId}).result.reason,
+    'zero_mode_required');
+  assert.equal(m.dispatch(0,5,{type:'watch',mode:'zero'}).ok,true);
+  assert.equal(m.dispatch(0,6,{type:'pokeStart',targetId}).ok,true);
+  assert.equal(replayMatchJournal(m.exportJournal()).ok,true);
+});
