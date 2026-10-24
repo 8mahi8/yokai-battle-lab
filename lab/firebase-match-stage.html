@@ -18,6 +18,8 @@
 <button type="button" id="join" disabled>ゲスト：参加</button>
 <button type="button" id="start" disabled>ホスト：試合開始</button>
 <button type="button" id="connect" disabled>ゲスト：戦闘接続</button>
+<button type="button" id="retry" disabled>未確定入力を再送</button>
+<span id="link-state" aria-live="polite">接続待機中</span>
 <b id="role">未接続</b>
 </div>
 <div id="remote-status" role="status">Firebase SDKを準備中</div>
@@ -32,6 +34,20 @@ import {createMatchProtocol} from '../engine/match-protocol.mjs';
 import {createMatchStage} from '../ui/match-stage.mjs';
 const $=id=>document.getElementById(id);
 let database,room,match,stage=null,seat=null;
+let localConnected=false,peerConnected=null;
+function available(){return localConnected&&peerConnected===true;}
+function updatePresence(){
+ const state=!localConnected?'回線オフライン':
+  peerConnected===true?'相手と接続中':peerConnected===false?'相手が切断':'相手の接続待ち';
+ $('link-state').textContent=state;
+ if(stage)stage.setConnection(available()?'2P ONLINE':'2P PAUSE');
+ // Never run a standalone host clock while the opponent is unreachable.
+ $('retry').disabled=seat!==1||!available()||!match||!match.status().pendingSequence;
+}
+function guard(){
+ return !localConnected?{ok:false,reason:'connection_offline'}:
+  peerConnected!==true?{ok:false,reason:'opponent_offline_or_waiting'}:null;
+}
 function info(message){$('remote-status').textContent=String(message);stage?.alert(message);}
 function err(error){info('通信エラー: '+error.message);}
 async function init(){
@@ -55,10 +71,19 @@ function afterJoined(role){
  stage=createMatchStage({element:$('battle-stage'),seat:role,onError:err,
   onAction:(s,intent)=>{
    if(!match)return {ok:false,reason:'battle_not_started'};
-   return role===0?match.submit(intent):match.enqueue(intent);
+   const blocked=guard();if(blocked)return blocked;
+   const receipt=role===0?match.submit(intent):match.enqueue(intent);
+   updatePresence();return receipt;
   },
-  onStep:()=>role===0&&match?match.advanceAuto():{ok:false,reason:'host_only'}});
- stage.setConnection('FIREBASE LOCAL');
+  onStep:()=>{
+   if(role!==0||!match)return {ok:false,reason:'host_only'};
+   const blocked=guard();if(blocked)return blocked;
+   return match.advanceAuto();
+  }});
+ // watchPresence registers onDisconnect before reporting this seat online.
+ room.watchPresence(value=>{localConnected=value;updatePresence();});
+ room.watchPeerPresence(value=>{peerConnected=value;updatePresence();});
+ updatePresence();
 }
 $('make').addEventListener('click',async()=>{
  try{const result=await room.createRoom();if(!result.ok)throw Error(result.reason);
@@ -75,18 +100,28 @@ $('start').addEventListener('click',async()=>{
   const starting=await room.startRoom();if(!starting.ok)throw Error(starting.reason);
   match=createFirebaseMatchHost({roomClient:room,protocol:createMatchProtocol(),
    onSnapshot:state=>stage.render(state),onError:err});
-  const started=await match.start();if(!started.ok)throw Error(started.error||'snapshot_publish_failed');
-  $('start').disabled=true;info('ホスト開始。ゲームに参加できます。');}
+  const started=await match.start();if(!started.ok)
+   throw Error(started.reason||started.error||'snapshot_publish_failed');
+  $('start').disabled=true;info('ホスト開始。相手の接続を待っています。');updatePresence();}
  catch(error){err(error);}
 });
 $('connect').addEventListener('click',async()=>{
  try{
   const phase=(await database.ref('yokaiRoomsV1/'+room.active().roomCode+'/phase').once('value')).val();
   if(phase!=='playing')throw Error('ホストがまだ開始していません');
-  match=createFirebaseMatchGuest({roomClient:room,onSnapshot:state=>stage.render(state),
-   onError:err,onAck:e=>info('入力 '+e.clientSeq+' をホストが確定しました。')});
-  match.start();$('connect').disabled=true;info('ゲスト接続。最初の戦況を待っています。');}
+  match=createFirebaseMatchGuest({roomClient:room,onSnapshot:state=>{stage.render(state);updatePresence();},
+   onError:err,onAck:e=>{info('入力 '+e.clientSeq+' をホストが確定しました。');updatePresence();}});
+  match.start();$('connect').disabled=true;info('ゲスト接続。最初の戦況を待っています。');updatePresence();}
  catch(error){err(error);}
+});
+$('retry').addEventListener('click',async()=>{
+ try{
+  if(seat!==1||!match)throw Error('ゲストの未確定入力がありません');
+  const blocked=guard();if(blocked)throw Error(blocked.reason);
+  const result=await match.retry();if(!result.ok)throw Error(result.reason);
+  info('同じ操作番号を再送しました。ホストのACKを確認してください。');
+  updatePresence();
+ }catch(error){err(error);}
 });
 init().catch(err);
 </script></body></html>
