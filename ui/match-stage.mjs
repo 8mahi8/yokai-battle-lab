@@ -120,47 +120,68 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  let activeSeat=seat??0,wireState=null,view=null,selection=null;
  let recentMessage='準備中',pointer=null,lastMove=0;
  let seenActionTurn=null,flash=null,flashTimer=null;
+ let commandMode=null,battleDrawCache=null;
  const teamDrawCache=[null,null];let forecastDrawCache=null;
  element.innerHTML=`
- <div class="mb-stage">
+ <div class="mb-stage mb-yw2">
   <header class="mb-topbar">
    <div class="mb-title-group"><span class="mb-mark">◈</span><div>
-    <small>ORIGINAL CIRCLE BATTLE / RESEARCH</small>
+    <small>CIRCLE BATTLE / ORIGINAL INSPIRED LAYOUT</small>
     <h1>輪戦 <span>—</span> サークルバトル</h1></div></div>
-   <div class="mb-state"><span id="mb-connection" class="mb-online">LOCAL</span><span>TURN <b id="mb-turn">0</b></span></div>
+   <div class="mb-state"><span id="mb-connection" class="mb-online">LOCAL</span><span>行動 <b id="mb-turn">0</b></span></div>
   </header>
-  <div class="mb-disclaimer">原作の駆け引きを研究したオリジナル対戦。技の一部数値・入力条件は仮モデル。閃光魂は初期版OFF。</div>
-  <section class="mb-forecast-section"><div class="mb-section-label">
-   <b>次の5行動</b><span>予測・回転／KOで変化します</span></div>
-   <div class="mb-forecast" id="mb-forecast"></div>
-   <div class="mb-action-label" id="mb-action-label" aria-live="polite">次の行動を待機中</div>
-  </section>
-  <section class="mb-arena" aria-label="対戦フィールド">
-   <div id="mb-team0" class="mb-team mb-side0"></div>
-   <div class="mb-divider"><div>VS</div></div>
-   <div id="mb-team1" class="mb-team mb-side1"></div>
-  </section>
-  <div class="mb-bottom">
-   <section class="mb-actions">
-    <div class="mb-command-head"><div>
-     <b id="mb-active-label">PLAYER A の操作</b><small id="mb-selected">妖怪を選択してください</small>
-    </div><div class="mb-seat-switch" id="mb-seat-switch">
-     <button type="button" data-seat="0" class="is-active">A</button>
-     <button type="button" data-seat="1">B</button></div></div>
-    <div class="mb-control-grid">
-     <button type="button" data-rotate="-1" class="mb-big">↶ 左回転</button>
-     <button type="button" data-rotate="1" class="mb-big">右回転 ↷</button>
+  <div class="mb-disclaimer">妖怪ウォッチ2の上下画面の構成を参考にした研究UI。キャラと背景はオリジナル。技の数値・演出は調整中。</div>
+  <div class="mb-dualscreen">
+   <section class="mb-upper-screen" aria-label="上画面：戦闘フィールド">
+    <div class="mb-screen-caption">BATTLE FIELD <span>上画面 / 前衛3体ずつ</span></div>
+    <div class="mb-battle-backdrop">
+     <div class="mb-scenery mb-scenery-back" aria-hidden="true"></div>
+     <div class="mb-foe-line" id="mb-foe-line"></div>
+     <div class="mb-scenery mb-scenery-floor" aria-hidden="true"></div>
+     <div class="mb-ally-line" id="mb-ally-line"></div>
+    </div>
+    <div class="mb-action-label" id="mb-action-label" aria-live="polite">次の行動を待機中</div>
+    <div class="mb-forecast-section">
+     <div class="mb-section-label"><b>次の5行動</b><span>研究用の予測表示</span></div>
+     <div class="mb-forecast" id="mb-forecast"></div>
+    </div>
+   </section>
+   <section class="mb-lower-screen" aria-label="下画面：メダルサークルとコマンド">
+    <div class="mb-command-head mb-lower-title">
+     <div><b id="mb-active-label">PLAYER A の操作</b><small id="mb-selected">妖怪を選択してください</small></div>
+     <div class="mb-seat-switch" id="mb-seat-switch"><button type="button" data-seat="0" class="is-active">A</button>
+      <button type="button" data-seat="1">B</button></div>
+    </div>
+    <div class="mb-command-field">
+     <div class="mb-command-column mb-command-left">
+      <button type="button" data-act="charge" id="mb-charge" class="mb-watch-command mb-command-skill"><span>わざ</span><small>必殺技</small></button>
+      <button type="button" data-act="purify" id="mb-purify" class="mb-watch-command mb-command-purify"><span>おはらい</span><small>状態を回復</small></button>
+     </div>
+     <div class="mb-wheel-shell">
+      <div class="mb-wheel-host">
+       <div id="mb-team0" class="mb-team mb-side0"></div>
+       <div id="mb-team1" class="mb-team mb-side1" hidden></div>
+      </div>
+      <div class="mb-wheel-turn"><button type="button" data-rotate="-1" class="mb-big" aria-label="サークル左回転">◀ 左回転</button>
+       <span>前衛 / 後衛</span>
+       <button type="button" data-rotate="1" class="mb-big" aria-label="サークル右回転">右回転 ▶</button></div>
+     </div>
+     <div class="mb-command-column mb-command-right">
+      <button type="button" data-act="target" id="mb-target" class="mb-watch-command mb-command-target"><span>ねらう</span><small>ピンで狙う</small></button>
+      <button type="button" disabled class="mb-watch-command mb-command-item" title="公式対戦ルールではアイテムを使えません"><span>アイテム</span><small>対戦では使用不可</small></button>
+     </div>
+    </div>
+    <div class="mb-command-footer">
      <button type="button" data-act="watch" id="mb-watch">零式へ切替</button>
      <button type="button" data-act="pin-clear">ピン解除</button>
-     <button type="button" data-act="charge" class="mb-accent">✦ 必殺技</button>
-     <button type="button" data-act="purify">おはらい</button>
+     <button type="button" data-act="mode-cancel" id="mb-mode-cancel">選択をやめる</button>
+     <span class="mb-footnote" id="mb-mode-hint">サークルで前衛を回転できます</span>
     </div>
-    <div class="mb-footnote" id="mb-mode-hint">敵の前衛をタップしてピンを付けられます</div>
-   </section>
-   <section class="mb-feed"><div class="mb-command-head"><b>戦況</b><button type="button" id="mb-step" data-step="1">次の行動 ▶</button></div>
-    <div class="mb-activity" id="mb-activity" aria-live="polite">読み込み中</div>
-    <div class="mb-feed-list" id="mb-feed-list"></div>
-    <small class="mb-revision" id="mb-revision">REV 0</small>
+    <div class="mb-feed"><div class="mb-feed-heading"><b>戦況</b><button type="button" id="mb-step" data-step="1">研究用：次の行動 ▶</button></div>
+     <div class="mb-activity" id="mb-activity" aria-live="polite">読み込み中</div>
+     <div class="mb-feed-list" id="mb-feed-list"></div>
+     <small class="mb-revision" id="mb-revision">REV 0</small>
+    </div>
    </section>
   </div>
   <div class="mb-modal" id="mb-modal" hidden>
@@ -221,6 +242,28 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    '<span class="mb-team-control-indicator">'+(activeSeat===t.side?'操作中':'')+'</span></div>'+
    '<div class="mb-wheel"><div class="mb-wheel-ring"></div><div class="mb-center-symbol">輪</div>'+chunks+'</div>';
  }
+ function frontlineHTML(team,isOwn){
+  return team.frontIds.map(id=>{
+   const unit=team.members.find(m=>m.id===id);
+   if(!unit)return '';
+   const name=escapeHTML(unit.name);
+   const actor=flash?.actor===id?' mb-acting':'';
+   const target=flash?.target===id?(flash.kind==='heal'?' mb-healed':' mb-hit'):'';
+   const pinned=!isOwn&&view.teams[activeSeat].pin===id?' mb-pinned':'';
+   const ko=unit.ko?' mb-ko':'';
+   const status=unit.negative?'<span class="mb-condition-icon" aria-label="悪いとりつき">⚠</span>':'';
+   return '<button type="button" data-unit="'+id+'" class="mb-fighter'+
+    actor+target+pinned+ko+'" aria-label="'+name+(isOwn?' 味方前衛':' 敵前衛')+'">'+
+    '<span class="mb-fighter-sprite">'+renderSpiritPortrait(id)+'</span>'+
+    '<span class="mb-fighter-meta"><strong>'+name+'</strong>'+
+    '<span class="mb-bars"><i style="width:'+pct(unit.hp,unit.maxHp)+'%"></i></span>'+
+    (isOwn?'<span class="mb-bars mb-soulbar"><i style="width:'+pct(unit.soul,unit.capacity)+'%"></i></span>':'')+
+    '<small>'+unit.hp+'/'+unit.maxHp+'</small>'+status+'</span>'+
+    (flash?.target===id&&Number.isFinite(flash.amount)&&flash.amount>0?
+     '<span class="mb-floating-number">'+(flash.kind==='heal'?'+':'−')+flash.amount+'</span>':'')+
+    '</button>';
+  }).join('');
+ }
  function forecastHTML(){
   if(!view.forecast.length)return '<div class="mb-empty">次の行動を予測できません</div>';
   return view.forecast.slice(0,5).map((action,index)=>{
@@ -280,11 +323,21 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     // The next authoritative event can still activate these same portrait
     // nodes; invalidate the cache so it is not accidentally left stale.
     teamDrawCache[0]=null;teamDrawCache[1]=null;
+    battleDrawCache=null;
    },780);
   }
   const own=view.teams[activeSeat];
   if(!own.members.some(x=>x.id===selection))selection=own.frontIds[0];
   $('mb-turn').textContent=String(view.turn);
+  $('mb-team0').hidden=activeSeat!==0;
+  $('mb-team1').hidden=activeSeat!==1;
+  const fieldKey=JSON.stringify({side:activeSeat,own:view.teams[activeSeat],
+   enemy:view.teams[1-activeSeat],flash});
+  if(fieldKey!==battleDrawCache){
+   $('mb-foe-line').innerHTML=frontlineHTML(view.teams[1-activeSeat],false);
+   $('mb-ally-line').innerHTML=frontlineHTML(view.teams[activeSeat],true);
+   battleDrawCache=fieldKey;
+  }
   // Touch challenges may send many authoritative snapshots per second.
   // The SVG cards must not be torn down for each tiny touch update.
   for(let index=0;index<2;index++){
@@ -311,10 +364,19 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   $('mb-active-label').textContent='PLAYER '+(activeSeat?'B':'A')+' の操作';
   const selected=own.members.find(x=>x.id===selection);
   $('mb-selected').textContent=selected?'選択: '+selected.name+(selected.front?' / 前衛':' / 後衛'):'妖怪を選択';
-  $('mb-watch').textContent=own.mode==='zero'?'標準ウォッチへ':'零式ウォッチへ';
-  $('mb-mode-hint').textContent=own.mode==='zero'
-   ?'零式：敵を選んで「つつく」（条件に合う時のみ）':
-    '標準：敵の前衛を選んでピンで狙おう';
+  $('mb-watch').textContent=own.mode==='zero'?'標準ウォッチへ':'零式へ切替';
+  $('mb-target').querySelector('span').textContent=own.mode==='zero'?'つつく':'ねらう';
+  $('mb-target').querySelector('small').textContent=own.mode==='zero'?'敵をつつく':'敵にピンを刺す';
+  $('mb-charge').classList.toggle('mb-command-active',commandMode==='charge');
+  $('mb-purify').classList.toggle('mb-command-active',commandMode==='purify');
+  $('mb-target').classList.toggle('mb-command-active',commandMode==='target');
+  $('mb-mode-cancel').disabled=commandMode===null;
+  $('mb-mode-hint').textContent=commandMode==='charge'
+   ?'必殺技：前衛の妖怪をサークルから選択'
+   :commandMode==='purify'?'おはらい：後衛の妖怪をサークルから選択'
+   :commandMode==='target'?(own.mode==='zero'?'つつく：上画面の敵を選択':'ねらう：上画面の敵を選択')
+   :own.mode==='zero'?'零式モード：Gわざは研究中。つつくは選択可能'
+   :'サークルを回して前衛3体を入れ替えよう';
   $('mb-activity').textContent=recentMessage;
   $('mb-feed-list').innerHTML=feedHTML();
   $('mb-revision').textContent='REV '+view.revision+' / A '+view.clientSequences[0]+' ・ B '+view.clientSequences[1];
