@@ -302,3 +302,15 @@
  .mb-fighter.mb-missed .mb-character-art{animation:none!important}
  .mb-yw2 .mb-wheel-ring{transition:none!important}
 }
+
+/* Original reproduction: Game8 documents the literal "わざOK" prompt on
+   ready medals. Zero Watch uses "Gわざ" and must fill both ring neighbours.
+   Decorative state ONLY; all eligibility comes from engine/soul.mjs. */
+.mb-yw2 .mb-special-ready{position:absolute;z-index:7;bottom:8px;left:50%;
+ transform:translateX(-50%);max-width:calc(100% + 16px);
+ padding:2px 4px;background:#d6f8d0;color:#274b35;
+ border:2px solid #4b895d;border-radius:6px;font-size:9px;
+ font-weight:900;white-space:nowrap;pointer-events:none;
+ box-shadow:0 1px 4px #1c2c294d}
+.mb-yw2 .mb-creature.mb-choice-eligible{box-shadow:0 0 0 2px #d1eec5,0 2px 7px #21393077}
+.mb-yw2 .mb-creature.mb-choice-ineligible{opacity:.54}
