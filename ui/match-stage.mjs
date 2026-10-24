@@ -5,6 +5,7 @@
  * The combat engine, turn scheduler, gesture rules and Soul are never cloned.
  * No CSS imports, network connection, timers or hidden actions.
  */
+import {renderSpiritPortrait} from './character-art.mjs';
 const ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
 const escapeHTML=x=>String(x??'').replace(/[&<>"']/g,ch=>ESC[ch]);
 const pct=(value,max)=>Math.max(0,Math.min(100,Math.round(100*value/(max||1))));
@@ -119,6 +120,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  let activeSeat=seat??0,wireState=null,view=null,selection=null;
  let recentMessage='準備中',pointer=null,lastMove=0;
  let seenActionTurn=null,flash=null,flashTimer=null;
+ const teamDrawCache=[null,null];let forecastDrawCache=null;
  element.innerHTML=`
  <div class="mb-stage">
   <header class="mb-topbar">
@@ -202,10 +204,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     ?(flash.kind==='heal'?' mb-healed':' mb-hit'):'';
    const benched=unit.front?'':' mb-bench';
    const name=escapeHTML(unit.name);
-   const figure=Number(unit.id.slice(1));
    return '<button type="button" data-unit="'+unit.id+'" class="mb-creature'+selected+pinned+disabled+animated+benched+
     '" style="--x:'+pos.x+'%;--y:'+pos.y+'%" aria-label="'+name+(unit.front?' 前衛':' 後衛')+'">'+
-    '<span class="mb-avatar mb-avatar-'+figure+'"><i class="mb-eyes"></i></span>'+
+    renderSpiritPortrait(unit.id)+
     '<span class="mb-name">'+name+'</span>'+
     '<span class="mb-bars"><i style="width:'+pct(unit.hp,unit.maxHp)+'%"></i></span>'+
     '<span class="mb-bars mb-soulbar"><i style="width:'+pct(unit.soul,unit.capacity)+'%"></i></span>'+
@@ -225,7 +226,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   return view.forecast.slice(0,5).map((action,index)=>{
    const char=view.teams[action.id?.startsWith('A')?0:1].members.find(x=>x.id===action.id);
    return '<div class="mb-next"><span class="mb-num">'+String(index+1).padStart(2,'0')+'</span>'+
-    '<span class="mb-next-avatar '+(action.id?.startsWith('A')?'mb-a':'mb-b')+'">'+escapeHTML(action.id?.slice(0,1)||'?')+'</span>'+
+    '<span class="mb-next-avatar '+(action.id?.startsWith('A')?'mb-a':'mb-b')+'">'+
+     renderSpiritPortrait(action.id,{mini:true})+'</span>'+
     '<div><strong>'+escapeHTML(char?.name||action.id)+'</strong><small>予測順 '+(index+1)+'</small></div></div>';
   }).join('');
  }
@@ -275,14 +277,28 @@ export function createMatchStage({element,onAction,onStep=()=>{},
      el.classList.remove('mb-acting','mb-hit','mb-healed');
     });
     element.querySelectorAll('.mb-floating-number').forEach(el=>el.remove());
+    // The next authoritative event can still activate these same portrait
+    // nodes; invalidate the cache so it is not accidentally left stale.
+    teamDrawCache[0]=null;teamDrawCache[1]=null;
    },780);
   }
   const own=view.teams[activeSeat];
   if(!own.members.some(x=>x.id===selection))selection=own.frontIds[0];
   $('mb-turn').textContent=String(view.turn);
-  $('mb-team0').innerHTML=teamHTML(view.teams[0]);
-  $('mb-team1').innerHTML=teamHTML(view.teams[1]);
-  $('mb-forecast').innerHTML=forecastHTML();
+  // Touch challenges may send many authoritative snapshots per second.
+  // The SVG cards must not be torn down for each tiny touch update.
+  for(let index=0;index<2;index++){
+   const key=JSON.stringify({team:view.teams[index],seat:activeSeat,selection,flash});
+   if(key!==teamDrawCache[index]){
+    $('mb-team'+index).innerHTML=teamHTML(view.teams[index]);
+    teamDrawCache[index]=key;
+   }
+  }
+  const forecastKey=JSON.stringify(view.forecast);
+  if(forecastKey!==forecastDrawCache){
+   $('mb-forecast').innerHTML=forecastHTML();
+   forecastDrawCache=forecastKey;
+  }
   if(action){
    const actor=view.teams[action.actor?.startsWith('B')?1:0]?.members.find(u=>u.id===action.actor);
    const target=view.teams[action.target?.startsWith('B')?1:0]?.members.find(u=>u.id===action.target);
