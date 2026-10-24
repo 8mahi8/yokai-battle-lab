@@ -7,6 +7,7 @@
  */
 import {renderSpiritPortrait} from './character-art.mjs';
 import {wheelAngle,wheelGestureAt} from './wheel-gesture.mjs';
+import {latestBattleCue} from './battle-vfx.mjs';
 const ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
 const escapeHTML=x=>String(x??'').replace(/[&<>"']/g,ch=>ESC[ch]);
 const pct=(value,max)=>Math.max(0,Math.min(100,Math.round(100*value/(max||1))));
@@ -146,7 +147,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  let activeSeat=seat??0,wireState=null,view=null,selection=null;
  let recentMessage='準備中',pointer=null,lastMove=0;
  let wheelPointer=null,suppressWheelClick=false,wheelClickTimer=null;
- let seenActionTurn=null,flash=null,flashTimer=null;
+ let seenCueKey=null,flash=null,flashTimer=null;
  let commandMode=null,battleDrawCache=null;
  const teamDrawCache=[null,null];let forecastDrawCache=null;
  element.innerHTML=`
@@ -164,6 +165,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     <div class="mb-battle-backdrop">
      <div id="mb-special-flare" class="mb-special-flare" hidden aria-hidden="true"><span id="mb-special-title"></span></div>
      <div class="mb-scenery mb-scenery-back" aria-hidden="true"></div>
+     <div id="mb-special-flare" class="mb-special-flare" hidden aria-hidden="true"><span id="mb-special-title"></span></div>
      <div class="mb-foe-line" id="mb-foe-line"></div>
      <div class="mb-scenery mb-scenery-floor" aria-hidden="true"></div>
      <div class="mb-ally-line" id="mb-ally-line"></div>
@@ -251,8 +253,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     ?' mb-choice-eligible':'';
    const pinned=t.side!==activeSeat&&unit.id===view.teams[activeSeat].pin?' mb-pinned':'';
    const disabled=unit.ko?' mb-ko':'';
-   const animated=flash?.actor===unit.id?' mb-acting':flash?.target===unit.id
-    ?(flash.kind==='heal'?' mb-healed':' mb-hit'):'';
+   const impact=flash?.targets?.find(x=>x.id===unit.id);
+   const animated=flash?.actor===unit.id?' mb-acting':impact
+    ?(impact.kind==='heal'?' mb-healed':impact.hit===false?' mb-missed':' mb-hit'):'';
    const benched=unit.front?'':' mb-bench';
    const ineligible=commandMode&&t.side===activeSeat&&!choice?' mb-choice-ineligible':'';
    const name=escapeHTML(unit.name);
@@ -264,8 +267,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     '<span class="mb-bars mb-soulbar"><i style="width:'+pct(unit.soul,unit.capacity)+'%"></i></span>'+
     '<span class="mb-unit-stat">'+unit.hp+'/'+unit.maxHp+(unit.negative?' ⚠':'')+'</span>'+
     (unit.front?'<span class="mb-front-badge">前衛</span>':'')+
-    (flash?.target===unit.id&&Number.isFinite(flash.amount)&&flash.amount>0
-     ?'<span class="mb-floating-number">'+(flash.kind==='heal'?'+':'−')+flash.amount+'</span>':'')+
+    (impact&&impact.amount>0
+     ?'<span class="mb-floating-number">'+(impact.kind==='heal'?'+':'−')+impact.amount+'</span>':
+      impact&&impact.hit===false?'<span class="mb-floating-number">MISS</span>':'')+
     '</button>';
   }).join('');
   return '<div class="mb-team-heading"><span class="mb-team-icon">'+(t.side===0?'A':'B')+'</span>'+
@@ -279,7 +283,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    if(!unit)return '';
    const name=escapeHTML(unit.name);
    const actor=flash?.actor===id?' mb-acting':'';
-   const target=flash?.target===id?(flash.kind==='heal'?' mb-healed':' mb-hit'):'';
+   const impact=flash?.targets?.find(x=>x.id===id);
+   const target=impact?(impact.kind==='heal'?' mb-healed':impact.hit===false?' mb-missed':' mb-hit'):'';
    const pinned=!isOwn&&view.teams[activeSeat].pin===id?' mb-pinned':'';
    const candidate=!isOwn&&commandMode==='target'&&!unit.ko?' mb-choice-eligible':'';
    const tonedDown=!isOwn&&commandMode==='target'&&unit.ko?' mb-choice-ineligible':'';
@@ -293,8 +298,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     '<span class="mb-bars"><i style="width:'+pct(unit.hp,unit.maxHp)+'%"></i></span>'+
     (isOwn?'<span class="mb-bars mb-soulbar"><i style="width:'+pct(unit.soul,unit.capacity)+'%"></i></span>':'')+
     '<small>'+unit.hp+'/'+unit.maxHp+'</small>'+status+'</span>'+
-    (flash?.target===id&&Number.isFinite(flash.amount)&&flash.amount>0?
-     '<span class="mb-floating-number">'+(flash.kind==='heal'?'+':'−')+flash.amount+'</span>':'')+
+    (impact&&impact.amount>0?
+     '<span class="mb-floating-number">'+(impact.kind==='heal'?'+':'−')+impact.amount+'</span>':
+     impact&&impact.hit===false?'<span class="mb-floating-number">MISS</span>':'')+
     '</button>';
   }).join('');
  }
@@ -343,23 +349,26 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   wireState=state;
   view=makeStageView(state,activeSeat);
   const action=view.events.slice().reverse().find(e=>e.type==='action')??null;
-  if(seenActionTurn===null)seenActionTurn=action?.turn??0;
-  else if(action&&action.turn>seenActionTurn){
-   seenActionTurn=action.turn;
-   flash={actor:action.actor,target:action.target,amount:action.amount,kind:action.kind};
+  const cue=latestBattleCue(view.events);
+  if(seenCueKey===null)seenCueKey=cue?.key??'initial';
+  else if(cue&&cue.key!==seenCueKey){
+   seenCueKey=cue.key;
+   flash=cue;
    clearTimeout(flashTimer);
    flashTimer=setTimeout(()=>{
     flash=null;
-    element.querySelectorAll('.mb-acting,.mb-hit,.mb-healed').forEach(el=>{
-     el.classList.remove('mb-acting','mb-hit','mb-healed');
+    element.querySelectorAll('.mb-acting,.mb-hit,.mb-healed,.mb-missed').forEach(el=>{
+     el.classList.remove('mb-acting','mb-hit','mb-healed','mb-missed');
     });
     element.querySelectorAll('.mb-floating-number').forEach(el=>el.remove());
-    // The next authoritative event can still activate these same portrait
-    // nodes; invalidate the cache so it is not accidentally left stale.
-    teamDrawCache[0]=null;teamDrawCache[1]=null;
-    battleDrawCache=null;
-   },780);
+    $('mb-special-flare').hidden=true;
+    teamDrawCache[0]=null;teamDrawCache[1]=null;battleDrawCache=null;
+   },cue.type==='special'?1050:780);
   }
+  $('mb-special-flare').hidden=flash?.type!=='special';
+  $('mb-special-title').textContent=flash?.type==='special'
+   ?(flash.mode==='g-tech'?'Gわざ発動！':'ひっさつわざ！'):'';
+
   const own=view.teams[activeSeat];
   if(!own.members.some(x=>x.id===selection))selection=own.frontIds[0];
   $('mb-turn').textContent=String(view.turn);
@@ -387,7 +396,11 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    $('mb-forecast').innerHTML=forecastHTML();
    forecastDrawCache=forecastKey;
   }
-  if(action){
+  if(flash?.type==='special'){
+   const caster=view.teams[flash.actor?.startsWith('B')?1:0]?.members.find(u=>u.id===flash.actor);
+   $('mb-action-label').textContent=(caster?.name||'妖怪')+' / '+
+    (flash.mode==='g-tech'?'Gわざ':'ひっさつわざ')+'発動';
+  }else if(action){
    const actor=view.teams[action.actor?.startsWith('B')?1:0]?.members.find(u=>u.id===action.actor);
    const target=view.teams[action.target?.startsWith('B')?1:0]?.members.find(u=>u.id===action.target);
    const kindNames={attack:'攻撃',technique:'妖術',inspirit:'とりつき',guard:'ガード',heal:'回復',loaf:'サボり'};
