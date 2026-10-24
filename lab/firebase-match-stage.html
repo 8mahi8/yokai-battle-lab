@@ -32,6 +32,7 @@
 import {createFirebaseRoomClient} from '../network/firebase-room.mjs';
 import {createFirebaseMatchHost,createFirebaseMatchGuest} from '../network/firebase-match.mjs';
 import {createMatchProtocol} from '../engine/match-protocol.mjs';
+import {RENTAL_SQUAD} from '../engine/combat.mjs';
 import {createMatchStage} from '../ui/match-stage.mjs';
 import {matchAckMessage} from '../ui/match-feedback.mjs';
 const $=id=>document.getElementById(id);
@@ -100,7 +101,16 @@ $('join').addEventListener('click',async()=>{
 $('start').addEventListener('click',async()=>{
  try{
   const starting=await room.startRoom();if(!starting.ok)throw Error(starting.reason);
-  match=createFirebaseMatchHost({roomClient:room,protocol:createMatchProtocol(),
+  // Localhost-only deterministic Phase22C browser QA. NEVER part of the
+  // production Google Sites build. The default page has full normal gauges.
+  const phase22cFixture=new URLSearchParams(location.search).get('phase22c')==='1';
+  const guard=phase22cFixture?RENTAL_SQUAD.map(unit=>({...unit,
+   soulCapacity:5,weights:[0,0,0,100]})):null;
+  const protocol=phase22cFixture?
+   createMatchProtocol({battleOptions:{seed:12,teams:[guard,guard],
+    rotationCooldownMs:0,researchSpecialEffects:false}}):
+   createMatchProtocol();
+  match=createFirebaseMatchHost({roomClient:room,protocol,
    onSnapshot:state=>stage.render(state),onError:err});
   const started=await match.start();if(!started.ok)
    throw Error(started.reason||started.error||'snapshot_publish_failed');
