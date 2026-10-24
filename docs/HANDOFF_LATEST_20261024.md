@@ -15,13 +15,13 @@
 1. **この資料**：`docs/HANDOFF_LATEST_20261024.md`
 2. **Phase 14A本来の対戦画面と2ブラウザFirebase E2E**：[`docs/PHASE14_STAGE_QA_20261024.md`](./PHASE14_STAGE_QA_20261024.md)
 3. **Phase 13Bオンライン戦闘統合**：[`docs/PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md`](./PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md)
-3. **Phase 13A実装とSDKテスト**：[`docs/PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md`](./PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md)
-4. **Phase 13外部資料・既存ゲーム比較**：[`docs/PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md`](./PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md)
-5. **Phase 12通信基盤**：[`docs/PHASE12_RELAY_RECOVERY_20261024.md`](./PHASE12_RELAY_RECOVERY_20261024.md)
-6. **Phase 11対戦コマンド**：[`docs/PHASE11_MATCH_PROTOCOL_QA_20261023.md`](./PHASE11_MATCH_PROTOCOL_QA_20261023.md)
-7. **Phase 10基本戦闘**：[`docs/PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md`](./PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md)
-8. **歴史・各Phaseリンク**：[`docs/DEVELOPMENT_STATUS_20261023.md`](./DEVELOPMENT_STATUS_20261023.md)
-9. **実際のコード**：`engine/combat.mjs`・`engine/match-protocol.mjs`・`lab/phase2.html`・`lab/match-contract.html`・各 `tests/*.test.mjs`。
+4. **Phase 13A実装とSDKテスト**：[`docs/PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md`](./PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md)
+5. **Phase 13外部資料・既存ゲーム比較**：[`docs/PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md`](./PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md)
+6. **Phase 12通信基盤**：[`docs/PHASE12_RELAY_RECOVERY_20261024.md`](./PHASE12_RELAY_RECOVERY_20261024.md)
+7. **Phase 11対戦コマンド**：[`docs/PHASE11_MATCH_PROTOCOL_QA_20261023.md`](./PHASE11_MATCH_PROTOCOL_QA_20261023.md)
+8. **Phase 10基本戦闘**：[`docs/PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md`](./PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md)
+9. **歴史・各Phaseリンク**：[`docs/DEVELOPMENT_STATUS_20261023.md`](./DEVELOPMENT_STATUS_20261023.md)
+10. **実際のコード**：`engine/combat.mjs`・`engine/match-protocol.mjs`・`lab/phase2.html`・`lab/match-contract.html`・各 `tests/*.test.mjs`。
 
 **Repository**: https://github.com/8mahi8/yokai-battle-lab  
 **開発ブランチ**: `feat/phase1-action-circle-lab-20261023`  
