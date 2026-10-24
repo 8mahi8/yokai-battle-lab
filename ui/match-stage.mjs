@@ -9,6 +9,7 @@ import {renderSpiritPortrait} from './character-art.mjs';
 import {wheelAngle,wheelGestureAt} from './wheel-gesture.mjs';
 import {latestBattleCue} from './battle-vfx.mjs';
 import {soultimateReadiness} from './soultimate-ready.mjs';
+import {matchRuleFailureMessage} from './match-feedback.mjs';
 const ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
 const escapeHTML=x=>String(x??'').replace(/[&<>"']/g,ch=>ESC[ch]);
 const pct=(value,max)=>Math.max(0,Math.min(100,Math.round(100*value/(max||1))));
@@ -249,7 +250,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  function report(result){
   if(result?.ok===false){
    const reason=result.result?.reason||result.reason||'rule_rejected';
-   alert('操作できません: '+reason);return;
+   alert(matchRuleFailureMessage(reason,result.result?.remainingMs??result.remainingMs));return;
   }
   if(result?.queued)alert('入力を順番待ちに追加（残り '+result.position+' 件）');
   else if(result?.accepted===true)alert('操作を確定 / rev '+result.revision);
