@@ -88,6 +88,22 @@ try{
   console.warn('Stage browser smoke attempt '+i+' failed: '+problem);
  }
  if(!success)throw Error('Phase14 real Chromium stage interaction did not pass');
+ // Create a visual review artifact from the actual ESM app (not a mock image).
+ const shot=path.join(root,'phase14-stage-preview.png');
+ const child=spawn(browser,[
+  '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+  '--no-first-run','--disable-extensions','--hide-scrollbars',
+  '--user-data-dir='+path.join(tmp,'visual'),
+  '--window-size=1200,880','--virtual-time-budget=2200',
+  '--screenshot='+shot,'http://127.0.0.1:'+server.address().port+'/lab/match-stage.html'
+ ],{stdio:['ignore','pipe','pipe']});
+ let errors='';
+ child.stderr.on('data',b=>errors+=String(b).slice(0,10000));
+ const timeout=setTimeout(()=>child.kill('SIGKILL'),18000);
+ const exit=await new Promise(resolve=>child.on('close',resolve));
+ clearTimeout(timeout);
+ if(exit!==0||!existsSync(shot))throw Error('Stage image capture failed: '+errors.slice(-500));
+ console.log('SCREENSHOT-READY phase14-stage-preview.png');
 }finally{
  await new Promise(resolve=>server.close(resolve));
  rmSync(tmp,{recursive:true,force:true});
