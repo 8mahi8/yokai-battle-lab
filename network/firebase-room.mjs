@@ -229,6 +229,44 @@ export function createFirebaseRoomClient({database,uid,randomBytes=defaultRandom
   },undefined,false);
   return {ok:t.committed,reason:t.committed?null:'stale_snapshot'};
  }
+ /**
+  * Read the remote authoritative game baseline before allowing a new host
+  * engine to start. Null means no snapshot has ever been published.
+  * Existing state is NEVER interpreted as a resumable in-memory engine:
+  * replay/restoration of a host's RNG/journal is not available yet.
+  */
+ async function readPublishedSnapshot(){
+  if(seat===null)throw new Error('not in room');
+  const currentSession=session,joinEpoch=epoch;
+  const state=(await roomRef().child('state').once('value')).val();
+  if(joinEpoch!==epoch||currentSession!==session)
+   throw new Error('room changed during remote snapshot check');
+  if(state===null)return null;
+  if(!plain(state)||state.session!==currentSession||!validRev(state.revision)||
+    typeof state.stateJson!=='string')
+   throw new Error('invalid_or_foreign_remote_state');
+  let payload;
+  try{payload=JSON.parse(state.stateJson);}catch(_){throw new Error('malformed_remote_state');}
+  if(!plain(payload)||payload.revision!==state.revision||
+    !Array.isArray(payload.clientSequences))
+   throw new Error('malformed_remote_state');
+  return clone(payload);
+ }
+ /**
+  * Observe ONLY the other seat's presence. This is advisory presence, not
+  * an authenticated trust proof or a host-restart recovery protocol.
+  * null = no evidence yet, true = connected, false = disconnected.
+  */
+ function watchPeerPresence(handler){
+  if(seat===null)throw new Error('not in room');
+  if(typeof handler!=='function')throw new TypeError('presence handler required');
+  const roomEpoch=epoch;
+  return attach(roomRef().child('presence/'+(seat===0?'guest':'host')),snapshot=>{
+   if(epoch!==roomEpoch)return;
+   const value=snapshot.val();
+   handler(value===true?true:value===false?false:null);
+  });
+ }
  function subscribeInputs(handler){
   if(seat!==0)throw new Error('only host receives guest input');
   if(typeof handler!=='function')throw new TypeError('handler required');
@@ -289,5 +327,6 @@ export function createFirebaseRoomClient({database,uid,randomBytes=defaultRandom
   clearWatchers();roomCode=null;seat=null;session=null;epoch++;
  }
  return {createRoom,joinRoom,startRoom,sendIntent,publishSnapshot,
-  subscribeInputs,subscribeSnapshots,watchPresence,leaveLocal,active};
+  subscribeInputs,subscribeSnapshots,watchPresence,watchPeerPresence,
+  readPublishedSnapshot,leaveLocal,active};
 }
