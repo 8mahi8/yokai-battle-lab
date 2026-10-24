@@ -37,15 +37,48 @@ test('late charge completing after delay cannot hit before it is complete',()=>{
  assert.equal(outcome.hitAt,1700);
  assert.equal(t.advance(0)[0].resolvedAt,1700);
 });
-test('two endurance consumptions lock original cut-in front even on late finish',()=>{
+test('two endurance consumptions have unambiguous cut-in front only if no cut-in rotation happened',()=>{
  const t=createCounterWindow();start(t,800,2);
- t.advance(400);t.setFront({side:1,ids:['B2','B3','B4']});
- t.advance(500);
+ t.advance(900);
  const outcome=t.completeCharge({side:0,token:7});
  assert.equal(outcome.frontLock,'endure-exception');
+ assert.equal(outcome.uncertainty,null);
  assert.deepEqual(outcome.targetIds,['B1','B2','B3']);
  t.setFront({side:1,ids:['B4','B5','B6']});
  assert.deepEqual(t.advance(400)[0].targetIds,['B1','B2','B3']);
+});
+test('22D two Endures with wheel changes DURING cut-in expose unknown lock frame, not a verified target',()=>{
+ const t=createCounterWindow();start(t,800,2);
+ t.advance(400);
+ t.setFront({side:1,ids:['B2','B3','B4']});
+ assert.equal(t.snapshot().cutin.frontChangedDuringCutin,true);
+ t.advance(500);
+ const result=t.completeCharge({side:0,token:7});
+ assert.equal(result.frontLock,'endure-exception');
+ assert.equal(result.uncertainty?.code,'two-endures-cutin-front-lock-time-unverified');
+ assert.deepEqual(result.targetIds,['B1','B2','B3'],
+  'original front is a fixture CANDIDATE, never an established lock');
+ t.setFront({side:1,ids:['B4','B5','B6']});
+ const hit=t.advance(400)[0];
+ assert.equal(hit.uncertainty.code,'two-endures-cutin-front-lock-time-unverified');
+ assert.deepEqual(hit.targetIds,['B1','B2','B3']);
+});
+test('22D returning to the original face DURING cut-in still leaves the lock frame unverified',()=>{
+ const t=createCounterWindow();start(t,800,2);
+ t.advance(200);t.setFront({side:1,ids:['B2','B3','B4']});
+ t.advance(100);t.setFront({side:1,ids:['B1','B2','B3']});
+ t.advance(600);
+ const q=t.completeCharge({side:0,token:7});
+ assert.equal(q.uncertainty.code,'two-endures-cutin-front-lock-time-unverified');
+ assert.deepEqual(t.snapshot().fronts[1],['B1','B2','B3']);
+});
+test('22D a wheel rotation AFTER cut-in does not create an ambiguity DURING cut-in',()=>{
+ const t=createCounterWindow();start(t,800,2);
+ t.advance(800);t.setFront({side:1,ids:['B2','B3','B4']});
+ t.advance(100);
+ const q=t.completeCharge({side:0,token:7});
+ assert.equal(q.uncertainty,null);
+ assert.deepEqual(q.targetIds,['B1','B2','B3']);
 });
 test('one endurance charge does not activate special exception',()=>{
  const t=createCounterWindow();start(t,800,1);
