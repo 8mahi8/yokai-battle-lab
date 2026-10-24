@@ -1,4 +1,6 @@
 # 妖怪対戦ブラウザゲーム｜最新・正式引き継ぎ（2026-10-24）
+> **最優先・本人からの方針修正：「まず原作を再現してから改善する」（2026-10-24）**: [原作再現のチェック・残課題と新たな受入ゲート](./REPRODUCTION_FIRST_FIDELITY_GATE_20261024.md)。Phase16/17で画面演出・操作UI・5行動予測などの改善を先に進めてしまった。ユーザーの「まず妖怪ウォッチ2対戦を忠実再現→その後に改善」から逸脱したため、**原作再現を明確に最優先に戻す**。戦闘エンジンは自動行動/回転/とりつき/妖気/必殺/G/つつくを持つが、原作忠実性には重大な欠落：元のレンタル数値・行動頻度/時間・攻撃妖気回収・必殺/G効果・つつく効果・ノーモーション必殺/相手視点のモーション反映など。375テスト成功は実装仕様の一貫性検査であり原作一致の証拠ではない。**今後、新たな演出や独自改善は止め、まず1メカニクスごとに外部資料→原作ルール→照合テスト→実装・比較。** 5行動予測など原作にない研究用表示はリリース版では採用しない方向。既存6体オリジナル絵の使用と閃光魂OFF、学校iPad Safari GoogleサイトHTML直接貼り付けの方針は維持。main/既存Googleサイト/本番Firebase未変更。
+
 > **Phase 17外部資料研究＋サークル指スライド＋必殺演出（2026-10-24）**: [仕様・資料リンク・テスト証跡](./PHASE17_SOURCE_RESEARCH_WHEEL_SPECIALS_20261024.md)。レベルファイブ公式サイト・原作操作解説・零式仕様・W3C/MDN Pointer Events・web.dev旧端末アニメ最適化を実際に調査。下画面の**6メダルサークルを指で回転**できるようにした。角度36°は独自の暫定UI閾値で原作の確定値ではない。短いタップ/指キャンセル/2本指誤動作は回転しない。滑らかなリング演出は**見た目だけ**、戦闘交代は元エンジンへ1コマンド送信して確定、オンラインではホストのsnapshot待ち。上画面には正規戦闘イベントの`special`（通常必殺/Gわざ区別）・複数人へのダメージ回復を読み取って短いカットインを表示。**ダメージ演算・AI・ルールは変更していない**。[Node375/375成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40092147021)・[Chromium実操作と10種タッチ成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40092146981)・[Firebaseエミュレータ2ブラウザ成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40092103043)。原作と同一の演出・学校iPad Safariの実機は未検証、main/公開Googleサイト/本番Firebaseは変更なし。**ユーザー要望により外部資料で根拠を確認しながら制作する。**
 
 > **Phase 16Bコマンド選択の視認性改善（2026-10-24）**: [詳細記録](./PHASE16B_SELECTION_UX_20261024.md)。本家寄りの上画面3vs3／下画面6体メダルサークルを維持したまま、「わざ」で生存前衛メダル、「おはらい」で悪いとりつき状態の後衛メダル、「ねらう」で敵前衛を強調表示する操作ガイドと`aria-pressed`を実装。とりつきが無ければおはらい対象無しを明示。零式の`つつく`は条件付きであり**選択を成功保証として表示しない**。ゲームルールは既存`engine/match-protocol.mjs`のまま。ブラウザで実際にボタンを押して操作可否・見た目を検証。[372/372 Nodeテスト成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40090606364)、[Chromium画面＋10タッチ試験成功／1024×768選択画面の実スクリーンショットあり](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40090606353)。学校の実iPad Safari、GoogleサイトへのHTML直接埋め込み、本番Firebaseは未検証／未変更。ゲームの見た目と操作感を優先し、完全なブラウザ再起動復元は開発しない。
@@ -25,21 +27,22 @@
 
 ## 0. 最初に読む順番
 1. **この資料**：`docs/HANDOFF_LATEST_20261024.md`
-2. **Phase 17原作研究・サークルスワイプ・必殺演出**：[`docs/PHASE17_SOURCE_RESEARCH_WHEEL_SPECIALS_20261024.md`](./PHASE17_SOURCE_RESEARCH_WHEEL_SPECIALS_20261024.md)
-3. **Phase 16B選択操作ガイド**：[`docs/PHASE16B_SELECTION_UX_20261024.md`](./PHASE16B_SELECTION_UX_20261024.md)
-4. **Phase 16本家風上下2画面UI**：[`docs/PHASE16_YW2_SCREEN_LAYOUT_20261024.md`](./PHASE16_YW2_SCREEN_LAYOUT_20261024.md)
-5. **Phase 15Aオリジナルキャラ実装**：[`docs/PHASE15_ORIGINAL_2D_CHARACTERS_20261024.md`](./PHASE15_ORIGINAL_2D_CHARACTERS_20261024.md)
-6. **Phase 14C相手切断とホスト再起動フェンス**：[`docs/PHASE14C_PRESENCE_RESTART_FENCING_20261024.md`](./PHASE14C_PRESENCE_RESTART_FENCING_20261024.md)
-7. **Phase 14Bタッチ・通信安全性**：[`docs/PHASE14B_GESTURE_SECURITY_20261024.md`](./PHASE14B_GESTURE_SECURITY_20261024.md)
-8. **Phase 14A本来の対戦画面と2ブラウザFirebase E2E**：[`docs/PHASE14_STAGE_QA_20261024.md`](./PHASE14_STAGE_QA_20261024.md)
-9. **Phase 13Bオンライン戦闘統合**：[`docs/PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md`](./PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md)
-10. **Phase 13A実装とSDKテスト**：[`docs/PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md`](./PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md)
-11. **Phase 13外部資料・既存ゲーム比較**：[`docs/PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md`](./PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md)
-12. **Phase 12通信基盤**：[`docs/PHASE12_RELAY_RECOVERY_20261024.md`](./PHASE12_RELAY_RECOVERY_20261024.md)
-13. **Phase 11対戦コマンド**：[`docs/PHASE11_MATCH_PROTOCOL_QA_20261023.md`](./PHASE11_MATCH_PROTOCOL_QA_20261023.md)
-14. **Phase 10基本戦闘**：[`docs/PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md`](./PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md)
-15. **歴史・各Phaseリンク**：[`docs/DEVELOPMENT_STATUS_20261023.md`](./DEVELOPMENT_STATUS_20261023.md)
-16. **実際のコード**：`engine/combat.mjs`・`engine/match-protocol.mjs`・`lab/phase2.html`・`lab/match-contract.html`・各 `tests/*.test.mjs`。
+2. **最優先：原作再現優先と未達ゲート**：[`docs/REPRODUCTION_FIRST_FIDELITY_GATE_20261024.md`](./REPRODUCTION_FIRST_FIDELITY_GATE_20261024.md)
+3. **Phase 17原作研究・サークルスワイプ・必殺演出**：[`docs/PHASE17_SOURCE_RESEARCH_WHEEL_SPECIALS_20261024.md`](./PHASE17_SOURCE_RESEARCH_WHEEL_SPECIALS_20261024.md)
+4. **Phase 16B選択操作ガイド**：[`docs/PHASE16B_SELECTION_UX_20261024.md`](./PHASE16B_SELECTION_UX_20261024.md)
+5. **Phase 16本家風上下2画面UI**：[`docs/PHASE16_YW2_SCREEN_LAYOUT_20261024.md`](./PHASE16_YW2_SCREEN_LAYOUT_20261024.md)
+6. **Phase 15Aオリジナルキャラ実装**：[`docs/PHASE15_ORIGINAL_2D_CHARACTERS_20261024.md`](./PHASE15_ORIGINAL_2D_CHARACTERS_20261024.md)
+7. **Phase 14C相手切断とホスト再起動フェンス**：[`docs/PHASE14C_PRESENCE_RESTART_FENCING_20261024.md`](./PHASE14C_PRESENCE_RESTART_FENCING_20261024.md)
+8. **Phase 14Bタッチ・通信安全性**：[`docs/PHASE14B_GESTURE_SECURITY_20261024.md`](./PHASE14B_GESTURE_SECURITY_20261024.md)
+9. **Phase 14A本来の対戦画面と2ブラウザFirebase E2E**：[`docs/PHASE14_STAGE_QA_20261024.md`](./PHASE14_STAGE_QA_20261024.md)
+10. **Phase 13Bオンライン戦闘統合**：[`docs/PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md`](./PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md)
+11. **Phase 13A実装とSDKテスト**：[`docs/PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md`](./PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md)
+12. **Phase 13外部資料・既存ゲーム比較**：[`docs/PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md`](./PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md)
+13. **Phase 12通信基盤**：[`docs/PHASE12_RELAY_RECOVERY_20261024.md`](./PHASE12_RELAY_RECOVERY_20261024.md)
+14. **Phase 11対戦コマンド**：[`docs/PHASE11_MATCH_PROTOCOL_QA_20261023.md`](./PHASE11_MATCH_PROTOCOL_QA_20261023.md)
+15. **Phase 10基本戦闘**：[`docs/PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md`](./PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md)
+16. **歴史・各Phaseリンク**：[`docs/DEVELOPMENT_STATUS_20261023.md`](./DEVELOPMENT_STATUS_20261023.md)
+17. **実際のコード**：`engine/combat.mjs`・`engine/match-protocol.mjs`・`lab/phase2.html`・`lab/match-contract.html`・各 `tests/*.test.mjs`。
 
 **Repository**: https://github.com/8mahi8/yokai-battle-lab  
 **開発ブランチ**: `feat/phase1-action-circle-lab-20261023`  
