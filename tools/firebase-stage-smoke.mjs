@@ -62,6 +62,20 @@ async function until(predicate,label){
   throw Error('guest wheel rotation did not reflect on B2');
  if(doc(host).querySelector('#mb-team1 [data-unit="B4"]').classList.contains('mb-bench'))
   throw Error('host did not reflect guest wheel B4');
+ await until(()=>el(guest,'remote-status')?.textContent.includes('対戦に反映しました'),
+  'guest sees host rule success, not merely transport ACK');
+ // The second rotation is sent straight after the first host ACK, well
+ // within the official-rule three-second lock. A consumed input still gets
+ // a revision, but both wheels must remain unchanged and the guest must see
+ // the reason in Japanese instead of a false success message.
+ doc(guest).querySelector('[data-rotate="1"]').click();
+ await until(()=>el(guest,'mb-revision')?.textContent.includes('B 2')&&
+  el(host,'mb-revision')?.textContent.includes('B 2'),'denied guest input ACK revision');
+ await until(()=>el(guest,'remote-status')?.textContent.includes('サークルはまだ回せません'),
+  'guest sees explicit authoritative cooldown refusal');
+ if(doc(guest).querySelector('#mb-team1 [data-unit="B2"]').classList.contains('mb-bench')||
+    doc(host).querySelector('#mb-team1 [data-unit="B4"]').classList.contains('mb-bench'))
+  throw Error('cooldown-denied second guest rotation changed the battle');
  doc(host).querySelector('[data-rotate="1"]').click();
  await until(()=>el(guest,'mb-revision')?.textContent.includes('A 1'),'guest receives host action');
  el(host,'mb-step').click();
@@ -81,7 +95,7 @@ async function until(predicate,label){
  el(host,'mb-step').click();
  await until(()=>Number(el(guest,'mb-turn')?.textContent)===turnBefore+1,
   'battle resumes on same host engine after guest transport reconnect');
- result.textContent='FIREBASE-STAGE-PASS room sync, actual guest disconnect, host pause, transport resume';
+ result.textContent='FIREBASE-STAGE-PASS authoritative 3s guest cooldown feedback, room sync, disconnect, host pause, resume';
 })().catch(e=>{result.textContent='FIREBASE-STAGE-FAIL '+(e.stack||e.message)});
 </script></body></html>`;
 const srv=createServer(async(req,res)=>{
