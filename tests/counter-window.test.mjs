@@ -143,3 +143,48 @@ test('invalid input, duplicates and malformed timings rejected',()=>{
  assert.throws(()=>t.beginCharge({side:2,token:7}));
  assert.throws(()=>t.completeCharge({side:0,token:0}));
 });
+
+
+test('22D-B cut-in research ledger retains every candidate front and virtual offset, not a freeze-frame guess',()=>{
+ const t=createCounterWindow();start(t,800,2);
+ t.advance(100);t.setFront({side:1,ids:['B2','B3','B4']});
+ t.advance(230);t.setFront({side:1,ids:['B3','B4','B5']});
+ t.advance(70);t.setFront({side:1,ids:['B1','B2','B3']});
+ t.advance(500);
+ const end=t.completeCharge({side:0,token:7});
+ assert.equal(end.uncertainty.code,'two-endures-cutin-front-lock-time-unverified');
+ assert.deepEqual(end.uncertainty.cutinFrontlineTimeline,[
+  {at:0,frontIds:['B1','B2','B3']},
+  {at:100,frontIds:['B2','B3','B4']},
+  {at:330,frontIds:['B3','B4','B5']},
+  {at:400,frontIds:['B1','B2','B3']}
+ ]);
+ assert.equal(end.uncertainty.historyTruncated,false);
+ end.uncertainty.cutinFrontlineTimeline[1].frontIds[0]='FAKE';
+ assert.equal(t.snapshot().pending[0].uncertainty.cutinFrontlineTimeline[1].frontIds[0],'B2',
+  'observations must not mutate the pending research target');
+});
+
+test('22D-B only changes while the cut-in runs enter the candidate lineup ledger',()=>{
+ const t=createCounterWindow();start(t,800,2);
+ t.setFront({side:0,ids:['A2','A3','A4']});
+ t.setFront({side:1,ids:['B1','B2','B3']});
+ t.advance(800);t.setFront({side:1,ids:['B2','B3','B4']});
+ assert.deepEqual(t.snapshot().cutin.cutinFrontlineTimeline,[
+  {at:0,frontIds:['B1','B2','B3']}
+ ]);
+ assert.equal(t.snapshot().cutin.frontChangedDuringCutin,false);
+ t.advance(1);assert.equal(t.completeCharge({side:0,token:7}).uncertainty,null);
+});
+
+test('22D-B a bounded virtual cut-in ledger reports discarded observations instead of pretending complete footage',()=>{
+ const t=createCounterWindow();start(t,800,2);
+ for(let i=0;i<70;i++)t.setFront({side:1,
+  ids:i%2===0?['B2','B3','B4']:['B1','B2','B3']});
+ assert.equal(t.snapshot().cutin.cutinFrontlineTimeline.length,64);
+ assert.equal(t.snapshot().cutin.historyTruncated,true);
+ t.advance(800);
+ const result=t.completeCharge({side:0,token:7});
+ assert.equal(result.uncertainty.historyTruncated,true);
+ assert.equal(result.uncertainty.cutinFrontlineTimeline.length,64);
+});
