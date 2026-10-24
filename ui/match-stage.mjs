@@ -288,7 +288,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   // Touch challenges may send many authoritative snapshots per second.
   // The SVG cards must not be torn down for each tiny touch update.
   for(let index=0;index<2;index++){
-   const key=JSON.stringify({team:view.teams[index],seat:activeSeat,selection,flash});
+   const key=JSON.stringify({team:view.teams[index],seat:activeSeat,selection,
+    ownerPin:view.teams[activeSeat].pin,flash});
    if(key!==teamDrawCache[index]){
     $('mb-team'+index).innerHTML=teamHTML(view.teams[index]);
     teamDrawCache[index]=key;
