@@ -139,6 +139,19 @@ async function main(){
   assert.equal(hostMatch.snapshot().clientSequences[1],5);
   assert.deepEqual(ackEvents.map(x=>x.clientSeq),[1,2,3,4,5]);
   assert.deepEqual(bridgeErrors,[]);
+  // This uses the real SDK and the same room. A newly created host engine
+  // must not publish revision=0 over the already accepted battle.
+  const oldRevision=hostMatch.snapshot().revision;
+  const restoredAttempt=createFirebaseMatchHost({roomClient:hostB});
+  const refused=await restoredAttempt.start();
+  assert.equal(refused.ok,false);
+  assert.equal(refused.reason,'existing_authoritative_state');
+  assert.equal(refused.revision,oldRevision);
+  assert.equal(restoredAttempt.status().fenced,true);
+  assert.equal((await hostB.readPublishedSnapshot()).revision,oldRevision);
+  restoredAttempt.stop();
+  console.log('EMULATOR RESTART FENCE PASS same room cannot rewind to revision zero');
+  tests++;
   guestMatch.stop();hostMatch.stop();
   hostB.leaveLocal();guestB.leaveLocal();
   console.log('EMULATOR BRIDGE PASS guest 2 ACKs, host command, host-only auto tick');
