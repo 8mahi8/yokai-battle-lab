@@ -42,6 +42,10 @@ export function createCounterWindow({fronts=[['A1','A2','A3'],['B1','B2','B3']],
    return {ok:false,reason:'cutin_or_hit_pending'};
   cutin={id:++issued,attackerSide,startedAt:now,endsAt:now+durationMs,
    frontAtStart:[...current[attackerSide]],enduresSpent,
+   // The source only says "the face showing DURING the cut-in".
+   // When that face changes in the window, a start-of-cutin freeze
+   // is not an original-confirmed rule. Keep this ambiguity explicit.
+   frontChangedDuringCutin:false,
    counterToken:null,counterStartedAt:null};
   return {ok:true,cutin:clone(cutin)};
  }
@@ -68,6 +72,13 @@ export function createCounterWindow({fronts=[['A1','A2','A3'],['B1','B2','B3']],
    return {ok:false,reason:'counter_hit_already_pending'};
   const completedDuringCutin=now<cutin.endsAt;
   const lock=completedDuringCutin||cutin.enduresSpent>=2;
+  const ambiguousEndureFront=!completedDuringCutin&&cutin.enduresSpent>=2&&
+    cutin.frontChangedDuringCutin;
+  const uncertainty=ambiguousEndureFront?
+    {code:'two-endures-cutin-front-lock-time-unverified',
+     explanation:'The opponent changed its front during the cut-in; the source does not identify the freeze frame.'}:null;
+  // Keep frontAtStart ONLY as a plausible research candidate, never as a
+  // verified damage target if the opponent rotated during the cut-in.
   const targetIds=lock?(completedDuringCutin?[...current[cutin.attackerSide]]:[...cutin.frontAtStart]):null;
   // Original exact timing for completed-during-cutin hits is UNKNOWN.
   // Cut-in end is an explicit, non-authoritative staging timestamp.
@@ -75,7 +86,7 @@ export function createCounterWindow({fronts=[['A1','A2','A3'],['B1','B2','B3']],
   const event={id:++issued,cutinId:cutin.id,side,token,attackerSide:cutin.attackerSide,
    chargeCompletedAt:now,hitAt,completedDuringCutin,frontLock:
     completedDuringCutin?'completion':lock?'endure-exception':'impact',
-   targetIds,staging:'research-only'};
+   targetIds,uncertainty,staging:'research-only'};
   pending.push(event);
   cutin.counterToken=null;
   return {ok:true,...clone(event)};
@@ -126,6 +137,9 @@ export function createCounterWindow({fronts=[['A1','A2','A3'],['B1','B2','B3']],
   // only advance() dispatches its returned hit records to the damage engine.
   if(pending.some(item=>item.hitAt<=now))
    return {ok:false,reason:'hit_due_resolve_first'};
+  if(cutin&&side===cutin.attackerSide&&now>=cutin.startedAt&&now<cutin.endsAt&&
+     next.some((id,i)=>id!==current[side][i]))
+    cutin.frontChangedDuringCutin=true;
   current[side]=next;
   return {ok:true,side,frontIds:[...next],at:now};
  }
