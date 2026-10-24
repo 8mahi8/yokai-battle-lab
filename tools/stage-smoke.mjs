@@ -201,6 +201,23 @@ try{
  if(ipadExit!==0||!existsSync(ipad))
   throw new Error('iPad-class landscape preview capture failed: '+ipadError.slice(-400));
  console.log('SCREENSHOT-READY phase16-ipad-landscape-preview.png');
+ const targetPreview=path.join(root,'phase16-target-selection-preview.png');
+ const targetChild=spawn(browser,[
+  '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+  '--no-first-run','--disable-extensions','--hide-scrollbars',
+  '--user-data-dir='+path.join(tmp,'target-preview'),
+  '--window-size=1024,768','--virtual-time-budget=2400',
+  '--screenshot='+targetPreview,
+  'http://127.0.0.1:'+server.address().port+'/lab/match-stage.html?review=target'
+ ],{stdio:['ignore','pipe','pipe']});
+ let targetError='';
+ targetChild.stderr.on('data',b=>targetError+=String(b).slice(0,2000));
+ const targetTimeout=setTimeout(()=>targetChild.kill('SIGKILL'),18000);
+ const targetExit=await new Promise(resolve=>targetChild.on('close',resolve));
+ clearTimeout(targetTimeout);
+ if(targetExit!==0||!existsSync(targetPreview))
+  throw new Error('target-selection screenshot failed: '+targetError.slice(-400));
+ console.log('SCREENSHOT-READY phase16-target-selection-preview.png');
 }finally{
  await new Promise(resolve=>server.close(resolve));
  rmSync(tmp,{recursive:true,force:true});
