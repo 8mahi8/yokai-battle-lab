@@ -23,6 +23,60 @@ const INSTRUCTIONS={
 const ACTION_KIND={charge:'chargeInput',purify:'purifyInput',poke:'pokeInput'};
 const CANCEL_KIND={charge:'chargeCancel',purify:'purifyCancel',poke:'pokeCancel'};
 
+/**
+ * Read-only SVG guides derived from the actual input trial snapshot.
+ * Never decide gesture success here; only the imported combat engine does.
+ */
+export function gestureGuideHTML(kind,challenge={}){
+ const safePoint=value=>Array.isArray(value)&&value.length===2&&
+  value.every(n=>Number.isFinite(n)&&n>=0&&n<=1);
+ const point=value=>[value[0]*100,value[1]*100];
+ if(kind==='align'&&Number.isInteger(challenge.clockNumber)&&
+  challenge.clockNumber>=1&&challenge.clockNumber<=12){
+  const target=challenge.clockNumber;
+  const targetAngle=-Math.PI/2+(target%12)*Math.PI/6;
+  const angle=Number.isFinite(challenge.handAngle)?challenge.handAngle:-Math.PI/2;
+  const tx=50+32*Math.cos(targetAngle),ty=50+32*Math.sin(targetAngle);
+  const hx=50+32*Math.cos(angle),hy=50+32*Math.sin(angle);
+  const nums=Array.from({length:12},(_,i)=>{
+   const n=i+1,a=-Math.PI/2+n*Math.PI/6;
+   const x=50+40*Math.cos(a),y=50+40*Math.sin(a);
+   return '<text x="'+x+'" y="'+(y+1.5)+'" font-size="6" text-anchor="middle" fill="'+
+    (n===target?'#ffe093':'#bdcfdc')+'">'+n+'</text>';
+  }).join('');
+  return '<svg class="mb-gesture-svg" viewBox="0 0 100 100" aria-hidden="true">'+
+   '<circle cx="50" cy="50" r="33" fill="none" stroke="#a9c5cf" stroke-width="1.4"/>'+
+   nums+'<circle cx="'+tx+'" cy="'+ty+'" r="6" fill="#f4cb6b" opacity=".55"/>'+
+   '<line x1="50" y1="50" x2="'+hx+'" y2="'+hy+
+   '" stroke="#f8e2ac" stroke-width="3" stroke-linecap="round"/>'+
+   '<circle cx="50" cy="50" r="4" fill="#fff0c8"/></svg>';
+ }
+ if(kind==='slash'&&Array.isArray(challenge.slashPoints)){
+  const count=Number.isSafeInteger(challenge.count)?challenge.count:0;
+  const paths=challenge.slashPoints.map((pair,i)=>{
+   if(!Array.isArray(pair)||!pair.every(safePoint))return '';
+   const [start,end]=pair.map(point);
+   const color=i<count?'#8da5af':i===count?'#fbd897':'#a0a9b8';
+   return '<line x1="'+start[0]+'" y1="'+start[1]+'" x2="'+end[0]+'" y2="'+end[1]+
+    '" stroke="'+color+'" stroke-width="5" stroke-linecap="round"/>'+
+    '<circle cx="'+start[0]+'" cy="'+start[1]+'" r="4" fill="'+color+'"/>'+
+    '<text x="'+(start[0]-8)+'" y="'+(start[1]+2)+'" fill="#f0e1bf" font-size="6">'+(i+1)+'</text>';
+  }).join('');
+  return '<svg class="mb-gesture-svg" viewBox="0 0 100 100" aria-hidden="true">'+paths+'</svg>';
+ }
+ if(kind==='trace'&&Array.isArray(challenge.path)){
+  const path=challenge.path.filter(safePoint);
+  if(!path.length)return '';
+  return '<svg class="mb-gesture-svg" viewBox="0 0 100 100" aria-hidden="true">'+
+   '<polyline points="'+path.map(x=>point(x).join(',')).join(' ')+
+   '" stroke="#a7cfcf" stroke-width="2.5" stroke-dasharray="3 2" fill="none"/>'+
+   path.map((p,i)=>{const xy=point(p);return '<circle cx="'+xy[0]+'" cy="'+xy[1]+
+    '" r="'+(i===challenge.pathIndex?6:3.5)+'" fill="'+(i===challenge.pathIndex?'#f9d28b':'#9cd6d8')+'"/>';}).join('')+
+   '</svg>';
+ }
+ return '';
+}
+
 export function makeStageView(state,side=0){
  if(side!==0&&side!==1)throw new RangeError('seat must be 0 or 1');
  if(!state||!state.game||!Array.isArray(state.game.squads)||!Array.isArray(state.game.clock?.teams))
@@ -194,9 +248,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    points='<span class="mb-touch-target" style="left:'+(challenge.target[0]*100)+'%;top:'+(challenge.target[1]*100)+'%"></span>';
   }else if(kind==='pop'&&Array.isArray(challenge.popPoints)){
    points=challenge.popPoints.map(([px,py],i)=>'<span class="mb-touch-target" style="left:'+(px*100)+'%;top:'+(py*100)+'%;opacity:'+(challenge.popped?.includes(i)?'.2':'1')+'"></span>').join('');
-  }else if(kind==='trace'&&Array.isArray(challenge.path)){
-   points=challenge.path.map(([px,py],i)=>'<span class="mb-trace-target" style="left:'+(px*100)+'%;top:'+(py*100)+'%;opacity:'+(i<(challenge.pathIndex??0)?0.45:1)+'"></span>').join('');
-  }else points='<span class="mb-touch-guideline">'+(kind==='spin'?'↻':kind==='rub'?'↔':kind==='slash'?'⤳':kind==='align'?'↕':'✦')+'</span>';
+  }else if(kind==='align'||kind==='slash'||kind==='trace'){
+   points=gestureGuideHTML(kind,challenge);
+  }else points='<span class="mb-touch-guideline">'+(kind==='spin'?'↻':kind==='rub'?'↔':'✦')+'</span>';
   $('mb-touch-points').innerHTML=points;
  }
  function render(state){
@@ -272,38 +326,48 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  function onDown(event){
   if(!view?.gesture||event.button!==0)return;
   const pad=event.target.closest('#mb-touch-pad');if(!pad)return;
+  if(pointer!==null)return; // Do not let a second finger steal the active drag.
   event.preventDefault();pointer=event.pointerId;lastMove=0;
   try{pad.setPointerCapture(event.pointerId);}catch(_){}
   const kind=view.gesture.kind==='poke'?'poke':view.gesture.challenge?.kind;
   if(!['tap','pop','mash','poke'].includes(kind))sendGesture('down',coords(event,pad));
  }
  function onMove(event){
-  const pad=event.target.closest('#mb-touch-pad');
-  if(pointer!==event.pointerId||!pad||!view?.gesture)return;
+  // Capture retargets moves to the pad even when a finger leaves its bounds.
+  const pad=$('mb-touch-pad');
+  if(pointer!==event.pointerId||!view?.gesture)return;
   event.preventDefault();
   const kind=view.gesture.kind==='poke'?'poke':view.gesture.challenge?.kind;
   if(['tap','pop','mash','poke'].includes(kind))return;
-  if(event.timeStamp-lastMove<38)return;
+  if(event.timeStamp-lastMove<20)return;
   lastMove=event.timeStamp;
   sendGesture('move',coords(event,pad));
  }
- function onUp(event){
-  if(pointer!==event.pointerId||!view?.gesture)return;
-  event.preventDefault();
-  const pad=$('mb-touch-pad'),kind=view.gesture.kind==='poke'?'poke':view.gesture.challenge?.kind;
+ function finishPointer(event,cancelled=false){
+  if(pointer!==event.pointerId)return;
+  event.preventDefault?.();
+  const pad=$('mb-touch-pad'),kind=view?.gesture?.kind==='poke'?'poke':view?.gesture?.challenge?.kind;
   pointer=null;
-  if(['tap','pop','mash','poke'].includes(kind))sendGesture('tap',coords(event,pad));
-  else sendGesture('up');
+  // Pointer cancellation is NOT a click. Never give out free tap progress.
+  if(!view?.gesture)return;
+  if(['tap','pop','mash','poke'].includes(kind)){
+   if(!cancelled)sendGesture('tap',coords(event,pad));
+  }else sendGesture('up');
  }
+ function onUp(event){finishPointer(event,false);}
+ function onCancel(event){finishPointer(event,true);}
+ function onLostCapture(event){if(pointer===event.pointerId)finishPointer(event,true);}
  element.addEventListener('click',handleClick);
  element.addEventListener('pointerdown',onDown);
  element.addEventListener('pointermove',onMove);
  element.addEventListener('pointerup',onUp);
- element.addEventListener('pointercancel',onUp);
+ element.addEventListener('pointercancel',onCancel);
+ element.addEventListener('lostpointercapture',onLostCapture);
  function setConnection(label){$('mb-connection').textContent=String(label);}
  function destroy(){element.removeEventListener('click',handleClick);
   element.removeEventListener('pointerdown',onDown);element.removeEventListener('pointermove',onMove);
-  element.removeEventListener('pointerup',onUp);element.removeEventListener('pointercancel',onUp);}
+  element.removeEventListener('pointerup',onUp);element.removeEventListener('pointercancel',onCancel);
+  element.removeEventListener('lostpointercapture',onLostCapture);}
  return {render,setConnection,alert,destroy,selectSeat(nextSeat){
   if(fixedSeat!==null)throw new Error('network seat fixed');
   if(![0,1].includes(nextSeat))throw new RangeError('unknown seat');
