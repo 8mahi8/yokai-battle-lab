@@ -11,6 +11,7 @@ function fakeTransport(){
  const sent=[],saves=[];
  const host={
   active:()=>({session,roomCode:code,seat:0}),
+  async readPublishedSnapshot(){return latest?clone(latest.state):null;},
   subscribeInputs(fn){listeners.input.add(fn);return()=>listeners.input.delete(fn);},
   async publishSnapshot(state){
    latest={session,revision:state.revision,state:clone(state)};
@@ -137,4 +138,39 @@ test('bounded guest FIFO preserves all fast taps, draining only after host ACK',
  assert.equal(host.snapshot().clientSequences[1],3);
  assert.equal(guest.status().revision,3);
  guest.stop();host.stop();
+});
+
+test('host start refuses existing authoritative room state instead of resetting match',async()=>{
+ const bus=fakeTransport(),original=createFirebaseMatchHost({roomClient:bus.host});
+ assert.equal((await original.start()).ok,true);
+ assert.equal(original.submit({type:'rotate',direction:1}).accepted,true);
+ await tick();
+ const previous=bus.latest(),reloaded=createFirebaseMatchHost({roomClient:bus.host});
+ const result=await reloaded.start();
+ assert.deepEqual(result,{ok:false,reason:'existing_authoritative_state',revision:1});
+ assert.equal(reloaded.status().fenced,true);
+ assert.throws(()=>reloaded.submit({type:'watch',mode:'zero'}),/existing_authoritative_state/);
+ assert.throws(()=>reloaded.advanceAuto(),/existing_authoritative_state/);
+ assert.deepEqual(bus.latest(),previous);
+ original.stop();reloaded.stop();
+});
+
+test('host is fenced when remote revision conflict appears after preflight',async()=>{
+ const bus=fakeTransport();
+ const original=createFirebaseMatchHost({roomClient:bus.host});
+ await original.start();
+ const staleClient={
+  ...bus.host,
+  readPublishedSnapshot:async()=>null,
+  publishSnapshot:async()=>({ok:false,reason:'stale_snapshot'})
+ };
+ const errors=[];
+ const parallel=createFirebaseMatchHost({roomClient:staleClient,
+  onError:error=>errors.push(error.message)});
+ const result=await parallel.start();
+ assert.equal(result.ok,false);
+ assert.equal(parallel.status().fenced,true);
+ assert.ok(errors.includes('existing_authoritative_state'));
+ assert.throws(()=>parallel.advanceAuto(),/existing_authoritative_state/);
+ original.stop();parallel.stop();
 });
