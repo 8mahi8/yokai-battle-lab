@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createFirebaseMatchHost,createFirebaseMatchGuest} from '../network/firebase-match.mjs';
 import {createMatchProtocol,replayMatchJournal} from '../engine/match-protocol.mjs';
+import {RENTAL_SQUAD} from '../engine/combat.mjs';
+import {makeStageView} from '../ui/match-stage.mjs';
+import {matchAckMessage} from '../ui/match-feedback.mjs';
 
 const clone=x=>JSON.parse(JSON.stringify(x));
 function fakeTransport(){
@@ -233,4 +236,99 @@ test('old or truncated host snapshot never yields a false-positive guest success
  assert.equal(acks[0].applied,null,'unknown receipt must not be labeled successful');
  assert.equal(acks[0].reason,undefined);
  guest.stop();host.stop();
+});
+
+const chargeGuardTeam=RENTAL_SQUAD.map(x=>({...x,soulCapacity:5,
+ weights:[0,0,0,100]}));
+const testChargeProtocol=()=>createMatchProtocol({battleOptions:{seed:12,
+ teams:[chargeGuardTeam,chargeGuardTeam],rotationCooldownMs:0,
+ researchSpecialEffects:false}});
+const gaugeOf=(state,id)=>state.game.soul.teams.flat().find(x=>x.id===id).soul;
+
+test('22C actual guest bridge: rejected chargeStart never presents a success ACK',async()=>{
+ const bus=fakeTransport(),acks=[],states=[],errors=[],protocol=testChargeProtocol();
+ const host=createFirebaseMatchHost({roomClient:bus.host,protocol,
+  onError:e=>errors.push(e.message)});
+ const guest=createFirebaseMatchGuest({roomClient:bus.guest,
+  onSnapshot:s=>states.push(s),onAck:a=>acks.push(a),onError:e=>errors.push(e.message)});
+ guest.start();await host.start();await tick();
+ assert.equal(guest.enqueue({type:'chargeStart',id:'B1'}).ok,true);
+ await tick();await tick();
+ assert.equal(acks.length,1);
+ assert.equal(acks[0].accepted,true);
+ assert.equal(acks[0].applied,false,'host consumes an invalid rule action');
+ assert.equal(acks[0].reason,'soul_not_full');
+ assert.equal(acks[0].completed,undefined);
+ assert.equal(matchAckMessage(acks[0]),'操作は適用されませんでした：soul_not_full');
+ assert.equal(makeStageView(states.at(-1),1).gesture,null);
+ assert.equal(states.at(-1).lastCommandOutcomes[1].completed,undefined);
+ assert.deepEqual(errors,[]);
+ host.stop();guest.stop();
+});
+
+test('22C real guest command FIFO and verified charge ACK: 5 partial touches, final activation, replay',async()=>{
+ const bus=fakeTransport(),acks=[],views=[],errors=[],protocol=testChargeProtocol();
+ const host=createFirebaseMatchHost({roomClient:bus.host,protocol,
+  onError:e=>errors.push(e.message)});
+ const guest=createFirebaseMatchGuest({roomClient:bus.guest,
+  onAck:a=>acks.push(a),onSnapshot:s=>views.push(makeStageView(s,1)),
+  onError:e=>errors.push(e.message)});
+ guest.start();await host.start();await tick();
+ let i=0;
+ for(;i<60&&gaugeOf(host.snapshot(),'B1')<5;i++)
+  assert.equal(host.advanceAuto().ok,true);
+ assert.ok(i<60,'B1 must fill from legal guard actions');
+ await tick();await tick();
+ assert.equal(gaugeOf(guest.status().lastState,'B1'),5);
+ assert.equal(views.at(-1).teams[1].members.find(x=>x.id==='B1').specialReady,true);
+ assert.equal(guest.enqueue({type:'chargeStart',id:'B1'}).ok,true);
+ await tick();await tick();
+ assert.equal(acks.length,1);
+ assert.equal(acks[0].applied,true);
+ assert.equal(acks[0].commandType,'chargeStart');
+ assert.equal(matchAckMessage(acks[0]),'必殺チャージを開始しました');
+ assert.equal(views.at(-1).gesture.kind,'charge');
+ assert.equal(views.at(-1).gesture.challenge.kind,'tap');
+ assert.equal(views.at(-1).teams[1].members.find(x=>x.id==='B1').specialReady,false);
+
+ for(let n=0;n<6;n++){
+  const target=guest.status().lastState.game.guided[1].challenge.target;
+  const intent={type:'chargeInput',gesture:{type:'tap',x:target[0],y:target[1]}};
+  // Hide authoritative snapshots on the FIRST partial input to simulate
+  // an ACK lost after the host has already accepted and applied that tap.
+  if(n===0)bus.setDrop(true);
+  assert.equal(guest.enqueue(intent).ok,true);
+  await tick();await tick();
+  if(n===0){
+   assert.equal(guest.status().pendingSequence,2);
+   assert.equal(protocol.snapshot().game.guided[1].challenge.count,1);
+   assert.equal((await guest.retry()).ok,true);
+   await tick();
+   assert.equal(protocol.snapshot().game.guided[1].challenge.count,1,
+    'same command sequence must never advance the charge twice');
+   bus.setDrop(false);bus.replay();
+   await tick();
+  }
+  assert.equal(acks.length,n+2);
+  assert.equal(acks.at(-1).applied,true);
+  assert.equal(acks.at(-1).completed,n===5);
+  const lastText=matchAckMessage(acks.at(-1));
+  if(n<5){
+   assert.match(lastText,/まだ発動していません/);
+   assert.equal(gaugeOf(host.snapshot(),'B1'),5);
+   assert.equal(views.at(-1).gesture.kind,'charge');
+  }else{
+   assert.match(lastText,/わざを発動しました/);
+   assert.equal(gaugeOf(host.snapshot(),'B1'),0);
+   assert.equal(views.at(-1).gesture,null);
+  }
+ }
+ assert.equal(acks.length,7);
+ assert.deepEqual(acks.map(a=>a.clientSeq),[1,2,3,4,5,6,7]);
+ assert.equal(host.snapshot().lastCommandOutcomes[1].completed,true);
+ assert.equal(guest.status().pendingSequence,null);
+ assert.equal(guest.status().queuedInputs,0);
+ assert.equal(replayMatchJournal(protocol.exportJournal()).ok,true);
+ assert.deepEqual(errors,[]);
+ host.stop();guest.stop();
 });
