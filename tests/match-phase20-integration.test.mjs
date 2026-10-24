@@ -23,6 +23,7 @@ test('Phase20 initial online host enables previously researched damage + multi-h
   researchSoulRecoveryMode:'owner-nonattack',
   researchDamageModel:true,
   researchMultiHit:true,
+  researchStatInspirits:true,
   researchSpecialEffects:true
  });
  const action=firstMatching(m,x=>x.type==='action'&&['attack','technique'].includes(x.kind)&&
