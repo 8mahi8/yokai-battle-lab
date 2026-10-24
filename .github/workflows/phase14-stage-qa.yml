@@ -17,10 +17,12 @@ jobs:
           node --version
           node --check engine/match-protocol.mjs
           node --check ui/character-art.mjs
+          node --check ui/wheel-gesture.mjs
+          node --check ui/battle-vfx.mjs
           node --check ui/match-stage.mjs
           node --check tools/stage-smoke.mjs
       - name: Verify original match renderer state
-        run: node --test tests/match-stage.test.mjs tests/character-art.test.mjs
+        run: node --test tests/match-stage.test.mjs tests/character-art.test.mjs tests/phase17-interaction-vfx.test.mjs
       - name: Install CJK font for truthful Japanese screenshot QA
         run: |
           sudo apt-get update -qq
@@ -39,4 +41,5 @@ jobs:
             phase15-character-gallery.png
             phase16-ipad-landscape-preview.png
             phase16-target-selection-preview.png
+            phase17-special-cutin-preview.png
           if-no-files-found: ignore
