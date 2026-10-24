@@ -1,0 +1,94 @@
+/**
+ * Actual Chromium DOM interaction smoke for Phase 14 original-engine stage.
+ * Self-contained, no external network, no production Firebase.
+ */
+import {createServer} from 'node:http';
+import {spawn} from 'node:child_process';
+import {readFile} from 'node:fs/promises';
+import {existsSync,mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=path.resolve(fileURLToPath(new URL('../',import.meta.url)));
+const browser=['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser',
+ '/opt/google/chrome/chrome','/usr/bin/google-chrome-stable'].find(existsSync);
+if(!browser)throw new Error('Chromium required: refusing false-green UI test');
+const mime={'.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=utf-8',
+ '.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8'};
+const qa=String.raw`<!doctype html><html lang="ja"><meta charset="utf-8">
+<body><strong id="result">STAGE-WAIT</strong>
+<iframe id="frame" src="/lab/match-stage.html" style="width:1120px;height:740px;border:0"></iframe>
+<script>
+const report=document.getElementById('result');
+document.getElementById('frame').addEventListener('load',()=>{
+ try {
+  const root=document.getElementById('frame').contentDocument;
+  const pick=x=>{let a=root.querySelector(x);if(!a)throw Error('missing '+x);return a;};
+  const check=(condition,message)=>{if(!condition)throw Error(message);};
+  check(pick('#battle-stage').dataset.stageReady==='true','ESM stage not ready');
+  check(root.querySelectorAll('.mb-creature').length===12,'not 12 original rental creatures');
+  check(root.querySelectorAll('.mb-next').length===5,'missing 5 predicted actions');
+  check(pick('#mb-turn').textContent==='0','wrong starting turn');
+  const panel=pick('#mb-team0');
+  check(Number.parseFloat(getComputedStyle(panel).minHeight)>=290,'battle stage has no layout');
+  pick('#mb-team1 [data-unit="B1"]').click();
+  check(pick('#mb-team1 [data-unit="B1"]').classList.contains('mb-pinned'),'enemy pin did not follow canonical protocol');
+  pick('[data-rotate="1"]').click();
+  check(!pick('#mb-team0 [data-unit="A4"]').classList.contains('mb-bench'),'A side wheel failed to rotate');
+  check(pick('#mb-revision').textContent.includes('REV 2'),'game revision did not advance after pin and rotation');
+  pick('#mb-watch').click();
+  check(pick('#mb-watch').textContent.includes('標準ウォッチ'),'standard -> zero watch toggle failed');
+  pick('#mb-step').click();
+  check(Number(pick('#mb-turn').textContent)===1,'actual automatic battle action failed');
+  pick('[data-seat="1"]').click();
+  check(pick('#mb-active-label').textContent.includes('PLAYER B'),'offline seat switch failed');
+  pick('[data-rotate="-1"]').click();
+  check(!pick('#mb-team1 [data-unit="B6"]').classList.contains('mb-bench'),'B side wheel failed to rotate');
+  check(root.querySelectorAll('.mb-creature').length===12,'cards lost after battle actions');
+  check(root.querySelectorAll('.mb-next').length===5,'forecast lost after battles');
+  check(pick('#mb-modal').hidden,'touch mini-game unexpectedly visible');
+  report.textContent='STAGE-PASS canonical engine wheel pin watch host tick seat selection and five forecasts';
+ }catch(error){report.textContent='STAGE-FAIL '+(error.stack||error.message);}
+});
+</script></body></html>`;
+const server=createServer(async(req,res)=>{
+ try{
+  const name=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
+  if(name==='/qa'){res.writeHead(200,{'Content-Type':mime['.html']}).end(qa);return;}
+  const target=path.resolve(root,'.'+name);
+  if(!target.startsWith(root+path.sep))throw Error('out of tree');
+  const buffer=await readFile(target);
+  res.writeHead(200,{'Content-Type':mime[path.extname(target)]||'text/plain'}).end(buffer);
+ }catch(error){res.writeHead(404).end('Not found');}
+});
+const tmp=mkdtempSync(path.join(tmpdir(),'stage-chromium-'));
+try{
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ const endpoint='http://127.0.0.1:'+server.address().port+'/qa';
+ let success=false;
+ for(let i=1;i<=2;i++){
+  const profile=path.join(tmp,'chrome-'+i);
+  const cmd=['--headless=new','--no-sandbox','--disable-dev-shm-usage',
+   '--disable-gpu','--disable-background-networking','--no-first-run',
+   '--no-default-browser-check','--disable-extensions',
+   '--user-data-dir='+profile,'--window-size=1180,900',
+   '--virtual-time-budget=3000','--dump-dom',endpoint];
+  let stdout='',stderr='',timedOut=false;
+  const child=spawn(browser,cmd,{stdio:['ignore','pipe','pipe']});
+  const timeout=setTimeout(()=>{timedOut=true;child.kill('SIGKILL');},16000);
+  child.stdout.on('data',b=>stdout+=String(b).slice(0,250000));
+  child.stderr.on('data',b=>stderr+=String(b).slice(0,5000));
+  const exit=await new Promise(resolve=>child.on('close',resolve));
+  clearTimeout(timeout);
+  if(!timedOut&&exit===0&&stdout.includes('STAGE-PASS')){
+   console.log('STAGE-PASS: canonical combat, 2 wheel seats, pinned enemy, watch, actual turn and five forecasts');
+   success=true;break;
+  }
+  const problem=stdout.match(/STAGE-FAIL[^<]+/)?.[0]||stdout.slice(-700)||stderr.slice(-700);
+  console.warn('Stage browser smoke attempt '+i+' failed: '+problem);
+ }
+ if(!success)throw Error('Phase14 real Chromium stage interaction did not pass');
+}finally{
+ await new Promise(resolve=>server.close(resolve));
+ rmSync(tmp,{recursive:true,force:true});
+}
