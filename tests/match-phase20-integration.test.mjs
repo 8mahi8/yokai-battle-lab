@@ -82,3 +82,19 @@ test('deliberate protocol overrides still permit legacy damage model and reject 
   researchDamageModel:false,researchTurnInspirits:true
  }}),/requires researchDamageModel/);
 });
+
+test('Phase20 detailed hit events fit the existing Firebase room 128 KiB snapshot envelope',()=>{
+ const m=createMatchProtocol({battleOptions:{seed:31,teams:[attack,guard]}});
+ let actions=0;
+ for(let i=0;i<120;i++){
+  const result=m.advanceAuto();
+  assert.equal(result.ok,true);
+  if(result.result.type==='action')actions++;
+  else if(result.result.type==='finished')break;
+ }
+ assert.ok(actions>=5,'not enough real battle turns to exercise detailed hit logging');
+ const snapshot=m.snapshot();
+ const bytes=new TextEncoder().encode(JSON.stringify(snapshot)).byteLength;
+ assert.ok(bytes<131072,'Firebase room publish limit exceeded: '+bytes+' bytes');
+ assert.equal(replayMatchJournal(m.exportJournal()).ok,true);
+});
