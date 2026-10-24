@@ -1,0 +1,101 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "yokaiRoomsV1": {
+      "$code": {
+        ".read": "auth !== null && $code.matches(/^[0-9]{6}$/)",
+        ".write": "auth !== null && $code.matches(/^[0-9]{6}$/) && !data.exists() && newData.hasChildren(['version','phase','hostUid','session','createdAt']) && newData.child('version').val() === 13 && newData.child('phase').val() === 'lobby' && newData.child('hostUid').val() === auth.uid && newData.child('session').isString()",
+        ".validate": "newData.hasChildren(['version','phase','hostUid','session','createdAt'])",
+        "version": {
+          ".validate": "newData.val() === 13"
+        },
+        "hostUid": {
+          ".validate": "newData.isString() && newData.val().length <= 128"
+        },
+        "session": {
+          ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{32}$/)"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < now + 300000"
+        },
+        "phase": {
+          ".write": "auth !== null && auth.uid === root.child('yokaiRoomsV1/'+$code).child('hostUid').val() && data.val() === 'lobby' && newData.val() === 'playing' && root.child('yokaiRoomsV1/'+$code).child('guestUid').exists()",
+          ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'playing' || newData.val() === 'finished')"
+        },
+        "guestUid": {
+          ".write": "auth !== null && !data.exists() && root.child('yokaiRoomsV1/'+$code).child('phase').val() === 'lobby' && auth.uid !== root.child('yokaiRoomsV1/'+$code).child('hostUid').val() && newData.val() === auth.uid",
+          ".validate": "newData.isString() && newData.val().length <= 128"
+        },
+        "inputs": {
+          "$seat": {
+            ".write": "auth !== null && root.child('yokaiRoomsV1/'+$code).child('phase').val() === 'playing' && (($seat === 'host' && auth.uid === root.child('yokaiRoomsV1/'+$code).child('hostUid').val()) || ($seat === 'guest' && auth.uid === root.child('yokaiRoomsV1/'+$code).child('guestUid').val())) && newData.hasChildren(['session','clientSeq','intent']) && newData.child('session').val() === root.child('yokaiRoomsV1/'+$code).child('session').val() && (!data.exists() || (data.child('session').val() === root.child('yokaiRoomsV1/'+$code).child('session').val() && newData.child('clientSeq').val() > data.child('clientSeq').val()))",
+            ".validate": "newData.hasChildren(['session','clientSeq','intent']) && newData.child('session').val() === root.child('yokaiRoomsV1/'+$code).child('session').val() && newData.child('clientSeq').isNumber() && newData.child('clientSeq').val() >= 1 && newData.child('clientSeq').val() < 1000000 && newData.child('intent').hasChild('type')",
+            "session": {
+              ".validate": "newData.isString()"
+            },
+            "clientSeq": {
+              ".validate": "newData.isNumber()"
+            },
+            "intent": {
+              ".validate": "newData.hasChild('type')",
+              "type": {
+                ".validate": "newData.isString() && (newData.val() === 'rotate' || newData.val() === 'pin' || newData.val() === 'watch' || newData.val() === 'chargeStart' || newData.val() === 'chargeInput' || newData.val() === 'chargeCancel' || newData.val() === 'purifyStart' || newData.val() === 'purifyInput' || newData.val() === 'purifyCancel' || newData.val() === 'pokeStart' || newData.val() === 'pokeInput' || newData.val() === 'pokeCancel')"
+              },
+              "direction": {
+                ".validate": "newData.isNumber() && (newData.val() === 1 || newData.val() === -1)"
+              },
+              "targetId": {
+                ".validate": "newData.isString() && newData.val().matches(/^([AB][1-6]|__clear__)$/)"
+              },
+              "id": {
+                ".validate": "newData.isString() && newData.val().matches(/^[AB][1-6]$/)"
+              },
+              "mode": {
+                ".validate": "newData.val() === 'standard' || newData.val() === 'zero'"
+              },
+              "gesture": {
+                ".validate": "newData.hasChild('type') && newData.child('type').isString() && (newData.child('type').val() === 'tap' || newData.child('type').val() === 'down' || newData.child('type').val() === 'move' || newData.child('type').val() === 'up')"
+              },
+              "$other": {
+                ".validate": false
+              }
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "state": {
+          ".write": "auth !== null && auth.uid === root.child('yokaiRoomsV1/'+$code).child('hostUid').val() && root.child('yokaiRoomsV1/'+$code).child('phase').val() === 'playing' && newData.hasChildren(['session','revision','stateJson']) && newData.child('session').val() === root.child('yokaiRoomsV1/'+$code).child('session').val() && (!data.exists() || (data.child('session').val() === root.child('yokaiRoomsV1/'+$code).child('session').val() && newData.child('revision').val() > data.child('revision').val()))",
+          ".validate": "newData.hasChildren(['session','revision','stateJson']) && newData.child('revision').isNumber() && newData.child('revision').val() >= 0 && newData.child('stateJson').isString() && newData.child('stateJson').val().length <= 131072",
+          "session": {
+            ".validate": "newData.isString()"
+          },
+          "revision": {
+            ".validate": "newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
+          },
+          "stateJson": {
+            ".validate": "newData.isString() && newData.val().length <= 131072"
+          }
+        },
+        "presence": {
+          "host": {
+            ".write": "auth !== null && auth.uid === root.child('yokaiRoomsV1/'+$code).child('hostUid').val() && newData.isBoolean()",
+            ".validate": "newData.isBoolean()"
+          },
+          "guest": {
+            ".write": "auth !== null && auth.uid === root.child('yokaiRoomsV1/'+$code).child('guestUid').val() && newData.isBoolean()",
+            ".validate": "newData.isBoolean()"
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    }
+  }
+}

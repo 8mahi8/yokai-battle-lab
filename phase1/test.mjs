@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {weight,makeBattle,active,rotate,nextAction} from './engine.mjs';
+for(const [s,w] of [[1,123],[5,122],[170,67],[171,66],[175,66],[176,65],[200,61],[201,60],[210,60],[500,31],[501,30]])assert.equal(weight(s),w);
+const teams=[0,1].map(side=>Array.from({length:6},(_,i)=>({id:side+'-'+i,speed:180+i*10})));
+const b=makeBattle(teams,42);assert.deepEqual(active(b,0).map(u=>u.id),['0-0','0-1','0-2']);
+rotate(b,0,1);assert.deepEqual(active(b,0).map(u=>u.id),['0-1','0-2','0-3']);
+assert.equal(b.sides[0].units[0].wait,null);assert.equal(b.sides[0].units[3].wait,3*weight(210));
+for(let i=0;i<1000;i++)assert.ok(Number.isFinite(nextAction(b).tick));
+const c=makeBattle(teams,42);rotate(c,0,1);for(let i=0;i<1000;i++)nextAction(c);
+assert.deepEqual(b.history,c.history);console.log('PASS: 1000 deterministic actions, rotation, bench, speed boundaries');

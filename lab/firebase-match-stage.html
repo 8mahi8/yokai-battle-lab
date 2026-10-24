@@ -1,0 +1,129 @@
+<!doctype html><html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>輪戦｜Firebase Emulator 2ブラウザ研究</title>
+<link rel="stylesheet" href="./match-stage.css">
+<link rel="stylesheet" href="./yw2-layout.css">
+<style>
+#remote-lab{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px;background:#1a3043;border-bottom:1px solid #4c6473;font-size:12px}
+#remote-lab button,#remote-lab input{padding:9px;border:1px solid #7993aa;border-radius:8px;background:#244764;color:#fff}
+#remote-lab input{width:104px;background:#112338}
+#remote-lab button:disabled{opacity:.4}
+#remote-lab strong{color:#ffe1aa}
+#remote-status{color:#c7d7e5;padding:8px 13px;font-size:12px;min-height:32px}
+</style>
+</head><body>
+<div id="remote-lab">
+<strong>PHASE 14 / Firebaseローカル研究</strong>
+<button type="button" id="make" disabled>ホスト：部屋作成</button>
+<input id="code" inputmode="numeric" maxlength="6" aria-label="6桁ルーム番号" placeholder="6桁番号">
+<button type="button" id="join" disabled>ゲスト：参加</button>
+<button type="button" id="start" disabled>ホスト：試合開始</button>
+<button type="button" id="connect" disabled>ゲスト：戦闘接続</button>
+<button type="button" id="retry" disabled>未確定入力を再送</button>
+<span id="link-state" aria-live="polite">接続待機中</span>
+<b id="role">未接続</b>
+</div>
+<div id="remote-status" role="status">Firebase SDKを準備中</div>
+<div id="battle-stage"></div>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script type="module">
+import {createFirebaseRoomClient} from '../network/firebase-room.mjs';
+import {createFirebaseMatchHost,createFirebaseMatchGuest} from '../network/firebase-match.mjs';
+import {createMatchProtocol} from '../engine/match-protocol.mjs';
+import {createMatchStage} from '../ui/match-stage.mjs';
+import {matchAckMessage} from '../ui/match-feedback.mjs';
+const $=id=>document.getElementById(id);
+let database,room,match,stage=null,seat=null;
+let localConnected=false,peerConnected=null;
+function available(){return localConnected&&peerConnected===true;}
+function updatePresence(){
+ const state=!localConnected?'回線オフライン':
+  peerConnected===true?'相手と接続中':peerConnected===false?'相手が切断':'相手の接続待ち';
+ $('link-state').textContent=state;
+ if(stage)stage.setConnection(available()?'2P ONLINE':'2P PAUSE');
+ // Never run a standalone host clock while the opponent is unreachable.
+ $('retry').disabled=seat!==1||!available()||!match||!match.status().pendingSequence;
+}
+function guard(){
+ return !localConnected?{ok:false,reason:'connection_offline'}:
+  peerConnected!==true?{ok:false,reason:'opponent_offline_or_waiting'}:null;
+}
+function info(message){$('remote-status').textContent=String(message);stage?.alert(message);}
+function err(error){info('通信エラー: '+error.message);}
+async function init(){
+ if(!['localhost','127.0.0.1'].includes(location.hostname))
+  throw Error('この研究画面はlocalhost専用（本番Firebaseは禁止）');
+ if(!window.firebase?.auth||!window.firebase?.database)throw Error('Firebase SDK読み込み失敗');
+ firebase.initializeApp({apiKey:'demo-key',authDomain:'demo-yokai-lab.firebaseapp.com',
+  projectId:'demo-yokai-lab',databaseURL:'https://demo-yokai-lab-default-rtdb.firebaseio.com'});
+ firebase.auth().useEmulator('http://127.0.0.1:9099',{disableWarnings:true});
+ await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE);
+ database=firebase.database();database.useEmulator('127.0.0.1',9000);
+ const user=(await firebase.auth().signInAnonymously()).user;
+ room=createFirebaseRoomClient({database,uid:user.uid,onError:err});
+ $('make').disabled=false;$('join').disabled=false;info('認証OK。別々のタブでホスト作成→ゲスト参加。');
+}
+function afterJoined(role){
+ seat=role;
+ $('role').textContent=(role===0?'ホスト':'ゲスト')+' / 部屋 '+room.active().roomCode;
+ $('make').disabled=true;$('join').disabled=true;
+ $('start').disabled=role!==0;$('connect').disabled=role!==1;
+ stage=createMatchStage({element:$('battle-stage'),seat:role,onError:err,
+  onAction:(s,intent)=>{
+   if(!match)return {ok:false,reason:'battle_not_started'};
+   const blocked=guard();if(blocked)return blocked;
+   const receipt=role===0?match.submit(intent):match.enqueue(intent);
+   updatePresence();return receipt;
+  },
+  onStep:()=>{
+   if(role!==0||!match)return {ok:false,reason:'host_only'};
+   const blocked=guard();if(blocked)return blocked;
+   return match.advanceAuto();
+  }});
+ // watchPresence registers onDisconnect before reporting this seat online.
+ room.watchPresence(value=>{localConnected=value;updatePresence();});
+ room.watchPeerPresence(value=>{peerConnected=value;updatePresence();});
+ updatePresence();
+}
+$('make').addEventListener('click',async()=>{
+ try{const result=await room.createRoom();if(!result.ok)throw Error(result.reason);
+  afterJoined(0);info('ルーム '+result.code+' をゲストへ共有してください。');}
+ catch(error){err(error);}
+});
+$('join').addEventListener('click',async()=>{
+ try{const result=await room.joinRoom($('code').value.trim());if(!result.ok)throw Error(result.reason);
+  afterJoined(1);info('参加成功。ホストが開始してから「戦闘接続」を押してください。');}
+ catch(error){err(error);}
+});
+$('start').addEventListener('click',async()=>{
+ try{
+  const starting=await room.startRoom();if(!starting.ok)throw Error(starting.reason);
+  match=createFirebaseMatchHost({roomClient:room,protocol:createMatchProtocol(),
+   onSnapshot:state=>stage.render(state),onError:err});
+  const started=await match.start();if(!started.ok)
+   throw Error(started.reason||started.error||'snapshot_publish_failed');
+  $('start').disabled=true;info('ホスト開始。相手の接続を待っています。');updatePresence();}
+ catch(error){err(error);}
+});
+$('connect').addEventListener('click',async()=>{
+ try{
+  const phase=(await database.ref('yokaiRoomsV1/'+room.active().roomCode+'/phase').once('value')).val();
+  if(phase!=='playing')throw Error('ホストがまだ開始していません');
+  match=createFirebaseMatchGuest({roomClient:room,onSnapshot:state=>{stage.render(state);updatePresence();},
+   onError:err,onAck:e=>{info(matchAckMessage(e));updatePresence();}});
+  match.start();$('connect').disabled=true;info('ゲスト接続。最初の戦況を待っています。');updatePresence();}
+ catch(error){err(error);}
+});
+$('retry').addEventListener('click',async()=>{
+ try{
+  if(seat!==1||!match)throw Error('ゲストの未確定入力がありません');
+  const blocked=guard();if(blocked)throw Error(blocked.reason);
+  const result=await match.retry();if(!result.ok)throw Error(result.reason);
+  info('同じ操作番号を再送しました。ホストのACKを確認してください。');
+  updatePresence();
+ }catch(error){err(error);}
+});
+init().catch(err);
+</script></body></html>

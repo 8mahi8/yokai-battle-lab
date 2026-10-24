@@ -1,0 +1,33 @@
+name: Phase14 real browser Firebase emulator QA
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+    paths:
+      - 'engine/**'
+      - 'network/**'
+      - 'ui/**'
+      - 'lab/firebase-match-stage.html'
+      - 'lab/match-stage.css'
+      - 'tools/firebase-stage-smoke.mjs'
+      - '.github/workflows/phase14-firebase-browser.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  two-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare isolated local emulator
+        run: npm install --no-save --package-lock=false firebase-tools@14.24.0 @firebase/rules-unit-testing@4.0.1
+      - name: Verify both rules and real Chromium two-auth browser integration
+        run: ./node_modules/.bin/firebase emulators:exec --only auth,database --project demo-yokai-lab --config network/emulator/firebase.json "node tests/firebase-room-emulator.cjs && node tools/firebase-stage-smoke.mjs"

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>輪戦｜本来の戦闘エンジンを使う開発画面</title>
+<link rel="stylesheet" href="./match-stage.css">
+<link rel="stylesheet" href="./yw2-layout.css">
+<style>
+#stage-lab-bar{background:#243142;padding:8px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:11px;color:#b9cbd9;border-bottom:1px solid #506073}
+#stage-lab-bar strong{color:#f8e1b6}#stage-lab-bar button{background:#486583;color:white;border:1px solid #7694af;border-radius:6px;padding:6px}
+#stage-lab-bar button[aria-pressed="true"]{background:#8b6b48}
+</style>
+</head>
+<body>
+<div id="stage-lab-bar">
+<strong>PHASE 14 / 本来の戦闘エンジン</strong>
+<span>1ブラウザ2席操作で画面とルールを検証。オンラインではありません。</span>
+<button id="restart" type="button">新しいバトル</button>
+<button id="auto" type="button" aria-pressed="false">自動行動 OFF</button>
+<span id="lab-state"></span>
+</div>
+<div id="battle-stage"></div>
+<script type="module">
+import {createMatchProtocol} from '../engine/match-protocol.mjs';
+import {createMatchStage} from '../ui/match-stage.mjs';
+const el=id=>document.getElementById(id);
+let protocol=null,autoTimer=null;
+function begin(){
+ protocol=createMatchProtocol({battleOptions:{seed:20261024,researchSoulRecoveryMode:'owner-nonattack'}});
+ stage.render(protocol.snapshot());stage.alert('戦闘準備完了。A / B の操作を切り替えて確認できます。');
+}
+function action(side,command){
+ const s=protocol.snapshot(),sequence=s.clientSequences[side]+1;
+ const receipt=protocol.dispatch(side,sequence,command);
+ if(receipt.accepted)stage.render(protocol.snapshot());
+ return receipt;
+}
+function step(){
+ const result=protocol.advanceAuto();
+ if(result.ok)stage.render(protocol.snapshot());
+ return result;
+}
+const stage=createMatchStage({element:el('battle-stage'),onAction:action,
+ onStep:step,onError:error=>{el('lab-state').textContent=error.message;}});
+stage.setConnection('LOCAL 2-SEAT');
+el('restart').addEventListener('click',begin);
+el('auto').addEventListener('click',()=>{
+ if(autoTimer!==null){clearInterval(autoTimer);autoTimer=null;}
+ else autoTimer=setInterval(()=>{
+  if(protocol.snapshot().game.winner!==null){
+   clearInterval(autoTimer);autoTimer=null;el('auto').setAttribute('aria-pressed','false');
+   el('auto').textContent='自動行動 OFF';return;
+  }
+  step();
+ },1250);
+ const enabled=autoTimer!==null;
+ el('auto').setAttribute('aria-pressed',String(enabled));
+ el('auto').textContent=enabled?'自動行動 ON':'自動行動 OFF';
+});
+begin();
+const review=new URL(location.href).searchParams.get('review');
+if(review==='target'){
+ // Local research screenshot fixture only; no network/command dispatch.
+ el('battle-stage').querySelector('#mb-target').click();
+}else if(review==='special'){
+ // Presentation-only QA fixture matching canonical event shape. It does not
+ // grant Soul, resolve real damage, or alter the match engine.
+ const state=protocol.snapshot();
+ state.game.events.push({type:'special',mode:'soultimate',actor:'A1',impacts:[
+  {targetId:'B1',kind:'damage',amount:42},
+  {targetId:'B2',kind:'damage',amount:17}
+ ]});
+ stage.render(state);
+}else if(review==='soul-ready'||review==='g-soul-ready'){
+ // Local screenshot-only projection of a possible full Soul state.
+ // No engine state is mutated, no client is given arbitrary Soul commands.
+ const state=protocol.snapshot();
+ const fill=id=>{
+  const member=state.game.soul.teams[0].find(x=>x.id===id);
+  member.soul=member.capacity;
+ };
+ if(review==='g-soul-ready'){
+  state.game.soul.modes[0]='zero';
+  fill('A1');fill('A2');fill('A6'); // A6 is fixed neighbour on reserve
+ }else fill('A2');
+ stage.render(state);
+ el('battle-stage').querySelector('#mb-charge').click();
+}
+</script>
+</body></html>

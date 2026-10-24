@@ -1,0 +1,141 @@
+<!doctype html><html lang="ja"><meta charset="utf-8">
+<link rel="stylesheet" href="./match-stage.css">
+<link rel="stylesheet" href="./yw2-layout.css">
+<title>Phase14 gesture/pointer Chrome integration QA</title>
+<div id="result">GESTURE-PENDING</div><div id="battle"></div>
+<script type="module">
+import {createMatchProtocol} from '../engine/match-protocol.mjs';
+import {createMatchStage,gestureGuideHTML} from '../ui/match-stage.mjs';
+import {createChargeTrial} from '../engine/charge-input.mjs';
+import {createPurifyTrial} from '../engine/purify-input.mjs';
+import {createPokeTrial} from '../engine/poke-input.mjs';
+const result=document.getElementById('result');
+const root=document.getElementById('battle'),base=createMatchProtocol().snapshot();
+let trial=null,group=null,gestureType=null,completed=false,commands=[];
+function assert(cond,message){if(!cond)throw Error(message)}
+function render(){
+ const s=JSON.parse(JSON.stringify(base));
+ s.revision+=commands.length;
+ if(trial){
+  if(group==='charge')s.game.guided[0]={id:'A1',kind:gestureType,challenge:trial.snapshot()};
+  else if(group==='purify')s.game.purification[0]={id:'A4',challenge:trial.snapshot()};
+  else s.game.poke.active[0]={targetId:'B1',challenge:trial.snapshot()};
+ }
+ stage.render(s);
+}
+const stage=createMatchStage({element:root,seat:0,onError:e=>{throw e},onAction:(_seat,command)=>{
+ commands.push(command);
+ assert(command.type===(group==='charge'?'chargeInput':group==='purify'?'purifyInput':'pokeInput'),
+  'canonical type mismatch: '+command.type);
+ const value=trial.input(command.gesture);
+ if(value.completed){completed=true;trial=null;}
+ render();
+ return {ok:true,accepted:true,revision:commands.length};
+}});
+const delay=()=>new Promise(resolve=>setTimeout(resolve,25));
+let pointerId=30;
+function pad(){return root.querySelector('#mb-touch-pad');}
+async function eventAt(type,x,y,id=pointerId){
+ const r=pad().getBoundingClientRect();
+ const e=new PointerEvent(type,{bubbles:true,cancelable:true,
+  pointerId:id,button:0,pointerType:'touch',isPrimary:true,
+  clientX:r.left+r.width*x,clientY:r.top+r.height*y});
+ pad().dispatchEvent(e);
+ await delay();
+}
+async function tap(x,y){await eventAt('pointerdown',x,y);await eventAt('pointerup',x,y);pointerId++;}
+async function path(points){
+ for(let i=0;i<points.length;i++){
+  const [x,y]=points[i];await eventAt(i?'pointermove':'pointerdown',x,y);
+ }
+ const last=points.at(-1);await eventAt('pointerup',...last);pointerId++;
+}
+function start(nextGroup,kind){
+ group=nextGroup;gestureType=kind;completed=false;commands=[];
+ trial=group==='charge'?createChargeTrial({kind,seed:173}):
+  group==='purify'?createPurifyTrial({kind,seed:0}):createPokeTrial({targetId:'B1'});
+ render();
+ assert(!root.querySelector('#mb-modal').hidden,'gesture overlay missing');
+}
+async function check(){
+ start('charge','tap');
+ const before=trial.snapshot().progress;
+ await eventAt('pointerdown',.5,.19,90);
+ await eventAt('pointercancel',.5,.19,90);
+ assert(trial.snapshot().progress===before,'cancelled pointer became tap');
+ let first=trial.snapshot().target;
+ await eventAt('pointerdown',...first,91);
+ await eventAt('pointerdown',...first,92);
+ await eventAt('pointerup',...first,92);
+ assert(trial.snapshot().count===0,'second finger hijacked gesture');
+ await eventAt('pointerup',...first,91);
+ assert(trial.snapshot().count===1,'first finger tap not counted');
+ pointerId=50;
+ while(!completed){const target=trial.snapshot().target;await tap(...target);}
+ assert(commands.length===6,'six real taps required');
+
+ start('charge','spin');
+ for(let i=0;i<3&&!completed;i++){
+  const circle=Array.from({length:23},(_,n)=>[.5+.3*Math.cos(n*Math.PI/11),
+   .5+.3*Math.sin(n*Math.PI/11)]);
+  await path(circle);
+ }
+ assert(completed,'two full turns failed to complete charge spin');
+
+ start('charge','trace');
+ for(let n=0;n<3&&!completed;n++){
+  await path(trial.snapshot().path);
+ }
+ assert(completed,'three gesture traces did not complete');
+
+ start('charge','align');
+ assert((root.querySelector('#mb-touch-points svg')?.querySelectorAll('text').length||0)===12,
+  'target clock is not visible');
+ for(let n=0;n<3&&!completed;n++){
+  const snap=trial.snapshot();
+  const a=-Math.PI/2+(snap.clockNumber%12)*Math.PI/6;
+  await path([[.5,.18],[.5+.32*Math.cos(a),.5+.32*Math.sin(a)]]);
+ }
+ assert(completed,'clock hand target alignment did not complete');
+
+ start('purify','pop');
+ for(const p of trial.snapshot().popPoints)await tap(...p);
+ assert(completed,'bubble pop did not complete');
+
+ start('purify','mash');
+ for(let n=0;n<14;n++)await tap(.5,.5);
+ assert(completed,'14 center taps did not purify');
+
+ start('purify','rub');
+ for(let n=0;n<3&&!completed;n++){
+  const points=Array.from({length:19},(_,i)=>
+   [i%2===0?.4:.6,.5]);
+  await path(points);
+ }
+ assert(completed,'rub geometry did not reach target');
+
+ start('purify','spin');
+ for(let n=0;n<3&&!completed;n++){
+  const circle=Array.from({length:23},(_,k)=>[.5+.3*Math.cos(k*Math.PI/11),
+   .5+.3*Math.sin(k*Math.PI/11)]);
+  await path(circle);
+ }
+ assert(completed,'purification spin failed');
+
+ start('purify','slash');
+ assert(root.querySelectorAll('#mb-touch-points svg line').length===3,
+  'slash starts and ends are not actually displayed');
+ for(let n=0;n<3&&!completed;n++){
+  const [a,b]=trial.snapshot().slashPoints[n];
+  await path([a,b]);
+ }
+ assert(completed,'slash chain failed');
+
+ start('poke','poke');
+ for(let n=0;n<12;n++)await tap(.5,.5);
+ assert(completed,'poking 12 times failed');
+ assert(root.querySelector('#mb-modal').hidden,'overlay should close on completion');
+ result.textContent='GESTURE-PASS 4 charge + 5 purification + poke with pointercancel and multitouch protection';
+}
+check().catch(error=>{result.textContent='GESTURE-FAIL '+(error.stack||error.message)});
+</script></html>
