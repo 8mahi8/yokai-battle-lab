@@ -16,10 +16,11 @@ jobs:
         run: |
           node --version
           node --check engine/match-protocol.mjs
+          node --check ui/character-art.mjs
           node --check ui/match-stage.mjs
           node --check tools/stage-smoke.mjs
       - name: Verify original match renderer state
-        run: node --test tests/match-stage.test.mjs
+        run: node --test tests/match-stage.test.mjs tests/character-art.test.mjs
       - name: Install CJK font for truthful Japanese screenshot QA
         run: |
           sudo apt-get update -qq
