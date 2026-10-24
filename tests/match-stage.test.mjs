@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMatchProtocol} from '../engine/match-protocol.mjs';
-import {makeStageView} from '../ui/match-stage.mjs';
+import {makeStageView,matchSelectionHints} from '../ui/match-stage.mjs';
 
 test('Phase14 stage reads original two 6-member teams and front/bench wheel',()=>{
  const protocol=createMatchProtocol({battleOptions:{seed:212}});
@@ -44,4 +44,36 @@ test('invalid stage input fails closed',()=>{
  assert.throws(()=>makeStageView(null,0),/snapshot/);
  assert.throws(()=>makeStageView({game:{}},0),/snapshot/);
  assert.throws(()=>makeStageView(createMatchProtocol().snapshot(),3),/seat/);
+});
+
+test('front line/bench prompts never claim damage or target legality',()=>{
+ const protocol=createMatchProtocol({battleOptions:{seed:212}});
+ const initial=makeStageView(protocol.snapshot(),0);
+ assert.deepEqual(matchSelectionHints(initial,'charge').own,['A1','A2','A3']);
+ assert.deepEqual(matchSelectionHints(initial,'target').enemy,['B1','B2','B3']);
+ assert.match(matchSelectionHints(initial,'purify').message,/いません/);
+ assert.deepEqual(matchSelectionHints(initial,'purify').own,[]);
+ const altered=JSON.parse(JSON.stringify(initial));
+ altered.teams[0].members.find(x=>x.id==='A5').negative=true;
+ assert.deepEqual(matchSelectionHints(altered,'purify').own,['A5']);
+ assert.deepEqual(matchSelectionHints(altered,'charge').own,['A1','A2','A3'],
+  'purification eligibility must not change the normal front list');
+ const ignored=JSON.parse(JSON.stringify(altered));
+ ignored.teams[1].members.find(x=>x.id==='B1').ko=true;
+ assert.deepEqual(matchSelectionHints(ignored,'target').enemy,['B2','B3']);
+ assert.deepEqual(matchSelectionHints(ignored,null),{own:[],enemy:[],message:''});
+ assert.throws(()=>matchSelectionHints(initial,'debug'),/invalid battle selection/);
+ assert.throws(()=>matchSelectionHints(null,'target'),/invalid battle selection/);
+});
+
+test('target highlighting follows authoritative pin and watch from either seat',()=>{
+ const match=createMatchProtocol({battleOptions:{seed:212}});
+ assert.equal(match.dispatch(0,1,{type:'pin',targetId:'B2'}).accepted,true);
+ const a=makeStageView(match.snapshot(),0),b=makeStageView(match.snapshot(),1);
+ assert.equal(a.pin,'B2');
+ assert.equal(b.pin,null);
+ assert.deepEqual(matchSelectionHints(a,'target').enemy,['B1','B2','B3']);
+ assert.deepEqual(matchSelectionHints(b,'target').enemy,['A1','A2','A3']);
+ assert.equal(match.dispatch(0,2,{type:'watch',mode:'zero'}).accepted,true);
+ assert.match(matchSelectionHints(makeStageView(match.snapshot(),0),'target').message,/つつく/);
 });
