@@ -200,7 +200,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
           // invented HP changes as though they were verified YW2 outcomes.
           events.push({type:'counter-hit-indeterminate',hitId:hit.id,
             hitAt:hit.hitAt,frontLock:hit.frontLock,possibleFixtureTargets:[...hit.targetIds],
-            reason:uncertainty.code,rotationCount:uncertainty.rotations,
+            reason:uncertainty.code,
+            ...(uncertainty.rotations!==undefined?{rotationCount:uncertainty.rotations}:{}),
             hpApplied:false,model:'research-uncertain'});
           continue;
         }
@@ -482,6 +483,13 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     }
     const planned=counter?counter.completeCharge({side,token}):null;
     if(planned?.ok){
+      // The player report establishes an Endure exception, but does NOT
+      // establish which cut-in frame locks targets if the defending team
+      // rotates during the cut-in. Never apply fictional HP in that case.
+      if(planned.uncertainty)uncertainCounterHits.set(planned.id,{
+        ...planned.uncertainty,side:planned.attackerSide,
+        candidateFronts:[...planned.targetIds]
+      });
       if(wheel){
         const targetSide=planned.attackerSide;
         const group=wheel.snapshot().groups[targetSide];
