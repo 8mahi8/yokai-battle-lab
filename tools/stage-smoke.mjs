@@ -26,6 +26,10 @@ document.getElementById('frame').addEventListener('load',()=>{
   const pick=x=>{let a=root.querySelector(x);if(!a)throw Error('missing '+x);return a;};
   const check=(condition,message)=>{if(!condition)throw Error(message);};
   check(pick('#battle-stage').dataset.stageReady==='true','ESM stage not ready');
+  check(root.querySelectorAll('#mb-special-flare').length===1,
+   'battle stage must have exactly one special cut-in (duplicate DOM IDs)');
+  check(root.querySelectorAll('#mb-special-title').length===1,
+   'special title must not have duplicate DOM IDs');
   check(root.querySelectorAll('.mb-creature').length===12,'not 12 original rental creatures');
   check(root.querySelectorAll('.mb-character-art:not(.mb-mini-art)').length===12,
    'all 12 original SVG characters must render in battle');
