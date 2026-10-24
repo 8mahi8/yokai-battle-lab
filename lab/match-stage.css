@@ -67,17 +67,6 @@ button:focus-visible{outline:3px solid #ffe5a9;outline-offset:2px}
 .mb-creature.mb-pinned{border:2px solid #f9be7a;box-shadow:0 0 0 4px #f4a67b55}
 .mb-creature.mb-ko{opacity:.32}
 .mb-creature:active{transform:translate(-50%,-50%) scale(.96)}
-.mb-avatar{position:relative;display:block;margin-top:0;width:40px;height:41px;flex:none;background:radial-gradient(circle at 39% 25%,#f8d6a5 1%,#c97b65 75%);border:2px solid #f7bf9b;border-radius:45% 46% 42% 40%;box-shadow:inset -5px -4px 7px #572c4a40,0 2px 2px #0004}
-.mb-avatar:before,.mb-avatar:after{content:"";position:absolute;top:-6px;width:13px;height:16px;background:inherit;border:2px solid currentColor;color:#bd857a;border-radius:60% 30% 10% 10%;z-index:-1}
-.mb-avatar:before{left:1px;transform:rotate(-20deg)}
-.mb-avatar:after{right:1px;transform:rotate(20deg)}
-.mb-avatar-2{background:radial-gradient(circle at 35% 25%,#e9e6aa,#70af83 85%);border-color:#b2deb6}
-.mb-avatar-3{background:radial-gradient(circle at 39% 25%,#dee0e7,#748ba2 80%);border-color:#b8c7e0}
-.mb-avatar-4{background:radial-gradient(circle at 39% 25%,#e5ccff,#986ab4 85%);border-color:#d2b5f0}
-.mb-avatar-5{background:radial-gradient(circle at 39% 25%,#fff4b4,#dba868 85%);border-color:#f2dda1}
-.mb-avatar-6{background:radial-gradient(circle at 39% 25%,#c5e9ec,#528c9e 85%);border-color:#a2d3d8}
-.mb-eyes:before,.mb-eyes:after{content:"";position:absolute;width:5px;height:8px;background:#212735;border-radius:50%;top:16px}
-.mb-eyes:before{left:11px}.mb-eyes:after{right:10px}
 /* Phase15 original vector familar roster. The SVG root (not individual
    SVG path transforms) is animated for older WebKit compatibility. Only three
    front-row units per team animate at a time; bench and forecasts stay still. */
@@ -95,7 +84,6 @@ button:focus-visible{outline:3px solid #ffe5a9;outline-offset:2px}
 @keyframes mb-lift{0%,100%{transform:translateY(0)}40%{transform:translateY(-6px) scale(1.07)}}
 .mb-next-avatar{overflow:hidden;padding:1px}
 .mb-next-avatar .mb-mini-art{width:26px;height:26px;max-width:unset;flex:none}
-.mb-side1 .mb-character-art{transform:scaleX(-1)}
 /* Short-lived combat FX take precedence; no continuous compositor layers
    or costly blur/filter effects on the moving portrait shapes. */
 @media(prefers-reduced-motion:reduce){
