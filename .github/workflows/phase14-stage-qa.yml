@@ -22,3 +22,10 @@ jobs:
         run: node --test tests/match-stage.test.mjs
       - name: Render and interact in real Chromium
         run: node tools/stage-smoke.mjs
+      - name: Preserve actual stage screenshot for visual review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase14-original-engine-stage-preview
+          path: phase14-stage-preview.png
+          if-no-files-found: ignore
