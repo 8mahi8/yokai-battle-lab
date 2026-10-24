@@ -9,7 +9,7 @@ import {renderSpiritPortrait} from './character-art.mjs';
 import {wheelAngle,wheelGestureAt} from './wheel-gesture.mjs';
 import {latestBattleCue} from './battle-vfx.mjs';
 import {soultimateReadiness} from './soultimate-ready.mjs';
-import {matchRuleFailureMessage} from './match-feedback.mjs';
+import {matchAckMessage,matchRuleFailureMessage} from './match-feedback.mjs';
 const ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
 const escapeHTML=x=>String(x??'').replace(/[&<>"']/g,ch=>ESC[ch]);
 const pct=(value,max)=>Math.max(0,Math.min(100,Math.round(100*value/(max||1))));
@@ -243,18 +243,26 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   try{
    const value=onAction(activeSeat,intent);
    if(value&&typeof value.then==='function'){
-    value.then(report).catch(err=>{onError(err);alert(err.message);});
-   }else report(value);
+    value.then(result=>report(result,intent)).catch(err=>{onError(err);alert(err.message);});
+   }else report(value,intent);
   }catch(err){onError(err);alert(err.message);}
  }
- function report(result){
+ function report(result,intent){
   if(result?.ok===false){
    const reason=result.result?.reason||result.reason||'rule_rejected';
    alert(matchRuleFailureMessage(reason,result.result?.remainingMs??result.remainingMs));return;
   }
   if(result?.queued)alert('入力を順番待ちに追加（残り '+result.position+' 件）');
-  else if(result?.accepted===true)alert('操作を確定 / rev '+result.revision);
-  else if(result?.clientSeq)alert('入力 '+result.clientSeq+' を送信 / ACK待ち');
+  else if(result?.accepted===true){
+   // A revision proves the host consumed a command; it is NOT evidence
+   // that a partial touch completed the charge. Use its rule result.
+   const outcome=result.result;
+   alert(matchAckMessage({clientSeq:result.clientSeq,accepted:true,
+    applied:outcome?.ok===true?true:outcome?.ok===false?false:null,
+    commandType:intent.type,
+    ...(typeof outcome?.completed==='boolean'?{completed:outcome.completed}:{})
+   }));
+  }else if(result?.clientSeq)alert('入力 '+result.clientSeq+' を送信 / ACK待ち');
  }
  function teamHTML(t){
   const chunks=t.members.map(unit=>{
