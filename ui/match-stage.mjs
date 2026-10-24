@@ -146,7 +146,7 @@ export function matchSelectionHints(view,mode){
 }
 
 export function createMatchStage({element,onAction,onStep=()=>{},
- seat=null,onError=()=>{}}={}){
+ seat=null,onError=()=>{},showResearchForecast=false}={}){
  if(!element||typeof element.addEventListener!=='function')throw new TypeError('root DOM element required');
  if(typeof onAction!=='function'||typeof onStep!=='function'||typeof onError!=='function')
   throw new TypeError('callbacks required');
@@ -233,6 +233,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   </div>
  </div>`;
  const $=id=>element.querySelector('#'+id);
+ // A five-next-action forecast is a developer research aid, NOT an original
+ // Yo-kai Watch 2 PvP screen feature. Default battle must never display it.
+ element.querySelector('.mb-forecast-section').hidden=!showResearchForecast;
  function alert(text){recentMessage=String(text);$('mb-activity').textContent=recentMessage;}
  function command(intent){
   if(!wireState){alert('戦闘がまだ始まっていません');return;}
