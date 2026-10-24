@@ -118,7 +118,7 @@ function checkOptions(options){
  // competitive glitches may enter the initial online contract.
  const allow=new Set(['seed','teams','autoRotateReserves','enableLoafing',
   'researchSoulRecoveryMode','researchDamageModel','researchMultiHit',
-  'researchTurnInspirits','researchHealingVariance','researchSpecialEffects']);
+  'researchStatInspirits','researchTurnInspirits','researchHealingVariance','researchSpecialEffects']);
  for(const key of Object.keys(options))if(!allow.has(key))
   throw new RangeError('initial online contract forbids option '+key);
  // Direct debugging / bypass values and lab Soul fixtures are not exposed.
@@ -138,13 +138,14 @@ export function createMatchProtocol({battleOptions={}}={}){
  // researched and tested. Exact move power, hit chance modifiers, individual
  // rental stats and ±random rounding are NOT guaranteed original parity.
  //
+ // Original-style stat-down Inspirits are independent of speculative HP-loss.
  // Keep speculative own-turn HP-loss 5% scaling, healing base/variance and
  // incomplete no-motion counter windows disabled. Allow explicit overrides
  // for controlled legacy comparisons and seeded journal reproduction.
  // Soultimates remain separately flagged research-fixture (not original moves).
  const options=clone({researchSoulRecoveryMode:'owner-nonattack',
    researchDamageModel:true,researchMultiHit:true,
-   researchSpecialEffects:true,...battleOptions});
+   researchStatInspirits:true,researchSpecialEffects:true,...battleOptions});
  function newBattle(){return createCombat(options);}
  const game=newBattle();
  let revision=0;
