@@ -1,4 +1,6 @@
 # 妖怪対戦ブラウザゲーム｜最新・正式引き継ぎ（2026-10-24）
+> **Phase21B完了・現在地（2026-10-24）:** [Phase21B 3秒制限・ゲストACK成果と残課題](./PHASE21B_OFFICIAL_WHEEL_AND_GUEST_ACK_20261024.md)。原作公式ルールの3秒回転制限を、正規ホスト対戦デフォルト`rotationCooldownMs:3000`へ統合。Phase21Aの時刻付きJournalを再利用。ゲストへ「コマンド受信＝成功」と誤表示していた問題を直し、ホスト側のルール適用/拒否・理由・残り時間を双方の対戦画面に表示。ゲストの即時二度回転は拒否されてもサーバー上の前衛・ゲスト画面の前衛は変わらない。**[Node396/396](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40103884449)、[Chrome戦闘画面・指操作](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40103884464)、[Firebase Auth+RTDBローカルエミュレーター2ブラウザ](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40103884476)すべて成功。** ブラウザE2Eワークフローが今後`engine/**`変更でも走るように改修。**Phase21Aの「標準は0ms」という下記の記述は当時の履歴で、現行は3000msがデフォルト。** 例外の0msは研究比較用に明示指定できる。原作の3DSフレーム細部、Phase5二度回転のターゲットずれ、ノーモーション必殺はまだ未統合。**次はPhase21C、既存94行速度表・初期行動権・同値順位の原作照合。** 原作再現優先。main/学校Googleサイト/本番Firebase・学校iPad実機には触れていない。
+
 > **Phase21A原作行動順／サークル3秒制限の接続（2026-10-24）：** [外部資料・現行コードとの差・QA](./PHASE21A_WHEEL_ACTION_PARITY_20261024.md)。Phase1に既にある妖怪ウォッチ2用94行速度表とサークル`3000ms`研究を再利用。従来オンラインは`rotationCooldownMs:0`固定だったため、ホスト側だけが使う`hostNowMs`を介して`createCombat`→`createBattle.rotate(atMs)`へ接続。プレイヤーの時刻偽装不可、両者独立した制限、連打抑止、ホストJournalの時刻込み再演を保証。Firebaseゲストの疑似通信でも3秒拒否・再許可を確認。[Node393/393](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40102644457)・[Chrome2画面/タッチQA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40102644465)成功。**まだ標準の対戦設定は0msのままで、研究版のみ明示的`rotationCooldownMs:3000`。** 理由：現在はゲストのACKにクールダウン拒否理由が見えず、相手画面の2回回転/モーション遅延の原作一致も未証明。次Phase21Bで拒否フィードバック・時刻境界・オンラインを検証してから標準採用する。main/Googleサイト/本番Firebase/学校旧iPadは未変更。
 
 > **Phase 20B 原作資料照合から能力低下を実戦統合（2026-10-24）:** [実装・比較検証・保留理由](./PHASE20B_STATUS_HEAL_GATE_20261024.md)。以前のPhase10研究を再利用し、STR/DEF/SPR低下だけを`researchStatInspirits:true`として正規2席ホストで有効化。HP損失一律5%/levelと継続回復の仮説は`researchTurnInspirits:false`のまま隔離。既存6体のレンタル数値は変更せず、原作技別値が完全に確認されたという意味ではない。ホスト実行で敵DEF-downを受けた後の攻撃がステージ-2、倍率0.7で計算されるのを実証し、Journal決定的再現も合格。[Node388/388+旧Chromium成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40101561056)、[実戦画面Chrome+タッチ成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40101561015)。次はPhase21、既存Phase1/5の行動順・サークル回転・妖気研究を実装コードと原作動作で比較する。**以後は [設計全体図・進捗管理](./PROJECT_MAP_AND_PROGRESS.md) の「今回/次/全体のどこ」から開始する。** Googleサイト・main・本番Firebase・旧iPad実機は変更・検証なし。
@@ -40,27 +42,28 @@
 ## 0. 最初に読む順番
 1. **設計全体図・更新する進捗入口**：[`docs/PROJECT_MAP_AND_PROGRESS.md`](./PROJECT_MAP_AND_PROGRESS.md)
 2. **この資料**：`docs/HANDOFF_LATEST_20261024.md`
-3. **Phase21A行動順と3秒回転（最新）**：[`docs/PHASE21A_WHEEL_ACTION_PARITY_20261024.md`](./PHASE21A_WHEEL_ACTION_PARITY_20261024.md)
-4. **Phase 20B能力低下とりつきの分離統合**：[`docs/PHASE20B_STATUS_HEAL_GATE_20261024.md`](./PHASE20B_STATUS_HEAL_GATE_20261024.md)
-5. **Phase 20A戦闘エンジン統合**：[`docs/PHASE20_COMBAT_INTEGRATION_20261024.md`](./PHASE20_COMBAT_INTEGRATION_20261024.md)
-6. **Phase 19必殺技効果ホスト統合（研究仮値を区別）**：[`docs/PHASE19_SPECIAL_EFFECTS_HOST_20261024.md`](./PHASE19_SPECIAL_EFFECTS_HOST_20261024.md)
-7. **Phase 18原作ソウル・G必殺照合**：[`docs/PHASE18_REPRODUCTION_SOUL_G_PARITY_20261024.md`](./PHASE18_REPRODUCTION_SOUL_G_PARITY_20261024.md)
-8. **最優先：原作再現優先と未達ゲート**：[`docs/REPRODUCTION_FIRST_FIDELITY_GATE_20261024.md`](./REPRODUCTION_FIRST_FIDELITY_GATE_20261024.md)
-9. **Phase 17原作研究・サークルスワイプ・必殺演出**：[`docs/PHASE17_SOURCE_RESEARCH_WHEEL_SPECIALS_20261024.md`](./PHASE17_SOURCE_RESEARCH_WHEEL_SPECIALS_20261024.md)
-10. **Phase 16B選択操作ガイド**：[`docs/PHASE16B_SELECTION_UX_20261024.md`](./PHASE16B_SELECTION_UX_20261024.md)
-11. **Phase 16本家風上下2画面UI**：[`docs/PHASE16_YW2_SCREEN_LAYOUT_20261024.md`](./PHASE16_YW2_SCREEN_LAYOUT_20261024.md)
-12. **Phase 15Aオリジナルキャラ実装**：[`docs/PHASE15_ORIGINAL_2D_CHARACTERS_20261024.md`](./PHASE15_ORIGINAL_2D_CHARACTERS_20261024.md)
-13. **Phase 14C相手切断とホスト再起動フェンス**：[`docs/PHASE14C_PRESENCE_RESTART_FENCING_20261024.md`](./PHASE14C_PRESENCE_RESTART_FENCING_20261024.md)
-14. **Phase 14Bタッチ・通信安全性**：[`docs/PHASE14B_GESTURE_SECURITY_20261024.md`](./PHASE14B_GESTURE_SECURITY_20261024.md)
-15. **Phase 14A本来の対戦画面と2ブラウザFirebase E2E**：[`docs/PHASE14_STAGE_QA_20261024.md`](./PHASE14_STAGE_QA_20261024.md)
-16. **Phase 13Bオンライン戦闘統合**：[`docs/PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md`](./PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md)
-17. **Phase 13A実装とSDKテスト**：[`docs/PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md`](./PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md)
-18. **Phase 13外部資料・既存ゲーム比較**：[`docs/PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md`](./PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md)
-19. **Phase 12通信基盤**：[`docs/PHASE12_RELAY_RECOVERY_20261024.md`](./PHASE12_RELAY_RECOVERY_20261024.md)
-20. **Phase 11対戦コマンド**：[`docs/PHASE11_MATCH_PROTOCOL_QA_20261023.md`](./PHASE11_MATCH_PROTOCOL_QA_20261023.md)
-21. **Phase 10基本戦闘**：[`docs/PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md`](./PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md)
-22. **歴史・各Phaseリンク**：[`docs/DEVELOPMENT_STATUS_20261023.md`](./DEVELOPMENT_STATUS_20261023.md)
-23. **実際のコード**：`engine/combat.mjs`・`engine/match-protocol.mjs`・`lab/phase2.html`・`lab/match-contract.html`・各 `tests/*.test.mjs`。
+3. **Phase21B 公式ルール3秒回転＋ゲスト拒否表示（現行）**：[`docs/PHASE21B_OFFICIAL_WHEEL_AND_GUEST_ACK_20261024.md`](./PHASE21B_OFFICIAL_WHEEL_AND_GUEST_ACK_20261024.md)
+4. **Phase21A行動順と3秒回転（当時の研究）**：[`docs/PHASE21A_WHEEL_ACTION_PARITY_20261024.md`](./PHASE21A_WHEEL_ACTION_PARITY_20261024.md)
+5. **Phase 20B能力低下とりつきの分離統合**：[`docs/PHASE20B_STATUS_HEAL_GATE_20261024.md`](./PHASE20B_STATUS_HEAL_GATE_20261024.md)
+6. **Phase 20A戦闘エンジン統合**：[`docs/PHASE20_COMBAT_INTEGRATION_20261024.md`](./PHASE20_COMBAT_INTEGRATION_20261024.md)
+7. **Phase 19必殺技効果ホスト統合（研究仮値を区別）**：[`docs/PHASE19_SPECIAL_EFFECTS_HOST_20261024.md`](./PHASE19_SPECIAL_EFFECTS_HOST_20261024.md)
+8. **Phase 18原作ソウル・G必殺照合**：[`docs/PHASE18_REPRODUCTION_SOUL_G_PARITY_20261024.md`](./PHASE18_REPRODUCTION_SOUL_G_PARITY_20261024.md)
+9. **最優先：原作再現優先と未達ゲート**：[`docs/REPRODUCTION_FIRST_FIDELITY_GATE_20261024.md`](./REPRODUCTION_FIRST_FIDELITY_GATE_20261024.md)
+10. **Phase 17原作研究・サークルスワイプ・必殺演出**：[`docs/PHASE17_SOURCE_RESEARCH_WHEEL_SPECIALS_20261024.md`](./PHASE17_SOURCE_RESEARCH_WHEEL_SPECIALS_20261024.md)
+11. **Phase 16B選択操作ガイド**：[`docs/PHASE16B_SELECTION_UX_20261024.md`](./PHASE16B_SELECTION_UX_20261024.md)
+12. **Phase 16本家風上下2画面UI**：[`docs/PHASE16_YW2_SCREEN_LAYOUT_20261024.md`](./PHASE16_YW2_SCREEN_LAYOUT_20261024.md)
+13. **Phase 15Aオリジナルキャラ実装**：[`docs/PHASE15_ORIGINAL_2D_CHARACTERS_20261024.md`](./PHASE15_ORIGINAL_2D_CHARACTERS_20261024.md)
+14. **Phase 14C相手切断とホスト再起動フェンス**：[`docs/PHASE14C_PRESENCE_RESTART_FENCING_20261024.md`](./PHASE14C_PRESENCE_RESTART_FENCING_20261024.md)
+15. **Phase 14Bタッチ・通信安全性**：[`docs/PHASE14B_GESTURE_SECURITY_20261024.md`](./PHASE14B_GESTURE_SECURITY_20261024.md)
+16. **Phase 14A本来の対戦画面と2ブラウザFirebase E2E**：[`docs/PHASE14_STAGE_QA_20261024.md`](./PHASE14_STAGE_QA_20261024.md)
+17. **Phase 13Bオンライン戦闘統合**：[`docs/PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md`](./PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md)
+18. **Phase 13A実装とSDKテスト**：[`docs/PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md`](./PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md)
+19. **Phase 13外部資料・既存ゲーム比較**：[`docs/PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md`](./PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md)
+20. **Phase 12通信基盤**：[`docs/PHASE12_RELAY_RECOVERY_20261024.md`](./PHASE12_RELAY_RECOVERY_20261024.md)
+21. **Phase 11対戦コマンド**：[`docs/PHASE11_MATCH_PROTOCOL_QA_20261023.md`](./PHASE11_MATCH_PROTOCOL_QA_20261023.md)
+22. **Phase 10基本戦闘**：[`docs/PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md`](./PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md)
+23. **歴史・各Phaseリンク**：[`docs/DEVELOPMENT_STATUS_20261023.md`](./DEVELOPMENT_STATUS_20261023.md)
+24. **実際のコード**：`engine/combat.mjs`・`engine/match-protocol.mjs`・`lab/phase2.html`・`lab/match-contract.html`・各 `tests/*.test.mjs`。
 
 **Repository**: https://github.com/8mahi8/yokai-battle-lab  
 **開発ブランチ**: `feat/phase1-action-circle-lab-20261023`  
