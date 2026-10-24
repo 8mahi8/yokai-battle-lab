@@ -118,6 +118,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  const fixedSeat=seat;
  let activeSeat=seat??0,wireState=null,view=null,selection=null;
  let recentMessage='準備中',pointer=null,lastMove=0;
+ let seenActionTurn=null,flash=null,flashTimer=null;
  element.innerHTML=`
  <div class="mb-stage">
   <header class="mb-topbar">
@@ -130,6 +131,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   <section class="mb-forecast-section"><div class="mb-section-label">
    <b>次の5行動</b><span>予測・回転／KOで変化します</span></div>
    <div class="mb-forecast" id="mb-forecast"></div>
+   <div class="mb-action-label" id="mb-action-label" aria-live="polite">次の行動を待機中</div>
   </section>
   <section class="mb-arena" aria-label="対戦フィールド">
    <div id="mb-team0" class="mb-team mb-side0"></div>
@@ -196,17 +198,22 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const selected=selection===unit.id&&t.side===activeSeat?' mb-selected':'';
    const pinned=t.side!==activeSeat&&unit.id===view.teams[activeSeat].pin?' mb-pinned':'';
    const disabled=unit.ko?' mb-ko':'';
+   const animated=flash?.actor===unit.id?' mb-acting':flash?.target===unit.id
+    ?(flash.kind==='heal'?' mb-healed':' mb-hit'):'';
    const benched=unit.front?'':' mb-bench';
    const name=escapeHTML(unit.name);
    const figure=Number(unit.id.slice(1));
-   return '<button type="button" data-unit="'+unit.id+'" class="mb-creature'+selected+pinned+disabled+benched+
+   return '<button type="button" data-unit="'+unit.id+'" class="mb-creature'+selected+pinned+disabled+animated+benched+
     '" style="--x:'+pos.x+'%;--y:'+pos.y+'%" aria-label="'+name+(unit.front?' 前衛':' 後衛')+'">'+
     '<span class="mb-avatar mb-avatar-'+figure+'"><i class="mb-eyes"></i></span>'+
     '<span class="mb-name">'+name+'</span>'+
     '<span class="mb-bars"><i style="width:'+pct(unit.hp,unit.maxHp)+'%"></i></span>'+
     '<span class="mb-bars mb-soulbar"><i style="width:'+pct(unit.soul,unit.capacity)+'%"></i></span>'+
     '<span class="mb-unit-stat">'+unit.hp+'/'+unit.maxHp+(unit.negative?' ⚠':'')+'</span>'+
-    (unit.front?'<span class="mb-front-badge">前衛</span>':'')+'</button>';
+    (unit.front?'<span class="mb-front-badge">前衛</span>':'')+
+    (flash?.target===unit.id&&Number.isFinite(flash.amount)&&flash.amount>0
+     ?'<span class="mb-floating-number">'+(flash.kind==='heal'?'+':'−')+flash.amount+'</span>':'')+
+    '</button>';
   }).join('');
   return '<div class="mb-team-heading"><span class="mb-team-icon">'+(t.side===0?'A':'B')+'</span>'+
    '<div><b>PLAYER '+(t.side===0?'A':'B')+'</b><small>妖怪6体 / '+(t.mode==='zero'?'零式':'標準')+'ウォッチ</small></div>'+
@@ -256,12 +263,34 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  function render(state){
   wireState=state;
   view=makeStageView(state,activeSeat);
+  const action=view.events.slice().reverse().find(e=>e.type==='action')??null;
+  if(seenActionTurn===null)seenActionTurn=action?.turn??0;
+  else if(action&&action.turn>seenActionTurn){
+   seenActionTurn=action.turn;
+   flash={actor:action.actor,target:action.target,amount:action.amount,kind:action.kind};
+   clearTimeout(flashTimer);
+   flashTimer=setTimeout(()=>{
+    flash=null;
+    element.querySelectorAll('.mb-acting,.mb-hit,.mb-healed').forEach(el=>{
+     el.classList.remove('mb-acting','mb-hit','mb-healed');
+    });
+    element.querySelectorAll('.mb-floating-number').forEach(el=>el.remove());
+   },780);
+  }
   const own=view.teams[activeSeat];
   if(!own.members.some(x=>x.id===selection))selection=own.frontIds[0];
   $('mb-turn').textContent=String(view.turn);
   $('mb-team0').innerHTML=teamHTML(view.teams[0]);
   $('mb-team1').innerHTML=teamHTML(view.teams[1]);
   $('mb-forecast').innerHTML=forecastHTML();
+  if(action){
+   const actor=view.teams[action.actor?.startsWith('B')?1:0]?.members.find(u=>u.id===action.actor);
+   const target=view.teams[action.target?.startsWith('B')?1:0]?.members.find(u=>u.id===action.target);
+   const kindNames={attack:'攻撃',technique:'妖術',inspirit:'とりつき',guard:'ガード',heal:'回復',loaf:'サボり'};
+   $('mb-action-label').textContent=(actor?.name||action.actor||'妖怪')+' → '+(target?.name||'行動')+
+    ' / '+(kindNames[action.kind]||action.kind)+(action.hit===false?'（ミス）':
+    action.amount>0?' '+action.amount:'');
+  }else $('mb-action-label').textContent='次の行動を待機中';
   $('mb-active-label').textContent='PLAYER '+(activeSeat?'B':'A')+' の操作';
   const selected=own.members.find(x=>x.id===selection);
   $('mb-selected').textContent=selected?'選択: '+selected.name+(selected.front?' / 前衛':' / 後衛'):'妖怪を選択';
@@ -364,7 +393,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  element.addEventListener('pointercancel',onCancel);
  element.addEventListener('lostpointercapture',onLostCapture);
  function setConnection(label){$('mb-connection').textContent=String(label);}
- function destroy(){element.removeEventListener('click',handleClick);
+ function destroy(){clearTimeout(flashTimer);element.removeEventListener('click',handleClick);
   element.removeEventListener('pointerdown',onDown);element.removeEventListener('pointermove',onMove);
   element.removeEventListener('pointerup',onUp);element.removeEventListener('pointercancel',onCancel);
   element.removeEventListener('lostpointercapture',onLostCapture);}
