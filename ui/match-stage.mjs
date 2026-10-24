@@ -531,6 +531,10 @@ export function createMatchStage({element,onAction,onStep=()=>{},
      event.isPrimary===false||wheelPointer!==null)return;
   const wheel=event.target.closest('.mb-wheel');
   if(!wheel||!element.contains(wheel)||wheel.closest('[hidden]'))return;
+  // A fresh down marks a new medal tap, not the synthetic click following
+  // the last successful drag. Prevent sticky click suppression after a swipe.
+  suppressWheelClick=false;
+  clearTimeout(wheelClickTimer);
   const bounds=wheel.getBoundingClientRect();
   const centerX=bounds.left+bounds.width/2,centerY=bounds.top+bounds.height/2;
   const radius=Math.min(bounds.width,bounds.height)/2;
