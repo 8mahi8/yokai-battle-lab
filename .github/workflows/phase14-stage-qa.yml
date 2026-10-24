@@ -1,0 +1,24 @@
+name: Phase14 original-engine stage QA
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check browser-stage modules
+        run: |
+          node --version
+          node --check engine/match-protocol.mjs
+          node --check ui/match-stage.mjs
+          node --check tools/stage-smoke.mjs
+      - name: Verify original match renderer state
+        run: node --test tests/match-stage.test.mjs
+      - name: Render and interact in real Chromium
+        run: node tools/stage-smoke.mjs
