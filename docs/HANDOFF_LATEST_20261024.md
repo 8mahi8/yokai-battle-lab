@@ -1,4 +1,6 @@
 # 妖怪対戦ブラウザゲーム｜最新・正式引き継ぎ（2026-10-24）
+> **Phase 14A開発（2026-10-24）**: 本来のPhase11戦闘エンジンのsnapshotに次5行動予測を追加し、[サークル対戦画面](../lab/match-stage.html)と[同じ画面を使うFirebaseエミュレーター対戦](../lab/firebase-match-stage.html)を実装。6体×2陣営、HP・妖気、標準/零式、ピン、回転、必殺/おはらい/つつく操作UI。**急造したGoogleサイト用簡易版は本来の開発と無関係なので使わない**。 [Node+実Chromium画面操作QA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40061681947)成功。さらに[本物のFirebase Auth+RTDBエミュレーター上の2独立ブラウザ画面E2E](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40061682008)成功：ルーム作成/参加・回転の双方同期・ホスト行動をゲストに反映。資料[Phase14 UI/E2E検証](./PHASE14_STAGE_QA_20261024.md)。**本番Firebase、学校Safari、Google Sitesコード直貼り、完全なタッチミニゲーム操作、切断復帰・視覚完成評価は未完成**。main/学校公開版未変更、無料と閃光魂OFFを維持。
+
 > **Phase 13B（2026-10-24）**: [Firebase実SDK戦闘ブリッジとローカル2タブ研究画面](./PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md) を追加。ホストはPhase11戦闘を確定してFirebaseへ配信、ゲストはホストの`clientSequences[1]`によるACKを待つ方式。Node **360/360合格**、Firebase RTDB公式エミュレーターと**異なる2 SDKクライアント**でゲスト回転→ACK→ピンクリア→ACK→ホスト操作→自動行動進行まで検証成功（[Firebase CI](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40039540378)）。一度既存Chromiumが起動タイムアウトしたが、[最新の研究CI](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40039933027)は360 Nodeテスト＋既存ブラウザ研究テストすべて成功。ローカル2タブHTML実操作は未実施。本番Firebase/Googleサイト/実iPad未接続。**ゲストのACK待ち高速入力を最大48件バッファするキュー実装済み**。ホスト再起動、認証・切断復帰、実ブラウザ2タブE2Eは未完成。費用0円、閃光魂OFF、mainとGoogleサイト版は未変更。
 
 > **Phase 13A実装（2026-10-24）**: [Firebase room adapter & SDK QA](./PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md) を追加。実Firebase互換SDK+匿名認証テストコンテキスト+ローカルRTDB Emulatorを用い、6桁ルーム作成→2人参加→ゲスト回転入力→ホスト戦闘エンジン処理→ゲスト戦況受信まで接続テスト成功。Security Rulesは28項目の許可/拒否検査と実SDK統合1件、計29チェック成功（[CI](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40037975858)）。Node単体テストは **355/355合格**。本物のFirebaseクラウドと学校iPad/Google Sitesは**未接続**。全モデルの初期閃光魂OFF、費用0円、main/既存Googleサイト版は不変。最新Chromium CIは一度ブラウザ起動タイムアウトがあるので、再実行結果を確認すること。
@@ -11,7 +13,8 @@
 
 ## 0. 最初に読む順番
 1. **この資料**：`docs/HANDOFF_LATEST_20261024.md`
-2. **Phase 13Bオンライン戦闘統合**：[`docs/PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md`](./PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md)
+2. **Phase 14A本来の対戦画面と2ブラウザFirebase E2E**：[`docs/PHASE14_STAGE_QA_20261024.md`](./PHASE14_STAGE_QA_20261024.md)
+3. **Phase 13Bオンライン戦闘統合**：[`docs/PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md`](./PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md)
 3. **Phase 13A実装とSDKテスト**：[`docs/PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md`](./PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md)
 4. **Phase 13外部資料・既存ゲーム比較**：[`docs/PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md`](./PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md)
 5. **Phase 12通信基盤**：[`docs/PHASE12_RELAY_RECOVERY_20261024.md`](./PHASE12_RELAY_RECOVERY_20261024.md)
