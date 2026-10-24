@@ -178,6 +178,18 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     ?createWheelCoalescing({fronts:clock.snapshot().teams.map(t=>t.frontIds)}):null;
   const pendingCounterEffects=new Map();
   const uncertainCounterHits=new Map();
+  function markCounterUnknown(hitId,reason){
+    const prev=uncertainCounterHits.get(hitId);
+    if(!prev){uncertainCounterHits.set(hitId,reason);return;}
+    if(prev.code===reason.code){
+      uncertainCounterHits.set(hitId,{...prev,...reason});return;
+    }
+    const extras=[...(prev.additionalReasons||[])];
+    const index=extras.findIndex(x=>x.code===reason.code);
+    if(index>=0)extras[index]=reason;
+    else extras.push(reason);
+    uncertainCounterHits.set(hitId,{...prev,additionalReasons:extras});
+  }
   const recordView=event=>{if(presentation)presentation.record(event);};
   function beginPresentationMotion(options){
     if(!presentation)return {ok:false,reason:'presentation_disabled'};
@@ -198,10 +210,16 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
           uncertainCounterHits.delete(hit.id);
           // Unknown original target semantics for 3+ rotations: NEVER apply
           // invented HP changes as though they were verified YW2 outcomes.
+          const causes=[uncertainty,...(uncertainty.additionalReasons||[])];
+          const wheelCause=causes.find(x=>x.rotations!==undefined);
+          const cutinCause=causes.find(x=>x.cutinFrontlineTimeline!==undefined);
           events.push({type:'counter-hit-indeterminate',hitId:hit.id,
             hitAt:hit.hitAt,frontLock:hit.frontLock,possibleFixtureTargets:[...hit.targetIds],
             reason:uncertainty.code,
-            ...(uncertainty.rotations!==undefined?{rotationCount:uncertainty.rotations}:{}),
+            reasonCodes:causes.map(x=>x.code),
+            ...(wheelCause?{rotationCount:wheelCause.rotations}:{}),
+            ...(cutinCause?{candidateCutinFronts:cutinCause.cutinFrontlineTimeline.map(x=>({at:x.at,frontIds:[...x.frontIds]})),
+              cutinHistoryTruncated:cutinCause.historyTruncated}:{}),
             hpApplied:false,model:'research-uncertain'});
           continue;
         }
@@ -380,7 +398,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         }
         if(update.uncertainty){
           const affected=counter.snapshot().pending.filter(hit=>hit.attackerSide===side);
-          for(const hit of affected)uncertainCounterHits.set(hit.id,update.uncertainty);
+          for(const hit of affected)markCounterUnknown(hit.id,update.uncertainty);
           events.push({type:'wheel-fidelity-unknown',side,
             rotations:update.groupRotations,affectedHits:affected.map(hit=>hit.id),
             code:update.uncertainty.code});
@@ -486,7 +504,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       // The player report establishes an Endure exception, but does NOT
       // establish which cut-in frame locks targets if the defending team
       // rotates during the cut-in. Never apply fictional HP in that case.
-      if(planned.uncertainty)uncertainCounterHits.set(planned.id,{
+      if(planned.uncertainty)markCounterUnknown(planned.id,{
         ...planned.uncertainty,side:planned.attackerSide,
         candidateFronts:[...planned.targetIds]
       });
@@ -494,7 +512,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         const targetSide=planned.attackerSide;
         const group=wheel.snapshot().groups[targetSide];
         if(group?.rotations>=3){
-          uncertainCounterHits.set(planned.id,{
+          markCounterUnknown(planned.id,{
             code:'three-plus-rotations-unverified',side:targetSide,
             rotations:group.rotations,epoch:wheel.snapshot().epoch});
         }else if(planned.frontLock==='completion'){
@@ -644,7 +662,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       ...(presentation?{presentation:presentation.snapshot()}:{}),
       ...(counter?{counterWindow:counter.snapshot(),counterEffectsPending:pendingCounterEffects.size}:{}),
       ...(wheel?{wheelCoalescing:wheel.snapshot(),
-        uncertainCounterHits:[...uncertainCounterHits].map(([hitId,reason])=>({hitId,reason:{...reason}}))}:{})};
+        uncertainCounterHits:[...uncertainCounterHits].map(([hitId,reason])=>({hitId,reason:JSON.parse(JSON.stringify(reason))}))}:{})};
   }
   function step(){
     if(winner!==null)return {type:'finished',winner};
