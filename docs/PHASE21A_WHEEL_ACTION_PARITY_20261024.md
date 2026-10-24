@@ -26,12 +26,14 @@ Four new tests `tests/match-phase21-rotation-clock.test.mjs`:
 3. Legacy default remains available and does not unexpectedly access wall time or block immediate spins; bad configuration explicitly rejected.
 4. Invalid monotonic host timestamp cannot advance the authoritative sequence, state or journal.
 
-- [Node + research Chrome run 40102341467](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40102341467) **392/392 PASS**.
-- [Real combat UI & 10 gesture Chrome run 40102341498](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40102341498) **PASS**.
+- [Latest Node + research Chrome run 40102644457](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40102644457) **393/393 PASS**.
+- [Latest real combat UI & 10 gesture Chrome run 40102644465](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40102644465) **PASS**.
+- **Additional Phase21 guest-host bridge test** in `tests/firebase-match.test.mjs`: an emulated two-seat Firebase transport confirms guest first wheel rotation succeeds, guest second at 1450ms is rejected by the authoritative host, third at 4000ms succeeds, all statuses/published front IDs match and replay reproduces the same outcome. This does NOT represent real Firebase cloud latency or physical iPad Safari.
+- **Discovered UI limitation:** the guest `onAck` callback currently reports receipt of a valid authoritative revision, not the nested battle rule result. A rejected cooldown still increments the match revision but provides no clear in-game rejection reason. **Phase21B must address guest feedback before turning this lock ON by default.**
 - No actual 3DS timed comparison or physical old iPad Safari run is claimed.
 
 ## Remaining Phase21 and next execution order
-1. **21B**: validate default game combat presentation/online host time semantics, source 3-second lock vs real guest command latency and double-rotation case. If validated, set canonical default `rotationCooldownMs=3000`, update legacy tests to explicit `rotationCooldownMs:0` only where they are intentionally timing-independent; verify host/guest emulator, synthetic iPad gestures and replay. No gameplay shortcuts.
+1. **21B**: make rule-invalid cooldown visible to the remote guest (currently transport ACK only confirms the revision), validate default game combat presentation/online host time semantics, source 3-second lock vs real guest command latency and double-rotation case. If validated, set canonical default `rotationCooldownMs=3000`, update legacy tests to explicit `rotationCooldownMs:0` only where they are intentionally timing-independent; verify host/guest emulator, synthetic iPad gestures and replay. No gameplay shortcuts.
 2. **21C**: isolate matching-start initial-front opening priority and tie break using actual YW2 side-by-side examples. Existing Phase1 already reconstructs the 94-row wait values, **do not restart wait-table research**.
 3. **21D**: actual Soul gain on damaging attacks, techniques, and Poke; player theory says some gain after actions but numerical timing isn't yet source-verified. Do not simply grant global +5.
 4. **22**: integrate narrowly verified Phase5 no-motion, animation-visibility delay and counter Soultimate; Flash Soul stays OFF in initial 1vs1.
