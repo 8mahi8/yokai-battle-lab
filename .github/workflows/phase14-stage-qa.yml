@@ -19,10 +19,11 @@ jobs:
           node --check ui/character-art.mjs
           node --check ui/wheel-gesture.mjs
           node --check ui/battle-vfx.mjs
+          node --check ui/soultimate-ready.mjs
           node --check ui/match-stage.mjs
           node --check tools/stage-smoke.mjs
       - name: Verify original match renderer state
-        run: node --test tests/match-stage.test.mjs tests/character-art.test.mjs tests/phase17-interaction-vfx.test.mjs
+        run: node --test tests/match-stage.test.mjs tests/character-art.test.mjs tests/phase17-interaction-vfx.test.mjs tests/soultimate-readiness-parity.test.mjs
       - name: Install CJK font for truthful Japanese screenshot QA
         run: |
           sudo apt-get update -qq
