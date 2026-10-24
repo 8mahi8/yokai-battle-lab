@@ -48,17 +48,40 @@ test('late counter uses new front at delayed hit and does not hit former front',
  assert.equal(hp(g,'B1'),before.B1);
  assert.ok(targets.every(id=>hp(g,id)<before[id]));
 });
-test('two Endure consumptions override late front snapshot',()=>{
+test('two Endure consumptions override late front snapshot only with stable cut-in face',()=>{
  const g=make();g.beginCounterCutin({attackerSide:1,durationMs:800,enduresSpent:2});
  const c=charge(g);g.advancePresentation(900);
  const out=g.resolveSoultimate(0,c.token,true);
  assert.equal(out.counter.frontLock,'endure-exception');
+ assert.equal(out.counter.uncertainty,null);
  g.rotate(1,1);g.rotate(1,1);
  const before=Object.fromEntries(g.snapshot().squads[1].map(m=>[m.id,m.hp]));
  g.advancePresentation(400);
  assert.deepEqual(g.snapshot().events.findLast(x=>x.type==='counter-hit').targets,['B1','B2','B3']);
  assert.ok(['B1','B2','B3'].every(id=>hp(g,id)<before[id]));
  assert.ok(['B4','B5','B6'].every(id=>hp(g,id)===before[id]));
+});
+test('22D cut-in wheel rotation plus two Endures cannot invent HP for an unknown freeze frame',()=>{
+ const g=make();g.beginCounterCutin({attackerSide:1,durationMs:800,enduresSpent:2});
+ const c=charge(g);
+ g.advancePresentation(250);
+ g.rotate(1,1); // B2,B3,B4 visible during cut-in; lock time unknown
+ g.advancePresentation(650);
+ const planned=g.resolveSoultimate(0,c.token,true);
+ assert.equal(planned.counter.uncertainty?.code,
+  'two-endures-cutin-front-lock-time-unverified');
+ assert.equal(g.snapshot().counterEffectsPending,1);
+ const before=Object.fromEntries(g.snapshot().squads[1].map(m=>[m.id,m.hp]));
+ g.rotate(1,1);
+ g.advancePresentation(400);
+ const after=g.snapshot();
+ assert.deepEqual(Object.fromEntries(after.squads[1].map(m=>[m.id,m.hp])),before);
+ assert.equal(after.counterEffectsPending,0);
+ const unresolved=after.events.filter(x=>x.type==='counter-hit-indeterminate');
+ assert.equal(unresolved.length,1);
+ assert.equal(unresolved[0].reason,'two-endures-cutin-front-lock-time-unverified');
+ assert.equal(unresolved[0].hpApplied,false);
+ assert.equal(after.events.filter(x=>x.type==='counter-hit').length,0);
 });
 test('cancelling a cutin counter does not queue any HP changes',()=>{
  const g=make();g.beginCounterCutin({attackerSide:1,durationMs:800});
