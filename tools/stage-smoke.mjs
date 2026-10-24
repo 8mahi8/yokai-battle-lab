@@ -309,6 +309,23 @@ try{
  if(specialExit!==0||!existsSync(specialShot))
   throw new Error('special VFX screenshot failed: '+specialError.slice(-400));
  console.log('SCREENSHOT-READY phase17-special-cutin-preview.png');
+ const gReadyShot=path.join(root,'phase18-g-soultimate-ready.png');
+ const gReadyChild=spawn(browser,[
+  '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+  '--no-first-run','--disable-extensions','--hide-scrollbars',
+  '--user-data-dir='+path.join(tmp,'g-ready-preview'),
+  '--window-size=1024,768','--virtual-time-budget=1700',
+  '--screenshot='+gReadyShot,
+  'http://127.0.0.1:'+server.address().port+'/lab/match-stage.html?review=g-soul-ready'
+ ],{stdio:['ignore','pipe','pipe']});
+ let gReadyError='';
+ gReadyChild.stderr.on('data',b=>gReadyError+=String(b).slice(0,2000));
+ const gReadyTimeout=setTimeout(()=>gReadyChild.kill('SIGKILL'),18000);
+ const gReadyExit=await new Promise(resolve=>gReadyChild.on('close',resolve));
+ clearTimeout(gReadyTimeout);
+ if(gReadyExit!==0||!existsSync(gReadyShot))
+  throw new Error('G ready screenshot failed: '+gReadyError.slice(-400));
+ console.log('SCREENSHOT-READY phase18-g-soultimate-ready.png');
 }finally{
  await new Promise(resolve=>server.close(resolve));
  rmSync(tmp,{recursive:true,force:true});
