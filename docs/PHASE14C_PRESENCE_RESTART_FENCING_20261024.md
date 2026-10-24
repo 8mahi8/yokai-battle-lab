@@ -22,7 +22,7 @@ Date: 2026-10-24 JST
 ## Additional read-only battle presentation work
 
 - `ui/match-stage.mjs` and `lab/match-stage.css` now render transient actor action highlights, hit/heal feedback and an action summary from `game.events` **only**; no substitute simulation, RNG, damage or command side effects. Source includes reduced-motion CSS.
-- `tools/stage-smoke.mjs` verifies a Chrome-rendered combat action produces one acting-unit highlight after the real authoritative engine advances. Check [stage QA workflow](https://github.com/8mahi8/yokai-battle-lab/actions/workflows/phase14-stage-qa.yml) run status for the latest commit before claiming green.
+- `tools/stage-smoke.mjs` verifies a Chrome-rendered combat action produces exactly one acting-unit highlight after the real authoritative engine advances. [Phase14 stage CI run 40082755474](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40082755474) is **verified successful** (stage actions + all ten touch gestures and screenshot upload).
 - Visual presentation remains provisional CSS/placeholder creatures, not acceptable to label a finished release.
 
 ## What this DOES NOT solve
