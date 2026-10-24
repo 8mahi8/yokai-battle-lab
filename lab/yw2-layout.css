@@ -1,0 +1,172 @@
+/* Phase 16 / visual-only two-screen battle arrangement inspired by YW2.
+ * Combat state and legal commands remain owned by engine/match-protocol.
+ * Original CSS painting, hand-drawn SVG characters, no official sprite assets.
+ * Source layout: foe/front ally on upper screen; one local six-medal wheel
+ * with four commands on lower screen. Item disabled in PvP on purpose. */
+.mb-yw2{max-width:1040px;padding:9px 13px 18px}
+.mb-yw2 .mb-topbar{margin-bottom:5px}
+.mb-yw2 .mb-disclaimer{margin-bottom:7px;font-size:10px}
+.mb-dualscreen{display:flex;flex-direction:column;gap:8px;max-width:960px;margin:auto}
+.mb-upper-screen,.mb-lower-screen{position:relative;min-width:0;overflow:hidden;border-radius:14px;
+ border:2px solid #6e7282;box-shadow:inset 0 0 0 2px #18263d,0 8px 22px #0004}
+.mb-upper-screen{background:#152838;border-color:#668ba5}
+.mb-lower-screen{background:linear-gradient(145deg,#25253f 0%,#32213c 80%);
+ border-color:#826b96;padding:8px 12px 9px}
+.mb-screen-caption{height:25px;padding:5px 12px;background:#182f43cf;color:#d7e9ed;
+ font-size:10px;letter-spacing:1.3px;font-weight:900}
+.mb-screen-caption span{color:#a8c8d6;font-size:10px;font-weight:400;letter-spacing:0;margin-left:10px}
+.mb-battle-backdrop{height:207px;position:relative;overflow:hidden;
+ background:linear-gradient(180deg,#7aa2b0 0%,#a3bfbc 35%,#d8cda6 36%,#bca779 49%,#a18c6e 100%)}
+.mb-scenery{position:absolute;pointer-events:none}
+.mb-scenery-back{inset:0 0 53%;opacity:.75;
+ background:
+ linear-gradient(135deg,transparent 48%,#617f80 48%,#617f80 51%,transparent 51%) 3% 30%/140px 85px no-repeat,
+ linear-gradient(150deg,transparent 50%,#627d78 51%,transparent 52%) 90% 0%/200px 95px no-repeat,
+ linear-gradient(0deg,#617579 15%,transparent 16%) 0 0/110px 100% repeat-x,
+ linear-gradient(90deg,transparent 3%,#73898b 3% 16%,transparent 16% 25%,#8ca8a5 25% 40%,transparent 40% 52%,#6b898e 52% 70%,transparent 70%)}
+.mb-scenery-floor{bottom:-58%;height:145%;left:-22%;width:144%;opacity:.48;transform:perspective(240px) rotateX(67deg);
+ background:repeating-linear-gradient(0deg,#4f686f44 0 2px,transparent 2px 38px),
+ repeating-linear-gradient(90deg,#52687544 0 2px,transparent 2px 64px);border:5px solid #728a82}
+.mb-foe-line,.mb-ally-line{position:absolute;left:50%;transform:translateX(-50%);
+ display:flex;justify-content:center;gap:clamp(10px,4vw,37px);z-index:2;width:min(94%,530px)}
+.mb-foe-line{top:2px}.mb-ally-line{bottom:2px}
+.mb-fighter{position:relative;width:clamp(78px,10vw,98px);height:96px;border:0;
+ background:transparent;color:#fff7e8;padding:0;display:flex;align-items:center;flex-direction:column;
+ justify-content:flex-end;gap:0;flex:none;filter:drop-shadow(0 2px 2px #24344766)}
+.mb-fighter-sprite{height:65px;width:74px;display:grid;place-items:center;flex:none;z-index:1;pointer-events:none}
+.mb-fighter .mb-character-art{height:65px;width:65px;max-width:none;filter:drop-shadow(0 2px 1px #25374688)}
+.mb-fighter-meta{width:100%;background:linear-gradient(#1c2d41eb,#0e1c33ee);border:1px solid #9eb7ba;
+ border-radius:6px;padding:2px 5px 3px;min-height:30px;position:relative;z-index:2}
+.mb-foe-line .mb-fighter-meta{background:linear-gradient(#4d2a3deb,#241c33f5);border-color:#dd989f}
+.mb-fighter-meta strong{font-size:10px;white-space:nowrap;display:block;line-height:13px}
+.mb-fighter-meta small{font-size:9px;line-height:9px;display:block;color:#c9d5db}
+.mb-fighter .mb-bars{height:4px;width:100%;margin-bottom:2px}
+.mb-fighter .mb-soulbar{height:3px}
+.mb-fighter.mb-ko{opacity:.42}.mb-fighter.mb-pinned .mb-fighter-sprite:after{
+ content:'▼';position:absolute;top:-5px;color:#fff2a9;font-size:20px;left:50%;transform:translateX(-50%);
+ text-shadow:0 2px 3px #5b2433}
+.mb-fighter.mb-acting .mb-character-art{animation:mb-strike .7s cubic-bezier(.2,.6,.4,1) both}
+.mb-fighter.mb-hit .mb-character-art{animation:mb-recoil .7s ease-out both}
+.mb-fighter.mb-healed .mb-character-art{animation:mb-lift .7s ease-out both}
+.mb-condition-icon{position:absolute;top:0;right:2px;color:#ffdca1}
+.mb-yw2 .mb-action-label{margin:0;padding:6px 12px;background:#20394a;border:0;min-height:29px;
+ font-size:12px;color:#f2e7c3;text-align:center}
+.mb-yw2 .mb-forecast-section{border:0;border-radius:0;margin:0;background:#152636;padding:5px 10px}
+.mb-yw2 .mb-section-label{padding-bottom:4px;font-size:11px}
+.mb-yw2 .mb-forecast{gap:5px}
+.mb-yw2 .mb-next{padding:3px 6px;min-height:34px;border-radius:7px}
+.mb-yw2 .mb-next-avatar{width:26px;height:26px}
+.mb-yw2 .mb-next strong{font-size:10px}.mb-yw2 .mb-next small{display:none}
+.mb-lower-title{min-height:26px;padding:0 4px 5px;border-bottom:1px solid #9b7e8d44}
+.mb-lower-title b{color:#ffdfa3;font-size:13px}
+.mb-lower-title small{font-size:10px}
+.mb-yw2 .mb-seat-switch button{padding:3px 11px}
+.mb-command-field{display:grid;grid-template-columns:minmax(108px,.9fr) minmax(280px,330px) minmax(108px,.9fr);
+ align-items:center;gap:7px;max-width:760px;margin:2px auto 0}
+.mb-command-column{display:flex;flex-direction:column;gap:9px;align-self:stretch;justify-content:center}
+.mb-watch-command{display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;
+ min-height:106px;border-radius:15px;padding:10px 3px;color:#fff8e3;font-weight:900;
+ font-size:18px;text-shadow:0 1px 2px #301c2c;box-shadow:inset 0 1px 0 #ffffff55,0 3px 0 #11182877}
+.mb-watch-command small{margin-top:4px;color:#fff9da;font-size:10px;font-weight:500;text-shadow:none}
+.mb-command-skill{background:linear-gradient(150deg,#ca6455,#87384b);border:2px solid #f9b8a4}
+.mb-command-target{background:linear-gradient(145deg,#498bcc,#28579a);border:2px solid #a3d6f6}
+.mb-command-purify{background:linear-gradient(145deg,#8770b5,#59488b);border:2px solid #cfc0f7}
+.mb-command-item{background:linear-gradient(145deg,#699264,#3e6d50);border:2px solid #b1d6a5}
+.mb-watch-command:disabled{opacity:.48;cursor:not-allowed}
+.mb-watch-command.mb-command-active{outline:3px solid #ffeb9c;outline-offset:2px;
+ box-shadow:0 0 18px #fbdc8b88,inset 0 1px 0 #ffffff66}
+.mb-watch-command:active:not(:disabled){transform:scale(.98)}
+.mb-wheel-shell{min-width:0;position:relative}
+.mb-wheel-host{height:308px;position:relative}
+.mb-yw2 .mb-team{height:308px;min-height:0;padding:0;background:transparent!important;border:none;overflow:visible;
+ border-radius:0;box-shadow:none}
+.mb-yw2 .mb-team:after{display:none}
+.mb-yw2 .mb-team[hidden]{display:none!important}
+.mb-yw2 .mb-team-heading{position:absolute;z-index:6;top:2px;left:5px;right:5px;pointer-events:none;
+ background:linear-gradient(90deg,#24384ab8,#23354433);border-radius:20px;padding:2px 6px}
+.mb-yw2 .mb-team-icon{height:23px;width:23px;font-size:12px}
+.mb-yw2 .mb-team-heading b{font-size:10px}.mb-yw2 .mb-team-heading small{display:none}
+.mb-yw2 .mb-team-control-indicator{font-size:9px}
+.mb-yw2 .mb-wheel{height:300px;max-width:330px;margin:5px auto 0}
+.mb-yw2 .mb-wheel-ring{width:76%;height:76%;left:12%;top:12%;
+ border:9px solid #c79b55;border-radius:50%;box-shadow:0 0 0 3px #69513e,
+ inset 0 0 0 4px #dec280,inset 0 0 15px #1c223c88;background:
+ repeating-conic-gradient(from -30deg,#a87745 0 28deg,#e2b562 28deg 55deg,#584762 55deg 60deg)}
+.mb-yw2 .mb-wheel-ring:before,.mb-yw2 .mb-wheel-ring:after{width:95%;background:#482a44a3;height:4px;z-index:1}
+.mb-yw2 .mb-center-symbol{width:69px;height:69px;background:radial-gradient(circle,#3a577b,#25283f);
+ border:5px solid #b9a375;box-shadow:0 0 0 3px #513b48;color:#e8d8ab;font-weight:900;
+ font-size:22px;z-index:4}
+.mb-yw2 .mb-center-symbol:after{content:'前 / 後';display:block;font-size:9px;position:absolute;bottom:10px}
+.mb-yw2 .mb-creature{width:74px;height:94px;padding:1px 4px 3px;border-radius:40px;
+ background:linear-gradient(165deg,#d7b67a,#b38d60);color:#272837;border:3px solid #d3b882;
+ box-shadow:0 1px 0 #e4dfce inset,0 2px 5px #111d36bd}
+.mb-yw2 .mb-creature.mb-bench{filter:saturate(.68) brightness(.78);border-color:#9b92a1}
+.mb-yw2 .mb-creature.mb-selected{border-color:#fff2bd;box-shadow:0 0 0 3px #f8e29c77,0 2px 6px #08132ecc}
+.mb-yw2 .mb-creature .mb-character-art{height:42px;width:42px;margin-top:0}
+.mb-yw2 .mb-creature .mb-name{color:#2d2835;font-size:10px}
+.mb-yw2 .mb-creature .mb-bars{height:5px;background:#504257;margin-bottom:2px}
+.mb-yw2 .mb-creature .mb-unit-stat{color:#382b36;font-size:9px}
+.mb-yw2 .mb-creature .mb-front-badge{right:0;top:0;background:#45757c}
+.mb-yw2 .mb-wheel-turn{display:flex;justify-content:center;align-items:center;gap:9px;margin-top:-5px;
+ position:relative;z-index:7}
+.mb-yw2 .mb-wheel-turn button{min-height:28px;font-size:11px;font-weight:800;padding:3px 9px;
+ border:1px solid #dfc17e;border-radius:9px;color:#fff3c7;background:#735d70}
+.mb-yw2 .mb-wheel-turn span{color:#d1bdc3;font-size:9px}
+.mb-command-footer{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;
+ border-top:1px solid #9b7e8d55;padding-top:7px;margin-top:6px}
+.mb-command-footer button{border:1px solid #9f96b7;background:#3e436a;color:#e6edfb;
+ border-radius:7px;padding:5px 9px;font-size:11px}
+.mb-command-footer button:disabled{opacity:.4}
+.mb-yw2 .mb-footnote{font-size:10px;color:#c3b4cc;margin:0;flex:1;min-width:170px}
+.mb-yw2 .mb-feed{margin:6px auto 0;padding:5px 10px;border-radius:9px;
+ background:#1e2a42;border-color:#494e69;max-width:800px}
+.mb-yw2 .mb-feed-heading{display:flex;align-items:center;justify-content:space-between;gap:5px}
+.mb-yw2 .mb-feed-heading b{font-size:10px;color:#e5c99c}
+.mb-yw2 .mb-feed-heading button{font-size:10px;min-height:24px;padding:3px 10px;border-radius:6px}
+.mb-yw2 .mb-activity{margin:3px 0;padding:3px 6px;min-height:18px;font-size:11px}
+.mb-yw2 .mb-feed-list{display:none}
+.mb-yw2 .mb-revision{margin-top:0;font-size:9px;opacity:.75}
+@media(max-width:700px){
+ .mb-yw2{padding:6px}
+ .mb-command-field{grid-template-columns:minmax(68px,.85fr) minmax(195px,1.8fr) minmax(68px,.85fr);gap:4px}
+ .mb-watch-command{font-size:13px;min-height:88px;border-radius:10px}
+ .mb-watch-command small{font-size:8px}
+ .mb-wheel-host,.mb-yw2 .mb-team{height:260px}
+ .mb-yw2 .mb-wheel{height:250px}
+ .mb-yw2 .mb-creature{width:64px;height:83px;border-width:2px}
+ .mb-yw2 .mb-creature .mb-character-art{width:34px;height:34px}
+ .mb-yw2 .mb-creature .mb-name{font-size:9px}
+ .mb-yw2 .mb-creature .mb-unit-stat{font-size:8px}
+ .mb-yw2 .mb-team-heading b{font-size:9px}
+ .mb-yw2 .mb-team-icon{width:20px;height:20px}
+ .mb-yw2 .mb-center-symbol{height:53px;width:53px;font-size:17px}
+ .mb-yw2 .mb-center-symbol:after{font-size:7px}
+ .mb-battle-backdrop{height:195px}
+ .mb-foe-line,.mb-ally-line{gap:14px}
+ .mb-fighter{width:78px}
+ .mb-yw2 .mb-forecast{gap:3px}
+ .mb-yw2 .mb-next{padding:3px}
+}
+@media(max-width:415px){
+ .mb-command-field{grid-template-columns:68px minmax(176px,1fr) 68px;gap:2px}
+ .mb-watch-command{font-size:12px;padding:4px 2px}
+ .mb-watch-command small{display:none}
+ .mb-yw2 .mb-creature{width:57px;height:79px}
+ .mb-yw2 .mb-creature .mb-character-art{height:31px;width:31px}
+ .mb-yw2 .mb-next-avatar{display:none}
+}
+@media(max-height:560px) and (orientation:landscape){
+ .mb-yw2 .mb-disclaimer{display:none}
+ .mb-dualscreen{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:7px}
+ .mb-battle-backdrop{height:195px}
+ .mb-command-field{grid-template-columns:70px minmax(180px,1fr) 70px;gap:2px}
+ .mb-watch-command{min-height:75px;font-size:11px}
+ .mb-watch-command small{display:none}
+ .mb-wheel-host,.mb-yw2 .mb-team{height:230px}
+ .mb-yw2 .mb-wheel{height:220px}
+ .mb-yw2 .mb-creature{height:75px;width:58px}
+ .mb-yw2 .mb-creature .mb-character-art{height:30px;width:30px}
+ .mb-yw2 .mb-creature .mb-name{font-size:8px}
+}
+@media(prefers-reduced-motion:reduce){.mb-fighter.mb-acting .mb-character-art,.mb-fighter.mb-hit .mb-character-art,
+ .mb-fighter.mb-healed .mb-character-art{animation:none}}
