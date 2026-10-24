@@ -403,7 +403,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   $('mb-target').classList.toggle('mb-command-active',commandMode==='target');
   $('mb-choice-status').textContent=commandMode?matchSelectionHints(view,commandMode).message:
    '上画面 / 前衛3体ずつ';
-  $('mb-upper-screen').dataset.selecting=commandMode??'';
+  element.querySelector('.mb-upper-screen').dataset.selecting=commandMode??'';
   for(const [name,modeName] of [['mb-charge','charge'],['mb-purify','purify'],['mb-target','target']]){
    $(''+name).setAttribute('aria-pressed',String(commandMode===modeName));
   }
