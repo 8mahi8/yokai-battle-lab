@@ -29,7 +29,7 @@
         },
         "inputs": {
           "$seat": {
-            ".write": "auth !== null && root.child('yokaiRoomsV1/'+$code).child('phase').val() === 'playing' && (($seat === 'host' && auth.uid === root.child('yokaiRoomsV1/'+$code).child('hostUid').val()) || ($seat === 'guest' && auth.uid === root.child('yokaiRoomsV1/'+$code).child('guestUid').val())) && newData.hasChildren(['session','clientSeq','intent']) && newData.child('session').val() === root.child('yokaiRoomsV1/'+$code).child('session').val() && (!data.exists() || (data.child('session').val() === root.child('yokaiRoomsV1/'+$code).child('session').val() && newData.child('clientSeq').val() >= data.child('clientSeq').val()))",
+            ".write": "auth !== null && root.child('yokaiRoomsV1/'+$code).child('phase').val() === 'playing' && (($seat === 'host' && auth.uid === root.child('yokaiRoomsV1/'+$code).child('hostUid').val()) || ($seat === 'guest' && auth.uid === root.child('yokaiRoomsV1/'+$code).child('guestUid').val())) && newData.hasChildren(['session','clientSeq','intent']) && newData.child('session').val() === root.child('yokaiRoomsV1/'+$code).child('session').val() && (!data.exists() || (data.child('session').val() === root.child('yokaiRoomsV1/'+$code).child('session').val() && newData.child('clientSeq').val() > data.child('clientSeq').val()))",
             ".validate": "newData.hasChildren(['session','clientSeq','intent']) && newData.child('session').val() === root.child('yokaiRoomsV1/'+$code).child('session').val() && newData.child('clientSeq').isNumber() && newData.child('clientSeq').val() >= 1 && newData.child('clientSeq').val() < 1000000 && newData.child('intent').hasChild('type')",
             "session": {
               ".validate": "newData.isString()"
