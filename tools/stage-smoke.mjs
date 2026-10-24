@@ -48,6 +48,9 @@ document.getElementById('frame').addEventListener('load',()=>{
   check(pick('#mb-watch').textContent.includes('標準ウォッチ'),'standard -> zero watch toggle failed');
   pick('#mb-step').click();
   check(Number(pick('#mb-turn').textContent)===1,'actual automatic battle action failed');
+  check(!pick('#mb-action-label').textContent.includes('待機中'),'canonical actor summary not shown');
+  check(root.querySelectorAll('.mb-acting').length===1,'actual actor should flash once');
+  check(root.querySelectorAll('.mb-hit,.mb-healed').length<=1,'only one canonical target may flash');
   pick('[data-seat="1"]').click();
   check(pick('#mb-active-label').textContent.includes('PLAYER B'),'offline seat switch failed');
   pick('[data-rotate="-1"]').click();
