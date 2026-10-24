@@ -128,6 +128,22 @@ try{
  clearTimeout(timeout);
  if(exit!==0||!existsSync(shot))throw Error('Stage image capture failed: '+errors.slice(-500));
  console.log('SCREENSHOT-READY phase14-stage-preview.png');
+ const galleryShot=path.join(root,'phase15-character-gallery.png');
+ const galleryChild=spawn(browser,[
+  '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+  '--no-first-run','--disable-extensions','--hide-scrollbars',
+  '--user-data-dir='+path.join(tmp,'gallery'),
+  '--window-size=1140,1010','--virtual-time-budget=2200',
+  '--screenshot='+galleryShot,'http://127.0.0.1:'+server.address().port+'/lab/character-gallery.html'
+ ],{stdio:['ignore','pipe','pipe']});
+ let galleryError='';
+ galleryChild.stderr.on('data',b=>galleryError+=String(b).slice(0,2000));
+ const galleryTimeout=setTimeout(()=>galleryChild.kill('SIGKILL'),18000);
+ const galleryExit=await new Promise(resolve=>galleryChild.on('close',resolve));
+ clearTimeout(galleryTimeout);
+ if(galleryExit!==0||!existsSync(galleryShot))
+  throw new Error('Character gallery image capture failed: '+galleryError.slice(-400));
+ console.log('SCREENSHOT-READY phase15-character-gallery.png');
 }finally{
  await new Promise(resolve=>server.close(resolve));
  rmSync(tmp,{recursive:true,force:true});
