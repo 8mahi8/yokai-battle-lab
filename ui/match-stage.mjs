@@ -404,6 +404,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   $('mb-choice-status').textContent=commandMode?matchSelectionHints(view,commandMode).message:
    '上画面 / 前衛3体ずつ';
   element.querySelector('.mb-upper-screen').dataset.selecting=commandMode??'';
+  element.querySelector('.mb-upper-screen').dataset.targetKind=own.mode==='zero'?'poke':'pin';
   for(const [name,modeName] of [['mb-charge','charge'],['mb-purify','purify'],['mb-target','target']]){
    $(''+name).setAttribute('aria-pressed',String(commandMode===modeName));
   }
