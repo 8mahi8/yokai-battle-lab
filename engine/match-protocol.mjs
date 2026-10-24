@@ -143,9 +143,13 @@ export function createMatchProtocol({battleOptions={}}={}){
  // incomplete no-motion counter windows disabled. Allow explicit overrides
  // for controlled legacy comparisons and seeded journal reproduction.
  // Soultimates remain separately flagged research-fixture (not original moves).
+ // Preserve earlier explicit legacy comparisons: turning OFF the YW2
+ // damage model also defaults its dependent stat research OFF unless the
+ // caller explicitly requests an invalid combination (which must throw).
  const options=clone({researchSoulRecoveryMode:'owner-nonattack',
    researchDamageModel:true,researchMultiHit:true,
-   researchStatInspirits:true,researchSpecialEffects:true,...battleOptions});
+   researchStatInspirits:battleOptions.researchDamageModel===false?false:true,
+   researchSpecialEffects:true,...battleOptions});
  function newBattle(){return createCombat(options);}
  const game=newBattle();
  let revision=0;
