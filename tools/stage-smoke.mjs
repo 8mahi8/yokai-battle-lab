@@ -42,9 +42,15 @@ document.getElementById('frame').addEventListener('load',()=>{
    'portrait is not readable at intended iPad card size');
   check(root.querySelectorAll('.mb-next').length===5,'missing 5 predicted actions');
   check(pick('#mb-turn').textContent==='0','wrong starting turn');
-  const panel=pick('#mb-team0');
-  check(Number.parseFloat(getComputedStyle(panel).minHeight)>=290,'battle stage has no layout');
-  for(const team of root.querySelectorAll('.mb-team')){
+  const panel=pick('.mb-lower-screen');
+  check(panel.getBoundingClientRect().height>=270,'lower command screen has no layout');
+  check(pick('.mb-upper-screen').getBoundingClientRect().height>=200,'upper battle screen has no layout');
+  check(root.querySelectorAll('#mb-ally-line .mb-fighter').length===3,'must show own three active fighters');
+  check(root.querySelectorAll('#mb-foe-line .mb-fighter').length===3,'must show opponent three active fighters');
+  check(!pick('#mb-team0').hidden&&pick('#mb-team1').hidden,'show only own wheel, not two competing circles');
+  check(root.querySelectorAll('.mb-watch-command').length===4,'four original corner commands absent');
+  check(pick('.mb-command-item').disabled,'PvP battle items must not be usable');
+  for(const team of root.querySelectorAll('.mb-team:not([hidden])')){
    const boundary=team.getBoundingClientRect();
    for(const card of team.querySelectorAll('.mb-creature')){
     const box=card.getBoundingClientRect();
@@ -52,8 +58,11 @@ document.getElementById('frame').addEventListener('load',()=>{
      'a wheel creature card is clipped by its team panel: '+card.dataset.unit);
    }
   }
-  pick('#mb-team1 [data-unit="B1"]').click();
-  check(pick('#mb-team1 [data-unit="B1"]').classList.contains('mb-pinned'),'enemy pin did not follow canonical protocol');
+  pick('#mb-target').click();
+  check(pick('#mb-target').classList.contains('mb-command-active'),'target command must enter selection mode');
+  pick('#mb-foe-line [data-unit="B1"]').click();
+  check(pick('#mb-foe-line [data-unit="B1"]').classList.contains('mb-pinned'),
+   'enemy pin did not follow canonical protocol');
   pick('[data-rotate="1"]').click();
   check(!pick('#mb-team0 [data-unit="A4"]').classList.contains('mb-bench'),'A side wheel failed to rotate');
   check(pick('#mb-revision').textContent.includes('REV 2'),'game revision did not advance after pin and rotation');
@@ -62,13 +71,16 @@ document.getElementById('frame').addEventListener('load',()=>{
   pick('#mb-step').click();
   check(Number(pick('#mb-turn').textContent)===1,'actual automatic battle action failed');
   check(!pick('#mb-action-label').textContent.includes('待機中'),'canonical actor summary not shown');
-  check(root.querySelectorAll('.mb-acting').length===1,'actual actor should flash once');
-  check(root.querySelectorAll('.mb-hit,.mb-healed').length<=1,'only one canonical target may flash');
+  check(root.querySelectorAll('.mb-fighter.mb-acting').length===1,'actual fighter should flash once');
+  check(root.querySelectorAll('.mb-fighter.mb-hit,.mb-fighter.mb-healed').length<=1,'only one canonical target may flash');
   pick('[data-seat="1"]').click();
   check(pick('#mb-active-label').textContent.includes('PLAYER B'),'offline seat switch failed');
+  check(pick('#mb-team0').hidden&&!pick('#mb-team1').hidden,'B wheel should replace A wheel');
+  check(root.querySelectorAll('#mb-foe-line [data-unit^="A"]').length===3,
+   'upper screen should swap enemy perspective with selected player');
   pick('[data-rotate="-1"]').click();
   check(!pick('#mb-team1 [data-unit="B6"]').classList.contains('mb-bench'),'B side wheel failed to rotate');
-  check(root.querySelectorAll('.mb-creature').length===12,'cards lost after battle actions');
+  check(root.querySelectorAll('.mb-creature').length===12,'both player wheel projections lost after battle actions');
   check(root.querySelectorAll('.mb-next').length===5,'forecast lost after battles');
   check(pick('#mb-modal').hidden,'touch mini-game unexpectedly visible');
   report.textContent='STAGE-PASS canonical engine wheel pin watch host tick seat selection and five forecasts';
