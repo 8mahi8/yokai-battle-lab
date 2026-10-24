@@ -131,7 +131,13 @@ export function createMatchProtocol({battleOptions={}}={}){
  // The no-attack +5 owner-turn recovery is the one Soul-gain amount
  // supported by direct YW2 player experiments. Attacking gain remains
  // UNSOURCED and is not invented in the initial network contract.
- const options=clone({researchSoulRecoveryMode:'owner-nonattack',...battleOptions});
+ // Original game specials MUST have an impact in actual battles. The six
+ // original rental characters have no official YW2 move/HP data, therefore
+ // their numbers and per-move targeting remain an explicitly labeled research
+ // fixture, NOT a claim of original per-move fidelity. Keep the opt-out for
+ // source-parity research and locked test fixtures.
+ const options=clone({researchSoulRecoveryMode:'owner-nonattack',
+   researchSpecialEffects:true,...battleOptions});
  function newBattle(){return createCombat(options);}
  const game=newBattle();
  let revision=0;
