@@ -3,7 +3,7 @@
 更新: 2026-10-25 JST
 Repository: https://github.com/8mahi8/yokai-battle-lab
 Development branch: `feat/phase1-action-circle-lab-20261023`
-**現在: Phase20A/20B・21A/21B統合済み。21C-A/Bの速度表・初手観測比較は実装済み。**21C-Cで競技者の行動権説明を再調査したが完全な実機再現用データが揃わず、初期権と同着は保留。** Phase21D-Aで妖気ゲージ実測との比較器を追加、**417/417 Node＋Chrome研究・ステージ・Firebaseローカル2席テスト成功**。次は21D-Bの攻撃・妖術・時間由来自然回復と、21D-Cの零式つつく配分の実証。
+**現在: Phase20A/20B・21A/21B統合済み。Phase21C-A/Bの速度表と初手観測比較器は実装済み。Phase21C-Cでは競技者の初期行動権の記述を再調査したが、数値・同着の実機完全一致は未証明。Phase21D-Aで妖気ゲージの観測比較器を追加し、Node417/417・研究Chrome・対戦画面・Firebaseローカル2席のQAに成功。次は21D-Bの攻撃・妖術・自然回復と、21D-Cの零式つつくの配分検証。**
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
