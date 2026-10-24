@@ -20,6 +20,10 @@ jobs:
           node --check tools/stage-smoke.mjs
       - name: Verify original match renderer state
         run: node --test tests/match-stage.test.mjs
+      - name: Install CJK font for truthful Japanese screenshot QA
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-noto-cjk
       - name: Render and interact in real Chromium
         run: node tools/stage-smoke.mjs
       - name: Preserve actual stage screenshot for visual review
