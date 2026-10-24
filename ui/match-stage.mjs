@@ -6,6 +6,7 @@
  * No CSS imports, network connection, timers or hidden actions.
  */
 import {renderSpiritPortrait} from './character-art.mjs';
+import {wheelAngle,wheelGestureAt} from './wheel-gesture.mjs';
 const ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
 const escapeHTML=x=>String(x??'').replace(/[&<>"']/g,ch=>ESC[ch]);
 const pct=(value,max)=>Math.max(0,Math.min(100,Math.round(100*value/(max||1))));
@@ -144,6 +145,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  const fixedSeat=seat;
  let activeSeat=seat??0,wireState=null,view=null,selection=null;
  let recentMessage='準備中',pointer=null,lastMove=0;
+ let wheelPointer=null,suppressWheelClick=false,wheelClickTimer=null;
  let seenActionTurn=null,flash=null,flashTimer=null;
  let commandMode=null,battleDrawCache=null;
  const teamDrawCache=[null,null];let forecastDrawCache=null;
@@ -160,6 +162,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    <section class="mb-upper-screen" aria-label="上画面：戦闘フィールド">
     <div class="mb-screen-caption">BATTLE FIELD <span id="mb-choice-status" role="status">上画面 / 前衛3体ずつ</span></div>
     <div class="mb-battle-backdrop">
+     <div id="mb-special-flare" class="mb-special-flare" hidden aria-hidden="true"><span id="mb-special-title"></span></div>
      <div class="mb-scenery mb-scenery-back" aria-hidden="true"></div>
      <div class="mb-foe-line" id="mb-foe-line"></div>
      <div class="mb-scenery mb-scenery-floor" aria-hidden="true"></div>
@@ -434,7 +437,12 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    y:Math.max(0,Math.min(1,(event.clientY-r.top)/r.height))};
  }
  function handleClick(event){
-  const b=event.target.closest('button');if(!b||!element.contains(b)||!view)return;
+  const b=event.target.closest('button');
+  if(suppressWheelClick&&b?.closest('.mb-wheel')){
+   suppressWheelClick=false;
+   event.preventDefault();return;
+  }
+  if(!b||!element.contains(b)||!view)return;
   if(b.dataset.seat!==undefined){
    if(fixedSeat!==null)return;
    activeSeat=Number(b.dataset.seat);selection=null;commandMode=null;
@@ -498,6 +506,64 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    }catch(error){onError(error);alert(error.message);}
   }
  }
+ function resetWheelVisual(){
+  const wheel=element.querySelector('#mb-team'+activeSeat+' .mb-wheel');
+  if(wheel){
+   wheel.classList.remove('mb-wheel-dragging');
+   wheel.style.removeProperty('--wheel-drag-angle');
+  }
+ }
+ function onWheelDown(event){
+  if(!view||view.winner!==null||view.gesture||event.button!==0||
+     event.isPrimary===false||wheelPointer!==null)return;
+  const wheel=event.target.closest('.mb-wheel');
+  if(!wheel||!element.contains(wheel)||wheel.closest('[hidden]'))return;
+  const bounds=wheel.getBoundingClientRect();
+  const centerX=bounds.left+bounds.width/2,centerY=bounds.top+bounds.height/2;
+  const radius=Math.min(bounds.width,bounds.height)/2;
+  if(Math.hypot(event.clientX-centerX,event.clientY-centerY)<radius*.22)return;
+  wheelPointer={id:event.pointerId,seat:activeSeat,centerX,centerY,radius,
+   startAngle:wheelAngle(event.clientX,event.clientY,centerX,centerY),
+   latestDelta:0,direction:0};
+  // Capture on a STABLE ancestor: a host snapshot may redraw the wheel.
+  try{element.setPointerCapture(event.pointerId);}catch(_){}
+ }
+ function onWheelMove(event){
+  const p=wheelPointer;
+  if(!p||p.id!==event.pointerId||p.seat!==activeSeat)return;
+  const gesture=wheelGestureAt({x:event.clientX,y:event.clientY,
+   centerX:p.centerX,centerY:p.centerY,radius:p.radius,startAngle:p.startAngle});
+  if(!gesture)return;
+  p.latestDelta=gesture.delta;p.direction=gesture.direction;
+  if(Math.abs(gesture.delta)>Math.PI/15){
+   event.preventDefault();
+   const wheel=element.querySelector('#mb-team'+activeSeat+' .mb-wheel');
+   if(wheel){
+    wheel.classList.add('mb-wheel-dragging');
+    // Preview ring only; actor text does not spin. Engine will snap medals
+    // to its accepted canonical offset after the single command.
+    wheel.style.setProperty('--wheel-drag-angle',
+     Math.max(-60,Math.min(60,gesture.degrees))+'deg');
+   }
+  }
+ }
+ function finishWheel(event,cancelled=false){
+  const p=wheelPointer;
+  if(!p||p.id!==event.pointerId)return;
+  wheelPointer=null;resetWheelVisual();
+  if(cancelled||!p.direction||p.seat!==activeSeat)return;
+  event.preventDefault();
+  suppressWheelClick=true;
+  clearTimeout(wheelClickTimer);
+  wheelClickTimer=setTimeout(()=>{suppressWheelClick=false;},460);
+  commandMode=null;
+  command({type:'rotate',direction:p.direction});
+  // Async guest commands await host ACK; never rotate the local battle model.
+  if(wireState)render(wireState);
+ }
+ function onWheelUp(event){finishWheel(event,false);}
+ function onWheelCancel(event){finishWheel(event,true);}
+ function onWheelLost(event){finishWheel(event,true);}
  function onDown(event){
   if(!view?.gesture||event.button!==0)return;
   const pad=event.target.closest('#mb-touch-pad');if(!pad)return;
@@ -533,13 +599,24 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  function onCancel(event){finishPointer(event,true);}
  function onLostCapture(event){if(pointer===event.pointerId)finishPointer(event,true);}
  element.addEventListener('click',handleClick);
+ element.addEventListener('pointerdown',onWheelDown);
+ element.addEventListener('pointermove',onWheelMove);
+ element.addEventListener('pointerup',onWheelUp);
+ element.addEventListener('pointercancel',onWheelCancel);
+ element.addEventListener('lostpointercapture',onWheelLost);
  element.addEventListener('pointerdown',onDown);
  element.addEventListener('pointermove',onMove);
  element.addEventListener('pointerup',onUp);
  element.addEventListener('pointercancel',onCancel);
  element.addEventListener('lostpointercapture',onLostCapture);
  function setConnection(label){$('mb-connection').textContent=String(label);}
- function destroy(){clearTimeout(flashTimer);element.removeEventListener('click',handleClick);
+ function destroy(){clearTimeout(flashTimer);clearTimeout(wheelClickTimer);
+  element.removeEventListener('click',handleClick);
+  element.removeEventListener('pointerdown',onWheelDown);
+  element.removeEventListener('pointermove',onWheelMove);
+  element.removeEventListener('pointerup',onWheelUp);
+  element.removeEventListener('pointercancel',onWheelCancel);
+  element.removeEventListener('lostpointercapture',onWheelLost);
   element.removeEventListener('pointerdown',onDown);element.removeEventListener('pointermove',onMove);
   element.removeEventListener('pointerup',onUp);element.removeEventListener('pointercancel',onCancel);
   element.removeEventListener('lostpointercapture',onLostCapture);}
