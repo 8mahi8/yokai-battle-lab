@@ -37,4 +37,5 @@ jobs:
           path: |
             phase14-stage-preview.png
             phase15-character-gallery.png
+            phase16-ipad-landscape-preview.png
           if-no-files-found: ignore
