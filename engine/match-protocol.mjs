@@ -95,9 +95,9 @@ export function normalizeMatchCommand(side,command){
  exact(command,['type']);
  return {type:t};
 }
-function applyCommand(game,side,cmd){
+function applyCommand(game,side,cmd,{rotationAtMs=0}={}){
  switch(cmd.type){
-  case 'rotate':return game.rotate(side,cmd.direction);
+  case 'rotate':return game.rotate(side,cmd.direction,rotationAtMs);
   case 'pin':game.pin(side,cmd.targetId);return {ok:true,targetId:cmd.targetId};
   case 'watch':return {ok:true,mode:game.setWatchMode(side,cmd.mode)};
   case 'chargeStart':return game.beginGuidedCharge(side,cmd.id);
@@ -116,7 +116,7 @@ function checkOptions(options){
  if(!plain(options))throw new TypeError('initial options must be a plain object');
  // No lab injections, Flash Soul, counter timing, or other unfinished
  // competitive glitches may enter the initial online contract.
- const allow=new Set(['seed','teams','autoRotateReserves','enableLoafing',
+ const allow=new Set(['seed','teams','autoRotateReserves','enableLoafing','rotationCooldownMs',
   'researchSoulRecoveryMode','researchDamageModel','researchMultiHit',
   'researchStatInspirits','researchTurnInspirits','researchHealingVariance','researchSpecialEffects']);
  for(const key of Object.keys(options))if(!allow.has(key))
@@ -126,8 +126,11 @@ function checkOptions(options){
     !['none','owner-nonattack'].includes(options.researchSoulRecoveryMode))
   throw new RangeError('unknown owner Soul mode');
 }
-export function createMatchProtocol({battleOptions={}}={}){
+export function createMatchProtocol({battleOptions={},hostNowMs=()=>performance.now()}={}){
  checkOptions(battleOptions);
+ // Host-side monotonic clock only; the network command never supplies a
+ // timestamp. When the 3-second research mode is OFF, no wall time is read.
+ if(typeof hostNowMs!=='function')throw new TypeError('trusted host clock required');
  // The no-attack +5 owner-turn recovery is the one Soul-gain amount
  // supported by direct YW2 player experiments. Attacking gain remains
  // UNSOURCED and is not invented in the initial network contract.
@@ -184,11 +187,22 @@ export function createMatchProtocol({battleOptions={}}={}){
   if(journal.length>=MAX_JOURNAL)
    return {ok:false,reason:'research_journal_full'};
   let result;
-  try{result=applyCommand(game,side,command);}
+  // Capture time only AFTER duplicate/stale/gap checks so a retransmission
+  // cannot shift the wheel cooldown. The journal must record the exact
+  // trusted timestamp used, enabling byte-for-byte deterministic replay.
+  let hostRotationAtMs=null;
+  if(command.type==='rotate'&&options.rotationCooldownMs>0){
+   hostRotationAtMs=hostNowMs();
+   if(!Number.isFinite(hostRotationAtMs)||hostRotationAtMs<0)
+    return {ok:false,reason:'invalid_host_clock'};
+  }
+  try{result=applyCommand(game,side,command,
+   {rotationAtMs:hostRotationAtMs??0});}
   catch(error){result={ok:false,reason:'rule_exception',detail:error.message};}
   if(!plain(result))result={ok:true,result:result??null};
   sequence[side]=clientSeq;
-  const event=append({kind:'player',side,clientSeq,command,result:clone(result)});
+  const event=append({kind:'player',side,clientSeq,command,result:clone(result),
+   ...(hostRotationAtMs===null?{}:{hostRotationAtMs})});
   const receipt={ok:result.ok!==false,accepted:true,side,clientSeq,
     revision:event.revision,hash:event.hash,result:clone(result)};
   lastReceipt[side]={commandJson:raw,receipt:clone(receipt)};
@@ -223,12 +237,22 @@ export function replayMatchJournal(exported){
   !Array.isArray(exported.entries)||exported.entries.length>MAX_JOURNAL)
   return {ok:false,reason:'invalid_journal'};
  let match;
- try{match=createMatchProtocol({battleOptions:exported.initialOptions});}
+ // Event times are already trusted host observations from the original run.
+ // A replay must NEVER consult its current physical clock.
+ let replayRotationAtMs=0;
+ try{match=createMatchProtocol({battleOptions:exported.initialOptions,
+  hostNowMs:()=>replayRotationAtMs});}
  catch(error){return {ok:false,reason:'invalid_initial_options'};}
  for(let i=0;i<exported.entries.length;i++){
   const saved=exported.entries[i];
   if(!plain(saved)||!['auto','player'].includes(saved.kind))
    return {ok:false,reason:'invalid_event',index:i};
+  if(saved.kind==='player'&&saved.command?.type==='rotate'&&
+     exported.initialOptions.rotationCooldownMs>0){
+   if(!Number.isFinite(saved.hostRotationAtMs)||saved.hostRotationAtMs<0)
+    return {ok:false,reason:'invalid_replay_host_time',index:i};
+   replayRotationAtMs=saved.hostRotationAtMs;
+  }
   const now=saved.kind==='auto'?match.advanceAuto():
    match.dispatch(saved.side,saved.clientSeq,saved.command);
   if(!now.accepted&&saved.kind==='player')
