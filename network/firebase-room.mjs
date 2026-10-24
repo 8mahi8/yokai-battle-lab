@@ -171,14 +171,35 @@ export function createFirebaseRoomClient({database,uid,randomBytes=defaultRandom
    throw new TypeError('invalid or oversized command');
   const ref=roomRef().child('inputs/'+(seat===0?'host':'guest'));
   const payload={session,clientSeq,intent:clone(wireIntent)};
-  const t=await ref.transaction(previous=>{
-   if(previous && previous.session===session){
-    if(previous.clientSeq>clientSeq)return undefined;
-    if(previous.clientSeq===clientSeq)
-     return JSON.stringify(previous.intent)===JSON.stringify(wireIntent)?previous:undefined;
-   }
-   return payload;
-  },undefined,false);
+  // Repeated sends of the SAME command are idempotent, but the Rules
+  // must never permit a client to change the payload under an old sequence.
+  // Read-before-write avoids requiring repeated equal-sequence writes.
+  const same=old=>plain(old)&&old.session===session&&
+   old.clientSeq===clientSeq&&JSON.stringify(old.intent)===JSON.stringify(wireIntent);
+  const current=(await ref.once('value')).val();
+  if(same(current))return {ok:true,reason:'already_stored'};
+  if(plain(current)&&current.session===session&&current.clientSeq>=clientSeq)
+   return {ok:false,reason:'stale_or_conflicting_input'};
+  let t;
+  try{
+   t=await ref.transaction(previous=>{
+    if(plain(previous)&&previous.session===session&&previous.clientSeq>=clientSeq)
+     return undefined;
+    return payload;
+   },undefined,false);
+  }catch(error){
+   // Another concurrent writer may have stored the identical command in
+   // the meantime. Only that byte-for-byte matching command is accepted.
+   const latest=(await ref.once('value')).val();
+   if(same(latest))return {ok:true,reason:'already_stored'};
+   if(plain(latest)&&latest.session===session&&latest.clientSeq>=clientSeq)
+    return {ok:false,reason:'stale_or_conflicting_input'};
+   throw error;
+  }
+  if(!t.committed){
+   const latest=(await ref.once('value')).val();
+   if(same(latest))return {ok:true,reason:'already_stored'};
+  }
   return {ok:t.committed,reason:t.committed?null:'stale_or_conflicting_input'};
  }
  async function publishSnapshot(snapshot){
