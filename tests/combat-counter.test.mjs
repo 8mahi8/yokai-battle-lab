@@ -110,3 +110,60 @@ test('opt-in is isolated from existing research game modes',()=>{
  assert.throws(()=>createCombat({researchCounterTiming:true}));
  assert.throws(()=>createCombat({researchCounterTiming:true,researchPresentation:true}));
 });
+
+
+test('22D-B preserve BOTH unknown Endure freeze and 3+ rotations in real research combat without HP',()=>{
+ const g=createCombat({seed:123,researchPresentation:true,
+  researchSpecialEffects:true,researchCounterTiming:true,researchWheelCoalescing:true});
+ assert.equal(g.beginCounterCutin({attackerSide:1,durationMs:800,enduresSpent:2}).ok,true);
+ g.giveSoul('A1',100);
+ const charge=g.prepareSoultimate(0,'A1');assert.equal(charge.ok,true);
+ g.advancePresentation(100);g.rotate(1,1);
+ g.advancePresentation(100);g.rotate(1,1);
+ g.advancePresentation(100);g.rotate(1,1);
+ g.advancePresentation(600);
+ const outcome=g.resolveSoultimate(0,charge.token,true);
+ assert.equal(outcome.effectStatus,'pending-counter-hit');
+ assert.equal(outcome.counter.uncertainty.code,'two-endures-cutin-front-lock-time-unverified');
+ assert.equal(outcome.counter.frontLock,'endure-exception');
+ const reported=g.snapshot().uncertainCounterHits;
+ assert.equal(reported.length,1);
+ assert.deepEqual([reported[0].reason.code,
+  ...reported[0].reason.additionalReasons.map(x=>x.code)],[
+  'two-endures-cutin-front-lock-time-unverified','three-plus-rotations-unverified'
+ ]);
+ const before=g.snapshot().squads.map(team=>team.map(x=>x.hp));
+ g.advancePresentation(400);
+ const after=g.snapshot();
+ assert.deepEqual(after.squads.map(team=>team.map(x=>x.hp)),before);
+ assert.equal(after.counterEffectsPending,0);
+ const unknown=after.events.filter(x=>x.type==='counter-hit-indeterminate');
+ assert.equal(unknown.length,1);
+ assert.deepEqual(unknown[0].reasonCodes,[
+  'two-endures-cutin-front-lock-time-unverified','three-plus-rotations-unverified'
+ ]);
+ assert.equal(unknown[0].rotationCount,3);
+ assert.deepEqual(unknown[0].candidateCutinFronts,[
+  {at:0,frontIds:['B1','B2','B3']},
+  {at:100,frontIds:['B2','B3','B4']},
+  {at:200,frontIds:['B3','B4','B5']},
+  {at:300,frontIds:['B4','B5','B6']}
+ ]);
+ assert.equal(unknown[0].cutinHistoryTruncated,false);
+ assert.equal(unknown[0].hpApplied,false);
+ g.advancePresentation(999);
+ assert.equal(g.snapshot().events.filter(x=>x.type==='counter-hit-indeterminate').length,1);
+});
+
+test('22D-B uncertainty reasons in snapshots are deep defensive copies',()=>{
+ const g=createCombat({seed:123,researchPresentation:true,
+  researchSpecialEffects:true,researchCounterTiming:true,researchWheelCoalescing:true});
+ g.beginCounterCutin({attackerSide:1,durationMs:800,enduresSpent:2});
+ g.giveSoul('A1',100);
+ const c=g.prepareSoultimate(0,'A1');
+ g.rotate(1,1);g.advancePresentation(900);g.resolveSoultimate(0,c.token,true);
+ const first=g.snapshot().uncertainCounterHits[0];
+ assert.ok(first.reason.cutinFrontlineTimeline.length>=2);
+ first.reason.cutinFrontlineTimeline[0].frontIds[0]='corrupted';
+ assert.equal(g.snapshot().uncertainCounterHits[0].reason.cutinFrontlineTimeline[0].frontIds[0],'B1');
+});
