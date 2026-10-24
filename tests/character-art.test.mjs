@@ -20,7 +20,7 @@ test('six original inline SVG silhouettes match fixed six-unit rental team',()=>
   assert.match(faces[i],/aria-hidden="true"/);
   assert.match(faces[i],/focusable="false"/);
   assert.match(faces[i],/<path |<ellipse /);
-  assert.doesNotMatch(faces[i],/<image|xlink:href|url\(|https?:|<script|<filter|onload=/i,
+  assert.doesNotMatch(faces[i],/<image\b|(?:xlink:)?href=|\b(?:src|style)=|url\(|<script|<filter\b|onload=/i,
    'SVG art must load no external resources/scripts/filters');
   assert.ok(Buffer.byteLength(faces[i],'utf8')<4500,'small inline SVG required');
  }
