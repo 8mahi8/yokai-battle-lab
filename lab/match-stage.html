@@ -71,6 +71,20 @@ if(review==='target'){
   {targetId:'B2',kind:'damage',amount:17}
  ]});
  stage.render(state);
+}else if(review==='soul-ready'||review==='g-soul-ready'){
+ // Local screenshot-only projection of a possible full Soul state.
+ // No engine state is mutated, no client is given arbitrary Soul commands.
+ const state=protocol.snapshot();
+ const fill=id=>{
+  const member=state.game.soul.teams[0].find(x=>x.id===id);
+  member.soul=member.capacity;
+ };
+ if(review==='g-soul-ready'){
+  state.game.soul.modes[0]='zero';
+  fill('A1');fill('A2');fill('A6'); // A6 is fixed neighbour on reserve
+ }else fill('A2');
+ stage.render(state);
+ el('battle-stage').querySelector('#mb-charge').click();
 }
 </script>
 </body></html>
