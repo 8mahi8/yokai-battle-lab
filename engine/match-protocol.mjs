@@ -149,7 +149,12 @@ export function createMatchProtocol({battleOptions={},hostNowMs=()=>performance.
  // Preserve earlier explicit legacy comparisons: turning OFF the YW2
  // damage model also defaults its dependent stat research OFF unless the
  // caller explicitly requests an invalid combination (which must throw).
- const options=clone({researchSoulRecoveryMode:'owner-nonattack',
+ // Official-rule PvP: use the researched 3s wheel rotation lock in
+ // real standard matches. The exact original frame origin remains unknown;
+ // the authoritative browser host applies a per-seat monotonic timestamp.
+ // Explicit rotationCooldownMs:0 remains available for legacy lab studies.
+ const options=clone({rotationCooldownMs:3000,
+   researchSoulRecoveryMode:'owner-nonattack',
    researchDamageModel:true,researchMultiHit:true,
    researchStatInspirits:battleOptions.researchDamageModel===false?false:true,
    researchSpecialEffects:true,...battleOptions});
