@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createFirebaseMatchHost,createFirebaseMatchGuest} from '../network/firebase-match.mjs';
-import {createMatchProtocol} from '../engine/match-protocol.mjs';
+import {createMatchProtocol,replayMatchJournal} from '../engine/match-protocol.mjs';
 
 const clone=x=>JSON.parse(JSON.stringify(x));
 function fakeTransport(){
@@ -173,4 +173,37 @@ test('host is fenced when remote revision conflict appears after preflight',asyn
  assert.ok(errors.includes('existing_authoritative_state'));
  assert.throws(()=>parallel.advanceAuto(),/existing_authoritative_state/);
  original.stop();parallel.stop();
+});
+
+test('Phase21 opt-in three-second host wheel lock survives guest Firebase bridge ACK and replay',async()=>{
+ const bus=fakeTransport(),errors=[],acks=[];
+ let hostMs=1000;
+ const protocol=createMatchProtocol({battleOptions:{seed:212,rotationCooldownMs:3000},
+  hostNowMs:()=>hostMs});
+ const host=createFirebaseMatchHost({roomClient:bus.host,protocol,
+  onError:error=>errors.push(error.message)});
+ const guest=createFirebaseMatchGuest({roomClient:bus.guest,
+  onAck:a=>acks.push(a),onError:error=>errors.push(error.message)});
+ guest.start();await host.start();await tick();
+ const first=guest.submit({type:'rotate',direction:1});
+ assert.equal(first.ok,true);await tick();
+ assert.equal(host.snapshot().game.clock.teams[1].frontIds[0],'B2');
+ hostMs=1450;
+ assert.equal(guest.submit({type:'rotate',direction:1}).ok,true);
+ await tick();
+ assert.equal(host.snapshot().game.clock.teams[1].frontIds[0],'B2',
+  'guest transport cannot bypass the authoritative three-second cooldown');
+ assert.equal(protocol.exportJournal().entries[1].result.reason,'cooldown');
+ assert.equal(acks.length,2,'guest receives revision even when host rejected the rule action');
+ assert.equal(protocol.exportJournal().entries[1].hostRotationAtMs,1450);
+ hostMs=4000;
+ assert.equal(guest.submit({type:'rotate',direction:1}).ok,true);
+ await tick();
+ assert.equal(host.snapshot().game.clock.teams[1].frontIds[0],'B3');
+ assert.equal(acks.length,3);
+ assert.deepEqual(bus.latest().state.game.clock.teams[1].frontIds,
+  host.snapshot().game.clock.teams[1].frontIds);
+ assert.equal(replayMatchJournal(protocol.exportJournal()).ok,true);
+ assert.deepEqual(errors,[]);
+ guest.stop();host.stop();
 });
