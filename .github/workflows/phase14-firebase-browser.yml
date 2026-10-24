@@ -4,6 +4,7 @@ on:
     branches:
       - feat/phase1-action-circle-lab-20261023
     paths:
+      - 'engine/**'
       - 'network/**'
       - 'ui/**'
       - 'lab/firebase-match-stage.html'
