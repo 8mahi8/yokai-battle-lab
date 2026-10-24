@@ -244,6 +244,25 @@ try{
  if(targetExit!==0||!existsSync(targetPreview))
   throw new Error('target-selection screenshot failed: '+targetError.slice(-400));
  console.log('SCREENSHOT-READY phase16-target-selection-preview.png');
+ // QA-only screenshot of the exact production stage consuming a typed
+ // special battle event; no invented gameplay special execution.
+ const specialShot=path.join(root,'phase17-special-cutin-preview.png');
+ const specialChild=spawn(browser,[
+  '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+  '--no-first-run','--disable-extensions','--hide-scrollbars',
+  '--user-data-dir='+path.join(tmp,'special-preview'),
+  '--window-size=1024,768','--virtual-time-budget=550',
+  '--screenshot='+specialShot,
+  'http://127.0.0.1:'+server.address().port+'/lab/match-stage.html?review=special'
+ ],{stdio:['ignore','pipe','pipe']});
+ let specialError='';
+ specialChild.stderr.on('data',b=>specialError+=String(b).slice(0,2000));
+ const specialTimeout=setTimeout(()=>specialChild.kill('SIGKILL'),18000);
+ const specialExit=await new Promise(resolve=>specialChild.on('close',resolve));
+ clearTimeout(specialTimeout);
+ if(specialExit!==0||!existsSync(specialShot))
+  throw new Error('special VFX screenshot failed: '+specialError.slice(-400));
+ console.log('SCREENSHOT-READY phase17-special-cutin-preview.png');
 }finally{
  await new Promise(resolve=>server.close(resolve));
  rmSync(tmp,{recursive:true,force:true});
