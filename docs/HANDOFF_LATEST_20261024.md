@@ -1,4 +1,6 @@
 # 妖怪対戦ブラウザゲーム｜最新・正式引き継ぎ（2026-10-24）
+> **Phase 14Bタッチ・通信安全性改善（2026-10-24）**: [検証・変更記録](./PHASE14B_GESTURE_SECURITY_20261024.md)。本来の対戦画面で実ブラウザPointerEventを使用し、**4種類の必殺チャージ・5種類のおはらい・零式つつく**をすべてクリア。指のキャンセルをタップと誤認しない、複数指の操作奪取を防止、時計合わせと鎖斬りの実目標を表示（[成功CI](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40072500872)）。またFirebase Rulesが同じ入力番号で別の操作に書き換えられる問題を直し、再送判定でJSONキー順の差を吸収。[実SDKエミュレーターの**32権限チェック＋通信ブリッジ成功**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40072775429)。学校Safari/切断復帰/本番Firebase/Google Sites公開は**未完成**。**急造学校簡易版は使用禁止**。
+
 > **Phase 14A開発（2026-10-24）**: 本来のPhase11戦闘エンジンのsnapshotに次5行動予測を追加し、[サークル対戦画面](../lab/match-stage.html)と[同じ画面を使うFirebaseエミュレーター対戦](../lab/firebase-match-stage.html)を実装。6体×2陣営、HP・妖気、標準/零式、ピン、回転、必殺/おはらい/つつく操作UI。**急造したGoogleサイト用簡易版は本来の開発と無関係なので使わない**。 [Node+実Chromium画面操作QA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40061681947)成功。さらに[本物のFirebase Auth+RTDBエミュレーター上の2独立ブラウザ画面E2E](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40061682008)成功：ルーム作成/参加・回転の双方同期・ホスト行動をゲストに反映。資料[Phase14 UI/E2E検証](./PHASE14_STAGE_QA_20261024.md)。**本番Firebase、学校Safari、Google Sitesコード直貼り、完全なタッチミニゲーム操作、切断復帰・視覚完成評価は未完成**。main/学校公開版未変更、無料と閃光魂OFFを維持。
 
 > **Phase 13B（2026-10-24）**: [Firebase実SDK戦闘ブリッジとローカル2タブ研究画面](./PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md) を追加。ホストはPhase11戦闘を確定してFirebaseへ配信、ゲストはホストの`clientSequences[1]`によるACKを待つ方式。Node **360/360合格**、Firebase RTDB公式エミュレーターと**異なる2 SDKクライアント**でゲスト回転→ACK→ピンクリア→ACK→ホスト操作→自動行動進行まで検証成功（[Firebase CI](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40039540378)）。一度既存Chromiumが起動タイムアウトしたが、[最新の研究CI](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40039933027)は360 Nodeテスト＋既存ブラウザ研究テストすべて成功。ローカル2タブHTML実操作は未実施。本番Firebase/Googleサイト/実iPad未接続。**ゲストのACK待ち高速入力を最大48件バッファするキュー実装済み**。ホスト再起動、認証・切断復帰、実ブラウザ2タブE2Eは未完成。費用0円、閃光魂OFF、mainとGoogleサイト版は未変更。
@@ -13,15 +15,16 @@
 
 ## 0. 最初に読む順番
 1. **この資料**：`docs/HANDOFF_LATEST_20261024.md`
-2. **Phase 14A本来の対戦画面と2ブラウザFirebase E2E**：[`docs/PHASE14_STAGE_QA_20261024.md`](./PHASE14_STAGE_QA_20261024.md)
-3. **Phase 13Bオンライン戦闘統合**：[`docs/PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md`](./PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md)
-4. **Phase 13A実装とSDKテスト**：[`docs/PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md`](./PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md)
-5. **Phase 13外部資料・既存ゲーム比較**：[`docs/PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md`](./PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md)
-6. **Phase 12通信基盤**：[`docs/PHASE12_RELAY_RECOVERY_20261024.md`](./PHASE12_RELAY_RECOVERY_20261024.md)
-7. **Phase 11対戦コマンド**：[`docs/PHASE11_MATCH_PROTOCOL_QA_20261023.md`](./PHASE11_MATCH_PROTOCOL_QA_20261023.md)
-8. **Phase 10基本戦闘**：[`docs/PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md`](./PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md)
-9. **歴史・各Phaseリンク**：[`docs/DEVELOPMENT_STATUS_20261023.md`](./DEVELOPMENT_STATUS_20261023.md)
-10. **実際のコード**：`engine/combat.mjs`・`engine/match-protocol.mjs`・`lab/phase2.html`・`lab/match-contract.html`・各 `tests/*.test.mjs`。
+2. **Phase 14Bタッチ・通信安全性**：[`docs/PHASE14B_GESTURE_SECURITY_20261024.md`](./PHASE14B_GESTURE_SECURITY_20261024.md)
+3. **Phase 14A本来の対戦画面と2ブラウザFirebase E2E**：[`docs/PHASE14_STAGE_QA_20261024.md`](./PHASE14_STAGE_QA_20261024.md)
+4. **Phase 13Bオンライン戦闘統合**：[`docs/PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md`](./PHASE13B_FIREBASE_MATCH_BRIDGE_20261024.md)
+5. **Phase 13A実装とSDKテスト**：[`docs/PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md`](./PHASE13A_FIREBASE_ROOM_SDK_QA_20261024.md)
+6. **Phase 13外部資料・既存ゲーム比較**：[`docs/PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md`](./PHASE13_FIREBASE_CROSS_REPO_RESEARCH_20261024.md)
+7. **Phase 12通信基盤**：[`docs/PHASE12_RELAY_RECOVERY_20261024.md`](./PHASE12_RELAY_RECOVERY_20261024.md)
+8. **Phase 11対戦コマンド**：[`docs/PHASE11_MATCH_PROTOCOL_QA_20261023.md`](./PHASE11_MATCH_PROTOCOL_QA_20261023.md)
+9. **Phase 10基本戦闘**：[`docs/PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md`](./PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md)
+10. **歴史・各Phaseリンク**：[`docs/DEVELOPMENT_STATUS_20261023.md`](./DEVELOPMENT_STATUS_20261023.md)
+11. **実際のコード**：`engine/combat.mjs`・`engine/match-protocol.mjs`・`lab/phase2.html`・`lab/match-contract.html`・各 `tests/*.test.mjs`。
 
 **Repository**: https://github.com/8mahi8/yokai-battle-lab  
 **開発ブランチ**: `feat/phase1-action-circle-lab-20261023`  
