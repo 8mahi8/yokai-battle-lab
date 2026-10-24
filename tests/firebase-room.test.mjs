@@ -158,3 +158,40 @@ test('pin clear remains an explicit null command after Firebase JSON roundtrip',
  const m=createMatchProtocol();
  assert.equal(m.dispatch(1,1,events[0].intent).ok,true);
 });
+
+
+test('peer presence reports unknown, online, offline and unregisters on leave',async()=>{
+ const x=setup();
+ await x.host.createRoom({code:'343434'});
+ await x.guest.joinRoom('343434');
+ const hostSaw=[],guestSaw=[];
+ const stopHost=x.host.watchPeerPresence(status=>hostSaw.push(status));
+ x.guest.watchPeerPresence(status=>guestSaw.push(status));
+ assert.deepEqual(hostSaw,[null]);
+ assert.deepEqual(guestSaw,[null]);
+ x.mem.set('yokaiRoomsV1/343434/presence/guest',true);
+ assert.deepEqual(hostSaw,[null,true]);
+ x.mem.set('yokaiRoomsV1/343434/presence/host',true);
+ assert.deepEqual(guestSaw,[null,true]);
+ x.mem.set('yokaiRoomsV1/343434/presence/guest',false);
+ assert.deepEqual(hostSaw,[null,true,false]);
+ stopHost();
+ x.mem.set('yokaiRoomsV1/343434/presence/guest',true);
+ assert.deepEqual(hostSaw,[null,true,false],'unsubscribed callbacks may not fire');
+ x.guest.leaveLocal();
+ x.mem.set('yokaiRoomsV1/343434/presence/host',false);
+ assert.deepEqual(guestSaw,[null,true],'leaveLocal must detach peer listener');
+});
+
+test('remote authoritative preflight preserves existing game and rejects foreign sessions',async()=>{
+ const x=setup();await x.host.createRoom({code:'454545'});
+ await x.guest.joinRoom('454545');
+ assert.equal(await x.host.readPublishedSnapshot(),null);
+ const game=createMatchProtocol({battleOptions:{seed:212}}).snapshot();
+ assert.equal((await x.host.publishSnapshot(game)).ok,true);
+ assert.deepEqual(await x.host.readPublishedSnapshot(),game);
+ assert.deepEqual(await x.guest.readPublishedSnapshot(),game);
+ const path='yokaiRoomsV1/454545/state';
+ x.mem.set(path,{session:'f'.repeat(32),revision:game.revision,stateJson:JSON.stringify(game)});
+ await assert.rejects(x.host.readPublishedSnapshot(),/invalid_or_foreign_remote_state/);
+});
