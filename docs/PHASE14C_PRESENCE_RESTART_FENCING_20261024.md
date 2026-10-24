@@ -17,7 +17,13 @@ Date: 2026-10-24 JST
 - [Full Node/old Chromium suite at Phase14C](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40082426599): successful; **368 Node tests** including new host fencing and presence projection tests.
 - [Actual two-browser Firebase disconnect/reconnect QA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40082321722): successful; browser asserts an onDisconnect false event, pause during disconnect, reconnect and resumed authoritative host turn. No external Firebase cloud test.
 - [Stage and gesture browser regression](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40082426547): successful; original wheel view and canonical 10 touch challenges.
-- [Firebase SDK host restart/fencing QA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40082426621): check conclusion and log before claiming success; supports validation of real SDK match restart.
+- [Firebase SDK host restart/fencing QA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40082426621): **success**. Log explicitly contains `EMULATOR RESTART FENCE PASS same room cannot rewind to revision zero` and `EMULATOR RULES PASS 33 permission checks`. The extra SDK assertion creates a second host bridge in the already-active room and confirms revision is unchanged.
+
+## Additional read-only battle presentation work
+
+- `ui/match-stage.mjs` and `lab/match-stage.css` now render transient actor action highlights, hit/heal feedback and an action summary from `game.events` **only**; no substitute simulation, RNG, damage or command side effects. Source includes reduced-motion CSS.
+- `tools/stage-smoke.mjs` verifies a Chrome-rendered combat action produces one acting-unit highlight after the real authoritative engine advances. Check [stage QA workflow](https://github.com/8mahi8/yokai-battle-lab/actions/workflows/phase14-stage-qa.yml) run status for the latest commit before claiming green.
+- Visual presentation remains provisional CSS/placeholder creatures, not acceptable to label a finished release.
 
 ## What this DOES NOT solve
 
