@@ -150,7 +150,41 @@ document.getElementById('frame').addEventListener('load',()=>{
   check(root.querySelectorAll('.mb-next').length===5,'forecast lost after battles');
   check(pick('#mb-modal').hidden,'touch mini-game unexpectedly visible');
   check(pick('#mb-special-flare').hidden,'special cut-in must not appear for ordinary action');
-  report.textContent='STAGE-PASS canonical engine wheel swipe tap/cancel pin watch turn and 5 forecasts';
+  const gFrame=document.createElement('iframe');
+  gFrame.style.cssText='width:100px;height:100px;position:absolute;left:-200px';
+  gFrame.addEventListener('load',()=>{
+   try{
+    const doc=gFrame.contentDocument;
+    const ok=(selector)=>doc.querySelector(selector);
+    check(ok('#battle-stage').dataset.stageReady==='true','G-ready ESM stage not ready');
+    check(ok('#mb-charge').textContent.includes('Gわざ'),'zero must replace regular button with G');
+    check(doc.querySelectorAll('.mb-special-ready').length===1,'G mode must have exactly one ready medal');
+    check(ok('#mb-team0 [data-unit="A1"] .mb-special-ready')?.textContent==='GわざOK',
+     'G ready depends on full fixed neighbours, including benched A6');
+    check(!ok('#mb-team0 [data-unit="A2"] .mb-special-ready'),
+     'A2 must NOT be ready without A3 Soul');
+    check(ok('#mb-team0 [data-unit="A6"]').classList.contains('mb-bench'),
+     'G neighbour A6 should remain on bench');
+    check(ok('.mb-forecast-section').hidden,'original mode must hide five-turn forecast');
+    const nFrame=document.createElement('iframe');
+    nFrame.style.cssText='width:100px;height:100px;position:absolute;left:-300px';
+    nFrame.addEventListener('load',()=>{
+     try{
+      const nd=nFrame.contentDocument;
+      check(nd.querySelector('#mb-team0 [data-unit="A2"] .mb-special-ready')
+       ?.textContent==='わざOK','normal full Soul must show わざOK');
+      check(nd.querySelectorAll('.mb-special-ready').length===1,'normal mode one ready');
+      check(nd.querySelector('#mb-charge').textContent.includes('わざ'),
+       'normal mode must retain original special button');
+      report.textContent='STAGE-PASS original engine gestures and source-confirmed G/normal readiness';
+     }catch(error){report.textContent='STAGE-FAIL '+(error.stack||error.message);}
+    });
+    nFrame.src='/lab/match-stage.html?review=soul-ready';
+    document.body.appendChild(nFrame);
+   }catch(error){report.textContent='STAGE-FAIL '+(error.stack||error.message);}
+  });
+  gFrame.src='/lab/match-stage.html?review=g-soul-ready';
+  document.body.appendChild(gFrame);
  }catch(error){report.textContent='STAGE-FAIL '+(error.stack||error.message);}
 });
 </script></body></html>`;
