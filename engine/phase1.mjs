@@ -26,6 +26,10 @@ export function initialWaitRange(speed) {
 
 export function waitCostFromSpeed(speed) {
   if (!Number.isInteger(speed) || speed < 1) throw new RangeError('speed must be a positive integer');
+  // The datamined YW2 94-row source lists Speed 2..5 with weight 122
+  // (cost 366), whereas the published integer-formula approximation yields
+  // weight 123 for Speed 2. Prefer the explicit source row for this boundary.
+  if (speed === 2) return 366;
   if (speed <= 171) return 369 - Math.floor(speed / 3) * 3;
   if (speed <= 201) return 198 - Math.floor((speed - 171) / 5) * 3;
   if (speed <= 501) return 180 - Math.floor((speed - 201) / 10) * 3;
