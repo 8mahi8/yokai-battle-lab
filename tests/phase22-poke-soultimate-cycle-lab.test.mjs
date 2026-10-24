@@ -90,3 +90,44 @@ test('22A production host cannot enable the lab Soul-transfer shortcut',()=>{
   const m=createMatchProtocol();
   assert.equal(m.exportJournal().initialOptions.researchPokeSoulTransfer,undefined);
 });
+
+
+test('22A lab: rotation permits a second DIFFERENT caster to use a second Poke-funded Soultimate',()=>{
+  // RC / 2020 player party notes describe Poke-based energy feeding multiple
+  // different attackers, but they do NOT specify the Soul transfer mechanics.
+  // This intentionally relies on the existing lab's fictional first-living-
+  // frontline-recipient rule, and makes that chosen recipient change via
+  // a normal wheel rotation between the two Pokes.
+  const g=createCombat({researchPokeSoulTransfer:100,researchSpecialEffects:false});
+  for(const id of ['B1','B2'])g.giveSoul(id,100);
+  for(const id of ['B1','B2'])
+    g.applyInspirit({id,sign:'negative',effect:'sleep'});
+  g.setWatchMode(0,'zero');
+  const first=finishPoke(g,'B1');
+  assert.equal(first.reward.recipientId,'A1');
+  assert.equal(first.reward.amount,100);
+  g.setWatchMode(0,'standard');
+  const chargedA1=g.prepareSoultimate(0,'A1');
+  assert.equal(chargedA1.ok,true);
+  assert.equal(g.resolveSoultimate(0,chargedA1.token,true).ok,true);
+  assert.equal(meter(g,'A1'),0);
+
+  const rotation=g.rotate(0,1);
+  assert.equal(rotation.ok,true,JSON.stringify(rotation));
+  assert.deepEqual(g.snapshot().clock.teams[0].frontIds,['A2','A3','A4']);
+  g.setWatchMode(0,'zero');
+  const second=finishPoke(g,'B2');
+  assert.equal(second.reward.recipientId,'A2');
+  assert.equal(second.reward.amount,100);
+  assert.equal(meter(g,'A2'),100);
+  g.setWatchMode(0,'standard');
+  const chargedA2=g.prepareSoultimate(0,'A2');
+  assert.equal(chargedA2.ok,true);
+  const resolvedA2=g.resolveSoultimate(0,chargedA2.token,true);
+  assert.equal(resolvedA2.ok,true);
+  assert.equal(resolvedA2.effectStatus,'unimplemented');
+  assert.equal(meter(g,'A2'),0);
+  assert.equal(meter(g,'B1'),0);
+  assert.equal(meter(g,'B2'),0);
+  assert.deepEqual(g.snapshot().poke.used[0],['B1','B2']);
+});
