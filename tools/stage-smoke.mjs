@@ -53,11 +53,21 @@ document.getElementById('frame').addEventListener('load',()=>{
   pick('#mb-charge').click();
   check(pick('#mb-charge').classList.contains('mb-command-active'),
    'soultimate must require selecting a wheel medal');
+  check(pick('#mb-charge').getAttribute('aria-pressed')==='true','charge button not accessible');
+  check(root.querySelectorAll('#mb-team0 .mb-creature.mb-choice-eligible').length===3,
+   'Soultimate should highlight only three front medals');
+  check(root.querySelectorAll('#mb-team0 .mb-creature.mb-choice-ineligible').length===3,
+   'Soultimate should dim the three reserve medals');
+  check(pick('#mb-choice-status').textContent.includes('わざ'),'upper command prompt missing');
   pick('#mb-mode-cancel').click();
   check(!pick('#mb-charge').classList.contains('mb-command-active'),'command cancel failed');
   pick('#mb-purify').click();
   check(pick('#mb-purify').classList.contains('mb-command-active'),
    'purify must require a reserve medal selection');
+  check(root.querySelectorAll('#mb-team0 .mb-creature.mb-choice-eligible').length===0,
+   'purify should not present uninfected reserve as eligible');
+  check(pick('#mb-choice-status').textContent.includes('いません'),
+   'purify should say no eligible reserve rather than encourage invalid action');
   pick('#mb-mode-cancel').click();
   for(const team of root.querySelectorAll('.mb-team:not([hidden])')){
    const boundary=team.getBoundingClientRect();
@@ -69,15 +79,24 @@ document.getElementById('frame').addEventListener('load',()=>{
   }
   pick('#mb-target').click();
   check(pick('#mb-target').classList.contains('mb-command-active'),'target command must enter selection mode');
+  check(root.querySelectorAll('#mb-foe-line .mb-fighter.mb-choice-eligible').length===3,
+   'target selection must highlight three live enemies');
+  check(pick('#mb-target').getAttribute('aria-pressed')==='true','target button not accessible');
+  check(pick('#mb-choice-status').textContent.includes('ねらう'),'target visual instructions missing');
   pick('#mb-foe-line [data-unit="B1"]').click();
   check(pick('#mb-foe-line [data-unit="B1"]').classList.contains('mb-pinned'),
    'enemy pin did not follow canonical protocol');
+  check(root.querySelectorAll('#mb-foe-line .mb-fighter.mb-choice-eligible').length===0,
+   'target selection visuals should clear after pin is accepted');
   pick('[data-rotate="1"]').click();
   check(!pick('#mb-team0 [data-unit="A4"]').classList.contains('mb-bench'),'A side wheel failed to rotate');
   check(pick('#mb-revision').textContent.includes('REV 2'),'game revision did not advance after pin and rotation');
   pick('#mb-watch').click();
   check(pick('#mb-watch').textContent.includes('標準ウォッチ'),'standard -> zero watch toggle failed');
   check(pick('#mb-target').textContent.includes('つつく'),'zero mode should swap target into poke');
+  pick('#mb-target').click();
+  check(pick('#mb-choice-status').textContent.includes('つつく'),'zero poke command prompt missing');
+  pick('#mb-mode-cancel').click();
   pick('#mb-step').click();
   check(Number(pick('#mb-turn').textContent)===1,'actual automatic battle action failed');
   check(!pick('#mb-action-label').textContent.includes('待機中'),'canonical actor summary not shown');
