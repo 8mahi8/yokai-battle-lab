@@ -3,7 +3,7 @@
 更新: 2026-10-25 JST
 Repository: https://github.com/8mahi8/yokai-battle-lab
 Development branch: `feat/phase1-action-circle-lab-20261023`
-**現在: Phase20A/B・21A/B正規ホスト統合済み。Phase21C原作同着は実機確認未完。Phase21D原作妖気回復+5・24観測/13vs14差、零式つつく観測は研究済みだがPvP回収量・受取先未証明。Phase22Aは研究用の仮つつく回収で2連続必殺の接続QA済み。**Phase22Bでは正規2席オンラインホストで4種類のチャージを完走、キャンセルによる妖気保護、G技で後衛にいる固定輪隣接A6を含む3体消費、100妖気通常回復・2席同時チャージ・再送冪等・戦闘Journal再演を全検証。Node451/451成功。** 次はPhase22CのゲストACK表示/実ブラウザの充填状態差とPhase21Dの未証明吸収数値の解明。
+**現在: Phase20A/B・21A/Bの根拠ある部分は正規ホスト統合済み、Phase21Cの開幕同着・登録権とPhase21Dのつつく妖気吸収量/受取先は原作実機未照合。Phase22Aは研究専用の仮妖気転送で必殺連射の機構を検証、22Bは正規ホスト4種チャージ・G技・2席同時・取消を451件Nodeで検証済み。**Phase22CはゲストのチャージACKに途中/完了の権威判定を追加し、UI上で「まだ発動していない」と「発動確定」を区別。Node454/454、正規Chromeステージ、Firebase Auth+RTDBのローカルエミュレーター実2ブラウザでゲスト6タップ→5回途中＋最後発動→両画面の妖気消費をすべて検証成功。** 次は22D原作のノーモーション必殺/割込/回転イベント照合と、22Cの実旧iPad Safari検証準備。
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
@@ -32,30 +32,30 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 | 11〜19 | ホスト通信・画面の土台 | 正規2席コマンド、Firebaseエミュレータ通信、上下画面、オリジナルキャラ、仮必殺効果 | デバッグ画面と実オンラインを混同せず、通信端末で検証 | **基盤あり** |
 | 20 | 研究から正規1vs1への統合 | **20A: Phase9攻撃・妖術＋Phase10ヒット別処理。20B: DEF/STR/SPR能力低下を継続HP効果と分離してホストON**。両方とも個別技値は仮。 | 保留: 回復基礎式と毒/再生HP係数は原作確証までOFF。元の6体に多段技未付与。 | **根拠がある範囲は統合済み** |
 | 21 | 原作ルール一致度 | **21A/B:** 3秒回転制限・ゲスト拒否。**21C:** 94行速度表＋初手比較器（原作同着は未完）。**21D-A/B:** 妖気24条件と矛盾分析。**21D-C1/C2:** 正規ホストつつく/12体妖気観測。**21D-C3:** 2014年通信対戦の「妖気を奪われたあと必殺」記録と2020年の連続吸収/複数必殺の戦術編成を確認（どちらも数値未取得）。 | 妖気受取先・回収量・発生確率を元の対人映像で照合し、数値が固まるまで通常版へ追加しない | **原作PvP定性資料と研究試験あり／数値未検証** |
-| 22 | 原作PvP深層戦術 | Phase5のノーモーション/連続回転/カウンター独立研究。**22A:** つつく仮の研究報酬で別妖怪A2への2連射を結合QA。**22B:** 既存の正規`createMatchProtocol`で原作4チャージ類型全部を通常の入力イベントで完走、100妖気獲得→消費→再回復、チャージ中の零式切替/キャスター後衛化の中止、G技が固定輪の後衛隣接も消費、両席同時独立、重複ACK保護/正規journal replay、`makeStageView`選択可能状態と整合。Node451/451＋Chromium QA PASS。 | **22C:** ゲストACK拒否・ボタン/ゲージ表示・本家風ユーザー操作を実ブラウザで照合。**22D:** ノーモーション・カウンター・割込の原作時刻検証。Phase21D-C3のつつく受取量は未確認のため本番移植しない | **既存の正規ホストでチャージと消費の一連QA済／原作フレーム・数値は未一致** |
+| 22 | 原作PvP深層戦術 | **Phase5:** ノーモーション/連続回転/カウンター独立研究。**22A:** 仮つつく吸収による研究連射・別妖怪への輪回転連携。**22B:** 正規ホスト4タッチ方式・G技3体・キャンセル・2席同時成功。**22C:** ゲストのチャージ完了を本当のホスト結果`completed`で検証し、UIの途中・発動・拒否・不明を区別。Node454/454、ChromeステージQA、Firebaseエミュレーター実2Chrome／ゲスト6タップ・画面同期 PASS | **22D:** ノーモーション必殺と割込み/輪回転の元3DS時刻・対象の根拠照合。**22C残:** 旧iPad Safari実機と長時間/ネット途絶時の連続タップ確認。**21D残:** つつく吸収量・受取先原作未証明 | **通常ホストACK・ChromeエミュレーターQA済／原作実機完全一致は未証明** |
 | 23 | 本番向け1vs1同期 | Firebase Auth+RTDB **ローカルエミュレータ2ブラウザ成功**、短い回線断処理など | 実際のクラウド・権限・長時間同期・端末差を検証 | **基盤あり／本番未試験** |
 | 24 | 学校iPad・配布 | 上下画面、指サークル、低負荷の原形 | **学校iPad実機Safari・Google Sites単一HTML直貼り・2端末実戦** | **未完成** |
 
-## 3. 今回した作業（Phase22B／2026-10-25）
-**全体のどこ:** 原作の操作の型（Phase21/22）→ 戦闘エンジン`engine/soul.mjs`/`engine/charge-input.mjs` → 正規2席ホスト`engine/match-protocol.mjs` → 既存戦闘画面`ui/match-stage.mjs` → Phase23 Firebaseのゲスト追従/Phase24学校iPad SafariとGoogle Sites直接HTMLコード貼り付け。今回ゲームロジックの改変は不要で、足りなかった**正規ホスト全チャージ・キャンセル・消費・再試行**の受け入れテストを実装。
+## 3. 今回した作業（Phase22C／2026-10-25）
+**全体のどこ:** 元ゲームのPvPルール資料（Phase21D/22A）→ Phase22B正規ホスト必殺チャージ・消費 → **Phase22CゲストACK状態と画面の同期** → Phase23 Firebase通信安定 → Phase24学校旧iPad SafariとGoogle Sitesへの単一HTML/CSS/JS直接貼り付け。チャージ数値・戦闘ルールには変更なし。
 
-**原作根拠:** [ゲームエイト『必殺技の使い方と妖気ゲージの回復方法』](https://game8.jp/youkai-watch2/504498)によれば必殺は妖気満タン後に「わざ」を選び、4種類「まわせ」「打て」「なぞれ」「あわせろ」のタッチチャージを行う。[攻略大百科・Gわざ](https://gamepedia.jp/youkai-yw2/archives/1873)と[同・Gゲージ条件](https://gamepedia.jp/youkai-yw2/archives/5657)は発動者と固定輪左右隣接2体が満タンである必要を示す。ミニゲームの具体的閾値・ランダム割合・操作時間、G威力等は**未証明の研究値**であり、その仕様まで原作一致したとは言わない。
+**見つけた問題:** 正規`engine/match-protocol.mjs`の`chargeInput`内部結果にはチャージ完了フラグがあるが、ゲストが受信する`lastCommandOutcomes[1]`には`applied`しかなく、**チャージ入力を受け付けたことと必殺技が実際に発動したことをUI上で区別できなかった**。さらに`ui/match-stage.mjs`のホスト自身の表示は単に「操作を確定 / rev」で、ルールの実際の結果を説明していなかった。
 
-**今回追加した実装:** `tests/phase22b-canonical-soultimate-qa.test.mjs`（新規**9テスト**）。4チャージ種を実ホストの正規`chargeInput`イベントで完走する4件、チャージ中のウォッチ切替・本人を後衛へ回す各取消2件、固定輪A6が後衛にいてもG消費3体となる1件、100ゲージをガード行動で自然獲得して必殺→空になる1件、ホストAと相手Bが同時に独立チャージして完走する1件。最後のタッチコマンドを再送しても妖気を二重消費しないこと、空ゲージで連続発動不可、`makeStageView`/`soultimateReadiness`の「わざOK」と正規ホスト可否の一致、`replayMatchJournal`を全ケースで確認。
+**変更:** `engine/match-protocol.mjs`が`chargeInput`の場合のみ実際の`completed:boolean`を最新コマンド結果に付加。`network/firebase-match.mjs`は**一致するコマンド番号の権威側ACKだけ**ゲストへ完了/途中状態を送る。欠落/古い判定を成功に昇格させない。`ui/match-feedback.mjs`と`ui/match-stage.mjs`が「チャージ開始」「途中タップ成功・まだ発動していない」「最後のタップ完了・わざ発動」「中止」「妖気不足拒否」「結果不明」を区別する。ゲストの楽観的なローカルバトル進行・Soul注入・新コマンドの公開は**なし**。
 
-**注意:** 通常100妖気テスト以外の連続性チェックは`soulCapacity:5`・強制ガードの**明記されたテスト専用レンタル能力**を使用する。正規2席ホストAPIには追加デバッグ入力も機能追加もなし。原作なら5妖気で必殺が打てる、4チャージの研究入力の指定座標・ステップ数が元ゲームと完全一致する、といった主張はしない。Phase22Aの`researchPokeSoulTransfer:100`による研究連射は従来どおり**正規オンラインでOFF**。
+**新テスト:** `tests/match-feedback.test.mjs`に各状態の文言1件、`tests/firebase-match.test.mjs`に妖気不足でのチャージ開始拒否と、ゲスト5回途中＋6回目完了/ACK欠落時の同じ入力番号再送（**チャージが二重進行しない**）・正規ホスト最終Soul消費・Journal replayの2件。合計**Node454/454 PASS**。
 
-**検証:** [Node **451/451 PASS（新規9/9）**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40116853158)。[元ゲーム風画面＋Chrome指操作](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40116853197) PASS。前回の[Firebase Auth+RTDBローカル2ブラウザQA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40111904332)もPASS（**今回クラウド本番・学校実機で再試験した意味ではない**）。原作3DSのチャージフレームや現実の学校iPad Safari・Google Sites直貼りは引き続き未実測。
+**本物のブラウザ2席QA:** ローカル研究ページ`lab/firebase-match-stage.html?phase22c=1`限定で、容量5・ガード行動・seed12の試験fixtureを選択可能にした（通常ページではOFF、本番では使わない）。`tools/firebase-charge-smoke.mjs`を新規追加し、既存`.github/workflows/phase14-firebase-browser.yml`で**Firebase Auth+RTDBローカルエミュレーター+2匿名Chrome iframe**を実行。ゲストが正規PointerEventで6回タップし、途中5回は「まだ発動していません」＋妖気維持、6回目だけ必殺発動文＋両画面妖気0を**実DOMで検査**。[本番同等形式のFirebaseローカル2席 QA: stage＋charge双方PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40117901314)、同じ実行でAuth/RTDB 33権限チェック・接続切断/再接続も成功。[正規Chrome画面・指操作PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40117901410)、[Node454/454＋研究Chrome PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40117901345)。
 
-**詳細記録:** [Phase22B原作資料と正規ホストチャージ9ケースの詳細QA](./PHASE22B_CANONICAL_CHARGE_CONSUMPTION_QA_20261025.md)。前回の[つつく→必殺連射の研究](./PHASE21D_C3_PHASE22A_PVP_POKE_SOULTIMATE_RESEARCH_20261025.md)は独立フィクスチャとして維持。
+**原作根拠・保留:** 元の必殺チャージ方式/両隣G技は[Phase22B資料](./PHASE22B_CANONICAL_CHARGE_CONSUMPTION_QA_20261025.md)参照。**今回の修正はブラウザゲームの通信/状態の真偽だけを直したもので、元3DSのタッチ必要回数・レート・フレーム一致を証明しない。** [Phase22C詳細実装と各検証条件](./PHASE22C_GUEST_CHARGE_ACK_AND_BROWSER_QA_20261025.md)を参照。
 
-**変更先と君の操作:** 開発ブランチ`feat/phase1-action-circle-lab-20261023`のtestとdocsのみ。main、Googleサイト版、本番Firebaseは無変更、課金もなし。君の作業は現時点で不要。
+**変更範囲・君の作業:** GitHub開発ブランチ`feat/phase1-action-circle-lab-20261023`のみ。main、既存学校Googleサイト版、本番Firebase、課金、Flash Soul初期OFFの方針は変更なし。今は君の操作不要。
 
-## 4. 次にする作業（Phase22C→22D）
-1. **Phase22C:** Chrome本家風UIでゲストから`chargeStart`/`chargeInput`/`chargeCancel`を送ったときの送信ACK（accepted）と実際のルール適用（applied）を厳密に分けて表示。チャージ最中の相手輪操作、ウォッチ切替、連続操作の非同期描画・再送で表示や妖気が食い違わないか検証。既存テスト基盤・Firebaseローカル2席を優先活用。
-2. **Phase22D:** 対戦高等戦術ノーモーション必殺、回転/カウンター/割込の元ゲームの時刻・対象変更を根拠付きで検証し、未証明の挙動を正規ホストへ昇格させない。
-3. **Phase21D-C3:** つつくによる妖気の受取妖怪・増減量・確率、攻撃/妖術/後衛のゲージ速度の原作定量観測が足りない。資料がない数値は研究専用のままにする。Flash Soul初期OFF。
-4. **Phase23/24:** Firebase Auth+RTDBのホスト/ゲスト安定と学校旧iPad Safari実機2台 → Google Sitesで**単一HTML/CSS/JSを直接コード埋込**。育成/料金/新独自機能を先行させない。
+## 4. 次にする作業（Phase22D→23/24）
+1. **22D:** 既存Phase5の研究資料・独立エンジンと元ゲームのPvPノーモーション必殺/回転/カウンター/割込のタイミング、相手輪のロック対象、ダメージ確定の条件を照合。実映像やフレーム差のない数値を勝手に通常対戦へ足さない。
+2. **22C残/23:** Firebaseローカル2席の入力同期は今回の6タップQAに成功。次はパケット遅延/再接続を伴う連続チャージで同じ画面結果が保たれるか検証。学校旧iPad Safariの実機は未確認。
+3. **21D残:** PvPつつく吸収の受取先・実際のゲージ移動量、攻撃/妖術/後衛のSoul回復量を独立の原作数値資料で照合できるまでは、通常対戦の仮回収量を0（unresolved）のまま保留。
+4. **24:** 学校旧iPad Safari＋Google Sites「コードを埋め込む」方式で**自己完結したHTML/CSS/JSを直接貼り付け**る実機確認。GitHub Pages iframeで代替しない。実際の公開は本人が実行する。
 
 ## 5. 次フェーズへ進む条件と設計逸脱を防ぐルール
 - **原作再現 → 対人戦術 → オンラインの安定 → 学校Googleサイト**の順を守る。画面装飾、独自ATB、次の5行動予測（UI標準ではOFF）、閃光魂、育成、ランキング、リプレイ、観戦は**現在のスコープに入れない**。
