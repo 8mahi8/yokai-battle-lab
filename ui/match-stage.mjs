@@ -12,8 +12,8 @@ const pct=(value,max)=>Math.max(0,Math.min(100,Math.round(100*value/(max||1))));
 const LABELS={rotate:'回転',pin:'ピン',watch:'ウォッチ切替',
  chargeStart:'必殺チャージ',purifyStart:'おはらい',pokeStart:'つつく',
  chargeCancel:'必殺中止',purifyCancel:'おはらい中止',pokeCancel:'つつく中止'};
-const SLOTS=[{x:17,y:32},{x:50,y:12},{x:83,y:32},
- // Keep complete lower cards inside the panel on old low-height Safari.
+const SLOTS=[{x:17,y:32},{x:50,y:20},{x:83,y:32},
+ // Medals stay in the physical wheel circle; top/bottom cards are not clipped.
  {x:83,y:72},{x:50,y:79},{x:17,y:72}];
 const INSTRUCTIONS={
  spin:'円に沿って指を回そう',tap:'光る玉をタップ',trace:'光る点を順番になぞろう',
