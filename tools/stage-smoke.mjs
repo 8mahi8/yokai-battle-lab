@@ -91,6 +91,31 @@ document.getElementById('frame').addEventListener('load',()=>{
   pick('[data-rotate="1"]').click();
   check(!pick('#mb-team0 [data-unit="A4"]').classList.contains('mb-bench'),'A side wheel failed to rotate');
   check(pick('#mb-revision').textContent.includes('REV 2'),'game revision did not advance after pin and rotation');
+  const wheel=pick('#mb-team0 .mb-wheel'),bounds=wheel.getBoundingClientRect();
+  const cx=bounds.left+bounds.width/2,cy=bounds.top+bounds.height/2;
+  const radius=Math.min(bounds.width,bounds.height)*.32;
+  const pointer=(type,x,y,id=81)=>new PointerEvent(type,{bubbles:true,cancelable:true,
+   pointerId:id,button:0,pointerType:'touch',isPrimary:true,clientX:x,clientY:y});
+  const record=x=>Number(pick('#battle-stage').dataset.stageRevision);
+  const beforeDrag=record();
+  wheel.dispatchEvent(pointer('pointerdown',cx+radius,cy-radius));
+  pick('#battle-stage').dispatchEvent(pointer('pointermove',cx+radius,cy+radius));
+  pick('#battle-stage').dispatchEvent(pointer('pointerup',cx+radius,cy+radius));
+  check(record()===beforeDrag+1,'one circular drag must submit exactly one canonical rotate');
+  check(!pick('#mb-team0 [data-unit="A5"]').classList.contains('mb-bench'),
+   'clockwise swipe did not promote next member from bench');
+  // Short unintentional movement and cancellation are not turns.
+  const tiny=record();
+  const afterWheel=pick('#mb-team0 .mb-wheel');
+  afterWheel.dispatchEvent(pointer('pointerdown',cx+radius,cy-radius,82));
+  pick('#battle-stage').dispatchEvent(pointer('pointermove',cx+radius,cy-radius*.85,82));
+  pick('#battle-stage').dispatchEvent(pointer('pointerup',cx+radius,cy-radius*.85,82));
+  check(record()===tiny,'short angular tap must not rotate the wheel');
+  afterWheel.dispatchEvent(pointer('pointerdown',cx+radius,cy-radius,83));
+  pick('#battle-stage').dispatchEvent(pointer('pointermove',cx+radius,cy+radius,83));
+  pick('#battle-stage').dispatchEvent(pointer('pointercancel',cx+radius,cy+radius,83));
+  check(record()===tiny,'pointercancel must not submit a rotation');
+
   pick('#mb-watch').click();
   check(pick('#mb-watch').textContent.includes('標準ウォッチ'),'standard -> zero watch toggle failed');
   check(pick('#mb-target').textContent.includes('つつく'),'zero mode should swap target into poke');
@@ -112,7 +137,8 @@ document.getElementById('frame').addEventListener('load',()=>{
   check(root.querySelectorAll('.mb-creature').length===12,'both player wheel projections lost after battle actions');
   check(root.querySelectorAll('.mb-next').length===5,'forecast lost after battles');
   check(pick('#mb-modal').hidden,'touch mini-game unexpectedly visible');
-  report.textContent='STAGE-PASS canonical engine wheel pin watch host tick seat selection and five forecasts';
+  check(pick('#mb-special-flare').hidden,'special cut-in must not appear for ordinary action');
+  report.textContent='STAGE-PASS canonical engine wheel swipe tap/cancel pin watch turn and 5 forecasts';
  }catch(error){report.textContent='STAGE-FAIL '+(error.stack||error.message);}
 });
 </script></body></html>`;
