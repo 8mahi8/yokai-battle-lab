@@ -214,3 +214,36 @@
  .mb-yw2 .mb-activity{margin:2px 0;padding:2px 5px}
  .mb-yw2 .mb-revision{display:none}
 }
+
+/* Phase 16B / command selection cues. Show eligibility only; the existing
+   authoritative engine still decides whether a command is legal. */
+.mb-upper-screen[data-selecting="target"] .mb-screen-caption{
+ background:linear-gradient(90deg,#375c84,#1a3954)}
+.mb-upper-screen[data-selecting="target"] #mb-choice-status{
+ color:#ffebb2;font-weight:800}
+.mb-upper-screen[data-selecting="target"] .mb-battle-backdrop{
+ box-shadow:inset 0 0 0 2px #ffe3a755}
+.mb-foe-line .mb-fighter.mb-choice-eligible{cursor:pointer}
+.mb-foe-line .mb-fighter.mb-choice-eligible:before{
+ content:'ねらう ▼';position:absolute;top:0;left:50%;transform:translate(-50%,-2px);
+ z-index:5;white-space:nowrap;padding:1px 5px;color:#fff4be;
+ background:#2c5e82e8;border:1px solid #ffdfa0;border-radius:6px;
+ font-size:10px;font-weight:800;text-shadow:0 1px 2px #24304a;
+ box-shadow:0 0 0 2px #fff1c12a}
+.mb-upper-screen[data-selecting="target"] .mb-foe-line .mb-fighter.mb-choice-eligible{
+ border-radius:12px;outline:2px solid #ffe1a5;outline-offset:-3px;
+ background:#f2e1a41c}
+.mb-fighter.mb-choice-ineligible{opacity:.45}
+.mb-yw2 .mb-creature.mb-choice-eligible{
+ border-color:#fff9af;box-shadow:0 0 0 3px #ffe4a4bb,0 0 12px #ffbd73b8}
+.mb-yw2 .mb-creature.mb-choice-ineligible:not(.mb-selected){
+ opacity:.61;filter:saturate(.6)}
+.mb-yw2 .mb-creature.mb-choice-ineligible.mb-selected{
+ border-color:#a59ca1;box-shadow:0 1px 0 #e4dfce inset,0 2px 5px #111d36bd}
+.mb-yw2 .mb-lower-title [aria-pressed="true"]{border-color:#ffe2a9}
+.mb-yw2 .mb-watch-command:focus-visible,.mb-yw2 .mb-fighter:focus-visible,
+.mb-yw2 .mb-creature:focus-visible{
+ outline:3px solid #fff1ba;outline-offset:1px}
+@media(prefers-reduced-motion:reduce){
+ .mb-fighter.mb-choice-eligible,.mb-creature.mb-choice-eligible{animation:none}
+}
