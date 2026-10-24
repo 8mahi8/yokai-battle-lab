@@ -41,6 +41,8 @@ document.getElementById('frame').addEventListener('load',()=>{
   check(firstBox.width>=40&&firstBox.width<=60&&firstBox.height>=40,
    'portrait is not readable at intended iPad card size');
   check(root.querySelectorAll('.mb-next').length===5,'missing 5 predicted actions');
+  check(pick('.mb-forecast-section').hidden,
+   'non-original five-action debug forecast must stay hidden in reproduction-first UI');
   check(pick('#mb-turn').textContent==='0','wrong starting turn');
   const panel=pick('.mb-lower-screen');
   check(panel.getBoundingClientRect().height>=270,'lower command screen has no layout');
