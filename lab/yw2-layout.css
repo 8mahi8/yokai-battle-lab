@@ -170,3 +170,47 @@
 }
 @media(prefers-reduced-motion:reduce){.mb-fighter.mb-acting .mb-character-art,.mb-fighter.mb-hit .mb-character-art,
  .mb-fighter.mb-healed .mb-character-art{animation:none}}
+
+/* 1024×768 class school iPad landscape: preserve authentic vertical
+   upper/lower ordering, shrink scene and medal area before adding scrolling. */
+@media(min-width:701px) and (max-height:820px){
+ .mb-yw2{padding:4px 9px 8px}
+ .mb-yw2 .mb-topbar{margin-bottom:3px}
+ .mb-yw2 .mb-mark{width:32px;height:32px;font-size:19px}
+ .mb-yw2 .mb-title-group h1{font-size:18px}
+ .mb-yw2 .mb-title-group small{font-size:8px}
+ .mb-yw2 .mb-disclaimer{display:none}
+ .mb-dualscreen{gap:5px}
+ .mb-battle-backdrop{height:171px}
+ .mb-fighter{height:77px;width:84px}
+ .mb-fighter-sprite{height:49px;width:61px}
+ .mb-fighter .mb-character-art{height:49px;width:49px}
+ .mb-fighter-meta{padding:1px 4px;min-height:27px}
+ .mb-fighter-meta strong{font-size:9px;line-height:11px}
+ .mb-fighter-meta small{font-size:8px;line-height:8px}
+ .mb-screen-caption{height:21px;padding:3px 10px}
+ .mb-yw2 .mb-action-label{padding:4px 9px;min-height:24px}
+ .mb-yw2 .mb-forecast-section{padding:4px 8px}
+ .mb-yw2 .mb-section-label{font-size:10px;padding-bottom:2px}
+ .mb-yw2 .mb-next{min-height:28px;padding:2px 5px}
+ .mb-lower-screen{padding:5px 10px 6px}
+ .mb-lower-title{padding-bottom:3px;min-height:23px}
+ .mb-command-field{grid-template-columns:minmax(108px,.9fr) minmax(260px,300px) minmax(108px,.9fr)}
+ .mb-watch-command{min-height:88px;font-size:16px}
+ .mb-watch-command small{font-size:9px}
+ .mb-wheel-host,.mb-yw2 .mb-team{height:268px}
+ .mb-yw2 .mb-wheel{height:260px;max-width:300px}
+ .mb-yw2 .mb-creature{width:65px;height:80px;border-width:2px;padding:0 4px 2px}
+ .mb-yw2 .mb-creature .mb-character-art{height:35px;width:35px}
+ .mb-yw2 .mb-creature .mb-name{font-size:9px}
+ .mb-yw2 .mb-creature .mb-unit-stat{font-size:8px}
+ .mb-yw2 .mb-center-symbol{width:54px;height:54px;font-size:16px}
+ .mb-yw2 .mb-center-symbol:after{font-size:8px;bottom:7px}
+ .mb-yw2 .mb-wheel-turn{margin-top:-3px}
+ .mb-yw2 .mb-wheel-turn button{min-height:25px;padding:2px 8px}
+ .mb-command-footer{padding-top:4px;margin-top:3px}
+ .mb-command-footer button{padding:3px 7px}
+ .mb-yw2 .mb-feed{padding:3px 8px;margin-top:3px}
+ .mb-yw2 .mb-activity{margin:2px 0;padding:2px 5px}
+ .mb-yw2 .mb-revision{display:none}
+}
