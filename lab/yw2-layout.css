@@ -249,3 +249,56 @@
 @media(prefers-reduced-motion:reduce){
  .mb-fighter.mb-choice-eligible,.mb-creature.mb-choice-eligible{animation:none}
 }
+
+/* Phase17: physical wheel drag, one snapped 60deg engine rotation per
+   deliberate angular gesture. Only the decorative medal ring previews motion;
+   text, interactive buttons and status bars stay readable and static. */
+.mb-yw2 .mb-wheel{touch-action:none}
+.mb-yw2 .mb-wheel-ring{transform:rotate(var(--wheel-drag-angle,0deg));
+ transition:transform .12s ease-out}
+.mb-yw2 .mb-wheel.mb-wheel-dragging .mb-wheel-ring{
+ transition:none}
+.mb-yw2 .mb-wheel.mb-wheel-dragging:after{
+ content:'サークル回転';position:absolute;z-index:8;top:48%;
+ left:50%;transform:translate(-50%,-50%);pointer-events:none;
+ background:#29283ddd;border:1px solid #e5c795;
+ border-radius:18px;padding:5px 8px;color:#fff0c3;
+ font-size:10px;font-weight:800;white-space:nowrap}
+
+/* Phase17: short original VFX in upper action field. These are read-only
+   playback of authoritative battle events (not new damage calculations).
+   Compositor-friendly transform and opacity only; no blur or filters. */
+.mb-special-flare{position:absolute;z-index:9;left:50%;top:50%;width:210px;
+ height:112px;transform:translate(-50%,-50%);pointer-events:none;
+ display:flex;align-items:center;justify-content:center}
+.mb-special-flare[hidden]{display:none!important}
+.mb-special-flare:before{content:'';position:absolute;inset:3px 0;
+ border:3px solid #ffe2a4;border-radius:60px;
+ background:radial-gradient(ellipse,#ac6d51cd,#3b4c88be);
+ animation:mb-special-burst .75s ease-out both}
+.mb-special-flare span{position:relative;display:block;z-index:1;
+ font-size:24px;font-weight:900;letter-spacing:1px;
+ color:#fff6c5;text-shadow:1px 2px #613d57;
+ animation:mb-special-text .8s ease-out both}
+@keyframes mb-special-burst{
+ 0%{opacity:0;transform:scale(.5)}
+ 30%{opacity:1;transform:scale(1)}
+ 100%{opacity:0;transform:scale(1.35)}
+}
+@keyframes mb-special-text{
+ 0%{opacity:0;transform:translateY(13px) scale(.8)}
+ 30%,75%{opacity:1;transform:translateY(0) scale(1)}
+ 100%{opacity:0;transform:translateY(-7px) scale(1.05)}
+}
+.mb-fighter.mb-missed .mb-character-art{
+ animation:mb-miss .65s ease-out both}
+@keyframes mb-miss{
+ 0%,100%{transform:translateX(0)}
+ 35%{transform:translateX(9px)}
+ 65%{transform:translateX(-2px)}
+}
+@media(prefers-reduced-motion:reduce){
+ .mb-special-flare:before,.mb-special-flare span,
+ .mb-fighter.mb-missed .mb-character-art{animation:none!important}
+ .mb-yw2 .mb-wheel-ring{transition:none!important}
+}
