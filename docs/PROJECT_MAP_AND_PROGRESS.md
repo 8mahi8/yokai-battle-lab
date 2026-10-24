@@ -42,12 +42,12 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 **今回:** Mt.Wildwoodの妖怪ウォッチ2/3用94行速度表、通常技のWait=3、新登場前衛Wait=3×速度weightを**旧Phase1実装に照合**。原作の公式対戦「サークル連続回転3秒」資料と、Phase5で研究済みの二度回しの相手視点差を再確認。既存Phase1サークルの`rotationCooldownMs`を直接`engine/combat.mjs`から再利用できるようにして、対戦ホストに**クライアント時刻を受け取らないホスト専用モノトニック時刻**を接続。成功/拒否の時刻を対戦記録へ残し同じ結果を再演する。従来のデフォルト設定(0ms)は**21Bまで変更しない**。
 
 **テスト:** `tests/match-phase21-rotation-clock.test.mjs`新規4ケースで3秒の境界・両側の独立制限・偽装時刻拒否・重複防止・完全Journal再演。
-[Node392/392＋Chrome旧研究UI](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40102341467)、[実Chrome 2画面＋10タッチ](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40102341498)成功。原作実機の3秒開始フレームやオンライン同期での最終確認は**まだ未済**。詳細：[Phase21A外部資料とコード照合](./PHASE21A_WHEEL_ACTION_PARITY_20261024.md)。
+[Node393/393＋Chrome旧研究UI](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40102644457)、[実Chrome 2画面＋10タッチ](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40102644465)成功。追加でFirebaseモックの**ゲスト→ホスト→ゲスト通知**を経由して、連続回転を制限し3秒後に再度回せること・Journal再演を確認した。原作実機の3秒開始フレームやオンライン同期での最終確認は**まだ未済**。詳細：[Phase21A外部資料とコード照合](./PHASE21A_WHEEL_ACTION_PARITY_20261024.md)。
 
 **変更範囲:** 開発ブランチのみ。main/学校Googleサイト/本番Firebase/学校iPad実機は変更も検証もしていない。
 
 ## 4. 次にする作業（Phase 21B → 21C/21D）
-1. **21B サークルの標準3秒ルール**: 本来のホスト受信時刻と学校iPadのタッチ操作を両立させる。既存Phase5の2回回転の相手視点を混同せず、Chrome2ブラウザ Firebase EmulatorとホストJournalでQA。受入条件が揃ってから`createMatchProtocol`で標準設定を3秒へ変更する。
+1. **21B サークルの標準3秒ルール**: まず現在のゲスト側ACKが「ホストに届いた」だけを通知し、クールダウン拒否理由を表示できない問題を解決する。本来のホスト受信時刻と学校iPadのタッチ操作を両立させる。既存Phase5の2回回転の相手視点を混同せず、Chrome2ブラウザ Firebase EmulatorとホストJournalでQA。受入条件が揃ってから`createMatchProtocol`で標準設定を3秒へ変更する。
 2. **21C 初期行動権／細かい順序**: すでにPhase1に存在する94行初期wait研究とPhase5の`opening-priority`を元の実戦資料で照合。根拠のない左右のタイブレークや前衛補正を確定値とは呼ばない。
 3. **21D 妖気回収と必殺連射**: 攻撃・妖術・つつくの妖気獲得を別々に検証。未検証の固定+5を全員に付与しない。
 4. **Phase 22以降**: ノーモーション等の対人戦術 → Phase23オンライン同期の安定 → Phase24 Googleサイト直接HTML＋学校iPad Safari。
