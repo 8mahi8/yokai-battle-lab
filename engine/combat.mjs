@@ -108,7 +108,7 @@ export function baseDamage(attacker,target,kind,critical=false) {
 export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,researchSoulGainPerAction=0,researchSpecialEffects=false,
   researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false,
   researchWheelCoalescing=false,researchOpeningPriority=null,
-  researchPokeSoulTransfer=0,researchDamageModel=false,researchMultiHit=false,researchTurnInspirits=false,researchHealingVariance=false}={}) {
+  researchPokeSoulTransfer=0,researchDamageModel=false,researchMultiHit=false,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
   if(typeof researchPresentation!=='boolean')throw new TypeError('researchPresentation must be boolean');
@@ -118,6 +118,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   if(typeof researchMultiHit!=='boolean')throw new TypeError('researchMultiHit must be boolean');
   if(researchMultiHit&&!researchDamageModel)
     throw new RangeError('researchMultiHit requires researchDamageModel');
+  if(typeof researchStatInspirits!=='boolean')
+    throw new TypeError('researchStatInspirits must be boolean');
+  if(researchStatInspirits&&!researchDamageModel)
+    throw new RangeError('researchStatInspirits requires researchDamageModel');
   if(typeof researchTurnInspirits!=='boolean')
     throw new TypeError('researchTurnInspirits must be boolean');
   if(researchTurnInspirits&&!researchDamageModel)
@@ -142,9 +146,15 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const source=teams??[RENTAL_SQUAD,RENTAL_SQUAD];
   if(!Array.isArray(source)||source.length!==2||!source.every(x=>Array.isArray(x)&&x.length===6))throw new TypeError('requires two rosters of six');
   const squads=source.map((team,side)=>team.map((member,i)=>buildMember(member,side,i)));
-  if(!researchTurnInspirits&&squads.flat().some(m=>
-    !['sleep','strength-up'].includes(m.inspirit)))
-    throw new RangeError('advanced rental Inspirits require researchTurnInspirits');
+  // Stat reductions and HP-over-time are distinct move categories.
+  // Do not enable unverified negative HP-loss math to use real debuff types.
+  const statDebuffs=['strength-down','defense-down','spirit-down'];
+  if(squads.flat().some(m=>statDebuffs.includes(m.inspirit))&&
+      !researchStatInspirits&&!researchTurnInspirits)
+    throw new RangeError('stat debuffs require researchStatInspirits');
+  if(squads.flat().some(m=>['hp-loss','hp-regen'].includes(m.inspirit))&&
+      !researchTurnInspirits)
+    throw new RangeError('HP-over-time Inspirits require researchTurnInspirits');
   const byId=new Map(squads.flat().map(x=>[x.id,x]));
   const soul=createSoulSystem({teams:squads.map(team=>team.map(m=>({id:m.id,capacity:m.soulCapacity})))});
  const statuses=createInspiritLedger([...byId.keys()]);
@@ -264,9 +274,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       throw new RangeError('positive effect requires positive sign');
     if(!positive.includes(effect)&&sign!=='negative')
       throw new RangeError('negative effect requires negative sign');
-    if(!researchTurnInspirits&&
-      !['sleep','strength-up','research-marker'].includes(effect))
-      throw new RangeError('advanced Inspirit requires researchTurnInspirits');
+    if(['strength-down','defense-down','spirit-down'].includes(effect)&&
+       !researchStatInspirits&&!researchTurnInspirits)
+      throw new RangeError('stat Inspirit requires researchStatInspirits');
+    if(['hp-loss','hp-regen'].includes(effect)&&!researchTurnInspirits)
+      throw new RangeError('HP-over-time Inspirit requires researchTurnInspirits');
     if(effect==='sleep'&&duration!==null)throw new RangeError('sleep owner-turn duration is unsupported');
     const result=statuses.apply({id,sign,effect,source,duration,level});
     syncCanAct(id);return result;
