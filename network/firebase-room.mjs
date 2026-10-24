@@ -58,6 +58,15 @@ function parseRoom(value){
   throw new Error('incompatible or malformed room');
  return value;
 }
+// Firebase RTDB can reorder object keys when values are read back.
+// Compare nested command payloads canonically; JSON text order is not wire identity.
+function stableCommandJSON(value){
+ if(Array.isArray(value))return '['+value.map(stableCommandJSON).join(',')+']';
+ if(plain(value))return '{'+Object.keys(value).sort().map(k=>
+  JSON.stringify(k)+':'+stableCommandJSON(value[k])).join(',')+'}';
+ return JSON.stringify(value);
+}
+
 function packetSize(packet){
  try{return new TextEncoder().encode(JSON.stringify(packet)).length;}
  catch(_){return Infinity;}
@@ -175,7 +184,7 @@ export function createFirebaseRoomClient({database,uid,randomBytes=defaultRandom
   // must never permit a client to change the payload under an old sequence.
   // Read-before-write avoids requiring repeated equal-sequence writes.
   const same=old=>plain(old)&&old.session===session&&
-   old.clientSeq===clientSeq&&JSON.stringify(old.intent)===JSON.stringify(wireIntent);
+   old.clientSeq===clientSeq&&stableCommandJSON(old.intent)===stableCommandJSON(wireIntent);
   const current=(await ref.once('value')).val();
   if(same(current))return {ok:true,reason:'already_stored'};
   if(plain(current)&&current.session===session&&current.clientSeq>=clientSeq)
