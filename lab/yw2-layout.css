@@ -275,19 +275,19 @@
 .mb-special-flare:before{content:'';position:absolute;inset:3px 0;
  border:3px solid #ffe2a4;border-radius:60px;
  background:radial-gradient(ellipse,#ac6d51cd,#3b4c88be);
- animation:mb-special-burst .75s ease-out both}
+ animation:mb-special-burst 1.05s ease-out both}
 .mb-special-flare span{position:relative;display:block;z-index:1;
  font-size:24px;font-weight:900;letter-spacing:1px;
  color:#fff6c5;text-shadow:1px 2px #613d57;
- animation:mb-special-text .8s ease-out both}
+ animation:mb-special-text 1.05s ease-out both}
 @keyframes mb-special-burst{
  0%{opacity:0;transform:scale(.5)}
- 30%{opacity:1;transform:scale(1)}
- 100%{opacity:0;transform:scale(1.35)}
+ 22%,76%{opacity:1;transform:scale(1)}
+ 100%{opacity:0;transform:scale(1.22)}
 }
 @keyframes mb-special-text{
  0%{opacity:0;transform:translateY(13px) scale(.8)}
- 30%,75%{opacity:1;transform:translateY(0) scale(1)}
+ 20%,86%{opacity:1;transform:translateY(0) scale(1)}
  100%{opacity:0;transform:translateY(-7px) scale(1.05)}
 }
 .mb-fighter.mb-missed .mb-character-art{
