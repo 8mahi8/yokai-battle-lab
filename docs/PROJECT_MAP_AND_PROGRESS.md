@@ -3,7 +3,7 @@
 更新: 2026-10-24 JST
 Repository: https://github.com/8mahi8/yokai-battle-lab
 Development branch: `feat/phase1-action-circle-lab-20261023`
-**現在: Phase 20A 完了 → Phase 20B 原作根拠の照合中。**
+**現在: Phase 20A／20Bの根拠がある範囲を対戦エンジンへ統合済み → Phase 21原作一致の照合へ移る。未確定のHP継続減少・回復式は保留。**
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
@@ -30,35 +30,29 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 |---|---|---|---|---|
 | 1〜10 | 原作エンジン研究 | 行動順、4行動、とりつき、妖気、4チャージ、5おはらい、つつく、公式資料ベースのダメージ、各ヒット処理、独立研究用戦術 | 原作と確定できない数式を別扱いし実戦版へ段階統合 | **研究成果あり** |
 | 11〜19 | ホスト通信・画面の土台 | 正規2席コマンド、Firebaseエミュレータ通信、上下画面、オリジナルキャラ、仮必殺効果 | デバッグ画面と実オンラインを混同せず、通信端末で検証 | **基盤あり** |
-| 20 | 研究から正規1vs1への統合 | **20A: Phase9の攻撃/妖術ダメージモデル＋Phase10の多段処理がホスト標準ON**。必殺は別の仮効果。重複HTML IDも修正 | **20B**: 状態異常/回復を外部証拠で確認し、未確定数式はONにしない | **現在** |
-| 21 | 原作ルール一致度 | 先行研究の予備データ | 行動頻度、妖気獲得量、技固有数値、回転制限の再現照合 | **次段階** |
+| 20 | 研究から正規1vs1への統合 | **20A: Phase9攻撃・妖術＋Phase10ヒット別処理。20B: DEF/STR/SPR能力低下を継続HP効果と分離してホストON**。両方とも個別技値は仮。 | 保留: 回復基礎式と毒/再生HP係数は原作確証までOFF。元の6体に多段技未付与。 | **根拠がある範囲は統合済み** |
+| 21 | 原作ルール一致度 | Phase1速度表・Phase5回転研究・Soul研究を再利用可能 | 原作の行動頻度、攻撃時の妖気回収、回転制限、技固有効果の確認→比較テスト | **次に着手** |
 | 22 | 原作PvP深層戦術 | Phase5にノーモーション必殺、連続回転、カウンター必殺の独立研究モデル | 本家の時刻・相手画面・被弾イベントと実戦統合テストが一致 | **未統合** |
 | 23 | 本番向け1vs1同期 | Firebase Auth+RTDB **ローカルエミュレータ2ブラウザ成功**、短い回線断処理など | 実際のクラウド・権限・長時間同期・端末差を検証 | **基盤あり／本番未試験** |
 | 24 | 学校iPad・配布 | 上下画面、指サークル、低負荷の原形 | **学校iPad実機Safari・Google Sites単一HTML直貼り・2端末実戦** | **未完成** |
 
-## 3. 今回した作業（Phase 20A / 2026-10-24）
-**目的:** 過去の研究を作り直さず、正式ホストが使う`createMatchProtocol()`へ原作根拠のある攻撃・妖術の計算を統合する。
+## 3. 今回した作業（Phase 20B／2026-10-24）
+**対象箇所:** `engine/combat.mjs`（状態異常の種別と実効果） → `engine/match-protocol.mjs`（対戦版の標準設定） → `tests/match-phase20b-inspirit.test.mjs`（正規ホストの確認）。
 
-**変更済み:**
-- `engine/match-protocol.mjs` デフォルト: `researchDamageModel:true,researchMultiHit:true`。既存 `researchSpecialEffects:true` は個別妖怪の威力が**仮値**のまま。
-- 過去の `engine/damage-model.mjs` と `engine/combat.mjs` のヒット単位処理を**再実装せず再利用**。
-- `tests/match-phase20-integration.test.mjs` でホストの物理/妖術、3ヒット例、HP・急所・命中・再送・対戦ジャーナル再演・Firebase snapshot 128KiB制約。
-- `ui/match-stage.mjs` の必殺演出DOMの重複IDを削除、`tools/stage-smoke.mjs` で再発検知。
-- **デフォルトのオリジナル6体にはまだ多段攻撃の技属性を付けていない。** 多段処理がONと「3ヒット妖怪を正式採用」は違う。
+**成果:** 既存Phase10の **STR/DEF/SPR能力低下** と仮説を含む **HP継続減少・継続回復** を別々の設定に分割。`researchStatInspirits:true` を正規ホストでONにし、`researchTurnInspirits:false` を維持。敵B1の防御をとりつきで下げ、A2が攻撃して`defenseMultiplier:.7`となる通常対戦の実エンジン動作をテスト。**レベル2→-2段階の対応、オリジナル各キャラの数値はまだ研究仮値であり原作完全一致ではない。**
 
-**証拠:** [385/385 Node](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40099904901)、[実Chrome対戦画面](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40099904955)、[Firebaseローカル2ブラウザ](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40099646469)。最後のものはPhase20Aの最終HEADの再測定ではなく、今回有効化後の先行コミットの実験。実機Safari・実クラウド・Google Sites直貼りの合格を意味しない。
-**資料:** [Phase20A監査・コード統合](./PHASE20_COMBAT_INTEGRATION_20261024.md)。
+**検証:** [388/388 Node＋旧研究Chrome](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40101561056)、[実戦場Chrome/タッチ](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40101561015) 成功。中間で旧モデル比較テストが壊れたが後方互換を修正して緑化。[Phase20B詳細と引用元](./PHASE20B_STATUS_HEAL_GATE_20261024.md)。
+**本番への反映:** 開発ブランチのみ。main、Googleサイト、実Firebase、学校iPadには触れていない。
 
-## 4. 次にやる作業（Phase20B／状態異常と回復の事実確認）
-**最初に既存成果を見る:** `engine/inspirit.mjs` / `engine/selection.mjs` / `engine/turn-inspirit.mjs` / `engine/heal-model.mjs` / `tests/inspirit.test.mjs` / `tests/combat-turn-inspirit.test.mjs` / `docs/PHASE10_MULTI_HIT_INSPIRIT_HEAL_20261023.md`。
+**前回（Phase20A）:** [ダメージ計算・多段ヒット統合と詳細テスト](./PHASE20_COMBAT_INTEGRATION_20261024.md)。再実装はせず既存Phase9/10を活用。
 
-**再調査結果（2026-10-24):**
-- [Mt.Wildwood YKW2 Inspirits](https://mtwildwood.net/inspirits.php?g=yw2) は、通常の良いとりつきが**30回の戦闘全体行動**で失効し、普通の悪いとりつきは時間切れなし、特定の技は本人行動回数を明記する、と説明。`engine/inspirit.mjs` で既に実装され、`tests/inspirit.test.mjs` が範囲テストを持つ。**再実装不要**。
-- [Mt.Wildwood YW2 moves](https://www.mtwildwood.net/yw2/moves) では力ダウン、守りダウン、HP徐々に減少/回復は**種類・レベルごとに別技**。現在の`engine/turn-inspirit.mjs`にある**全マイナスHP効果へ一律5%/level**は完全な原作根拠がない。**標準ではOFFを維持**する。
-- 回復技の種類と±10%のばらつきについて研究があるが、`engine/heal-model.mjs` の**回復基礎式 `(power+spirit)/3` は未確定**。理論式を仮値と明示したまま、`researchHealingVariance`はOFFを維持する。
-- `damage-model.mjs` にある独自の段階倍率と、個別とりつきのレベルの対応も追加照合が必要。前の研究で作ったからというだけで全状態を自動有効化しない。
+## 4. 次にする作業（Phase 21／原作ルールの一致度検証）
+1. **行動順と回転の実機仕様照合**: 既存の`engine/phase1.mjs`、Phase1・Phase5の資料、`rotationCooldownMs:0` の根拠を再点検。対人戦で優先度が高いサークル操作・回転による行動権の温存を最初に確認する。
+2. **妖気獲得**: 今の「自分の攻撃しない手番後+5」以外、攻撃・妖術・つつくでの獲得条件は不確定。資料／原作の再現シーンを収集し、必殺連射など既存戦術が再現可能かを比較。
+3. **必殺固有技**: 既存Phase19の攻撃・回復は`research-fixture`。元ゲームでの対象範囲・ヒット回数・Gわざとの差を技ごとに照合する。**原作の条件が確定しない効果や数値は推測でONにしない**。
+4. **回復とHP継続異常は凍結**: `engine/heal-model.mjs` の`(power+spirit)/3`と`turn-inspirit.mjs` のHP損失一律5%は未確定なので、原作実測か強い根拠が揃うまで既存研究専用に保持する。
 
-**20Bの受け入れ条件:** 対象ごとに「確認した原作ルール → 原作の参照URL/測定 → 既存コードとテスト → 通常ホストへ安全に統合できるか」を記載。未確定は研究用OFFとしたままにする。新たな根拠がなければ**既存コードを触らず、根拠の不足を事実として報告する**。本家の最新資料・プレイ録画が得られた場合だけ追加調査する。
+**次の受入条件:** 外部原作資料／プレイ実例→いまの既存コード→相違点→ホスト・実ブラウザテストの対応表を作る。既に終わったPhaseを作り直さず、見つけた相違点だけ直す。公開と実機はまだ。
 
 ## 5. 次フェーズへ進む条件と設計逸脱を防ぐルール
 - **原作再現 → 対人戦術 → オンラインの安定 → 学校Googleサイト**の順を守る。画面装飾、独自ATB、次の5行動予測（UI標準ではOFF）、閃光魂、育成、ランキング、リプレイ、観戦は**現在のスコープに入れない**。
