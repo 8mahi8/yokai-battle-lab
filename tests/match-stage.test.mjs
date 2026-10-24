@@ -49,14 +49,15 @@ test('invalid stage input fails closed',()=>{
 test('front line/bench prompts never claim damage or target legality',()=>{
  const protocol=createMatchProtocol({battleOptions:{seed:212}});
  const initial=makeStageView(protocol.snapshot(),0);
- assert.deepEqual(matchSelectionHints(initial,'charge').own,['A1','A2','A3']);
+ assert.deepEqual(matchSelectionHints(initial,'charge').own,[],'full Soul is required even when three units are alive');
+ assert.match(matchSelectionHints(initial,'charge').message,/いません/);
  assert.deepEqual(matchSelectionHints(initial,'target').enemy,['B1','B2','B3']);
  assert.match(matchSelectionHints(initial,'purify').message,/いません/);
  assert.deepEqual(matchSelectionHints(initial,'purify').own,[]);
  const altered=JSON.parse(JSON.stringify(initial));
  altered.teams[0].members.find(x=>x.id==='A5').negative=true;
  assert.deepEqual(matchSelectionHints(altered,'purify').own,['A5']);
- assert.deepEqual(matchSelectionHints(altered,'charge').own,['A1','A2','A3'],
+ assert.deepEqual(matchSelectionHints(altered,'charge').own,[],
   'purification eligibility must not change the normal front list');
  const ignored=JSON.parse(JSON.stringify(altered));
  ignored.teams[1].members.find(x=>x.id==='B1').ko=true;
