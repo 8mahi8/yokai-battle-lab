@@ -8,6 +8,7 @@
 import {renderSpiritPortrait} from './character-art.mjs';
 import {wheelAngle,wheelGestureAt} from './wheel-gesture.mjs';
 import {latestBattleCue} from './battle-vfx.mjs';
+import {soultimateReadiness} from './soultimate-ready.mjs';
 const ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
 const escapeHTML=x=>String(x??'').replace(/[&<>"']/g,ch=>ESC[ch]);
 const pct=(value,max)=>Math.max(0,Math.min(100,Math.round(100*value/(max||1))));
@@ -88,11 +89,13 @@ export function makeStageView(state,side=0){
  const teams=[0,1].map(index=>{
   const clock=game.clock.teams[index],roster=game.squads[index];
   const bank=game.soul.teams[index];
+  const readiness=soultimateReadiness(game,index);
   const front=new Set(clock.frontIds);
   const members=roster.map((unit,idx)=>{
    const soul=bank.find(x=>x.id===unit.id)||{soul:0,capacity:100};
    return {id:unit.id,name:unit.name,hp:unit.hp,maxHp:unit.maxHp,
     soul:soul.soul,capacity:soul.capacity,
+    specialReady:readiness[unit.id]?.ready??false,
     front:front.has(unit.id),ko:unit.hp<=0,
     negative:(game.inspirits[unit.id]||[]).some(x=>x.sign==='negative'),
     slot:(idx-clock.offset+6)%6};
@@ -123,8 +126,13 @@ export function matchSelectionHints(view,mode){
  if(mode===null)return {own:[],enemy:[],message:''};
  const own=view.teams[view.side],opponent=view.teams[1-view.side];
  if(mode==='charge'){
-  return {own:own.members.filter(m=>m.front&&!m.ko).map(m=>m.id),
-   enemy:[],message:'わざ：前衛の妖怪を選ぼう'};
+  const ready=own.members.filter(m=>m.front&&!m.ko&&m.specialReady).map(m=>m.id);
+  return {own:ready,enemy:[],
+   message:ready.length?(own.mode==='zero'?
+     'GわざOK：妖気満タンの3体組から選ぼう':
+     'わざOK：妖気満タンの妖怪を選ぼう'):
+    (own.mode==='zero'?'Gわざを使える妖怪はいません':
+     'わざを使える妖怪はいません')};
  }
  if(mode==='purify'){
   const ownIds=own.members.filter(m=>!m.front&&!m.ko&&m.negative).map(m=>m.id);
@@ -267,6 +275,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     '<span class="mb-bars mb-soulbar"><i style="width:'+pct(unit.soul,unit.capacity)+'%"></i></span>'+
     '<span class="mb-unit-stat">'+unit.hp+'/'+unit.maxHp+(unit.negative?' ⚠':'')+'</span>'+
     (unit.front?'<span class="mb-front-badge">前衛</span>':'')+
+    (commandMode==='charge'&&unit.specialReady?
+     '<span class="mb-special-ready">'+(t.mode==='zero'?'GわざOK':'わざOK')+'</span>':'')+
     (impact&&impact.amount>0
      ?'<span class="mb-floating-number">'+(impact.kind==='heal'?'+':'−')+impact.amount+'</span>':
       impact&&impact.hit===false?'<span class="mb-floating-number">MISS</span>':'')+
@@ -412,6 +422,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   const selected=own.members.find(x=>x.id===selection);
   $('mb-selected').textContent=selected?'選択: '+selected.name+(selected.front?' / 前衛':' / 後衛'):'妖怪を選択';
   $('mb-watch').textContent=own.mode==='zero'?'標準ウォッチへ':'零式へ切替';
+  $('mb-charge').querySelector('span').textContent=own.mode==='zero'?'Gわざ':'わざ';
+  $('mb-charge').querySelector('small').textContent=own.mode==='zero'?
+   '自分と両隣の妖気を使用':'ひっさつわざ';
   $('mb-target').querySelector('span').textContent=own.mode==='zero'?'つつく':'ねらう';
   $('mb-target').querySelector('small').textContent=own.mode==='zero'?'敵をつつく':'敵にピンを刺す';
   $('mb-charge').classList.toggle('mb-command-active',commandMode==='charge');
@@ -468,7 +481,10 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     if(!ally)return;
     selection=clicked;
     if(commandMode==='charge'){
-     if(!ally.front||ally.ko){alert('必殺技は前衛の生存妖怪を選択してね');render(wireState);return;}
+     if(!ally.front||ally.ko||!ally.specialReady){
+      alert('必殺技は「'+(view.activeMode==='zero'?'GわざOK':'わざOK')+
+       '」の前衛妖怪を選んでね');render(wireState);return;
+     }
      commandMode=null;command({type:'chargeStart',id:clicked});
     }else if(commandMode==='purify'){
      if(ally.front||ally.ko||!ally.negative){
