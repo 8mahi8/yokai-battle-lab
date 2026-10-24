@@ -58,9 +58,19 @@ el('auto').addEventListener('click',()=>{
  el('auto').textContent=enabled?'自動行動 ON':'自動行動 OFF';
 });
 begin();
-if(new URL(location.href).searchParams.get('review')==='target'){
+const review=new URL(location.href).searchParams.get('review');
+if(review==='target'){
  // Local research screenshot fixture only; no network/command dispatch.
  el('battle-stage').querySelector('#mb-target').click();
+}else if(review==='special'){
+ // Presentation-only QA fixture matching canonical event shape. It does not
+ // grant Soul, resolve real damage, or alter the match engine.
+ const state=protocol.snapshot();
+ state.game.events.push({type:'special',mode:'soultimate',actor:'A1',impacts:[
+  {targetId:'B1',kind:'damage',amount:42},
+  {targetId:'B2',kind:'damage',amount:17}
+ ]});
+ stage.render(state);
 }
 </script>
 </body></html>
