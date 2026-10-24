@@ -36,6 +36,10 @@ async function main(){
   await deny('guest cannot forge host presence',b.ref(path+'/presence/host').set(false));
   const input={session,clientSeq:1,intent:{type:'rotate',direction:1}};
   await pass('guest own command',b.ref(path+'/inputs/guest').set(input));
+  await deny('cannot change old command under the same clientSeq',
+   b.ref(path+'/inputs/guest').set({...input,intent:{type:'rotate',direction:-1}}));
+  await deny('repeated direct same-seq writes are disallowed by rules',
+   b.ref(path+'/inputs/guest').set(input));
   await deny('third-party input cannot impersonate guest',c.ref(path+'/inputs/guest').set({...input,clientSeq:2}));
   await deny('guest cannot impersonate host',b.ref(path+'/inputs/host').set(input));
   await deny('stale sequence rejected',b.ref(path+'/inputs/guest').set({...input,clientSeq:0}));
@@ -65,6 +69,10 @@ async function main(){
   const received=[];
   const unsubscribe=hostClient.subscribeInputs(v=>received.push(v));
   assert.equal((await guestClient.sendIntent(1,{type:'rotate',direction:1})).ok,true);
+  assert.equal((await guestClient.sendIntent(1,{type:'rotate',direction:1})).ok,true,
+   'SDK idempotent retry must succeed without writing same clientSeq again');
+  assert.equal((await guestClient.sendIntent(1,{type:'rotate',direction:-1})).ok,false,
+   'SDK must not substitute different same-seq content');
   for(let i=0;i<50&&received.length===0;i++)await new Promise(r=>setTimeout(r,40));
   assert.equal(received.length,1,'host receives guest input via actual RTDB listener');
   const match=createMatchProtocol({battleOptions:{seed:212}});
