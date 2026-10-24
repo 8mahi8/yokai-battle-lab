@@ -54,11 +54,12 @@ document.getElementById('frame').addEventListener('load',()=>{
   check(pick('#mb-charge').classList.contains('mb-command-active'),
    'soultimate must require selecting a wheel medal');
   check(pick('#mb-charge').getAttribute('aria-pressed')==='true','charge button not accessible');
-  check(root.querySelectorAll('#mb-team0 .mb-creature.mb-choice-eligible').length===3,
-   'Soultimate should highlight only three front medals');
-  check(root.querySelectorAll('#mb-team0 .mb-creature.mb-choice-ineligible').length===3,
-   'Soultimate should dim the three reserve medals');
-  check(pick('#mb-choice-status').textContent.includes('わざ'),'upper command prompt missing');
+  check(root.querySelectorAll('#mb-team0 .mb-creature.mb-choice-eligible').length===0,
+   'uncharged front medals must not falsely say わざOK');
+  check(root.querySelectorAll('#mb-team0 .mb-creature.mb-choice-ineligible').length===6,
+   'all six uncharged medals must remain ineligible');
+  check(pick('#mb-choice-status').textContent.includes('いません'),'uncharged command should show no ready members');
+  check(root.querySelectorAll('.mb-special-ready').length===0,'do not advertise わざOK without full Soul');
   pick('#mb-mode-cancel').click();
   check(!pick('#mb-charge').classList.contains('mb-command-active'),'command cancel failed');
   pick('#mb-purify').click();
@@ -127,6 +128,7 @@ document.getElementById('frame').addEventListener('load',()=>{
   pick('#mb-watch').click();
   check(pick('#mb-watch').textContent.includes('標準ウォッチ'),'standard -> zero watch toggle failed');
   check(pick('#mb-target').textContent.includes('つつく'),'zero mode should swap target into poke');
+  check(pick('#mb-charge').textContent.includes('Gわざ'),'zero mode must label special button Gわざ');
   pick('#mb-target').click();
   check(pick('#mb-choice-status').textContent.includes('つつく'),'zero poke command prompt missing');
   pick('#mb-mode-cancel').click();
