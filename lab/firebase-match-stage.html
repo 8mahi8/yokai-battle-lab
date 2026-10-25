@@ -44,6 +44,13 @@ function updatePresence(){
   peerConnected===true?'相手と接続中':peerConnected===false?'相手が切断':'相手の接続待ち';
  $('link-state').textContent=state;
  if(stage)stage.setConnection(available()?'2P ONLINE':'2P PAUSE');
+ // The Firebase SDK can queue writes offline, but gameplay touches queued
+ // before a disconnect must not silently fire long after reconnection.
+ if(seat===1&&match?.setDeliveryEnabled){
+  const switched=match.setDeliveryEnabled(available());
+  if(switched.dropped>0)
+   info('接続が切れたため、未送信の操作'+switched.dropped+'件を破棄しました。送信済みの1件はACKか再送で確認できます。');
+ }
  // Never run a standalone host clock while the opponent is unreachable.
  $('retry').disabled=seat!==1||!available()||!match||!match.status().pendingSequence;
 }
