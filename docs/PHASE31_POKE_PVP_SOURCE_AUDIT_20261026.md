@@ -20,7 +20,9 @@
 ## 検証
 - tests/phase31-poke-pvp-outcomes.test.mjs：5件（結果分布の境界、通常35ダメージ、999ヒットとKO後行動不能、妖気量上限、対戦ホストの不適格敵つつく拒否・Journal再演）。
 - tests/playtest-soul-tuning.test.mjs：旧テストが「どのホスト試合でも吸収確定」と誤認しないよう修正。
-- [Node全551件PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40214574146)。ブラウザ/実Supabaseの最新結果は引き続き別途確認する。
+- [Node全551件PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40214922568)／[Chromium戦闘・指操作・勝敗画面PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40214922561)／[実Supabaseの高速6体KO決着PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40214444831)。
+- **残件を隠さない**：同じPhase31改修の[実Supabase初期接続・ゲスト入力ACKを確認する別QA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40214444892)は最初と再実行の2回ともゲスト初期戦況を受信できずタイムアウト。ホスト初期状態公開・ゲストの購読/フィルタ・リアルタイム/ポーリングの切分けが必要。高速6KOの成功はこの断続的な症状を否定しない。**学校旧Safariでの安定性を完成と呼ばない**。本件はPokeの仕様ではなく通信のQA/実接続問題として次優先。
+- [Google Sites向けHTML静的生成PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40214507728)。これは生成が可能な証拠であり新しいファイルを学校に渡したことではない。
 - 実学校Google Sites旧Safari実機、通常速度で全ターン配信する長時間戦闘は未確認。
 
 ## 次
