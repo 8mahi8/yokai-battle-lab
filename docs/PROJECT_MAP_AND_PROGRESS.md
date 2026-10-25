@@ -3,7 +3,7 @@
 更新: 2026-10-25 JST
 Repository: https://github.com/8mahi8/yokai-battle-lab
 Development branch: `feat/phase1-action-circle-lab-20261023`
-**現在（2026-10-25）:** Phase20/21の根拠ある原作ルールとPhase22B/Cの4種必殺/ゲストACKは正規2席ホストへ実装。Phase23A/B/CのFirebaseローカル2Chromeで旧タップ破棄/ホストdirty再publish/同一seq ACK復旧/故障注入の受入を完了。**Phase24-AはGoogle Sites直接貼付のオフライン1台2席単一HTMLを作成しChrome iframe.srcdocで合格。今回のPhase24-Bでは`createFirebaseRoomClient`/`createFirebaseMatchHost/Guest`の既存オンライン1vs1を同じ直接貼付コード形式へ統合し、Firebase Emulatorローカル2Chrome iframeで匿名Auth→6桁部屋→両画面/ゲスト回転ACK/3秒拒否/行動同期/断線復帰を検証。**オンラインのビルドは厳格に設定無し（通信しない170713バイト）、localhost限定エミュレーターQA（171529バイト）、将来の明示許可が必要なクラウド設定の3モードを分離。**[Phase24B最終のクラウド設定拒否/実Chrome2席Firebase Emulator全経路 #40174083143成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40174083143)、Node469/469・本家風Chromeも成功。** 本番Firebase実設定/RTDBルール配備、Google Sites実編集、学校旧iPad Safari別端末、原作未解明21D/22Dは未実施。次は24C許可された実クラウド構成と学校Safari実機ゲート。
+**現在（2026-10-25）:** 原作根拠のあるPhase20/21、Phase22B/Cの4種必殺/ゲストACKは正規2席ホストへ実装。Phase23A/B/CのAuth+RTDBローカル2Chromeで断線キュー破棄/ホストdirty再配信/同一seq権威ACK回復済み。Phase24-AでGoogle Sitesへ直接貼るオフライン1台2席単一HTMLを生成・Chrome検証、24-Bでオンライン2席の単一HTML化（安全な設定無し/localhostエミュレーター/明示承認済みクラウドの3モード）とChrome内2iframeの部屋作成/操作ACK/切断復帰に合格。**今回Phase24-C1: 研究用手動「次の行動」だけだったオンライン版にホスト専用・明示ONの自動進行パイロットを追加。接続中/画面前面/戦況publish済みの場合のみ既存の`advanceAuto()`を1.5秒ごとの**研究用仮テンポ**で呼び、切断・非表示・未保存・勝敗確定時は進行停止、復帰時の遅延分一括実行なし。手動の研究用次の行動ボタンをオンライン画面から隠した。**Node474/474とFirebaseエミュレーターChrome2席の自動進行→切断中停止→同じ試合で復帰→OFFの検証が成功。[Chrome Phase24C実ブラウザ #40175329997](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40175329997)／[Node474件 #40175330009](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40175330009)。**学校旧iPad Safari実機／本物のGoogle Sites編集欄・クラウドFirebaseの接続／原作1.5秒が正しいかは未検証**。次は独立Firebaseの本人承認・RTDB Rules・旧Safari実機ゲートと原作行動間隔比較。
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
@@ -34,34 +34,32 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 | 21 | 原作ルール一致度 | **21A/B:** 3秒回転制限・ゲスト拒否。**21C:** 94行速度表＋初手比較器（原作同着は未完）。**21D-A/B:** 妖気24条件と矛盾分析。**21D-C1/C2:** 正規ホストつつく/12体妖気観測。**21D-C3:** 2014年通信対戦の「妖気を奪われたあと必殺」記録と2020年の連続吸収/複数必殺の戦術編成を確認（どちらも数値未取得）。 | 妖気受取先・回収量・発生確率を元の対人映像で照合し、数値が固まるまで通常版へ追加しない | **原作PvP定性資料と研究試験あり／数値未検証** |
 | 22 | 原作PvP深層戦術 | Phase5ノーモーション・回転・カウンターの独立研究。**22A:** 仮妖気回収による研究用連射。**22B:** 正規ホスト4種チャージ/G技。**22C:** ゲストACKとChrome Firebaseローカル2席6タップの同期PASS。**22D-A/B:** 2我慢のcut-in回転例外は原作ロック時刻を未確定とし仮HPを止めた。cut-in中の前衛候補と仮想時刻64記録、3回以上回転との二重原因保持、2015年の両視点ノーモーション実験候補映像を特定。Node463/463、Chromeステージ・Firebase Emulator 2席PASS | **22D-C:** 2015年両視点映像から同期したフレーム時刻が実測できるときにだけ反映。2我慢例外の回転中ロック時刻、3回以上回転と追加効果は未定。Phase23/24旧iPad Safari実機・Google Sites直接コード貼り付け | **定性資料・研究診断・ブラウザ通信QA済／3DS実フレームと本番公開未検証** |
 | 23 | 本番向け1vs1同期 | Firebase Auth+RTDB **ローカルエミュレーター2Chrome**、33権限チェック・必殺6タップACK、23Aのオフライン古い操作FIFO破棄と同一番号再送、23Bの権威dirty再publish・120行動書込集約・91入力順序検証。**23C:** 実Chrome2席で研究ホストアダプタに一度だけpublish故障注入。ゲストの本物の輪操作はホスト内部1回だけ実行され、未配信間はゲスト画面が進まず、同番号再送でも二重回転せず、ホスト再配信ボタンで同じrevisionを公開するとゲストの前衛・ACKが追いつく。Node469/469、Chrome2席Firebase QA PASS | **Phase24-A:** Google Sites HTML/CSS/JSを直接貼るためのバンドルとSafari互換ゲート。実クラウド/学校2端末での長時間ネットワーク・負荷検証は未実施。22D原作フレーム調査は別途継続 | **研究アダプタ故障注入→実Chrome2席ACK復旧 PASS／物理iPad・本番Firebaseは未検証** |
-| 24 | 学校iPad・Google Sites直接埋込配布 | **24A:** 正規ゲームのオフライン1台2席をCSS+JS合計152476バイトの1HTMLにバンドル、Chrome iframe/srcdoc QA成功。**24B:** Firebase Host/Guest/Roomと本家風UIのオンライン1vs1を単一HTMLにバンドル。**安全3モード**: 未設定版は接続禁止170713バイト、ローカルエミュレーター限定QA版171529バイト、明示承認がないと生成できない公開Web config版。localhost実Firebase Emulator＋本物のChromeの2つのコード埋込iframeでAuth匿名2席/部屋/権威ACK/3秒回転拒否/ホスト自動ステップ/断線復帰PASS。外部Firebase 10.8.0 compat CDN3本を設定済み版のみ使用 | **24C:** 独立Firebase実クラウドの許可/Auth匿名・専用RTDBルール、実Google Sites編集画面でのコード保存・外部SDK読み込みと埋込原点、学校旧iPad Safari2実機・操作遅延/回線断。原作21D/22D照合は別件 | **HTMLオンライン1vs1コード形式＋ローカル2Chrome同期検証PASS／実クラウド/Google Sites/Safari実機は未検証** |
+| 24 | 学校iPad・Google Sites直接埋込配布 | 24Aで1台2席オフライン単一HTML/Chrome iframe QA成功。24BでFirebase Host/Guest/Room、4操作・6体サークルの**オンライン版もHTML1断片**にバンドル。未設定版は外部SDK無し・ネット接続禁止、localhost限定Emulator版と承認必須クラウド用を分離。Auth+RTDB実Emulator2Chrome iframeで6桁部屋/ACK/3秒輪制限/断線復帰PASS。**24C1:** ホストのみ明示ONにできる自動進行パイロットを新規導入、正規`advanceAuto()`を最新revision publish/相手接続/ホスト画面前面/未決着の場合だけ1.5秒の**仮テンポ**で動かし、切断・非表示・dirty publishの間止めて復帰後に継続、オンラインでは手動研究stepを非表示。Node474/474＆Chromeエミュレーター2席の自動進行・停止・復帰・手動OFF PASS | **24C残:** 本人許可済み実Firebaseクラウドの匿名Auth・専用RTDB Rules、実Google Sitesへの直貼り、学校旧iPad Safari2台で行動テンポ/操作/リアルタイム同期・断線復帰確認。原作速度値未計測は保留 | **Chrome2 iframe自動進行の局所QAまでPASS／Google Sites実公開・旧iPad・本番Firebaseは未検証** |
 
-## 3. 今回した作業（Phase24-B／2026-10-25）
+## 3. 今回した作業（Phase24-C1／2026-10-25）
 
-**全体設計のどこ:** 原作ルール研究と正規2席`match-protocol` (Phase20〜22) → 安定化済みFirebase Room/Guest/Host ACK (Phase23) → **Google Sites「コードを埋め込む」に貼る、JS/CSS+通信/対戦UIの単一HTML生成 (Phase24-B)** → 本物の学校旧iPad Safari/実Google Sites/独立クラウドへの接続テスト (Phase24-C)。
+**全体設計のどこ:** 原作の技/行動条件（Phase20-22の検証済み範囲）→ ホスト権威の`engine/match-protocol.mjs` → Firebase Room/Match同期・連番ACK（Phase23） → **Phase24C1 ホストが戦闘を自動進行させるオンラインHTML制御** → Phase24C以降のGoogle Sites実貼付/旧iPad Safari2台検証。
 
-**今回実装:** `lab/sites-embed-online-entry.mjs`にFirebase匿名Auth2席、6桁部屋作成／参加／試合開始、正規戦闘エンジン、実2席サークル/4操作、権威側のゲストACK、3秒回転拒否、Firebaseプレゼンス/断線復帰/待機タップ破棄/ホストdirty再送を**既存モジュールを直接再利用**して統合。 `tools/build-sites-online.mjs`はesbuild Safari13ターゲットのIIFE形式でCSS+ESMを単一HTMLへ束ねる。実クラウド接続先は**含めていない**。Google SitesへのURL埋め込みでなく、`<style>`+HTML+`<script>`という直貼り形式。
+**今回見つけた残存課題:** Phase24BでオンラインGoogle Sites型の**単一HTMLにまとめた2席通信**までは動いたが、ホスト画面の「研究用：次の行動」を**毎回手押ししないと戦闘の行動が進まない**。本来の友達1vs1のプレイ導線として不足し、また切断時の自動進行や戦況保存中の順序保護も必要。
 
-**3種類を明確に分離:** (A) `node tools/build-sites-online.mjs`は未設定の約170713バイト**安全な接続停止状態**、GitHub Actions artifactとしてダウンロード可能。(B) `--emulator`はlocalhost/127.0.0.1専用でFirebase Auth/RTDBエミュレーターとだけ接続し、**ダウンロード配布用artifactに含めない**。(C) 将来の承認済みクラウドは`YW_CLOUD_BUILD_APPROVED=1 node tools/build-sites-online.mjs --config <public-config.json>`で検証済みFirebase Web公開設定から生成できるが、本人の権限/設定/Rules/実費をAIが勝手に変更しない。**本ターンではクラウド構成を一度も読み込んでいない**。両設定済みモードはFirebase 10.8.0 compat CDN 3本をロード、未設定版は外部SDKを呼ばない。
+**今回の実装:** `ui/host-auto-clock.mjs`を新規追加。ホストだけが自動進行のON/OFFを操作し、既存の`createFirebaseMatchHost().advanceAuto()`を使う。**既存戦闘エンジンの正規game.step()のみ**呼ぶので、特殊技や妖気獲得数・原作カウンターの未確認時間は変えない。研究用間隔`1500ms`は**原作確定値でなく可変の試験テンポ**。あらかじめユーザーがホストの自動進行をONにして初めて起動する。以下ではパルスごとのステップを**一切進めない**: ゲストとの接続が途絶えた、ホストページが非表示、Firebaseへの権威revisionがまだ保存途中（dirty/lastPublished未追いつき）、勝敗確定、旧ホストセッションが無効。切断前の「逃した時間」を再接続時に一気に実行せず、**次の1パルスから再開**。二重タイマーは作らず、エラー時・勝者確定時に安全停止。
 
-**本物の2ブラウザ試験:** `tools/sites-online-smoke.mjs`と`.github/workflows/phase24-sites-online.yml`を追加。**生成済みの単一HTML文字列をChromeの`iframe.srcdoc`へ2つ読み込み、Firebase Auth+RTDBエミュレーターで本物の2つの匿名UIDを作り**、ルーム作成→相手6桁コード参加→試合開始→実画面12体/4コマンド→ゲスト前衛回転/ホストACK→3秒ルール拒否→自動行動同期→切断時ホスト進行停止→同じ試合で復帰を必須テスト。未設定版が**外部SDKなし・部屋作成ボタンdisabled・明示的な接続設定待ち**となるChrome試験も合格。
+**画面と既存単一HTML:** `lab/sites-embed-online-entry.mjs`にホスト専用の自動進行制御を統合。`tools/build-sites-online.mjs`でHTMLに**自動進行 OFF/ON/一時停止**のボタンを追加し、ゲストからは非表示。研究用`#mb-step`手動次の行動ボタンは両席オンライン版で**非表示＆操作拒否**。既存のオフライン研究画面には影響なし。未設定、localhostエミュレーター専用、本人承認必須クラウド設定の3ビルドの安全区別も維持。
 
-**結果:** [**Phase24B Online Google Sites HTMLビルド＋Chrome2席/Firebase実エミュレーターQA 成功 #40173549741**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40173549741)（セットアップ版170713バイト／QA専用エミュレーター版171529バイト）。[**既存469/469 Node**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40173549689)と[**本家風Chrome操作**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40173549698)も成功。**Chrome上のsrcdoc＋ローカルエミュレーター合格は、実Google Sitesへ貼って保存できること／Safari iPadでオンライン参加できることを意味しない**。
+**実行した検証:** 新規`tests/host-auto-clock.test.mjs`5件が、未ON時0ステップ、dirty保存待ち、切断/非表示中120パルスでも0ステップ、復帰後の単発実行、勝者/エラー/停止・disposeを受入。**[Node474/474成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40175330009)**。さらに`tools/sites-online-smoke.mjs`を更新し、Google Sites型の**本物のChromium `iframe.srcdoc`2個とFirebase Auth+RTDBローカルエミュレーター**で匿名UID・6桁部屋・権威ACK・3秒輪回転拒否→**自動行動ONしてゲスト側のターン増加→ゲストSDKを一時offlineにして1.7秒間ホスト行動が進まない→onlineで同じ対戦へ戻ると自動再開→OFFで1.8秒間余計な手番ゼロ**を検証。[**最終Phase24C Chrome2席埋込試験成功 #40175329997**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40175329997)。[既存ステージ指操作Chrome検証成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40175330056)。
 
-**詳細:** [Phase24-B 2席オンラインの単一HTML化、設定の明確な拒否、2ChromeエミュレーターQA](./PHASE24B_ONLINE_SITES_BUILD_EMULATOR_QA_20261025.md)。
+**残る境界:** 実際のGoogle Sitesへコードを貼っていない。古いiPad Safari・物理2端末・Firebase本番/Auth/RTDB Rulesは未確認。自動進行の`1500ms`は原作の実フレーム速度を調査した値ではない。ホストブラウザが完全に終了した場合の自動復元は未対応。Node全PASSは元3DSとの完全一致を証明しない。
 
-**最終の安全検証追記:** 関連ソースの修正後、追加した`tools/sites-online-build-gate.mjs`で「クラウド用HTMLは承認フラグ無しでは生成不可」「虚構のWeb設定でのみ生成試験」「設定されたFirebase認証ドメインとRTDB URLが合わなければ拒否」を確認。ビルド時定数で**エミュレーターの接続先コードをクラウド版から完全削除**。ビルド/Chromium/Firebase Emulator2席が[最終run #40174083143](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40174083143)で全成功。最終のNodeは[469/469](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40174083179)、[本家風画面Chrome](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40174083120)も成功。クラウド接続や実Google Sites公開は未実施。
+**詳細資料:** [Phase24-C1 ホスト自動行動・publishフェンス・Safari待ち](./PHASE24C_HOST_AUTO_PROGRESS_20261025.md)。
 
-**既存仕様保護:** 元3DSのノーモーション必殺/カウンター対象・零式つつく妖気量はまだ未確認。推測値をゲームへ追加しない。初期閃光魂OFF。オンライン版の`研究用：次の行動`はホスト側手動ステップであり、完成した実時間自動ループとはまだ異なる。
+**変更先・君の作業:** 開発ブランチ`feat/phase1-action-circle-lab-20261023`だけ。main、学校のGoogle Sites公開版、本番Firebase、支出/クラウド設定に変更なし。君の必須操作はまだない（実機ゲートでは貼付/学校試遊を頼む）。
 
-**変更先・君の操作:** GitHub開発ブランチのみ。`main`、学校の現在のGoogleサイト版、実クラウドFirebase/認証/RTDBルール、課金、他人への公開は未変更。実機試験ゲートまでは君の操作不要。
+## 4. 次にする作業（Phase24-C2と原作検証）
 
-## 4. 次にする作業（Phase24-C + 22D/21D残）
-
-1. **24C実クラウド設定:** 独立の本人承認済みFirebaseプロジェクトで匿名Authと`yokaiRoomsV1`に限るRTDB Rulesをレビュー/導入して初めてクラウド用HTMLを組み立てる。Google Sites由来のiframe origin/認証の動作を本当の学校iPadで確認する。利用許可が未取得なら構成を勝手に作らない。
-2. **24C学校Safari:** 実Google SitesのEmbed Codeへ171KBのオンラインHTMLが貼れるか、外部SDK3本/上下の戦場/指操作/回転/相手側描画/再接続/旧iPadメモリ/フレーム負荷/6桁部屋2端末を試す。**公開は本人が操作**する。
-3. **正規戦闘の自動進行:** ホストの手動研究ステップが、ユーザーが期待する自動のリアルタイム対人戦に適切かとAction Clockを今後検証。ブラウザ・画面互換のチェック合格だけでゲーム全体を完成扱いしない。
-4. **21D/22D原作未確定:** ノーモーションとカウンター対象の3DS正確フレーム、つつく妖気受取量・先は元映像で未検証。推測で追加しない。
+1. **24C2 Firebase実環境へ進む条件:** 本人が許可した無料枠の独立Firebase Auth匿名＋専用`yokaiRoomsV1` RTDB Rulesを用意し、それが実際に使えると確認してからクラウドビルドを生成。無断でプロジェクト作成、Rules配備や課金・既存ゲームのクラウド変更はしない。
+2. **Google Sites/旧iPadゲート:** 実Google Sites「コードを埋め込む」へ設定済みの単一HTMLを直接貼れるか、実旧iPad Safari2席で画面高さ、メダル操作、回転、ゲスト側弾/演出相当の見え方、1500ms仮進行とリクエスト遅延、断線/バックグラウンドからの復帰、発熱を確認する。公開は本人が貼り付ける。
+3. **本家行動テンポ:** 1.5秒は学校での評価用に暫定。原作3DSの実際の行動間隔と条件が測れれば調整する。ノーモーション必殺/2我慢カウンター/零式つつく妖気受取量の未確認を通常ルールへ推測で混ぜない。
+4. **本家UI/UX:** 学校で遊ぶために必要な操作の容易さと正規ルールの深さを優先。ランキング、育成、閃光魂、観戦、リプレイは今は対象外。
 
 ## 5. 次フェーズへ進む条件と設計逸脱を防ぐルール
 - **原作再現 → 対人戦術 → オンラインの安定 → 学校Googleサイト**の順を守る。画面装飾、独自ATB、次の5行動予測（UI標準ではOFF）、閃光魂、育成、ランキング、リプレイ、観戦は**現在のスコープに入れない**。
