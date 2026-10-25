@@ -19,7 +19,7 @@ export const SKILL_TRIAL=Object.freeze({
 });
 export function validateRentalSkill(skill){
  if(skill===null||skill===undefined)return null;
- if(!Object.hasOwn(RENTAL_SKILLS,skill))throw new RangeError('unknown rental skill');
+ if(!Object.prototype.hasOwnProperty.call(RENTAL_SKILLS,skill))throw new RangeError('unknown rental skill');
  return skill;
 }
 export function critSkillBonus(skill){
