@@ -12,7 +12,7 @@
 |---|---|---|
 | 行動順・輪 | `engine/phase1.mjs`には94行速度・初期待ち研究、前後衛6体輪・回転・クールダウン。Phase1/21A/B/21C資料、`tests/phase1.test.mjs`,`match-phase21-rotation-clock.test.mjs`他 | **原作実測は未完**: 同着、初手権、前衛登録の効力、継続待ちとフレーム境界。速度表を再作成しない。正式ホスト`match-protocol.mjs`は3秒回転制限標準。 |
 | 自動行動と通常技 | `engine/combat.mjs`,`selection.mjs`,`damage-model.mjs`,`hit-model.mjs`。Phase2/3/9/10/20統合資料、`combat*.test.mjs` | 命中・技別数値・回復等の**原作確度**を上げる。新たな戦闘エンジンを作らず、既存モデルに根拠付き差分。 |
-| とりつきとおはらい | `inspirIt`に相当する `engine/inspirit.mjs`,`turn-inspirit.mjs`,`purify-input.mjs`; Phase3/8/10/20B、`combat-purify.test.mjs`,`match-phase20b-inspirit.test.mjs` | 5タッチ種・現行2席統合あり。継続毒/回復の**仮HP式は既定OFF**。ステージ低下はホストに統合済み。 |
+| とりつきとおはらい | `engine/inspirit.mjs`,`turn-inspirit.mjs`,`purify-input.mjs`; Phase3/8/10/20B、`combat-purify.test.mjs`,`match-phase20b-inspirit.test.mjs` | 5タッチ種・現行2席統合あり。継続毒/回復の**仮HP式は既定OFF**。ステージ低下はホストに統合済み。 |
 | 妖気回復・G技 | `engine/soul.mjs`,`charge-input.mjs`,`match-protocol.mjs`、Phase4/18/21D/22B/22C、`match-protocol-charge.test.mjs` | 通常ホストに**非攻撃本人行動+5**の根拠付き方式あり。攻撃/妖術からの増加、グレード別細値・補正は未確定。両隣3人G技消費は既存実装。|
 | 必殺効果 | `engine/special-effects.mjs`と`combat.mjs`、Phase4/19/22B/22C、`combat-special-effects.test.mjs`,`match-special-effects-active.test.mjs` | 発動・チャージ・消費・HP効果はあるが**個別技威力はresearch-fixture**。原作技別データが裏付けられるまで完成扱い禁止。|
 | 零式つつく→妖気 | `poke-input.mjs`のタッチ12回研究、`combat.mjs`の標準つつく、Phase7/21D-C1/C2/C3/22A、`phase22-poke-soultimate-cycle-lab.test.mjs`,`phase21d-poke-soul-trace.test.mjs` | **つつく操作自体は実装済み**。Soul吸収先・量・発生確率は不明。研究用`researchPokeSoulTransfer`は正式ホスト既定でOFF。連射研究テストは「原作で連射可能」の定量証明ではない。 |
