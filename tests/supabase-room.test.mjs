@@ -37,10 +37,15 @@ const buildFake=()=>{
     limit(n){q.limitN=n;return Promise.resolve({data:selected(),error:null});},
     maybeSingle(){
      if(q.set){
-      const matches=selected();
-      const old=rows[table].find(x=>Object.entries(matches[0]||{}).every(
-       ([k,v])=>x[k]===v)); // selected filters before updating
-      if(old)Object.assign(old,q.set);
+      // UPDATE .. WHERE returns the updated row even if the changed column
+      // no longer matches the original predicate (e.g. guest_uid IS NULL).
+      const matches=rows[table].filter(row=>q.conditions.every(([op,key,v])=>
+       op==='eq'?row[key]===v:op==='is'?row[key]===v:op==='not'?row[key]!==v:row[key]>v));
+      if(matches.length===0)return Promise.resolve({data:null,error:null});
+      Object.assign(matches[0],q.set);
+      const allowed=q.fields==='*'?Object.keys(matches[0]):q.fields.split(',');
+      return Promise.resolve({data:Object.fromEntries(
+       Object.entries(matches[0]).filter(([k])=>allowed.includes(k))),error:null});
      }
      const results=selected();
      return Promise.resolve({data:results[0]||null,error:null});
