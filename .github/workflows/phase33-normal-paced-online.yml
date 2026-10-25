@@ -5,6 +5,7 @@ on:
       - feat/phase1-action-circle-lab-20261023
     paths:
       - 'engine/combat.mjs'
+      - 'engine/skill-effects.mjs'
       - 'engine/match-protocol.mjs'
       - 'engine/phase1.mjs'
       - 'engine/special-effects.mjs'
