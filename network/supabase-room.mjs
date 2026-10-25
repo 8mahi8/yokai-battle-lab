@@ -143,6 +143,11 @@ export function createSupabaseRoomClient({client,uid,now=()=>Date.now(),onError=
    throw Error('invalid_published_state');
   return state;
  }
+ async function readPhase(){
+  ensure();
+  const {data,error}=await client.from(ROOMS).select('phase').eq('code',roomCode).maybeSingle();
+  fail(error,'room_phase_failed');return data?.phase??null;
+ }
  function subscribeInputs(handler){
   ensure();if(seat!==0||typeof handler!=='function')throw Error('host input listener required');
   const expected=epoch;let last=0;
@@ -160,9 +165,10 @@ export function createSupabaseRoomClient({client,uid,now=()=>Date.now(),onError=
     handler({session,clientSeq:item.client_seq,intent:command});
    }
   }
-  realtime(INPUTS,'INSERT',collect);
-  tick(collect);
-  return ()=>{}; // Removed on leaveLocal(); match.stop stops only callbacks via epoch fence.
+  let active=true;const deliver=items=>{if(active)return collect(items);};
+  const releaseRealtime=realtime(INPUTS,'INSERT',deliver);
+  const releasePolling=tick(deliver);
+  return ()=>{active=false;releaseRealtime();releasePolling();};
  }
  function subscribeSnapshots(handler){
   ensure();if(typeof handler!=='function')throw Error('snapshot listener required');
@@ -177,9 +183,10 @@ export function createSupabaseRoomClient({client,uid,now=()=>Date.now(),onError=
    if(state?.revision!==data.revision)return;
    last=data.revision;handler({session,revision:last,state});
   }
-  realtime(STATES,'*',collect);
-  tick(collect);
-  return ()=>{};
+  let active=true;const deliver=items=>{if(active)return collect(items);};
+  const releaseRealtime=realtime(STATES,'*',deliver);
+  const releasePolling=tick(deliver);
+  return ()=>{active=false;releaseRealtime();releasePolling();};
  }
  function watchPresence(handler=()=>{}){
   ensure();
@@ -218,7 +225,7 @@ export function createSupabaseRoomClient({client,uid,now=()=>Date.now(),onError=
   for(const release of releases.splice(0))release();
   roomCode=null;session=null;seat=null;epoch++;
  }
- return {active,createRoom,joinRoom,startRoom,sendIntent,publishSnapshot,
+ return {active,createRoom,joinRoom,startRoom,readPhase,sendIntent,publishSnapshot,
   readPublishedSnapshot,subscribeInputs,subscribeSnapshots,
   watchPresence,watchPeerPresence,leaveLocal};
 }
