@@ -85,11 +85,11 @@ function setupSeat(role){
    const receipt=role===0?match.submit(intent):match.enqueue(intent);
    updatePresence();return receipt;
   },
-  onStep:()=>{
-   if(role!==0||!match)return {ok:false,reason:'host_only'};
-   const blocked=guard();if(blocked)return blocked;
-   return match.advanceAuto();
-  }});
+  onStep:()=>({ok:false,reason:'online_research_step_disabled'})});
+ // In actual online Sites embeds the research-only manual turn button is not
+ // a gameplay command; the host clock owns autonomous actions exclusively.
+ const debugStep=$('#mb-step');
+ if(debugStep){debugStep.hidden=true;debugStep.setAttribute('aria-hidden','true');}
  if(role===0){
   autoClock=createHostAutoClock({
    step:()=>match.advanceAuto(),
