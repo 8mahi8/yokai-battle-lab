@@ -40,7 +40,7 @@ try{
   // Reading stdout.includes('PASS') is a FALSE POSITIVE; inspect the rendered
   // result element's textContent instead. Verify an actual six-digit room.
   const rendered=output.match(/<strong id="result">([^<]*)<\/strong>/)?.[1]||'missing-result-node';
-  if(!timedOut&&exit===0&&/^SITES-SUPABASE-CHROME-PASS room=\\d{6}\\b/.test(rendered)){
+  if(!timedOut&&exit===0&&/^SITES-SUPABASE-CHROME-PASS room=\d{6}\b/.test(rendered)){
    console.log(rendered);passed=true;break;
   }
   console.warn('Supabase Sites iframe trial '+trial+' failed: '+
