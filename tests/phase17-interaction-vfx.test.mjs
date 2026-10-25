@@ -50,3 +50,14 @@ test('special presentation uses every resolved impact and exact G/normal mode',(
  assert.equal(latestBattleCue([...events,{type:'action',turn:7,actor:'B1'}]).key,'action:7');
  assert.throws(()=>latestBattleCue(null),/array/);
 });
+
+test('special buff/debuff events keep their visual kind and show resisted outcomes',()=>{
+ const cue=latestBattleCue([{type:'special',mode:'soultimate',actor:'A3',impacts:[
+  {targetId:'A1',kind:'buff',amount:0,applied:true},
+  {targetId:'B1',kind:'debuff',amount:0,applied:false},
+  {targetId:'B2',kind:'debuff',amount:0,applied:true}
+ ]}]);
+ assert.deepEqual(cue.targets.map(x=>[x.id,x.kind,x.hit]),[
+  ['A1','buff',true],['B1','debuff',false],['B2','debuff',true]
+ ]);
+});
