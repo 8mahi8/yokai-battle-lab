@@ -10,12 +10,13 @@ import {createFirebaseMatchHost,createFirebaseMatchGuest} from '../network/fireb
 import {createMatchProtocol} from '../engine/match-protocol.mjs';
 import {createMatchStage} from '../ui/match-stage.mjs';
 import {matchAckMessage} from '../ui/match-feedback.mjs';
+import {createHostAutoClock} from '../ui/host-auto-clock.mjs';
 
 const config=__YW_ONLINE_CONFIG__;
 const root=document.getElementById('yw-sites-online');
 if(!root)throw Error('online embed root not found');
 const $=selector=>root.querySelector(selector);
-let database=null,room=null,match=null,stage=null,seat=null;
+let database=null,room=null,match=null,stage=null,seat=null,autoClock=null;
 let localConnected=false,peerConnected=null,lastAvailable=false;
 const say=message=>{
  $('.yw-online-status').textContent=String(message);
@@ -26,6 +27,23 @@ function err(error){
  updatePresence();
 }
 const connected=()=>localConnected&&peerConnected===true;
+function canHostAdvance(){
+ const state=match?.status?.();
+ return seat===0&&connected()&&!document.hidden&&state?.started===true&&
+  !state.dirty&&!state.fenced&&!state.stopped&&
+  state.lastPublished>=state.revision&&match.snapshot().game.winner===null;
+}
+function updateAutoButton(){
+ const button=$('.yw-online-auto');
+ if(!button)return;
+ if(seat!==0){button.hidden=true;return;}
+ button.hidden=false;
+ const enabled=autoClock?.status().enabled===true;
+ const canStep=canHostAdvance();
+ button.disabled=!enabled&&!canStep;
+ button.textContent=enabled?(canStep?'自動進行 ON':'自動進行 一時停止'):'自動進行 OFF';
+ button.setAttribute('aria-pressed',String(enabled));
+}
 function updatePresence(){
  const ready=connected(),reconnected=ready&&!lastAvailable;
  lastAvailable=ready;
@@ -47,6 +65,7 @@ function updatePresence(){
  $('.yw-online-retry').disabled=!ready||!status||
   (seat===0?!status.started||!status.dirty:
    seat!==1||!status.pendingSequence);
+ updateAutoButton();
 }
 function guard(){
  return !localConnected?{ok:false,reason:'connection_offline'}:
@@ -71,6 +90,14 @@ function setupSeat(role){
    const blocked=guard();if(blocked)return blocked;
    return match.advanceAuto();
   }});
+ if(role===0){
+  autoClock=createHostAutoClock({
+   step:()=>match.advanceAuto(),
+   canAdvance:canHostAdvance,
+   getWinner:()=>match?.snapshot().game.winner??null,
+   intervalMs:1500,onUpdate:updateAutoButton,onError:err
+  });
+ }else autoClock=null;
  room.watchPresence(v=>{localConnected=v;updatePresence();});
  room.watchPeerPresence(v=>{peerConnected=v;updatePresence();});
  updatePresence();
@@ -115,6 +142,21 @@ $('.yw-online-connect').addEventListener('click',async()=>{
   say('ゲスト接続。ホストの初期状態を待っています。');updatePresence();
  }catch(error){err(error);}
 });
+// 1500 ms is only a research-pilot cadence, NOT the Nintendo 3DS step timing.
+// A human host enables it deliberately after both peers have joined.
+$('.yw-online-auto').addEventListener('click',()=>{
+ try{
+  if(seat!==0||!autoClock)throw Error('自動進行はホスト専用です');
+  if(autoClock.status().enabled){autoClock.stop();say('自動進行 OFF');}
+  else{
+   const state=autoClock.start();
+   if(!state.ok)throw Error(state.reason||'auto_clock_unavailable');
+   say('研究用の自動進行を開始しました。切断時は一時停止します。');
+  }
+  updateAutoButton();
+ }catch(error){err(error);}
+});
+document.addEventListener('visibilitychange',updateAutoButton);
 $('.yw-online-retry').addEventListener('click',async()=>{
  try{
   if(!match)throw Error('対戦未開始');
