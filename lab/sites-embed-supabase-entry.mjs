@@ -192,8 +192,12 @@ async function init(){
    auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:false}
  });
  const {data,error:authError}=await client.auth.signInAnonymously();
- if(authError||!data?.user?.id)
-  throw Error('匿名認証できません：'+(authError?.message||'認証設定が未完了です'));
+ if(authError||!data?.user?.id){
+  const disabled=String(authError?.message||'').toLowerCase().includes('anonymous sign-ins are disabled');
+  throw Error(disabled?
+   'このSupabaseでは匿名ログインが無効です。管理者がAuthのAnonymousを有効にするまで部屋を作成できません。':
+   '匿名認証できません：'+(authError?.message||'接続設定が未完了です'));
+ }
  room=createSupabaseRoomClient({client,uid:data.user.id,onError:err});
  $('.yw-online-make').disabled=false;
  $('.yw-online-join').disabled=false;
