@@ -33,7 +33,7 @@ export const RENTAL_SQUAD = Object.freeze([
   {name:'すずかぜ',speed:251,maxHp:190,strength:73,spirit:115,defense:55,attackPower:45,techniquePower:65,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[35,50,10,5],
    special:{kind:'damage-status',scope:'one',power:145,damageKind:'technique',effect:'spirit-down',level:2}},
   {name:'ほたる',speed:195,maxHp:220,strength:66,spirit:112,defense:72,attackPower:45,techniquePower:50,technique:'heal',attitude:'gentle',inspirit:'strength-up',weights:[30,50,15,5],
-   special:{kind:'revive',scope:'one',power:85}},
+   special:{kind:'revive-heal',scope:'team',power:85}},
   {name:'くろがね',speed:128,maxHp:305,strength:116,spirit:47,defense:130,attackPower:65,techniquePower:25,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,10,10,20],
    special:{kind:'debuff',scope:'front',effect:'defense-down',level:2}}
 ]);
@@ -467,7 +467,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const enemies=targets?targets.map(id=>byId.get(id)).filter(m=>m&&m.hp>0):livingFront(1-side);
     const impacts=planResearchSpecial({
       spec:caster.special,caster,
-      allies:caster.special.kind==='revive'?squads[side]:livingFront(side),enemies,
+      allies:['revive','revive-heal'].includes(caster.special.kind)?squads[side]:livingFront(side),enemies,
       powerMultiplier:result.powerMultiplier,pinnedId
     });
     const interruptions=[];
