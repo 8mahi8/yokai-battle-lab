@@ -11,6 +11,7 @@ import {createMatchProtocol} from '../engine/match-protocol.mjs';
 import {createMatchStage} from '../ui/match-stage.mjs';
 import {matchAckMessage} from '../ui/match-feedback.mjs';
 import {createHostAutoClock} from '../ui/host-auto-clock.mjs';
+import {checkSitesBrowserCapabilities} from '../ui/sites-browser-capabilities.mjs';
 
 const config=__YW_ONLINE_CONFIG__;
 const root=document.getElementById('yw-sites-online');
@@ -181,6 +182,9 @@ async function init(){
  }
  if(__YW_EMULATOR_MODE__&&!['localhost','127.0.0.1'].includes(location.hostname))
   throw Error('研究用エミュレーター版はlocalhost以外で起動禁止');
+ const capability=checkSitesBrowserCapabilities(window);
+ if(!capability.ok)
+  throw Error('このブラウザではオンライン対戦を開始できません：'+capability.message);
  if(!window.firebase?.auth||!window.firebase?.database)
   throw Error('Firebase SDKが読み込まれていません');
  const app=firebase.initializeApp(config);
