@@ -32,6 +32,8 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 
 > **【Phase31 PvPつつく3効果（2026-10-26）】** 本人の最新指示「**原作の仕様は先に調べる／調べても出ない数値だけ仮値**」を守り、[任天堂公式の零式つつく説明書と通信対戦の二次資料を分けて監査](./PHASE31_POKE_PVP_SOURCE_AUDIT_20261026.md)。対人戦では**HPダメージ・相手から妖気吸収・999ダメージ**が報告されている（999/対人3種は**二次資料**）。ストーリー用のお金/仲間確率をPvPに入れない。既存のplaytest限定ホスト実装だけで効果を選択し、従来の状態条件/1体1回/入力12タップ/正規ゲスト通信を保持。**49%通常/50%妖気/1%999・ダメージ35・妖気上限35は全部試遊用仮値**。クライアントは結果を指定不可。通常ダメージ・一撃は被ダメ演出、妖気吸収は独立の結果表示。**[Node 551/551 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40214574146)**。Chrome/実Supabaseの最新CI結果を別途確認。旧学校Phase27とmain・本番Googleサイトを変更しない。次は通常ペースのクラウド2席長時間の進行、その後に原作調査済み高度対人戦術へ。
 
+> **【Phase32 初期ゲスト受信の補強／通常テンポ5ターン実通信（2026-10-26）】** [調査・修正・テスト記録](./PHASE32_GUEST_INITIAL_SYNC_AND_PACED_CLOUD_QA_20261026.md)。以前の実クラウドQA失敗はゲスト専用障害とは限らず、ホスト画面表示と**初期戦況のクラウド保存完了**を区別していなかった。実際のホスト完成メッセージを確認するテスト順序に修正。加えてゲスト側へ**一回の確定初期スナップショット直接取得**を導入し、Realtime/pollと同じセッション・最新更新番号ゲートを共用。ページ閉鎖後の同試合復帰ではない。先行取得失敗/後着旧データ/購読初期通知欠落をテスト。**[Node554/554 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40216082728)**、**[Chromeステージ/指操作/勝敗PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40216082776)**、**[実Supabase通常2席ゲストACK＋1500ms間隔の5ターン以上同期PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40216218043)**、**[Supabase高速6KO終局PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40216082806)**。断続的な通信失敗の完全解消や実学校iPad成功までは断言しない。学校用固定Phase27・main・Google Sites公開ページ・本番DB/RLSは無変更。本人が配布を明示依頼するまで新しいHTMLは渡さない。
+
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
