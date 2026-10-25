@@ -118,9 +118,14 @@ function checkOptions(options){
  // competitive glitches may enter the initial online contract.
  const allow=new Set(['seed','teams','autoRotateReserves','enableLoafing','rotationCooldownMs',
   'researchSoulRecoveryMode','researchDamageModel','researchMultiHit',
-  'researchStatInspirits','researchTurnInspirits','researchHealingVariance','researchSpecialEffects']);
+  'researchStatInspirits','researchTurnInspirits','researchHealingVariance','researchSpecialEffects',
+  'playtestSoulTuning']);
  for(const key of Object.keys(options))if(!allow.has(key))
   throw new RangeError('initial online contract forbids option '+key);
+ // The user-approved playtest option is a boolean; individual gain values
+ // live in the fixed, auditable preset file and never in network commands.
+ if(options.playtestSoulTuning!==undefined&&typeof options.playtestSoulTuning!=='boolean')
+  throw new TypeError('playtestSoulTuning must be boolean');
  // Direct debugging / bypass values and lab Soul fixtures are not exposed.
  if(options.researchSoulRecoveryMode!==undefined&&
     !['none','owner-nonattack'].includes(options.researchSoulRecoveryMode))
@@ -133,7 +138,8 @@ export function createMatchProtocol({battleOptions={},hostNowMs=()=>performance.
  if(typeof hostNowMs!=='function')throw new TypeError('trusted host clock required');
  // The no-attack +5 owner-turn recovery is the one Soul-gain amount
  // supported by direct YW2 player experiments. Attacking gain remains
- // UNSOURCED and is not invented in the initial network contract.
+ // unverified; the friendly-match Sites build opts into a labelled temporary
+ // playtest preset while the research default remains unchanged.
  // Phase20 source-audited integration:
  // Standard attack/technique HP now uses the Phase9 YW2 formula study, while
  // Phase10 processes separate hit/critical/interruption rolls when the
