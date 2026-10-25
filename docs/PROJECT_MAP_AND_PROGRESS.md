@@ -12,6 +12,8 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 
 > **【2026-10-25 方針更新・Phase26試遊優先】** [妖気の試遊用仮数値・実装・調整方針](./PHASE26_PLAYTEST_SOUL_TUNING_20261025.md)。本人の判断で、原作で未確認の回復・吸収量を研究だけで追い続けず、**仮値と明示してSupabase Google Sites向け試遊版に採用し、友達との試遊から調整**する。既存の研究比較器は保持し、原作数値の確定とは呼ばない。仮値は `engine/playtest-soul-tuning.mjs` に一元化（非攻撃+5、攻撃+8、攻撃妖術+8、状態異常の敵への命中+4、零式つつく最大35の敵→味方移転）。通常の研究ホストはそのまま、実試遊版ホストだけ `playtestSoulTuning:true`。学校Googleサイト本番、`main`、Supabase DB/RLS、Firebaseは勝手に変更しない。リロード後の対戦復帰も不要。**今後の「未確認数値は通常版へ導入しない」は原作確定仕様としては正しいが、明示した試遊版の仮値を禁止する意味ではない**。
 
+> **【Phase26の実装・QA完了（2026-10-25）】** 仮値[一元調整ファイル](../engine/playtest-soul-tuning.mjs)と[設計・試遊メモ](./PHASE26_PLAYTEST_SOUL_TUNING_20261025.md)を更新済み。旧実装のSoul・Pokeを再利用して**通常のSupabase Google Sites版のみ仮値をON**。追加した研究/通常対戦の単体およびホストPoke確認を含め [Node 522/522 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40204311353)、[Chromium戦闘/指入力PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40204311488)、[Supabase Sites貼付HTMLビルドPASS（約176KB）](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40204311419)、[実Supabase 2 iframe Chrome通信PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40204146664)。**これは旧学校iPad Safariや実Google Sitesへの貼付を試したことではない**。数値は原作未確定の仮値で、本人の試遊後に再調整する。
+
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
