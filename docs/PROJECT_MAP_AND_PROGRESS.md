@@ -14,6 +14,8 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 
 > **【Phase26の実装・QA完了（2026-10-25）】** 仮値[一元調整ファイル](../engine/playtest-soul-tuning.mjs)と[設計・試遊メモ](./PHASE26_PLAYTEST_SOUL_TUNING_20261025.md)を更新済み。旧実装のSoul・Pokeを再利用して**通常のSupabase Google Sites版のみ仮値をON**。追加した研究/通常対戦の単体およびホストPoke確認を含め [Node 522/522 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40204311353)、[Chromium戦闘/指入力PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40204311488)、[Supabase Sites貼付HTMLビルドPASS（約176KB）](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40204311419)、[実Supabase 2 iframe Chrome通信PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40204146664)。**これは旧学校iPad Safariや実Google Sitesへの貼付を試したことではない**。数値は原作未確定の仮値で、本人の試遊後に再調整する。
 
+> **【2026-10-25 23:57 JST 指示更新：数値より戦闘システムの大枠完成を優先】** 本人は、妖気等の細かい数値を先に研究・調整するより**「1試合を開始→基本行動→必殺・つつく→6体気絶→勝敗表示まで遊べる戦闘ゲーム」を先に完成**させたい。Phase26の暫定Soul値は既に導入済みなので**しばらく数値調整を停止**し、原作未確認量は仮値のまま使う。今後の優先順位：**①全試合通しのホスト+ゲスト E2E（全6体KO/控え繰り上げ/停止なし/双方勝敗一致/オート進行）②基本システムの抜け（必殺技の攻撃・回復以外の種類／個別技・状態効果／零式つつくの複数結果を暫定でも実戦へ組込）③通常/零式/必殺/おはらい/前衛交代の操作を通したUI、勝敗表示と対戦終了の整理（現在はalert中心、再戦機能は必須ではない）④基礎の試合完成後にノーモーション必殺・カウンター等の対戦特有の高度戦術⑤旧Safari/Google Sites直接貼付の実機2台検証**。既存のPhase5/20/22の研究コード、Stage、Supabase E2Eを再利用し、同じ機能の再実装を禁止。**勝敗を決めるコード自体は既存、ただし全試合オンライン通しの受入試験は未実施**。ホストの自動進行は現在ボタンでONにする研究用1500ms間隔。原作完全一致・旧iPad Safari可動を完成と呼ばない。閃光魂、育成、ランキング、リプレイ、観戦、リロード後の対戦復帰は引き続き対象外。
+
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
