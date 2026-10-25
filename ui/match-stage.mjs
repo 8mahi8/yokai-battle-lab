@@ -366,8 +366,15 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   if(!logs.length)return '<div class="mb-feed-empty">次の行動を押すと戦闘が進みます</div>';
   return logs.map(x=>{
    const person=x.actor||x.id||x.targetId||'';
-   const type=x.kind||x.type||'行動';
-   const number=Number.isFinite(x.amount)?' / '+x.amount:'';
+   const pokeReward=x.type==='poke'?x.reward:null;
+   const pokeLabels={'playtest-soul-transfer':'妖気吸収',
+     'playtest-damage':'HPダメージ','playtest-heavy-hit':'一撃（999）',
+     'research-soul-transfer':'妖気吸収'};
+   const type=pokeReward?'つつく / '+(pokeLabels[pokeReward.kind]||'結果未確定'):
+     x.kind||x.type||'行動';
+   const number=pokeReward&&Number.isFinite(pokeReward.amount)?
+     ' / '+pokeReward.amount:
+     Number.isFinite(x.amount)?' / '+x.amount:'';
    return '<div><span>'+escapeHTML(person)+'</span> '+escapeHTML(type)+number+'</div>';
   }).join('');
  }
@@ -452,7 +459,12 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    $('mb-forecast').innerHTML=forecastHTML();
    forecastDrawCache=forecastKey;
   }
-  if(flash?.type==='special'){
+  if(flash?.type==='poke'){
+   const labels={'playtest-soul-transfer':'妖気吸収','playtest-damage':'HPダメージ',
+     'playtest-heavy-hit':'一撃（999）','research-soul-transfer':'妖気吸収（研究）'};
+   $('mb-action-label').textContent='つつく / '+(labels[flash.rewardKind]||'結果未確定')+
+    (flash.amount>0?' '+flash.amount:'');
+  }else if(flash?.type==='special'){
    const caster=view.teams[flash.actor?.startsWith('B')?1:0]?.members.find(u=>u.id===flash.actor);
    $('mb-action-label').textContent=(caster?.name||'妖怪')+' / '+
     (flash.mode==='g-tech'?'Gわざ':'ひっさつわざ')+'発動';
