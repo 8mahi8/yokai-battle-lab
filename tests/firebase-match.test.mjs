@@ -419,3 +419,108 @@ test('23A FIFO presence toggle validates boolean and does not deliver speculativ
  assert.equal(protocol.snapshot().game.soul.modes[1],'zero');
  host.stop();guest.stop();
 });
+
+
+test('23B transient host snapshot failure: duplicate guest resend does not recover ACK, host republish does',async()=>{
+ const bus=fakeTransport(),errors=[],acks=[];
+ let failNext=false;
+ const transport={...bus.host,async publishSnapshot(state){
+  if(failNext){failNext=false;throw new Error('test_transient_publish_failure');}
+  return bus.host.publishSnapshot(state);
+ }};
+ const protocol=createMatchProtocol({battleOptions:{seed:301}});
+ const host=createFirebaseMatchHost({roomClient:transport,protocol,
+  onError:e=>errors.push(e.message)});
+ const guest=createFirebaseMatchGuest({roomClient:bus.guest,onAck:a=>acks.push(a)});
+ guest.start();assert.equal((await host.start()).ok,true);
+ failNext=true;
+ assert.equal(guest.submit({type:'watch',mode:'zero'}).clientSeq,1);
+ await tick();await tick();
+ assert.equal(host.snapshot().revision,1,'host has already applied the command');
+ assert.equal(host.snapshot().game.soul.modes[1],'zero');
+ assert.equal(host.status().dirty,true,'failed authoritative publish is still dirty');
+ assert.equal(host.status().lastPublished,0);
+ assert.equal(guest.status().pendingSequence,1);
+ assert.equal(acks.length,0,'no transport ACK without a published authoritative snapshot');
+ const hash=host.snapshot().hash;
+ assert.equal((await guest.retry()).ok,true);
+ await tick();
+ assert.equal(host.snapshot().hash,hash,'duplicate guest retry cannot reapply the command');
+ assert.equal(host.snapshot().revision,1);
+ assert.equal(acks.length,0,'guest retry alone cannot force host snapshot publication');
+ const republished=await host.retryPublish();
+ assert.equal(republished.ok,true);
+ assert.equal(republished.revision,1);
+ assert.equal(host.status().dirty,false);
+ assert.equal(host.status().lastPublished,1);
+ assert.equal(guest.status().pendingSequence,null);
+ assert.equal(acks.length,1);
+ assert.equal(acks[0].clientSeq,1);
+ assert.equal(acks[0].applied,true);
+ assert.deepEqual(guest.status().lastState,host.snapshot());
+ assert.equal(replayMatchJournal(protocol.exportJournal()).ok,true);
+ assert.deepEqual(errors,['test_transient_publish_failure']);
+ host.stop();guest.stop();
+});
+
+test('23B long guard-only battle coalesces 120 host changes while one Firebase write is delayed',async()=>{
+ const bus=fakeTransport(),views=[];
+ let blockNext=false,release=null,blocked=false;
+ const delayed={...bus.host,async publishSnapshot(state){
+  if(blockNext){blockNext=false;blocked=true;await new Promise(resolve=>{release=resolve;});}
+  return bus.host.publishSnapshot(state);
+ }};
+ const protocol=testChargeProtocol();
+ const host=createFirebaseMatchHost({roomClient:delayed,protocol});
+ const guest=createFirebaseMatchGuest({roomClient:bus.guest,onSnapshot:s=>views.push(s)});
+ guest.start();assert.equal((await host.start()).ok,true);
+ blockNext=true;
+ assert.equal(host.submit({type:'watch',mode:'zero'}).accepted,true);
+ assert.equal(blocked,true);
+ const initialGuestRevision=guest.status().revision;
+ for(let n=0;n<120;n++)assert.equal(host.advanceAuto().ok,true);
+ const expected=host.snapshot();
+ assert.equal(expected.revision,121);
+ assert.equal(guest.status().revision,initialGuestRevision,
+  'unpublished local host state must not pretend to be a remote view');
+ assert.equal(host.status().dirty,true);
+ assert.equal(host.status().lastPublished,0);
+ release();
+ for(let i=0;i<8&&host.status().lastPublished<121;i++)await tick();
+ assert.equal(host.status().lastPublished,121);
+ assert.equal(host.status().dirty,false);
+ assert.equal(guest.status().revision,121);
+ assert.deepEqual(guest.status().lastState,host.snapshot());
+ assert.ok(bus.saves.length<=3,'coalescing cannot write 120 stale intermediate snapshots');
+ assert.ok(views.length<=3);
+ assert.equal(replayMatchJournal(protocol.exportJournal()).ok,true);
+ guest.stop();host.stop();
+});
+
+test('23B queued guest commands neither overtake blocked host ACK nor drop sequential revisions',async()=>{
+ const bus=fakeTransport(),ack=[],errors=[],protocol=testChargeProtocol();
+ const host=createFirebaseMatchHost({roomClient:bus.host,protocol,
+  onError:e=>errors.push(e.message)});
+ const guest=createFirebaseMatchGuest({roomClient:bus.guest,maxQueuedInputs:128,
+  onAck:a=>ack.push(a),onError:e=>errors.push(e.message)});
+ guest.start();assert.equal((await host.start()).ok,true);
+ bus.setDrop(true);
+ assert.equal(guest.enqueue({type:'watch',mode:'zero'}).clientSeq,1);
+ for(let n=0;n<90;n++){
+  const intent=n%2===0?{type:'watch',mode:'standard'}:{type:'watch',mode:'zero'};
+  assert.equal(guest.enqueue(intent).queued,true);
+ }
+ assert.equal(host.snapshot().revision,1);
+ assert.equal(guest.status().queuedInputs,90);
+ bus.setDrop(false);bus.replay();
+ for(let i=0;i<110&&guest.status().pendingSequence!==null;i++)await tick();
+ assert.equal(guest.status().queuedInputs,0);
+ assert.equal(guest.status().pendingSequence,null);
+ assert.deepEqual(ack.map(a=>a.clientSeq),Array.from({length:91},(_,i)=>i+1));
+ assert.equal(protocol.snapshot().clientSequences[1],91);
+ assert.equal(guest.status().revision,91);
+ assert.equal(protocol.snapshot().game.soul.modes[1],'zero');
+ assert.equal(replayMatchJournal(protocol.exportJournal()).ok,true);
+ assert.deepEqual(errors,[]);
+ guest.stop();host.stop();
+});
