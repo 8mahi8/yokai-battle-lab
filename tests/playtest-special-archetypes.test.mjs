@@ -13,9 +13,9 @@ test('six original rental designs now cover front damage/heal, one-target damage
  const g=make();
  const specials=g.snapshot().squads[0].map(x=>x.special);
  assert.deepEqual(specials.map(x=>x.kind),
-  ['damage','drain','buff','damage-status','revive','debuff']);
+  ['damage','drain','buff','damage-status','revive-heal','debuff']);
  assert.deepEqual(specials.map(x=>x.scope),
-  ['front','front','front','one','one','front']);
+  ['front','front','front','one','team','front']);
  assert.equal(specials[2].effect,'strength-up');
  assert.equal(specials[5].effect,'defense-down');
 });
