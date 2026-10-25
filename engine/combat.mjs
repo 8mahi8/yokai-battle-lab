@@ -652,7 +652,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(!autoRotateReserves)return;
     for(let side=0;side<2;side++){
       for(let tries=0;tries<6&&!livingFront(side).length&&squads[side].some(m=>m.hp>0);tries++){
-        const moved=clock.rotate(side,1,0);
+        // The entire visible front is KO, but reserves still have HP.
+        // Force the compulsory substitution past the player-only cooldown;
+        // otherwise a long real-host timestamp or even a second KO swap
+        // leaves online auto progression stuck in awaiting_rotation.
+        const moved=clock.rotate(side,1,0,{automaticKo:true});
         if(moved.ok&&counter){
           const frontIds=clock.snapshot().teams[side].frontIds;
           counter.setFront({side,ids:frontIds});
