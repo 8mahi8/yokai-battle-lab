@@ -4,6 +4,11 @@ on:
     branches:
       - feat/phase1-action-circle-lab-20261023
     paths:
+      - 'engine/combat.mjs'
+      - 'engine/match-protocol.mjs'
+      - 'engine/playtest-soul-tuning.mjs'
+      - 'lab/sites-embed-supabase-entry.mjs'
+      - 'tools/build-sites-supabase.mjs'
       - 'tools/supabase-sites-browser-smoke.mjs'
       - '.github/workflows/phase25-supabase-browser.yml'
   workflow_dispatch:
