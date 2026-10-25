@@ -73,7 +73,7 @@ function guard(){
   peerConnected!==true?{ok:false,reason:'opponent_offline_or_waiting'}:null;
 }
 function info(message){$('remote-status').textContent=String(message);stage?.alert(message);}
-function err(error){info('通信エラー: '+error.message);}
+function err(error){info('通信エラー: '+error.message);updatePresence();}
 async function init(){
  if(!['localhost','127.0.0.1'].includes(location.hostname))
   throw Error('この研究画面はlocalhost専用（本番Firebaseは禁止）');
@@ -131,8 +131,26 @@ $('start').addEventListener('click',async()=>{
    createMatchProtocol({battleOptions:{seed:12,teams:[guard,guard],
     rotationCooldownMs:0,researchSpecialEffects:false}}):
    createMatchProtocol();
-  match=createFirebaseMatchHost({roomClient:room,protocol,
-   onSnapshot:state=>stage.render(state),onError:err});
+  // Phase23C fault injection is restricted to localhost research UI with
+  // the explicit query opt-in. No production match or RTDB rule changes.
+  const phase23cFixture=new URLSearchParams(location.search).get('phase23c')==='1';
+  let failNextPublish=false;
+  const transport=phase23cFixture?Object.assign(Object.create(room),{
+   async publishSnapshot(state){
+    if(failNextPublish){
+     failNextPublish=false;
+     return {ok:false,reason:'phase23c_injected_publish_failure'};
+    }
+    return room.publishSnapshot(state);
+   }
+  }):room;
+  match=createFirebaseMatchHost({roomClient:transport,protocol,
+   onSnapshot:state=>{stage.render(state);updatePresence();},onError:err});
+  if(phase23cFixture)window.__phase23c={
+   failNextPublish:()=>{failNextPublish=true;},
+   status:()=>match.status(),
+   hostRevision:()=>match.snapshot().revision
+  };
   const started=await match.start();if(!started.ok)
    throw Error(started.reason||started.error||'snapshot_publish_failed');
   $('start').disabled=true;info('ホスト開始。相手の接続を待っています。');updatePresence();}
