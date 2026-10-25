@@ -22,7 +22,7 @@
 - [Chromium実Stage/指操作/勝敗表示 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40216082776)
 - [実Supabase通常2席 起動〜ゲストACK〜1ターン PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40216053282)
 - [実Supabase高速6体KO〜勝敗同期 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40216082806)
-- [実Supabase通常の5ターン連続通信・途中で双方一致](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40216218043)：**結果はこの後実行ログを確認して更新するまで未確定**。
+- [実Supabase通常の5ターン連続通信・途中で双方一致](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40216218043)：**初回成功＋2回目も成功（別部屋番号の再実行、2/2件PASS）**。通常の1,500ms時計で5行動以上、ゲスト側の同じターン表示、入力ACK、ホストOFF後の不要行動なし、4ビューポート幅が成功。これは数分以上・全6体の通常テンポでの実機対戦を保証しない。
 
 ## これからの課題
 - 通常5ターンの実クラウドQAが落ちたら、「ゲスト追い付き遅延／ホストの初期publish／クラウドHTTP遅延」を別々に診断。失敗を勝手に完了としない。
