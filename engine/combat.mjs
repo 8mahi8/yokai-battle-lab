@@ -22,6 +22,7 @@ import {ELEMENTS, validateElementResistances, calculateOneHit, deriveStatStage} 
 import {calculateTurnInspirit} from './turn-inspirit.mjs';
 import {calculateHeal} from './heal-model.mjs';
 import {yw2HitProbability,yw2CriticalProbability,rollPercent} from './hit-model.mjs';
+import {PLAYTEST_SOUL_TUNING} from './playtest-soul-tuning.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
   {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5]},
@@ -108,7 +109,7 @@ export function baseDamage(attacker,target,kind,critical=false) {
 export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,rotationCooldownMs=0,researchSoulGainPerAction=0,researchSpecialEffects=false,
   researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false,
   researchWheelCoalescing=false,researchOpeningPriority=null,
-  researchPokeSoulTransfer=0,researchDamageModel=false,researchMultiHit=false,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false}={}) {
+  researchPokeSoulTransfer=0,playtestSoulTuning=false,researchDamageModel=false,researchMultiHit=false,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
   if(typeof researchPresentation!=='boolean')throw new TypeError('researchPresentation must be boolean');
@@ -130,6 +131,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     throw new TypeError('researchHealingVariance must be boolean');
   if(researchHealingVariance&&!researchDamageModel)
     throw new RangeError('researchHealingVariance requires researchDamageModel');
+  if(typeof playtestSoulTuning!=='boolean')throw new TypeError('playtestSoulTuning must be boolean');
+  if(playtestSoulTuning&&(researchPokeSoulTransfer!==0||researchSoulGainPerAction!==0))
+    throw new RangeError('playtest Soul tuning cannot mix with research-only Soul injections');
   if(!Number.isInteger(researchPokeSoulTransfer)||researchPokeSoulTransfer<0||
     researchPokeSoulTransfer>250)
     throw new RangeError('researchPokeSoulTransfer must be an integer 0..250');
@@ -591,23 +595,27 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(!challenge.completed)return {ok:true,completed:false,challenge};
     pokes[side]=null;
     pokedTargets[side].add(pending.targetId);
-    // The manual confirms Soul-drain as ONE possible result. Which unit
-    // receives it, how much and the result odds are unresolved. Only a lab
-    // fixture is implemented: select first LIVING front ally and drain up
-    // to the configured integer from the target's Soul (0 by default).
+    // PvP playtest: Soul-drain is a documented POSSIBLE Poke outcome, but
+    // its probability, quantity and recipient selection remain unknown.
+    // For friendly matches, start with a guaranteed transferable amount;
+    // it never creates Soul when the enemy gauge is empty. Change only the
+    // small preset file after testing the feel. Research-mode stays separate.
     const targetSoul=soul.snapshot().teams[1-side].find(x=>x.id===pending.targetId);
     const recipient=livingFront(side)[0]??null;
     const receiverSoul=recipient?soul.snapshot().teams[side].find(x=>x.id===recipient.id):null;
-    const amount=researchPokeSoulTransfer>0&&recipient
-      ?Math.min(researchPokeSoulTransfer,targetSoul.soul,
+    const transferLimit=playtestSoulTuning
+      ?PLAYTEST_SOUL_TUNING.pokeMaxTransfer:researchPokeSoulTransfer;
+    const amount=transferLimit>0&&recipient
+      ?Math.min(transferLimit,targetSoul.soul,
         receiverSoul.capacity-receiverSoul.soul):0;
     if(amount>0){
       soul.setSoul(pending.targetId,targetSoul.soul-amount);
       soul.addSoul(recipient.id,amount);
     }
-    const reward={kind:researchPokeSoulTransfer>0?'research-soul-transfer':'unresolved',
+    const reward={kind:playtestSoulTuning?'playtest-soul-transfer':
+      researchPokeSoulTransfer>0?'research-soul-transfer':'unresolved',
       amount,recipientId:recipient?.id??null,sourceId:pending.targetId,
-      model:'research-only'};
+      model:playtestSoulTuning?'playtest-estimate':'research-only'};
     const event={type:'poke',side,targetId:pending.targetId,reward,
       actionCount:challenge.hits};
     events.push(event);
@@ -657,7 +665,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       purification:purification.map(p=>p?{id:p.id,challenge:p.trial.snapshot()}:null),
       poke:{active:pokes.map(p=>p?{targetId:p.targetId,challenge:p.trial.snapshot()}:null),
         used:pokedTargets.map(set=>[...set]),loafing:[...loafingActors],
-        rewardFixture:researchPokeSoulTransfer},
+        rewardFixture:researchPokeSoulTransfer,
+         ...(playtestSoulTuning?{playtestSoulTuning:{...PLAYTEST_SOUL_TUNING}}:{})},
       inspirits:Object.fromEntries([...byId.keys()].map(id=>[id,statuses.list(id)])),
       ...(presentation?{presentation:presentation.snapshot()}:{}),
       ...(counter?{counterWindow:counter.snapshot(),counterEffectsPending:pendingCounterEffects.size}:{}),
@@ -824,10 +833,27 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       actor:actor.id,...turnInspirit});
     recordView({side:actor.side,kind:'action',memberId:actor.id,detail:action.kind});
     if(researchSoulGainPerAction>0){for(const member of squads.flat())if(member.hp>0)soul.addSoul(member.id,researchSoulGainPerAction);}
-    if(researchSoulRecoveryMode==='owner-nonattack'){
-      // Empirical YW2 research: non-attacking Yo-kai restore ~5 Soul AFTER
-      // THEIR OWN turn. The exact recovery for attacks / damaging Techniques
-      // has not been verified; this intentionally doesn't guess it.
+    if(playtestSoulTuning){
+      // Friendly-match temporary pacing. NOT measured original-game numbers.
+      const didDamageAction=kind==='attack'||
+        (kind==='technique'&&actor.technique==='damage');
+      const vulnerableHit=didDamageAction&&hit&&target!==null&&
+        (loafingActors.has(target.id)||
+         statuses.list(target.id).some(x=>x.sign==='negative'));
+      const plannedGain=didDamageAction
+        ?(kind==='attack'?PLAYTEST_SOUL_TUNING.attackGain:
+          PLAYTEST_SOUL_TUNING.techniqueGain)+
+          (vulnerableHit?PLAYTEST_SOUL_TUNING.vulnerableHitBonus:0)
+        :PLAYTEST_SOUL_TUNING.nonAttackGain;
+      if(actor.hp>0){
+        const before=soul.snapshot().teams[actor.side].find(x=>x.id===actor.id).soul;
+        const after=soul.addSoul(actor.id,plannedGain);
+        action.soulPlaytest={model:'playtest-estimate',
+          gained:after-before,vulnerableHit,plannedGain};
+      }
+    }else if(researchSoulRecoveryMode==='owner-nonattack'){
+      // Empirical YW2 player report: +5 Soul after a nonattack owner's turn.
+      // Research/default-off mode deliberately still avoids unknown attacks.
       const didNotAttack=kind==='guard'||kind==='loaf'||kind==='inspirit'||
         (kind==='technique'&&actor.technique==='heal');
       if(didNotAttack && actor.hp>0)soul.addSoul(actor.id,5);
