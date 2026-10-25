@@ -54,7 +54,7 @@ ${shell}
 <script>\n${js}\n</script>`;
 const html=`<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>輪戦｜Google Sites直接埋込 1台2席試遊</title></head><body>${fragment}</body></html>`;
-const forbidden=[/demo-yokai-lab/i,/\.useEmulator\s*\(/i,/firebase\.initializeApp\s*\(/i,/<script[^>]+src\s*=/i,/<link[^>]+rel\s*=\s*["']stylesheet/i,/\bimport\s*\(/i,/\bimport\s*\{?/i];
+const forbidden=[/demo-yokai-lab/i,/\.useEmulator\s*\(/i,/firebase\.initializeApp\s*\(/i,/<script[^>]+src\s*=/i,/<link[^>]+rel\s*=\s*["']stylesheet/i,/\bimport\s*\(/i,/<script[^>]+type\s*=\s*["']module/i];
 for(const rule of forbidden)if(rule.test(fragment))throw Error('Offline standalone export contains forbidden reference: '+rule);
 if((fragment.match(/<script\b/g)||[]).length!==1)throw Error('Expected one inline JS block');
 if((fragment.match(/<style\b/g)||[]).length!==1)throw Error('Expected one inline CSS block');
