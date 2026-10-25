@@ -3,7 +3,7 @@
 更新: 2026-10-25 JST
 Repository: https://github.com/8mahi8/yokai-battle-lab
 Development branch: `feat/phase1-action-circle-lab-20261023`
-**現在: Phase20A/B・21A/Bは根拠のある通常2席ホストへ統合済み。21C開幕同着・21D零式つつく妖気吸収量/受取先は原作実機未照合。Phase22A研究連射と22B/Cの正規必殺/ゲストACKは確認済み。22D-Aで未確定の2我慢カウンターへの架空HP適用を停止。**22D-Bで2015年ノーモーション実践・相手視点合同検証の原作動画2本を新規発見（YouTubeメタデータ確認、実動画フレーム未視認）。2024年2回転原作説明を再照合。さらに研究cut-in中の前衛候補を時刻付きで記録し、2我慢のロック時刻不明と3回以上の回転不明が併発しても両原因と全候補面を保持するよう実装修正。Node463/463、Chromeステージ、Firebase EmulatorのChrome 2席が成功。** 次は22D-Cの本家側映像・同期時刻とPhase23/24の旧iPad Safari/Google Sites直貼りの実機ゲート。
+**現在: Phase20A/B・21A/Bの根拠ある部分は正規2席ホストへ統合済み。21C開幕同着・21D零式つつく妖気吸収量/受取先、22Dのノーモーション/カウンター本家フレーム時刻は未実機照合。22A/22Dの仮の必殺連射・演出は研究用のみ、22B/Cは正規ホストの4種チャージ・ゲストACKとChrome Firebase Emulator2席QA成功。**Phase23-Aでは実Firebase Web SDKが切断中の書込を後から同期し得る点を踏まえ、ゲストの未送信高速操作FIFOをpresenceオフラインで破棄し、送信済み1件だけ元のclientSeqで確認/再送できるよう修正。ローカルChromiumのAuth+RTDB2席で、必殺6タップ成功→一時オフラインで操作停止→接続復帰→次の正式コマンドをACKまで再検証。Node466/466、Chrome2席・ステージ成功。** 次はPhase23-B長時間/断線中のインフライト・旧iPad Safari実機準備と22D原作映像比較。
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
@@ -33,27 +33,31 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 | 20 | 研究から正規1vs1への統合 | **20A: Phase9攻撃・妖術＋Phase10ヒット別処理。20B: DEF/STR/SPR能力低下を継続HP効果と分離してホストON**。両方とも個別技値は仮。 | 保留: 回復基礎式と毒/再生HP係数は原作確証までOFF。元の6体に多段技未付与。 | **根拠がある範囲は統合済み** |
 | 21 | 原作ルール一致度 | **21A/B:** 3秒回転制限・ゲスト拒否。**21C:** 94行速度表＋初手比較器（原作同着は未完）。**21D-A/B:** 妖気24条件と矛盾分析。**21D-C1/C2:** 正規ホストつつく/12体妖気観測。**21D-C3:** 2014年通信対戦の「妖気を奪われたあと必殺」記録と2020年の連続吸収/複数必殺の戦術編成を確認（どちらも数値未取得）。 | 妖気受取先・回収量・発生確率を元の対人映像で照合し、数値が固まるまで通常版へ追加しない | **原作PvP定性資料と研究試験あり／数値未検証** |
 | 22 | 原作PvP深層戦術 | Phase5ノーモーション・回転・カウンターの独立研究。**22A:** 仮妖気回収による研究用連射。**22B:** 正規ホスト4種チャージ/G技。**22C:** ゲストACKとChrome Firebaseローカル2席6タップの同期PASS。**22D-A/B:** 2我慢のcut-in回転例外は原作ロック時刻を未確定とし仮HPを止めた。cut-in中の前衛候補と仮想時刻64記録、3回以上回転との二重原因保持、2015年の両視点ノーモーション実験候補映像を特定。Node463/463、Chromeステージ・Firebase Emulator 2席PASS | **22D-C:** 2015年両視点映像から同期したフレーム時刻が実測できるときにだけ反映。2我慢例外の回転中ロック時刻、3回以上回転と追加効果は未定。Phase23/24旧iPad Safari実機・Google Sites直接コード貼り付け | **定性資料・研究診断・ブラウザ通信QA済／3DS実フレームと本番公開未検証** |
-| 23 | 本番向け1vs1同期 | Firebase Auth+RTDB **ローカルエミュレータ2ブラウザ成功**、短い回線断処理など | 実際のクラウド・権限・長時間同期・端末差を検証 | **基盤あり／本番未試験** |
+| 23 | 本番向け1vs1同期 | Firebase Auth+RTDBローカルエミュレーターの2Chrome独立匿名ユーザー・33権限ルール・ゲスト必殺6タップ/途中5ACK/完了ACKを検証。**23A:** 回線断のpresenceを入力FIFOへ連動、未送信の高速タップを切断時に破棄、すでに送信した1件は元clientSeqでACK・明示再送。実Web SDKでgoOffline/goOnlineしても前衛3体は変わらず、復帰後新コマンドをACKまで継続。Node466/466、Firebase Emulatorブラウザ PASS | **23B:** 断線中の送信済み1件とネット遅延、実2デバイス長時間のゲスト同期、学校の古いSafariとGoogle Sites HTML直貼りゲート | **ローカル2Chrome短い回線断復帰検証済／物理iPad・本番Firebaseは未検証** |
 | 24 | 学校iPad・配布 | 上下画面、指サークル、低負荷の原形 | **学校iPad実機Safari・Google Sites単一HTML直貼り・2端末実戦** | **未完成** |
 
-## 3. 今回した作業（Phase22D-B／2026-10-25）
-**全体のどこ:** 原作の対人演出・カウンターの証拠 → 研究用 `engine/counter-window.mjs`/`engine/wheel-coalescing.mjs`/`engine/presentation-timeline.mjs` → `engine/combat.mjs`（標準のオンラインでは研究機能OFF） → 22B/22C既存の正規2席ホスト・Firebaseローカル実Chrome → Phase23/24旧iPad SafariとGoogle Sitesへ単一HTML/CSS/JS直接コード埋め込み。
+## 3. 今回した作業（Phase22D-C／Phase23-A／2026-10-25）
+**全体のどこ:** 原作ノーモーション/カウンターの時刻検証（Phase22D）→ 正規2席ホストのチャージとACK（22B/C）→ **Firebaseの回線断・高速入力キュー処理（23A）** → 学校旧iPad SafariとGoogle Sitesへ自己完結したHTML/CSS/JS**直接コード埋込**（Phase24）。
 
-**原作資料の追加:** [2015年6月27日ノーモーション必殺の打ち方](https://www.youtube.com/watch?v=6_9HFpAJEJU)、[2015年6月28日「はるくパパさんと合同検証」相手側の見え方](https://www.youtube.com/watch?v=GxCjC9STpmE)を発見。説明によれば原作で相手視点を検証済み。ただし**実際の映像フレーム・互いの視点の同期・何msずれたかは取得できていない**。 [2024年の対人2回転の具体的な説明](https://note.com/uzoumzou_nanoha/n/n2fb6ae41559c)における「2回目の輪回転の前後で必殺チャージ完了→対象が変化」も再確認。対応研究テストが既存なので**重複実装しない**。カウンターの2我慢例外と回転の組み合わせの確定フレームは未証明。研究用`800ms/500ms`は原作定数ではない。
+**原作照合の保留:** ノーモーション必殺・カウンターの2015年動画候補は[22D-B詳細](./PHASE22D_B_VIDEO_PROVENANCE_AND_COUNTER_CANDIDATES_20261025.md)に保存済み。ただし両視点を同期できる実映像のフレームはまだ得られず、研究用800ms/500msは**原作の確定定数ではない**。通常ホストへ追加していない。
 
-**今回の実装:** 旧`counter-window.mjs`は回転の有無しか保存しなかったため、cut-in中に出した前衛の候補を確認しづらかった。今回`cutinFrontlineTimeline`で仮想時刻・前衛3IDを**変更ごとに最大64回まで記録し、超えたら`historyTruncated`**と明示。`combat.mjs`は「2我慢中のcut-in回転でロック時刻不明」と「3回以上の輪回転で挙動不明」が**同時に起きた場合、後の原因が前の原因を上書きしていた**問題を修正。双方の`reasonCodes`、`candidateCutinFronts`、`rotationCount`を保持し、**未確定のカウンターHPダメージは研究専用で与えない**。ネストした研究スナップショットも改変不可の独立コピーとした。正規PvPルールへの変更は0。
+**今回発見した通信課題:** [Firebase公式 Web RTDBオフライン](https://firebase.google.com/docs/database/web/read-and-write)によると、オフライン中の操作はローカル処理・接続回復後の同期の可能性がある。既存ゲストの`network/firebase-match.mjs`はホストACK待ちの1件とは別に高速タップを最大48件FIFOへ保持する。画面を`2P PAUSE`にしても、**すでにFIFOへ入った未送信のタップ/サークル回転が復帰後まとめて実行され得る**。
 
-**新規受入テスト5件:** `tests/counter-window.test.mjs`3件（候補履歴、cut-in外除外、64件の上限）＋`tests/combat-counter.test.mjs`2件（二重原因、HP不適用、二重記録しないこと、スナップショット独立）。[**Node463/463＋研究Chromium PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40120217305)。[**Chrome本家風ステージ・指操作PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40120217295)。[**Firebase Emulatorの独立2Chrome・6タップQA PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40120162556)。**原作3DSのキャプチャ比較・学校Safari実機・クラウドFirebase/Googleサイト直貼りは未実施**。
+**実際に修正:** `network/firebase-match.mjs`へ`setDeliveryEnabled(boolean)`追加。`lab/firebase-match-stage.html`のFirebase接続・相手presenceと接続。断線時は**未送信FIFOを破棄し件数通知**、送信済みのただ1件は消さず権威ACKを待ち、必要なら接続回復後に**同じclientSeqで明示的に再送**。新規入力/再送/キュー自動送信はオフライン中停止。SDKへ送信済みのものは取り消せないので二重送信時も同じ番号を厳守。ホストの戦闘ルールは一切変更しない。
 
-**詳細研究記録:** [Phase22D-B 2015年の対人動画と複数不確定の調査・実装・受け入れ基準](./PHASE22D_B_VIDEO_PROVENANCE_AND_COUNTER_CANDIDATES_20261025.md)。初回[22D-A](./PHASE22D_COUNTER_ENDURE_CUTIN_UNCERTAINTY_20261025.md)は元の研究修正記録として保持。
+**テスト:** `tests/firebase-match.test.mjs`に3件：旧キュー破棄、送信済み同一seqの再送とホスト二重適用防止、presence切替時のコマンド拒否。**[Node466/466＋研究Chromium](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40158018443) PASS**。[**本家風ステージChrome・指操作**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40158018452) PASS。[**Firebaseローカルエミュレーター実2Chrome・33権限チェック・ゲスト6タップから実SDKオフライン→オンライン復帰**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40158018445) PASS。実画面DOMで**オフライン中に前衛3体が変化しない**ことを検査し、復帰後の新しい輪回転はホストACKで反映。前衛0体の空比較による偽陽性を防ぐチェックも追加。
 
-**変更先と君の操作:** GitHub研究ブランチ`feat/phase1-action-circle-lab-20261023`だけ。**main・既存学校Googleサイト版・本番Firebase、料金、閃光魂初期OFFの方針は未変更。** 今は君の操作なし。
+**条件と注意:** Chromeの**2つの独立iframe＋Firebase Auth/RTDBローカルエミュレーター**での成功。**学校の旧iPad Safari実機・本番クラウドFirebase・Google Sites直貼り／実3DSフレーム**を確認したと主張しない。ブラウザが完全再起動した後の試合復元は対象外、今はタブ内短期切断の復帰のみ。
 
-## 4. 次にする作業（Phase22D-C → Phase23/24）
-1. **22D-C:** 2015年の合同検証動画の原作フレームを両視点で読める手段が見つかれば、チャージ開始・完了・相手画面初出・cut-in／前衛変更・命中対象の順を記録し、実測で元ゲームのタイミングを検証。取得不可なら**未確定維持**。原作再現ではない800ms/500ms等を正規戦闘へ統合しない。
-2. **22D-C 対象ロック:** 2我慢例外＋cut-in中1回以上の輪回転、3回以上の輪回転、相手自動行動が挟まった場合の実例を探索。元のフレームがない場合は研究用`reasonCodes`を参照して対象を未確定とする。
-3. **23:** Firebaseのゲスト連続入力/ACK、再接続、端末差、長時間のフレーム負荷を調査。既存のEmulator2席実Chromeを再利用し、クラウドの実課金/設定を勝手に触らない。
-4. **24:** 学校旧iPad Safariで2席対戦が安定したときだけGoogle Sitesの「コードを埋め込む」へ**自己完結のHTML/CSS/JSを直接貼り付け**。GitHub Pages URL埋め込みではない。公開は本人が実施する。
+**詳細資料:** [Phase23-A 切断中の古い操作破棄・1件だけの安全再送・2席Chrome復帰QA](./PHASE23A_DISCONNECT_FIFO_AND_2SEAT_RESUME_20261025.md)。
+
+**変更先・君の操作:** GitHub開発ブランチ`feat/phase1-action-circle-lab-20261023`のみ。main、Googleサイト版、本番Firebase設定・課金、Flash魂初期OFFは変更なし。今は君の操作不要。
+
+## 4. 次にする作業（Phase23-B・24、22D残）
+1. **23B:** Firebaseローカル2席の長時間連続操作・ACK遅延・断線中に送った直後の1件と復帰の競合を再検証。Google Sites埋込時に不要なSDK動作を増やさない。実端末Safariのメモリ・画面・タッチ入力とオンライン同期を優先。
+2. **24:** 旧世代iPad Safariで実際に2端末1vs1操作ができる単一HTML/CSS/JSのGoogle Sites「コードを埋め込む」版を構築してブラウザQA。Google Pages iframeへ逃げない。**公開操作は本人が実施**。
+3. **22D-C残:** ノーモーション必殺・2我慢カウンターの正確な対象ロック/演出時間は、2015年の同時刻原作2視点を読めるようになった場合だけ測定。研究の仮時刻は正規戦闘へまだ導入しない。
+4. **21D残:** 零式つつく妖気の受取先・量・攻撃技/妖術のSoul増加も原作定量の照合がないので研究のみ。追加の閃光魂、育成、公開戦術改善は勝手に開始しない。
 
 ## 5. 次フェーズへ進む条件と設計逸脱を防ぐルール
 - **原作再現 → 対人戦術 → オンラインの安定 → 学校Googleサイト**の順を守る。画面装飾、独自ATB、次の5行動予測（UI標準ではOFF）、閃光魂、育成、ランキング、リプレイ、観戦は**現在のスコープに入れない**。
