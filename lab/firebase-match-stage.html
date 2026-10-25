@@ -37,13 +37,16 @@ import {createMatchStage} from '../ui/match-stage.mjs';
 import {matchAckMessage} from '../ui/match-feedback.mjs';
 const $=id=>document.getElementById(id);
 let database,room,match,stage=null,seat=null;
-let localConnected=false,peerConnected=null;
+let localConnected=false,peerConnected=null,lastAvailable=false;
 function available(){return localConnected&&peerConnected===true;}
 function updatePresence(){
+ const connected=available();
+ const justReconnected=connected&&!lastAvailable;
+ lastAvailable=connected;
  const state=!localConnected?'回線オフライン':
   peerConnected===true?'相手と接続中':peerConnected===false?'相手が切断':'相手の接続待ち';
  $('link-state').textContent=state;
- if(stage)stage.setConnection(available()?'2P ONLINE':'2P PAUSE');
+ if(stage)stage.setConnection(connected?'2P ONLINE':'2P PAUSE');
  // The Firebase SDK can queue writes offline, but gameplay touches queued
  // before a disconnect must not silently fire long after reconnection.
  if(seat===1&&match?.setDeliveryEnabled){
@@ -51,8 +54,19 @@ function updatePresence(){
   if(switched.dropped>0)
    info('接続が切れたため、未送信の操作'+switched.dropped+'件を破棄しました。送信済みの1件はACKか再送で確認できます。');
  }
- // Never run a standalone host clock while the opponent is unreachable.
- $('retry').disabled=seat!==1||!available()||!match||!match.status().pendingSequence;
+ // If the host already applied the guest action but its snapshot publish
+ // failed, resending the guest input is a duplicate and CANNOT heal the
+ // missing ACK. Republish the identical latest authoritative snapshot.
+ if(seat===0&&justReconnected&&match?.status?.().started&&match.status().dirty)
+  void match.retryPublish().then(result=>{
+   if(!result.ok)err(new Error(result.error||'snapshot_retry_failed'));
+   updatePresence();
+  }).catch(err);
+ const pending=match?.status?.()||null;
+ $('retry').textContent=seat===0?'未反映の戦況を再送':'未確定入力を再送';
+ $('retry').disabled=!connected||!match||
+  (seat===0?!pending?.started||!pending?.dirty:
+   seat!==1||!pending?.pendingSequence);
 }
 function guard(){
  return !localConnected?{ok:false,reason:'connection_offline'}:
@@ -135,10 +149,18 @@ $('connect').addEventListener('click',async()=>{
 });
 $('retry').addEventListener('click',async()=>{
  try{
-  if(seat!==1||!match)throw Error('ゲストの未確定入力がありません');
+  if(!match)throw Error('戦闘がまだ開始されていません');
   const blocked=guard();if(blocked)throw Error(blocked.reason);
-  const result=await match.retry();if(!result.ok)throw Error(result.reason);
-  info('同じ操作番号を再送しました。ホストのACKを確認してください。');
+  if(seat===0){
+   if(!match.status().dirty)throw Error('再配信する戦況はありません');
+   const result=await match.retryPublish();
+   if(!result.ok)throw Error(result.error||'snapshot_retry_failed');
+   info('未反映の戦況を再配信しました。相手のACKを確認してください。');
+  }else if(seat===1){
+   const result=await match.retry();
+   if(!result.ok)throw Error(result.reason);
+   info('同じ操作番号を再送しました。ホストのACKを確認してください。');
+  }else throw Error('戦闘がまだ開始されていません');
   updatePresence();
  }catch(error){err(error);}
 });
