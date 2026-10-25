@@ -145,3 +145,28 @@ button:focus-visible{outline:3px solid #ffe5a9;outline-offset:2px}
  .mb-bottom{margin-top:6px}.mb-actions,.mb-feed{padding:7px}
  .mb-control-grid{margin-top:6px;gap:4px}}
 @media(prefers-reduced-motion:reduce){.mb-creature{transition:none}.mb-creature.mb-acting,.mb-creature.mb-hit,.mb-creature.mb-healed,.mb-floating-number{animation:none}}
+
+/* Phase29: deterministic win/loss result, over the LOCAL match stage only.
+ * A remote room/new match is intentionally not auto-created or restored. */
+.mb-stage{position:relative}
+.mb-finish-screen{position:absolute;inset:0;z-index:80;background:rgba(9,17,28,.94);
+ display:flex;align-items:center;justify-content:center;padding:16px;
+ border-radius:16px;text-align:center}
+.mb-finish-screen[hidden]{display:none!important}
+.mb-finish-card{width:min(100%,390px);padding:28px 20px;
+ background:linear-gradient(145deg,#1b3247,#282840);
+ border:2px solid #ccad70;border-radius:20px;
+ box-shadow:0 8px 30px #0007;color:#f7f0df}
+.mb-finish-eyebrow{font-size:12px;letter-spacing:.23em;color:#d3b78f}
+.mb-finish-card h2{font-size:clamp(34px,7vw,54px);margin:6px 0;color:#ffe3a5}
+.mb-finish-card b{display:block;font-size:18px;color:#e8eef5}
+.mb-finish-card p{font-size:14px;line-height:1.5;margin:12px 0}
+.mb-finish-card .mb-finish-help{font-size:11px;color:#b9c9d3}
+.mb-finish-close{background:#456b79;border:1px solid #a2d3d5;border-radius:12px;
+ color:#f8fafb;padding:12px 15px;font-weight:700;min-height:44px;
+ max-width:100%;touch-action:manipulation}
+.mb-finish-close:focus-visible{outline:3px solid #ffe5a9}
+@media(max-width:440px){
+ .mb-finish-screen{padding:8px}
+ .mb-finish-card{padding:20px 12px}
+}
