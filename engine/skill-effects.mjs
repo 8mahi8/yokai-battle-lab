@@ -74,7 +74,7 @@ export function resolveLastStand({skill,enabled=true,spent=false,hp,amount}={}){
   throw new RangeError('nonnegative integer HP and incoming amount required');
  if(typeof spent!=='boolean'||typeof enabled!=='boolean')
   throw new TypeError('boolean spent/enabled required');
- const activate=enabled&&skill==='lastStand'&&!spent&&hp>1&&amount>=hp;
+ const activate=enabled&&skill==='lastStand'&&!spent&&hp>0&&amount>=hp;
  const remaining=activate?1:Math.max(0,hp-amount);
  return Object.freeze({
   hpAfter:remaining,amount:hp-remaining,activated:activate
