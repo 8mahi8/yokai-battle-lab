@@ -74,7 +74,8 @@ test('A6 guard-break ignores an actual B1 guard; only physical strikes pierce',(
  const left=squad().map((x,i)=>({...x,speed:i===5?850:1,weights:[100,0,0,0]}));
  const right=squad().map((x,i)=>({...x,speed:i===0?900:1,weights:[0,0,0,100]}));
  const g=manual([left,right]);
- assert.equal(g.rotate(0,1).ok,true);
+ for(let i=0;i<3;i++)assert.equal(g.rotate(0,1).ok,true);
+ assert.equal(g.snapshot().clock.teams[0].frontIds.includes('A6'),true);
  assert.equal(g.pin(0,'B1'),undefined);
  const guard=g.step();
  assert.equal(guard.actor,'B1');
