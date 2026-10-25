@@ -18,6 +18,8 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 
 > **【Phase27 キャラの役割を原作参考に変更（2026-10-25）】** [必殺技カテゴリと6体の役割](./PHASE27_ORIGINAL_INSPIRED_SPECIAL_ROLES_20261025.md)を確定。**キャラの完全再現は不要**、オリジナル6体を使いつつ原作の「単体/全体攻撃・全体回復・強化・弱体化」など効果の種類を参考にする。既存の必殺・とりつき台帳に**buff/debuff**を最小追加し、いしもり=味方全体攻撃強化、くろがね=敵前衛全体防御低下、すずかぜ=単体妖術に差別化。味方の良い状態/敵への弱体化の表示も追加。**[Node529/529 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40205856316)**、**[Chromium戦闘画面・Pointer操作PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40205856312)**。状態Lv・技パワー等は原作一致ではなく**仮値**。原作再現キャラ画像や固有名の追加はしない。**次はオンライン1試合を決着まで通して確認する**。Googleサイト学校版・main・SupabaseDB/Rulesは無変更。
 
+> **【Phase28 完全対戦通しテスト（2026-10-26）】** [新たな優先計画とバグ修正根拠](./PHASE28_FULL_MATCH_ROADMAP_20261026.md)。本人は**学校用Phase27ファイルを固定、こちらは開発継続**を決定。正規ホストの初手→前衛6体KO→勝敗一致までの3試合E2E相当のNode検証で、**強制KO交代に3秒手動回転ロックが誤適用され進行停止**する実バグを再現・修正。自動交代だけロック解除、プレイヤー自身の3秒ロックを維持。[Node533/533 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40207757736)。これは**通信なしのホストと両席の画面状態比較**で、Supabaseの全試合試験や学校Safari検証ではない。開発修正前の**学校用固定Phase27にはこの不具合が残っている可能性**があるため、本人へ明示する。Supabaseリアル2iframe QA [最新再実行](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40207757764) は別途確認し、結果が確定するまで完了と呼ばない。次はクラウド通信での決着まで、勝敗画面、その次に未完成必殺/つつく、最後に高度対人・実機チューニング。
+
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
