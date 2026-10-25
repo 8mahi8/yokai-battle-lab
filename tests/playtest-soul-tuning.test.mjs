@@ -87,3 +87,45 @@ test('host uses a flag, never exposes Soul amounts as guest commands, and replay
  assert.equal(m.dispatch(0,1,{type:'giveSoul',id:'A1',amount:200}).reason,'invalid_command');
  assert.equal(replayMatchJournal(m.exportJournal()).ok,true);
 });
+
+
+test('canonical match host playtest Poke transfers only measured available Soul and replays',()=>{
+ const attackers=RENTAL_SQUAD.map(u=>({...u,weights:[0,0,100,0],
+   inspirit:'strength-down'}));
+ const defenders=RENTAL_SQUAD.map(u=>({...u,weights:[0,0,0,100],
+   inspiritResistance:0}));
+ const match=createMatchProtocol({battleOptions:{
+   playtestSoulTuning:true,seed:1042,teams:[attackers,defenders]
+ }});
+ let targetId=null;
+ for(let i=0;i<18;i++){
+   const evt=match.advanceAuto();
+   assert.equal(evt.ok,true);
+   if(evt.result.kind==='inspirit'&&evt.result.actor.startsWith('A')&&
+     evt.result.hit&&evt.result.target?.startsWith('B')){
+     targetId=evt.result.target;
+     break;
+   }
+ }
+ assert.ok(targetId);
+ const before=match.snapshot().game.soul.teams;
+ const targetBefore=before.flat().find(x=>x.id===targetId).soul;
+ const recipientBefore=before[0].find(x=>x.id==='A1').soul;
+ assert.equal(match.dispatch(0,1,{type:'watch',mode:'zero'}).ok,true);
+ assert.equal(match.dispatch(0,2,{type:'pokeStart',targetId}).ok,true);
+ let end;
+ for(let i=0;i<12;i++){
+   end=match.dispatch(0,i+3,{type:'pokeInput',
+     gesture:{type:'tap',x:.5,y:.5}});
+   assert.equal(end.ok,true);
+ }
+ assert.equal(end.result.completed,true);
+ assert.equal(end.result.reward.kind,'playtest-soul-transfer');
+ assert.equal(end.result.reward.model,'playtest-estimate');
+ const amount=end.result.reward.amount;
+ assert.equal(amount,Math.min(T.pokeMaxTransfer,targetBefore,100-recipientBefore));
+ const after=match.snapshot().game.soul.teams;
+ assert.equal(after[0].find(x=>x.id==='A1').soul,recipientBefore+amount);
+ assert.equal(after.flat().find(x=>x.id===targetId).soul,targetBefore-amount);
+ assert.equal(replayMatchJournal(match.exportJournal()).ok,true);
+});
