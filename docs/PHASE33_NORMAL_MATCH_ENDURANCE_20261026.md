@@ -14,7 +14,7 @@
 - `.github/workflows/phase33-normal-paced-online.yml` にて無料のGitHub Actions上で実通信試験を実行。独立した**CI専用の匿名試験ルーム**を作る。ユーザーの学校/公開ページは変更しない。
 - 最初はChromiumの`--dump-dom --virtual-time-budget=190000`が**ブラウザ検証環境の210秒制限まで終了しなかった**ため、ゲーム側の同期不具合とは決めつけず、検証時間を最適化。`130000` budgetで同じ通常60ターン試験が[実Supabase成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40217794329)。実行ログ：
   `SITES-SUPABASE-PACED-PASS room=066442 normalRentals=6v6 guestCommand=ACK syncedTurns=60 checkpoints=60 win=false`。
-- **QA検証方式の切り分け**：ブラウザ結果をローカルサーバーへ早期報告する新方式を試したが、Chromeが結果送信前に終了して[失敗](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40218011449)。これはゲーム側の不具合を示さない。新方式を撤回し、**既に60ターン成功した130000仮想時刻予算 + 元の`--dump-dom`検証器と同一コードへ戻した**。成功したGitHub実行は [40217794329](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40217794329)。
+- **検証方式の切り分け**：ブラウザ結果をローカルWebサーバーへ早期報告する別方式の最初の実行は、結果送信前にChromeが終了して[失敗](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40218011449)。既知の `--dump-dom` ライフサイクルを併用すると[別の実部屋で60ターン成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40218185568)。ただし複雑な新方式を導入する必然性はないため、**最初に60ターン成功した単純な130000仮想時刻予算 + `--dump-dom` の検証器と同一コードへ戻した**。この時点で**異なる実部屋で2回の通常60ターン成功**を確認：[初回](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40217794329)、[再検証](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40218185568)。
 
 ## 追加②：実レンタルAI同士の自然な試合時間
 - `tools/normal-match-endurance.mjs` を新規作成。**既存6体、既存AI行動、playtestSoulTuning=true**、ホスト正規戦闘/100%決定的seedで、最大600ターンまで4本を測定する。戦闘値は変更しない。
