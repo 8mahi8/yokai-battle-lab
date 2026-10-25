@@ -95,6 +95,7 @@ export function makeStageView(state,side=0){
   const members=roster.map((unit,idx)=>{
    const soul=bank.find(x=>x.id===unit.id)||{soul:0,capacity:100};
    return {id:unit.id,name:unit.name,hp:unit.hp,maxHp:unit.maxHp,
+    skill:unit.skill??null,skillBoost:game.skillBoosts?.[unit.id]?.remainingTurns??0,
     soul:soul.soul,capacity:soul.capacity,
     specialReady:readiness[unit.id]?.ready??false,
     front:front.has(unit.id),ko:unit.hp<=0,
@@ -370,7 +371,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const pokeLabels={'playtest-soul-transfer':'妖気吸収',
      'playtest-damage':'HPダメージ','playtest-heavy-hit':'一撃（999）',
      'research-soul-transfer':'妖気吸収'};
-   const type=pokeReward?'つつく / '+(pokeLabels[pokeReward.kind]||'結果未確定'):
+   const type=x.type==='skill'?('スキル '+(x.label||x.skill||'')+' '+(x.kind||'発動')):
+     pokeReward?'つつく / '+(pokeLabels[pokeReward.kind]||'結果未確定'):
      x.kind||x.type||'行動';
    const number=pokeReward&&Number.isFinite(pokeReward.amount)?
      ' / '+pokeReward.amount:
@@ -478,7 +480,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   }else $('mb-action-label').textContent='次の行動を待機中';
   $('mb-active-label').textContent='PLAYER '+(activeSeat?'B':'A')+' の操作';
   const selected=own.members.find(x=>x.id===selection);
-  $('mb-selected').textContent=selected?'選択: '+selected.name+(selected.front?' / 前衛':' / 後衛'):'妖怪を選択';
+  $('mb-selected').textContent=selected?'選択: '+selected.name+(selected.front?' / 前衛':' / 後衛')+
+    (selected.skill?' / スキル '+({momentum:'撃破時強化',care:'隣接回復',sharpCrit:'会心率UP'}[selected.skill]||'未確認'):'')+
+    (selected.skillBoost?' / 強化残'+selected.skillBoost+'行動':''):'妖怪を選択';
   $('mb-watch').textContent=own.mode==='zero'?'標準ウォッチへ':'零式へ切替';
   $('mb-charge').querySelector('span').textContent=own.mode==='zero'?'Gわざ':'わざ';
   $('mb-charge').querySelector('small').textContent=own.mode==='zero'?
