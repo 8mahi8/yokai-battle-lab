@@ -23,19 +23,19 @@ import {calculateTurnInspirit} from './turn-inspirit.mjs';
 import {calculateHeal} from './heal-model.mjs';
 import {yw2HitProbability,yw2CriticalProbability,rollPercent} from './hit-model.mjs';
 import {PLAYTEST_SOUL_TUNING,choosePlaytestPokeOutcome} from './playtest-soul-tuning.mjs';
-import {validateRentalSkill,skillMomentumStage,critSkillBonus,careOnOwnerTurn,SKILL_TRIAL} from './skill-effects.mjs';
+import {validateRentalSkill,skillMomentumStage,critSkillBonus,careOnOwnerTurn,resolveLastStand,SKILL_TRIAL} from './skill-effects.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
   {name:'あかねこ',skill:'momentum',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5]},
-  {name:'こもれび',speed:170,maxHp:210,strength:55,spirit:125,defense:65,attackPower:40,techniquePower:50,technique:'heal',attitude:'gentle',inspirit:'strength-up',weights:[25,55,15,5],
+  {name:'こもれび',skill:'critImmune',speed:170,maxHp:210,strength:55,spirit:125,defense:65,attackPower:40,techniquePower:50,technique:'heal',attitude:'gentle',inspirit:'strength-up',weights:[25,55,15,5],
    special:{kind:'drain',scope:'front',power:80,damageKind:'technique'}},
-  {name:'いしもり',speed:105,maxHp:310,strength:92,spirit:45,defense:145,attackPower:45,techniquePower:35,technique:'damage',attitude:'careful',inspirit:'strength-up',weights:[35,10,15,40],
+  {name:'いしもり',skill:'lastStand',speed:105,maxHp:310,strength:92,spirit:45,defense:145,attackPower:45,techniquePower:35,technique:'damage',attitude:'careful',inspirit:'strength-up',weights:[35,10,15,40],
    special:{kind:'buff',scope:'front',effect:'strength-up',level:2}},
   {name:'すずかぜ',skill:'sharpCrit',speed:251,maxHp:190,strength:73,spirit:115,defense:55,attackPower:45,techniquePower:65,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[35,50,10,5],
    special:{kind:'damage-status',scope:'one',power:145,damageKind:'technique',effect:'spirit-down',level:2}},
   {name:'ほたる',skill:'care',speed:195,maxHp:220,strength:66,spirit:112,defense:72,attackPower:45,techniquePower:50,technique:'heal',attitude:'gentle',inspirit:'strength-up',weights:[30,50,15,5],
    special:{kind:'revive-heal',scope:'team',power:85}},
-  {name:'くろがね',speed:128,maxHp:305,strength:116,spirit:47,defense:130,attackPower:65,techniquePower:25,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,10,10,20],
+  {name:'くろがね',skill:'guardBreak',speed:128,maxHp:305,strength:116,spirit:47,defense:130,attackPower:65,techniquePower:25,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,10,10,20],
    special:{kind:'debuff',scope:'front',effect:'defense-down',level:2}}
 ]);
 
@@ -169,6 +169,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     throw new RangeError('HP-over-time Inspirits require researchTurnInspirits');
   const byId=new Map(squads.flat().map(x=>[x.id,x]));
   const skillBoosts=new Map();
+  const spentLastStand=new Set();
   const soul=createSoulSystem({teams:squads.map(team=>team.map(m=>({id:m.id,capacity:m.soulCapacity})))});
  const statuses=createInspiritLedger([...byId.keys()]);
   const clock=createBattle({seed,teams:squads.map(t=>t.map(m=>({name:m.name,speed:m.speed}))),rotationCooldownMs,
@@ -270,6 +271,20 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     skillBoosts.set(caster.id,{remainingTurns:SKILL_TRIAL.momentumOwnerTurns});
     events.push({type:'skill',actor:caster.id,targetId:target.id,skill:'momentum',
       label:'まえのめり型',kind:'発動',remainingTurns:SKILL_TRIAL.momentumOwnerTurns});
+  }
+  // Direct hits are resolved against the same host skill state, whether
+  // they are physical, Soultimate, or PvP Poke. Never apply a KO or score
+  // until the one-use survival effect has been accounted for.
+  function applyDirectDamage(target,incoming){
+    const result=resolveLastStand({skill:target.skill,enabled:enableRentalSkills,
+      spent:spentLastStand.has(target.id),hp:target.hp,amount:incoming});
+    target.hp=result.hpAfter;
+    if(result.activated){
+      spentLastStand.add(target.id);
+      events.push({type:'skill',actor:target.id,skill:'lastStand',
+        label:'どひょうぎわ型',kind:'発動',remainingHp:1});
+    }
+    return result;
   }
   function syncCanAct(id){
     const member=byId.get(id);
@@ -494,7 +509,14 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         }else impact.applied=false;
         continue;
       }
-      target.hp=impact.hpAfter;
+      if(impact.kind==='damage'||impact.kind==='damage-status'||impact.kind==='drain'){
+        const damage=applyDirectDamage(target,impact.amount);
+        impact.amount=damage.amount;
+        impact.deltaHp=-damage.amount;
+        impact.hpAfter=damage.hpAfter;
+        impact.predictedKO=target.hp===0;
+        if(damage.activated)impact.lastStand=true;
+      }else target.hp=impact.hpAfter;
       if(impact.kind==='damage'||impact.kind==='damage-status'||impact.kind==='drain'){
         const changed=interruptOnHit(target,impact.amount,false);
         if(changed)interruptions.push(changed);
@@ -648,8 +670,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       if(chosen==='damage'||chosen==='heavy-hit'){
         const nominal=chosen==='heavy-hit'
           ?PLAYTEST_SOUL_TUNING.pokeHeavyDamage:PLAYTEST_SOUL_TUNING.pokeNormalDamage;
-        const amount=Math.min(enemy.hp,nominal);
-        enemy.hp-=amount;
+        const damage=applyDirectDamage(enemy,Math.min(enemy.hp,nominal));
+        const amount=damage.amount;
         const interruption=interruptOnHit(enemy,amount,false);
         if(enemy.hp===0){syncCanAct(enemy.id);syncPinned();}
         if(squads.some(team=>team.every(unit=>unit.hp===0)))
@@ -736,6 +758,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   function snapshot(){
     return {seed,winner,pins:[...pins],clock:clock.snapshot(),
       skillBoosts:Object.fromEntries([...skillBoosts].map(([id,boost])=>[id,{...boost}])),
+      spentLastStand:[...spentLastStand],
       squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights],
       elementResistances:{...m.elementResistances}}))),events:events.slice(-80).map(e=>({...e})),soul:soul.snapshot(),
       guided:guided.map(g=>g?{token:g.token,id:g.id,kind:g.kind,challenge:g.trial.snapshot()}:null),
@@ -829,7 +852,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
             criticalResearch=yw2CriticalProbability({
               loafing:loafingActors.has(target.id),
               moveCritBonus:Math.min(98,actor.moveCritBonus+(enableRentalSkills?critSkillBonus(actor.skill):0)),
-              criticalImmune:target.criticalImmune});
+              criticalImmune:target.criticalImmune||(enableRentalSkills&&target.skill==='critImmune')});
             oneCritical=rng()*99<criticalResearch.units;
           }else oneCritical=rng()*99<1;
           critical=critical||oneCritical;
@@ -845,7 +868,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
               kind,power:kind==='attack'?actor.attackPower:actor.techniquePower,
               strength:actor.strength,spirit:actor.spirit,defense:target.defense,
               criticalDefense:target.criticalDefense,critical:oneCritical,
-              guarded:target.guard,guardBreak:actor.guardBreak,
+              guarded:target.guard,guardBreak:actor.guardBreak||(enableRentalSkills&&actor.skill==='guardBreak'),
               elementMultiplier:elemental,statStage,defenseStage,hits:attemptedHits
             });
             damage=damageResearch.amount;
@@ -855,16 +878,17 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
             damage=baseDamage({...actor,
               strength:Math.floor(actor.strength*(statuses.has(actor.id,'strength-up')?1.10:1)*extra),
               spirit:Math.floor(actor.spirit*extra)},target,kind,oneCritical);
-            if(target.guard)damage=Math.max(1,Math.floor(damage*.5));
+            if(target.guard&&!(actor.guardBreak||enableRentalSkills&&actor.skill==='guardBreak')&&kind==='attack')damage=Math.max(1,Math.floor(damage*.5));
+            else if(target.guard&&kind==='technique')damage=Math.max(1,Math.floor(damage*.5));
           }
           // A separate seeded spread is drawn for each unguarded hit.
-          if(!target.guard||damageResearch?.guardIgnored){
+          if(!target.guard||damageResearch?.guardIgnored||(enableRentalSkills&&actor.skill==='guardBreak'&&kind==='attack')){
             const range=Math.floor(damage/10+1);
             damage=Math.max(1,Math.min(999,damage+Math.floor(rng()*(2*range+1))-range));
           }
-          oneDamage=Math.min(target.hp,damage);
+          const dealt=applyDirectDamage(target,Math.min(target.hp,damage));
+          oneDamage=dealt.amount;
           amount+=oneDamage;
-          target.hp-=oneDamage;
           oneInterruption=interruptOnHit(target,oneDamage,oneCritical);
           if(oneInterruption?.stopped||!interruption)interruption=oneInterruption??interruption;
           if(target.hp===0){syncCanAct(target.id);actor.knockouts++;
