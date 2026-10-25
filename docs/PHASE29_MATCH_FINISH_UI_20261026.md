@@ -23,7 +23,7 @@
 ## 検証結果の区別
 - [Node534/534 PASS（最初のUI完成後）](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40208856871)。
 - [実Chromium stage・実指操作・結果表示PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40208856856)。
-- 最新CIはブランチ後続pushの実行結果を確認し、進捗資料のURLを更新する。
+- **最新すべてPASS**：[Node534/534](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40209153329)／[Stage・Pointer・ResultのChromium](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40209153345)／[単一Google Sites用HTMLの自動生成・静的検査](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40209153310)／[実Supabase 2 iframe通信の初期進行](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40208993113)。本番Googleサイト公開版は変更せず。
 - **未確認**：実Supabaseクラウドで最初から6体KOまで2席通信、学校Google Sitesと旧iPad Safari実機。Node試合通しとChromium結果画面は、この未確認事項の代用ではない。
 
 ## 次の順番
