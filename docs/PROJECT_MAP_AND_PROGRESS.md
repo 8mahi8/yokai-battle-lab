@@ -4,6 +4,8 @@
 Repository: https://github.com/8mahi8/yokai-battle-lab
 Development branch: `feat/phase1-action-circle-lab-20261023`
 **最新の現在地（2026-10-25再監査）:** [再監査済み正式引き継ぎ](./HANDOFF_VERIFIED_20261025.md)。開発は**Phase25（Supabase 1vs1 / 学校Google Sites用HTML）**。HEAD `7bfc083b7b3de677744aabffa80ad891a4c4488a`で[Node497/497 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40195497455)、[Chromium戦闘画面・指操作PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40195497517)、[実Supabase・同一Chromium内2 iframeの匿名認証/部屋/操作ACK/自動行動・4画面幅E2E PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40195497511)。旧`Anonymous sign-ins are disabled`は過去の失敗であり現在のブロッカーではない。学校実Google Sites・旧iPad Safari2端末の試遊、原作3DSとの定量一致、通信の長時間復帰は**未検証**。実DBは4表ともRLS有効で、Security Advisor最新取得は**5 WARN**（匿名認証に関係する4件・漏えいパスワード保護OFF 1件）なので過去の「0件」を現況と混同しない。ゲームテスト用の残存行あり。学校Googleサイト版・GitHub `main`・本番Firebaseは今回無変更。原作再現を独自改善より優先する方針は不変。
+> **重複実装防止の必読資料**: [Phase1〜25 既存成果の再利用マトリクス・次の作業計画](./REUSE_MATRIX_AND_NEXT_PLAN_20261025.md)。新作業の前に対応コード・既存テスト・原作未確定点を照合し、研究済み機能を別名で作り直さない。
+
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
