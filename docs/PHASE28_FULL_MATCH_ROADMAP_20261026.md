@@ -21,7 +21,7 @@
 ## Cloud integration test correction
 - First real Supabase two-iframe smoke after the change failed at a test assumption that the second wheel command must always occur during its three-second cooldown. Under cloud CI latency the command can legally arrive after three seconds, and therefore be accepted. Failure run: https://github.com/8mahi8/yokai-battle-lab/actions/runs/40207316845.
 - Updated tools/supabase-sites-browser-smoke.mjs to assert second ACK at **both** seats, then require either rejection with unchanged front or successful rotation with identical host/guest front. The exact cooldown boundary remains checked by deterministic Node tests.
-- Rerun E2E: https://github.com/8mahi8/yokai-battle-lab/actions/runs/40207566828 (verify result before claiming success).
+- First attempted rerun introduced a malformed inline JavaScript fixture and failed syntax checking (run 40207566828). Fixed escaped newlines in the QA fixture. [Real Supabase two-iframe rerun SUCCESS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40207757764): anonymous authentication, room/guest ACK, two wheel commands, host auto turn, four viewport widths. This still does not prove a network duel to winner.
 
 ## Prioritized upcoming work
 1. Phase28-B: *real Supabase two-iframe full-match-to-winner* with host auto tick, multiple reserve swaps, both seats matching winner and auto stop. The Node completion test is NOT equivalent.
