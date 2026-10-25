@@ -98,3 +98,31 @@ test('canonical match with skills still replays deterministically from the autho
  }
  assert.equal(replayMatchJournal(m.exportJournal()).ok,true);
 });
+
+
+test('actual combat applies Care healing immediately after a wounded adjacent ally acts',()=>{
+ const g=createCombat({seed:20261026,enableRentalSkills:true,
+  researchSpecialEffects:true,researchDamageModel:true});
+ // Both A4 and A5 become frontline while the medal positions stay adjacent.
+ assert.equal(g.rotate(0,1).ok,true);
+ g.giveSoul('B1',100);
+ const cast=g.prepareSoultimate(1,'B1');
+ assert.equal(cast.ok,true);
+ assert.equal(g.resolveSoultimate(1,cast.token,true).ok,true);
+ const wounded=g.snapshot().squads[0][3];
+ assert.ok(wounded.hp>0&&wounded.hp<wounded.maxHp,
+  'A4 must be alive and wounded by B1 group special');
+ let recovered=false;
+ for(let i=0;i<120;i++){
+  const move=g.step();
+  if(move.type==='finished')break;
+  const skill=g.snapshot().events.find(x=>x.type==='skill'&&
+   x.skill==='care'&&x.actor==='A5'&&x.targetId==='A4');
+  if(skill){
+   assert.equal(skill.amount,Math.max(1,Math.floor(wounded.maxHp*.02)));
+   assert.ok(g.snapshot().squads[0][3].hp>0);
+   recovered=true;break;
+  }
+ }
+ assert.equal(recovered,true,'bench or front care triggers only after adjacent action');
+});
