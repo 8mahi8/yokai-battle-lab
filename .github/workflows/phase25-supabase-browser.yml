@@ -11,6 +11,8 @@ on:
       - 'lab/yw2-layout.css'
       - 'engine/special-effects.mjs'
       - 'engine/match-protocol.mjs'
+      - 'network/firebase-match.mjs'
+      - 'network/supabase-room.mjs'
       - 'engine/playtest-soul-tuning.mjs'
       - 'lab/sites-embed-supabase-entry.mjs'
       - 'tools/build-sites-supabase.mjs'
