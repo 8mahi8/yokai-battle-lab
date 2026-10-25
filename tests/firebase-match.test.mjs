@@ -524,3 +524,68 @@ test('23B queued guest commands neither overtake blocked host ACK nor drop seque
  assert.deepEqual(errors,[]);
  guest.stop();host.stop();
 });
+
+test('guest one-shot bootstrap directly reads published host state when live subscription misses initial row',async()=>{
+ const bus=fakeTransport();
+ const host=createFirebaseMatchHost({roomClient:bus.host});
+ assert.equal((await host.start()).ok,true);
+ // Deliberately simulate a Realtime/poll subscription that has NOT delivered
+ // the initial row. The one-time authoritative fetch restores live UI.
+ const guestAdapter={
+  ...bus.guest,
+  subscribeSnapshots:()=>()=>{},
+  async readPublishedSnapshot(){return clone(bus.latest().state);}
+ };
+ const got=[],errors=[];
+ const guest=createFirebaseMatchGuest({roomClient:guestAdapter,
+  onSnapshot:x=>got.push(x),onError:error=>errors.push(error.message)});
+ assert.equal(guest.start().ok,true);
+ await tick();await tick();
+ assert.equal(guest.status().revision,0);
+ assert.equal(got.length,1);
+ assert.equal(got[0].revision,0);
+ assert.equal(guest.submit({type:'watch',mode:'zero'}).ok,true);
+ await tick();
+ assert.equal(host.snapshot().clientSequences[1],1);
+ assert.deepEqual(errors,[]);
+ host.stop();guest.stop();
+});
+
+test('slow guest bootstrap cannot overwrite newer live snapshot or repeat an ACK',async()=>{
+ const bus=fakeTransport();
+ const host=createFirebaseMatchHost({roomClient:bus.host});
+ await host.start();
+ const older=clone(bus.latest().state);
+ let resolveRead;
+ const pendingRead=new Promise(resolve=>resolveRead=resolve);
+ const adapter={...bus.guest,readPublishedSnapshot:()=>pendingRead};
+ const views=[],acks=[];
+ const guest=createFirebaseMatchGuest({roomClient:adapter,
+  onSnapshot:x=>views.push(x),onAck:x=>acks.push(x)});
+ guest.start();
+ await tick();
+ assert.equal(guest.status().revision,0);
+ assert.equal(guest.submit({type:'watch',mode:'zero'}).ok,true);
+ await tick();await tick();
+ assert.equal(guest.status().revision,1);
+ assert.equal(acks.length,1);
+ resolveRead(older);
+ await tick();await tick();
+ assert.equal(guest.status().revision,1,'late snapshot must not roll back live revision');
+ assert.equal(views.length,2,'one baseline and one authoritative command ACK');
+ assert.equal(acks.length,1,'late bootstrap never repeats the ACK');
+ host.stop();guest.stop();
+});
+
+test('failed guest one-shot bootstrap reports error but does not break normal subscription',async()=>{
+ const bus=fakeTransport(),errors=[],views=[];
+ const adapter={...bus.guest,readPublishedSnapshot:async()=>{throw Error('temporary_poll_error')}};
+ const host=createFirebaseMatchHost({roomClient:bus.host});
+ const guest=createFirebaseMatchGuest({roomClient:adapter,
+  onSnapshot:x=>views.push(x),onError:e=>errors.push(e.message)});
+ guest.start();await host.start();await tick();await tick();
+ assert.equal(guest.status().revision,0);
+ assert.ok(errors.includes('temporary_poll_error'));
+ assert.equal(views.length,1,'live subscription remains usable after bootstrap error');
+ host.stop();guest.stop();
+});
