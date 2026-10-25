@@ -147,6 +147,18 @@ export function matchSelectionHints(view,mode){
     'ねらう：相手の前衛を選ぼう'};
 }
 
+/** Winner comes only from the authoritative host snapshot, never from
+ * estimating the opponent's visible HP or independent guest simulation. */
+export function projectMatchResult(winner,seat){
+ if(seat!==0&&seat!==1)throw new RangeError('invalid result seat');
+ if(winner===null)return null;
+ if(winner!==0&&winner!==1)throw new RangeError('invalid winner');
+ const didWin=winner===seat;
+ return {winner,seat,didWin,title:didWin?'勝利！':'敗北…',
+  winnerLabel:'PLAYER '+(winner===0?'A':'B')+' の勝ち',
+  description:didWin?'相手の妖怪6体がすべて気絶しました。':'自分の妖怪6体がすべて気絶しました。'};
+}
+
 export function createMatchStage({element,onAction,onStep=()=>{},
  seat=null,onError=()=>{},showResearchForecast=false}={}){
  if(!element||typeof element.addEventListener!=='function')throw new TypeError('root DOM element required');
@@ -158,7 +170,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  let recentMessage='準備中',pointer=null,lastMove=0;
  let wheelPointer=null,suppressWheelClick=false,wheelClickTimer=null;
  let seenCueKey=null,flash=null,flashTimer=null;
- let commandMode=null,battleDrawCache=null;
+ let commandMode=null,battleDrawCache=null,resultDismissed=false;
  const teamDrawCache=[null,null];let forecastDrawCache=null;
  element.innerHTML=`
  <div class="mb-stage mb-yw2">
@@ -223,6 +235,16 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     </div>
    </section>
   </div>
+  <section class="mb-finish-screen" id="mb-finish-screen" hidden role="status" aria-live="polite" aria-label="対戦結果">
+   <div class="mb-finish-card">
+    <span class="mb-finish-eyebrow">MATCH RESULT</span>
+    <h2 id="mb-finish-title">勝敗</h2>
+    <b id="mb-finish-winner"></b>
+    <p id="mb-finish-description"></p>
+    <p class="mb-finish-help">もう一度対戦する場合は、ページを開き直して新しい部屋を作ってください。</p>
+    <button type="button" data-act="result-close" class="mb-finish-close">試合結果を閉じて戦況を見る</button>
+   </div>
+  </section>
   <div class="mb-modal" id="mb-modal" hidden>
    <div class="mb-modal-surface" role="dialog" aria-modal="true" aria-label="タッチ操作">
     <div class="mb-command-head"><b id="mb-gesture-title">操作</b><button type="button" data-act="cancel">中止 ✕</button></div>
@@ -373,6 +395,15 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  function render(state){
   wireState=state;
   view=makeStageView(state,activeSeat);
+  if(view.winner===null)resultDismissed=false;
+  if(view.winner!==null){
+   const outcome=projectMatchResult(view.winner,activeSeat);
+   $('mb-finish-title').textContent=outcome.title;
+   $('mb-finish-winner').textContent=outcome.winnerLabel;
+   $('mb-finish-description').textContent=outcome.description;
+  }
+  $('mb-finish-screen').hidden=view.winner===null||resultDismissed;
+  element.dataset.matchFinished=String(view.winner!==null);
   const action=view.events.slice().reverse().find(e=>e.type==='action')??null;
   const cue=latestBattleCue(view.events);
   if(seenCueKey===null)seenCueKey=cue?.key??'initial';
@@ -463,7 +494,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   element.querySelectorAll('[data-seat]').forEach(b=>b.classList.toggle('is-active',Number(b.dataset.seat)===activeSeat));
   $('mb-step').disabled=(fixedSeat!==null&&activeSeat!==0)||view.winner!==null;
   modal();
-  if(view.winner!==null)alert('対戦終了：PLAYER '+(view.winner===0?'A':'B')+' の勝ち');
+  if(view.winner!==null&&recentMessage!==projectMatchResult(view.winner,activeSeat).winnerLabel)
+   alert(projectMatchResult(view.winner,activeSeat).winnerLabel);
   element.dataset.stageReady='true';
   element.dataset.stageRevision=String(view.revision);
  }
@@ -484,11 +516,16 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    event.preventDefault();return;
   }
   if(!b||!element.contains(b)||!view)return;
+  if(b.dataset.act==='result-close'&&view.winner!==null){
+   resultDismissed=true;$('mb-finish-screen').hidden=true;return;
+  }
   if(b.dataset.seat!==undefined){
    if(fixedSeat!==null)return;
    activeSeat=Number(b.dataset.seat);selection=null;commandMode=null;
    battleDrawCache=null;render(wireState);return;
   }
+  // Ended matches are fully read-only, even after dismissing the overlay.
+  if(view.winner!==null)return;
   if(b.dataset.unit){
    const clicked=b.dataset.unit;
    if(clicked.startsWith(activeSeat===0?'A':'B')){
