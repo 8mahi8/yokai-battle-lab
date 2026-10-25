@@ -8,12 +8,24 @@
 import {createSupabaseRoomClient} from '../network/supabase-room.mjs';
 import {createFirebaseMatchHost,createFirebaseMatchGuest} from '../network/firebase-match.mjs';
 import {createMatchProtocol} from '../engine/match-protocol.mjs';
+import {RENTAL_SQUAD} from '../engine/combat.mjs';
 import {createMatchStage} from '../ui/match-stage.mjs';
 import {matchAckMessage} from '../ui/match-feedback.mjs';
 import {createHostAutoClock} from '../ui/host-auto-clock.mjs';
 import {checkSitesBrowserCapabilities} from '../ui/sites-browser-capabilities.mjs';
 
 const config=__YW_SUPABASE_CONFIG__;
+// Injected at BUILD TIME ONLY, false in the released HTML. Never trust URL
+// parameters, player intents, or room data to enable accelerated QA squads.
+function qaFullMatchOptions(){
+ if(!__YW_QA_FULL_MATCH__)return {};
+ const team=strong=>RENTAL_SQUAD.map(m=>({...m,
+  maxHp:strong?420:85,strength:strong?570:10,spirit:strong?310:10,
+  defense:strong?180:25,attackPower:strong?175:18,
+  techniquePower:strong?100:10,technique:'damage',
+  weights:[100,0,0,0],attackAccuracy:4}));
+ return {seed:20261026,teams:[team(true),team(false)]};
+}
 const root=document.getElementById('yw-sites-online');
 if(!root)throw Error('online embed root not found');
 const $=selector=>root.querySelector(selector);
@@ -121,7 +133,7 @@ $('.yw-online-start').addEventListener('click',async()=>{
  try{
   const begun=await room.startRoom();if(!begun.ok)throw Error(begun.reason);
   match=createFirebaseMatchHost({roomClient:room,
-   protocol:createMatchProtocol({battleOptions:{playtestSoulTuning:true}}),
+   protocol:createMatchProtocol({battleOptions:{playtestSoulTuning:true,...qaFullMatchOptions()}}),
    onSnapshot:s=>{stage.render(s);updatePresence();},onError:err});
   const initial=await match.start();
   if(!initial.ok)throw Error(initial.reason||initial.error||'snapshot_publish_failed');
@@ -143,6 +155,26 @@ $('.yw-online-connect').addEventListener('click',async()=>{
   say('ゲスト接続。ホストの初期状態を待っています。');updatePresence();
  }catch(error){err(error);}
 });
+// Build-isolated performance/transport QA: only the fixture HTML has
+// this button. It still uses the ACTUAL authoritative host and Supabase
+// publishSnapshot; multiple auto turns coalesce into the latest revision.
+if(__YW_QA_FULL_MATCH__){
+ $('.yw-online-qa-finish').addEventListener('click',()=>{
+  try{
+   if(seat!==0||!match?.status?.().started)throw Error('QA host not started');
+   let steps=0;
+   while(match.snapshot().game.winner===null&&steps<250){
+    const result=match.advanceAuto();
+    if(!result.ok||result.result?.type!=='action')
+     throw Error('QA auto progression blocked: '+JSON.stringify(result));
+    steps++;
+   }
+   if(match.snapshot().game.winner===null)throw Error('QA no winner after 250 turns');
+   say('QA完了：'+steps+'行動で勝敗決定。ゲスト同期を待機');
+   updateAutoButton();
+  }catch(error){err(error);}
+ });
+}
 // 1500 ms is only a research-pilot cadence, NOT the Nintendo 3DS step timing.
 // A human host enables it deliberately after both peers have joined.
 $('.yw-online-auto').addEventListener('click',()=>{
