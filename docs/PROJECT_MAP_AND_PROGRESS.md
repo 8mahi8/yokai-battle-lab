@@ -26,6 +26,8 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 
 > **【Phase30 新しい必殺技3カテゴリ（2026-10-26）】** [Phase30の設計・実装・仮値・検証](./PHASE30_SPECIAL_EFFECT_FAMILIES_20261026.md)。本人の「数値より大枠」「原作キャラを完全コピーしない」「Googleサイト貼付ファイルは本人が依頼した時だけ」の方針を守る。既存の必殺効果計画と状態台帳/KO・行動許可を拡張し、**復活（控えKO含む）／敵からのHP吸収→味方回復／敵への攻撃＋能力低下**を正規ホストでプレイ可能にした。オリジナル6体の役割を振り直し、数値は仮。**[Node542/542 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40211265032)**、**[Chromium UI/タッチ/勝敗 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40211265053)**、**[Supabase 2iframe初期通信PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40211265071)**、**[実Supabaseクラウド高速6KO終局PASS（Phase30コードを含む）](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40211457091)**。自動テストの合成高速戦闘は学校旧iPad Safariで通常テンポを試したことではない。**配布済みPhase27と実Google Sites/mainは無変更**。次は零式つつく結果の複数化、その次は通常ペースの2端末長時間戦闘。
 
+> **【Phase30-B 復活＋全体回復の資料再照合修正（2026-10-26）】** 本人の指摘を受けて[原作の固有必殺技と資料3系統を再照合](./PHASE30B_YW2_RESURRECTION_SOURCE_CORRECTION_20261026.md)。**花さか爺・心オバア：味方全体復活＋HP回復**、**おでんじん：単体復活**を区別。旧Phase30の「ほたる＝1体だけ復活」は誤った代表型選択だったので、ほたるの必殺を**味方6体の回復＋気絶者は全員復活（仮HP85）**へ修正。従来の単体復活kind自体は削除しない。KOが複数/控え/HP上限/G強化/対戦ホストの行動可否/Journalを追加テストで確認。**[Node546/546 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40212203910)**、**[Chromiumステージ/指操作/結果画面PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40212203922)**。旧学校Phase27ファイル・Googleサイト版/main/Supabase設定は無変更。新しいファイル配布は本人が明示するまで行わない。
+
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
