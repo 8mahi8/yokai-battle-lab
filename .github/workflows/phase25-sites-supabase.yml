@@ -1,0 +1,67 @@
+name: Phase25 Supabase Google Sites build QA
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+    paths:
+      - 'network/supabase-room.mjs'
+      - 'lab/sites-embed-supabase-entry.mjs'
+      - 'tools/build-sites-supabase.mjs'
+      - 'supabase/yw_pvp_public_config.json'
+      - 'lab/match-stage.css'
+      - 'lab/yw2-layout.css'
+      - '.github/workflows/phase25-sites-supabase.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  supabase-one-file:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned esbuild without persistent package mutation
+        run: npm install --no-save --package-lock=false --ignore-scripts esbuild@0.25.12
+      - name: Syntax check all new sources
+        run: |
+          node --check network/supabase-room.mjs
+          node --check lab/sites-embed-supabase-entry.mjs
+          node --check tools/build-sites-supabase.mjs
+      - name: Build safe offline setup HTML and configured Supabase online HTML
+        run: |
+          node tools/build-sites-supabase.mjs
+          node tools/build-sites-supabase.mjs --public-config
+      - name: Validate browser-only publishable key, UI + isolated game paths
+        run: |
+          node --input-type=module <<'EOF'
+          import {readFileSync} from 'node:fs';
+          import assert from 'node:assert/strict';
+          const read=name=>readFileSync('dist/'+name,'utf8');
+          const setup=read('sites-supabase-setup-code.html');
+          const online=read('sites-supabase-online-code.html');
+          assert.doesNotMatch(setup,/<script[^>]+src/i);
+          assert.match(setup,/yw-sites-online/);
+          assert.match(online,/yw_rooms_v1/);
+          assert.match(online,/yw_states_v1/);
+          assert.match(online,/yw_inputs_v1/);
+          assert.match(online,/sb_publishable_/);
+          assert.match(online,/cdn\.jsdelivr\.net/);
+          assert.doesNotMatch(online,/service_role|sb_secret_|SUPABASE_SERVICE_ROLE/);
+          assert.match(online,/yw-online-auto/);
+          assert.match(online,/mb-dualscreen/);
+          assert.ok(online.length<450000,'Google Sites embed too large');
+          console.log('SITES-SUPABASE-GATE-PASS',{bytes:Buffer.byteLength(online),onlinesdk:1});
+          EOF
+      - name: Upload Supabase online direct-code HTML for owner to paste later
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase25-supabase-sites-ready-html
+          path: |
+            dist/sites-supabase-online-code.html
+            dist/sites-supabase-online-preview.html
+            dist/sites-supabase-setup-code.html
+          if-no-files-found: error
+          retention-days: 14
