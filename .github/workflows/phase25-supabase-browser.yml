@@ -5,6 +5,7 @@ on:
       - feat/phase1-action-circle-lab-20261023
     paths:
       - 'engine/combat.mjs'
+      - 'engine/skill-effects.mjs'
       - 'ui/battle-vfx.mjs'
       - 'ui/match-stage.mjs'
       - 'lab/match-stage.css'
