@@ -17,8 +17,12 @@ const SPECIAL_STATUS_EFFECTS=Object.freeze({
 });
 export function validateSpecialSpec(spec) {
  if(!spec||typeof spec!=='object'||Array.isArray(spec))throw new TypeError('research special config required');
- if(!['damage','heal','buff','debuff','revive','drain','damage-status'].includes(spec.kind))throw new RangeError('unsupported special.kind');
- if(!['one','front'].includes(spec.scope))throw new RangeError('special.scope one/front required');
+ if(!['damage','heal','buff','debuff','revive','revive-heal','drain','damage-status'].includes(spec.kind))throw new RangeError('unsupported special.kind');
+ if(!['one','front','team'].includes(spec.scope))throw new RangeError('unsupported special.scope');
+ if(spec.kind==='revive-heal'&&spec.scope!=='team')
+  throw new RangeError('revive-heal must target whole team');
+ if(spec.kind!=='revive-heal'&&spec.scope==='team')
+  throw new RangeError('team scope is reserved for revive-heal');
  if(spec.kind==='buff'||spec.kind==='debuff'){
   if(!SPECIAL_STATUS_EFFECTS[spec.kind].includes(spec.effect))
    throw new RangeError('unsupported special status effect');
@@ -64,8 +68,21 @@ export function planResearchSpecial({spec,caster,allies,enemies,powerMultiplier=
  if(!Number.isFinite(powerMultiplier)||powerMultiplier<1||powerMultiplier>10)
   throw new RangeError('invalid G power multiplier');
  const power=rule.power*powerMultiplier;
- // A revived ally can be a KO reserve. The caller supplies all six allies
- // for revive, not only the current living front; a single KO is restored.
+ // Only the combined recovery (Hanasaka-jii / Shino-baa archetype)
+ // restores the entire six-member roster, with living members healed and
+ // KO members revived in the same effect. HP numbers remain a playtest guess.
+ // The caller must pass ALL six same-side allies, including KO reserves.
+ if(rule.kind==='revive-heal'){
+  return allies.map(target=>{
+   const amount=Math.min(target.maxHp-target.hp,Math.floor(power));
+   const revived=target.hp===0;
+   return {targetId:target.id,kind:revived?'revive':'heal',
+    amount,deltaHp:amount,hpBefore:target.hp,hpAfter:target.hp+amount,
+    predictedKO:false,...(revived?{revived:true}:{}),
+    linkedReviveHeal:true,model:'team-revive-heal-playtest-fixture'};
+  });
+ }
+ // Odenjin-style single-unit revival remains separately supported.
  if(rule.kind==='revive'){
   const target=allies.find(x=>x.hp===0);
   if(!target)return [];
