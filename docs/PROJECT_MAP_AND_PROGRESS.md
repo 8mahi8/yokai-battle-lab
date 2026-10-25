@@ -36,6 +36,8 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 
 > **【Phase33 通常編成の長時間実クラウドQA（2026-10-26）】** [詳細・検証ログ・次の課題](./PHASE33_NORMAL_MATCH_ENDURANCE_20261026.md)。本人の「長時間対戦の検証とは？」に応え、**通常の同一レンタル6体**・1500ms自動時計で**60ターンの実Supabaseホスト/ゲスト連続配信＋ゲストの実入力ACK＋双方の最終Revision/ターン一致**を[実Chromium 2iframeでPASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40217794329)。合成即時終局ではない。さらに通常の自動AI同士を4seed計測し**103/127/163/180行動で双方の6体KO決着**、換算で約2分35秒〜4分30秒、全試合進行停止なし。[Node全554件PASSと自然戦闘4件](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40217799000)。**60ターンで全試合決着までをネットで通したわけではない**、人間同士/学校Safari実機の所要時間でもない。長いChrome QAの生報告方式は不安定だったため**実際に成功した元の検証スクリプトへ戻した**。ゲーム本体の戦闘値、公開Google Sites、学校固定Phase27、main、本番DB/RLSは無変更。Google Sites用最新HTMLは本人の明示依頼時のみ渡す。
 
+> **【Phase34 最重要方針変更：原作ゲームの演出・表示仕様を先に再現（2026-10-26）】** 本人は「ノーモーション必殺は仕様を利用するテクニック。原作同様、技やスキル表示中は相手側に古い前衛が映り、演出終了時に輪回転や完了チャージが突然反映される」と指摘。**専用『ノーモーション必殺』能力・ボタンを作らず、原作の確定戦闘状態と相手側の見た目を分離し、演出の表示更新の遅延から自然に成立させること**を最優先に変更。[原作プレイヤー資料・既存Phase5/22研究・オンライン画面の欠落・移植順・未確認時刻](./PHASE34_ORIGINAL_MOTION_VISIBILITY_PARITY_PLAN_20261026.md)。調査で[2026競技者のモーションと画面反映の解説](https://note.com/tombow_yw/n/n1e4cf179d2d9)と[2024競技者のノーモーション/2回転の解説](https://note.com/uzoumzou_nanoha/n/n2fb6ae41559c)を確認。**engine/presentation-timeline.mjs と tests/combat-presentation.test.mjs は既に研究で実装済み**、一方**実オンラインui/match-stage.mjsは毎回確定frontIdsを直ちに両側に描画するため原作の隠れた前衛更新は未実装**。基礎仕様の再現（演出種類・本人画面と相手画面の区別・可視更新）を先に進め、ノーモーション専用システムを新設しない。戦闘のダメージ対象ロック（2回転/カウンター）は表示とは別で原作資料の未確定点を調査してから。学校Phase27・Google Sites/main/本番Supabase設定は触らず、配布は本人の明示要求時のみ。
+
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
