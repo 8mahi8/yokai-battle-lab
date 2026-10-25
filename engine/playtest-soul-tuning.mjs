@@ -11,5 +11,25 @@ export const PLAYTEST_SOUL_TUNING=Object.freeze({
   attackGain:8,             // tentative: normal physical attack
   techniqueGain:8,          // tentative: damaging technique
   vulnerableHitBonus:4,    // tentative: hit loafing / negatively Inspirited foe
-  pokeMaxTransfer:35       // tentative: cap of Soul stolen from foe and granted to first living ally
+  pokeMaxTransfer:35,      // tentative: Soul drained from foe, first live ally recipient not source-confirmed
+  pokeNormalDamage:35,    // tentative: regular Poke HP damage
+  pokeHeavyDamage:999,   // PvP effect category and 999 are described in YW2 PvP sources
+  pokeDamageWeight:49,   // unverified friendly-match outcome odds (%)
+  pokeSoulWeight:50,     // unverified friendly-match outcome odds (%)
+  pokeHeavyWeight:1      // unverified friendly-match outcome odds (%)
 });
+
+/** Source-grounded PvP categories, UNVERIFIED odds. Host-seeded RNG chooses.
+ * Story-only money/friendship rewards must never be part of PvP.
+ * See docs/PHASE31_POKE_PVP_SOURCE_AUDIT_20261026.md
+ */
+export function choosePlaytestPokeOutcome(roll){
+ if(!Number.isFinite(roll)||roll<0||roll>=1)
+  throw new RangeError('poke roll must be a finite number in [0,1)');
+ const p=PLAYTEST_SOUL_TUNING;
+ if(p.pokeDamageWeight+p.pokeSoulWeight+p.pokeHeavyWeight!==100)
+  throw new RangeError('poke weights must sum to 100');
+ const percent=roll*100;
+ return percent<p.pokeDamageWeight?'damage':
+  percent<p.pokeDamageWeight+p.pokeSoulWeight?'soul-drain':'heavy-hit';
+}
