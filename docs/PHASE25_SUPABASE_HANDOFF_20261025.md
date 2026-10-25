@@ -1,3 +1,5 @@
+> **【2026-10-25後続検証により現在地更新】** この文書の「匿名Auth無効・実オンライン未合格・本人のEnable操作が必須」「Security Advisor警告0」は当時の履歴。現在は [再監査済み引き継ぎ](./HANDOFF_VERIFIED_20261025.md) に記載した[実Supabase 2 iframe Chromium E2E PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40195497511)、[Node497/497 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40195497455) が最新根拠。学校実Google Sites/iPadは未検証。Security Advisor最新は匿名サインインに関する4警告＋漏えいパスワード保護OFFの1警告で、旧0件報告とは異なる。以下のPhase25初回失敗履歴は監査記録として残す。
+
 # Phase25｜Supabaseを本命とする1vs1・学校Google Sites版（2026-10-25）
 
 ## 決定と狙い
