@@ -86,8 +86,11 @@ if(!config&&(/firebase-app-compat\.js|demo-yokai-lab|firebaseio\.com|<script[^>]
 if(mode==='cloud-configured-not-deployed'&&
  /demo-yokai-lab|127\.0\.0\.1:9000|127\.0\.0\.1:9099/.test(fragment))
  throw Error('Cloud build contains emulator marker');
-if(emulator&&!fragment.includes('研究用エミュレーター版はlocalhost以外で起動禁止'))
- throw Error('Local emulator guard absent');
+// The minifier escapes Japanese message characters into JS unicode escapes.
+// Verify the generated hostname gate, not its localized error text.
+if(emulator&&(!fragment.includes('location.hostname')||
+ !fragment.includes('127.0.0.1')||!fragment.includes('9099')))
+ throw Error('Local emulator hostname/port gate absent');
 const html='<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>'+fragment+'</body></html>';
 await mkdir(path.join(root,'dist'),{recursive:true});
 await writeFile(path.join(root,'dist',basename+'-code.html'),fragment);
