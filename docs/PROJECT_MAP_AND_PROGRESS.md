@@ -24,6 +24,8 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 
 > **【Phase28-B 実Supabaseの最終勝敗まで（2026-10-26）】** [実クラウド最終決着検証・通常版との分離と未検証事項](./PHASE28B_REAL_SUPABASE_FULL_MATCH_20261026.md)。Google Sites想定2 iframeが別匿名Authで実Supabaseルームを作成・参加し、**実ホストの戦闘6体KO→クラウド配信→ゲストの同じ勝者受信→勝利/敗北の逆画面→終了後操作無効**まで [CI成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40209857257)。専用ビルドだけに**高速進行/合成攻守ステータス**を入れ、通常公開用HTMLへ漏れていないこともCIでチェック。**通常レンタル同士の1500ms全ターン配信、学校Safari/Google Sitesでの実機対戦はまだ未検証**。本人が「Googleサイトに貼るやつちょうだい」と言うまでは新しい配布ファイルを生成して渡さず、学校の旧Phase27版と公開ページは固定。次は必殺/つつくの基本効果種の完成と、通常ペースのクラウド連続試合QA。
 
+> **【Phase30 新しい必殺技3カテゴリ（2026-10-26）】** [Phase30の設計・実装・仮値・検証](./PHASE30_SPECIAL_EFFECT_FAMILIES_20261026.md)。本人の「数値より大枠」「原作キャラを完全コピーしない」「Googleサイト貼付ファイルは本人が依頼した時だけ」の方針を守る。既存の必殺効果計画と状態台帳/KO・行動許可を拡張し、**復活（控えKO含む）／敵からのHP吸収→味方回復／敵への攻撃＋能力低下**を正規ホストでプレイ可能にした。オリジナル6体の役割を振り直し、数値は仮。**[Node542/542 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40211265032)**、**[Chromium UI/タッチ/勝敗 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40211265053)**、**[Supabase 2iframe初期通信PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40211265071)**、**[実Supabaseクラウド高速6KO終局PASS（Phase30コードを含む）](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40211457091)**。自動テストの合成高速戦闘は学校旧iPad Safariで通常テンポを試したことではない。**配布済みPhase27と実Google Sites/mainは無変更**。次は零式つつく結果の複数化、その次は通常ペースの2端末長時間戦闘。
+
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
