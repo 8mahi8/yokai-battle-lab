@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createCombat,RENTAL_SQUAD} from '../engine/combat.mjs';
-import {validateRentalSkill,resolveLastStand} from '../engine/skill-effects.mjs';
+import {validateRentalSkill,resolveLastStand,careAtActionBoundary} from '../engine/skill-effects.mjs';
 import {createMatchProtocol,replayMatchJournal} from '../engine/match-protocol.mjs';
 import {makeStageView} from '../ui/match-stage.mjs';
 const squad=()=>RENTAL_SQUAD.map(x=>({...x}));
@@ -100,4 +100,17 @@ test('six-skill authoritative match replays and old research baseline stays opt-
  const legacy=createCombat({teams:[squad(),squad()],enableRentalSkills:false});
  assert.equal(legacy.snapshot().skillBoosts.A1,undefined);
  assert.deepEqual(legacy.snapshot().spentLastStand,[]);
+});
+
+
+test('Care applies each action boundary, including after an enemy acts; never heals KO members',()=>{
+ const teamA=squad().map((x,i)=>({...x,
+  id:'A'+(i+1),hp:i===3?100:i===5?0:x.maxHp}));
+ const teamB=squad().map((x,i)=>({...x,id:'B'+(i+1),hp:x.maxHp}));
+ const heals=careAtActionBoundary({teams:[teamA,teamB]});
+ const healA4=heals.find(x=>x.targetId==='A4');
+ assert.ok(healA4,'A4 is adjacent to the living Care owner A5');
+ assert.equal(healA4.amount,Math.floor(teamA[3].maxHp*.02));
+ assert.equal(heals.some(x=>x.targetId==='A6'),false,'KO member cannot receive passive heal');
+ assert.equal(heals.some(x=>x.targetId.startsWith('B')),false,'no Care on enemy roster');
 });
