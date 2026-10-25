@@ -3,7 +3,7 @@
 更新: 2026-10-25 JST
 Repository: https://github.com/8mahi8/yokai-battle-lab
 Development branch: `feat/phase1-action-circle-lab-20261023`
-**現在（2026-10-25）:** 学校旧iPad Safari・Google Sitesコード直貼りの1vs1を、まず原作寄せで再現する目標は不変。Phase20-22エンジン/必殺/ACK、Phase23 Firebase Auth/RTDB Emulatorの通信復旧、Phase24の直接貼付用HTML/仮自動進行/Chrome多画面幅操作試験は引継ぎ済み。**今回のPhase25:** ユーザー許可でSupabaseを今後の**本命通信基盤**に選び、既存のSupabase Free `3d-soccer-online` に**妖怪専用の`yw_rooms_v1`/`yw_states_v1`/`yw_inputs_v1`/`yw_presence_v1`テーブルを実作成**、RLS/ゲスト座席取得トリガー/権威revision更新フェンスを適用。Supabase Security Advisorの警告0件。GitHubにSupabase版ルームadapterと既存原作UI・2席engineをつないだコード、**Google Sitesへ全文直貼り可能な約175KB単一HTMLビルダー**を追加。[Node495/495 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40192833077)＆[Supabase HTML生成CI PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40192833057)。**ただし実クラウド2席の初回QAは`Anonymous sign-ins are disabled`で認証段階から先へ進めなかった**（[実Supabase Auth試験 #40192624538](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40192624538)）。本物のルーム/戦況/操作データは生成していない。Supabase接続プラグインからAnonymousプロバイダーを有効化するAPIが提供されていないため、**本人がDashboardのAnonymous Sign-Insを一度有効化する必要がある**。これを受けてから本番クラウド2席QA→学校Google Sites/旧iPad試遊へ進む。Firebase版・`main`・学校公開版・3Dフットサル既存テーブルは変更なし。詳細[Phase25の実装と未完境界](./PHASE25_SUPABASE_HANDOFF_20261025.md)。
+**最新の現在地（2026-10-25再監査）:** [再監査済み正式引き継ぎ](./HANDOFF_VERIFIED_20261025.md)。開発は**Phase25（Supabase 1vs1 / 学校Google Sites用HTML）**。HEAD `7bfc083b7b3de677744aabffa80ad891a4c4488a`で[Node497/497 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40195497455)、[Chromium戦闘画面・指操作PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40195497517)、[実Supabase・同一Chromium内2 iframeの匿名認証/部屋/操作ACK/自動行動・4画面幅E2E PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40195497511)。旧`Anonymous sign-ins are disabled`は過去の失敗であり現在のブロッカーではない。学校実Google Sites・旧iPad Safari2端末の試遊、原作3DSとの定量一致、通信の長時間復帰は**未検証**。実DBは4表ともRLS有効で、Security Advisor最新取得は**5 WARN**（匿名認証に関係する4件・漏えいパスワード保護OFF 1件）なので過去の「0件」を現況と混同しない。ゲームテスト用の残存行あり。学校Googleサイト版・GitHub `main`・本番Firebaseは今回無変更。原作再現を独自改善より優先する方針は不変。
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
@@ -35,28 +35,22 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 | 22 | 原作PvP深層戦術 | Phase5ノーモーション・回転・カウンターの独立研究。**22A:** 仮妖気回収による研究用連射。**22B:** 正規ホスト4種チャージ/G技。**22C:** ゲストACKとChrome Firebaseローカル2席6タップの同期PASS。**22D-A/B:** 2我慢のcut-in回転例外は原作ロック時刻を未確定とし仮HPを止めた。cut-in中の前衛候補と仮想時刻64記録、3回以上回転との二重原因保持、2015年の両視点ノーモーション実験候補映像を特定。Node463/463、Chromeステージ・Firebase Emulator 2席PASS | **22D-C:** 2015年両視点映像から同期したフレーム時刻が実測できるときにだけ反映。2我慢例外の回転中ロック時刻、3回以上回転と追加効果は未定。Phase23/24旧iPad Safari実機・Google Sites直接コード貼り付け | **定性資料・研究診断・ブラウザ通信QA済／3DS実フレームと本番公開未検証** |
 | 23 | 本番向け1vs1同期 | Firebase Auth+RTDB **ローカルエミュレーター2Chrome**、33権限チェック・必殺6タップACK、23Aのオフライン古い操作FIFO破棄と同一番号再送、23Bの権威dirty再publish・120行動書込集約・91入力順序検証。**23C:** 実Chrome2席で研究ホストアダプタに一度だけpublish故障注入。ゲストの本物の輪操作はホスト内部1回だけ実行され、未配信間はゲスト画面が進まず、同番号再送でも二重回転せず、ホスト再配信ボタンで同じrevisionを公開するとゲストの前衛・ACKが追いつく。Node469/469、Chrome2席Firebase QA PASS | **Phase24-A:** Google Sites HTML/CSS/JSを直接貼るためのバンドルとSafari互換ゲート。実クラウド/学校2端末での長時間ネットワーク・負荷検証は未実施。22D原作フレーム調査は別途継続 | **研究アダプタ故障注入→実Chrome2席ACK復旧 PASS／物理iPad・本番Firebaseは未検証** |
 | 24 | 学校iPad・Google Sites直接埋込配布 | **24A/B:** CSS/JSとホスト/ゲストRTDB通信を直貼りHTMLへバンドル、Chrome2iframe+Firebase Auth/RTDB Emulatorで実2席ルーム/輪/チャージ/ACK/断線復帰PASS。**24C1/C2:** ホストのみ自動行動ON（1500ms仮間隔、断線/画面非表示/未publish時停止）、Chrome iframeの横幅1024/820/568/390pxで上下画面・実タップヒットPASS、旧Safari最低機能を開始前に検査。**24C3:** 既存`mygame-df915`を共用、`/yokaiRoomsV1`のみ別ルート・匿名Authはプレイヤーに操作不要のまま採用。合成共有Rulesの16条件をFirebase EmulatorでPASS。**24C4:** Web config/現行Rules/匿名Authオーナー申告を無通信で監査するツール新設、広い親RTDB権限や別プロジェクト設定をブロック、APIキー・Rulesをログへ出さず、共有Firebase設定の誤コミットを除外。Node491/491 PASS | **次:** 既存Firebase ConsoleでWeb config/匿名Authの有無と**現行RTDB Rules**を読み取り確認、出力した案をローカルエミュレーターで事前検証（実Rulesのデプロイは別承認）。実Google Sites編集/学校iPad Safari 2台で実験。原作未確定テンポ/技効果は別途研究 | **ローカルの既存プロジェクト照合器・Chrome2席QAはPASS／本番Firebase・実Google Sites・旧iPad Safariは未検証** |
-| 25 | Supabaseを本命とする実DB・オンライン通信 | **実Supabase Free既存project`itqimlgnrjikaamstdlp`へ反映:** `yw_rooms_v1`,`yw_states_v1`,`yw_inputs_v1`,`yw_presence_v1`の4表/RLS/宿主guest UID検証/row-level更新フェンス。安全警告0件。**GitHub:** `network/supabase-room.mjs`、`lab/sites-embed-supabase-entry.mjs`、`tools/build-sites-supabase.mjs`、独立単一HTML生成（約175KB）、ゲームエンジンとACKを再利用。Node495件＋GitHub HTMLビルドQA PASS。SQLトランザクションで模擬authenticated host/guest RLS通過→ROLLBACK済 | **残件:** Project AuthのAnonymous Sign-Insが無効。実クラウドAuth QAで明示エラー。本人がproviderをEnable→再度実2席クラウドRoom/ACK/auto検証→Google Sites直接貼付/旧学校iPad Safariでラグ・操作最終試遊 | **Supabaseテーブル＆RLS/HTML作成までは完了／実クラウド2席未合格（匿名Auth設定が障害）** |
+| 25 | Supabase本命・実クラウド1vs1基盤 | 開発ブランチの戦闘engineを再利用、4つの`yw_*`表/RLS/host guest分離、約175KBの直貼りHTML生成。**Node497/497、Chrome研究UI・本番Supabase 2 iframe E2EすべてPASS**。過去の匿名Auth OFF障害は解消を観測 | **残:** 実Google Sites・学校旧iPad Safari2席・長時間切断復帰・原作3DS技値/妖気/フレーム照合。クラウドQAの残存テスト部屋は勝手に消さず後片付け設計。Advisor5 WARNは匿名運用を考慮して別途レビュー | **ブラウザクラウドE2EはPASS／学校実機・原作一致は未検証** |
 
-## 3. 今回した作業（Phase25／2026-10-25）
+## 3. 今回した作業（Phase25再監査・2026-10-25）
 
-**全体設計のどこ:** 原作資料→`engine/match-protocol.mjs`でホスト権威の1vs1→**実ネットワークバックエンドをSupabaseへ切替（今回）**→同じ`ui/match-stage.mjs`の上下画面と4コマンド→Google Sites「コードを埋め込む」→学校旧iPad Safari/友達と2端末試遊。
+**全体設計のどこ:** 原作研究→`engine/match-protocol.mjs`（ホスト権威）→`network/supabase-room.mjs`（本番通信）→`ui/match-stage.mjs`（上下2画面）→Google Sites直接HTML貼り→学校旧iPad Safari試遊。
 
-**実作業:** 本人から「普通に動く前提で作っていい」と委任を受け、研究版のFirebaseから**新しい主軸Supabase**への移行コードをGitHub dev branchに追加。Supabase既存Free `3d-soccer-online`のDBに4つの`yw_*`専用テーブル/アクセス権/RLS/hostguest更新フェンスを**実適用**。既存のサッカー関連テーブルを上書きしていない。最初のSECURITY DEFINER RPCがSecurity Advisorで1警告となったため、**削除してRLS＋SECURITY INVOKERトリガーへ変更後、Advisor警告0件**を再確認。`network/supabase-room.mjs`は2席room/session/host state/revision/guest intent/seq/presenceとRealtime＋poll fallbackを実装。`lab/sites-embed-supabase-entry.mjs`は従来の戦闘stageと自動行動を再利用。`tools/build-sites-supabase.mjs`は未設定の安全HTMLまたは**設定済み単一オンラインHTML約175KB**を生成（CDNはPinned Supabase JS1件、キーは公開用`sb_publishable_`のみ）。
+**確認した事実:** 正規開発ブランチの実ファイル・GitHub Actions最新ログ・実Supabaseプロジェクト状態を再照合。497件のNodeとChromium UI・ポインタ操作PASS、実Supabase匿名Authを使った2 iframeオンライン操作同期PASS。4表RLS有効、Project ACTIVE_HEALTHY。Supabase Security Advisorは最新**5 WARN**。2 room / 2 state / 2 input / 4 presenceのテスト行が残る（読み取り専用集計）。旧文書の「Auth disabled」「警告0」「495 tests」「クラウド対戦未実施」は現状を表していない。詳細とリンクは[再監査済み正式引き継ぎ](./HANDOFF_VERIFIED_20261025.md)。
 
-**自動試験:** [495/495のNodeテスト](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40192833077)に合格。[Google Sites用Supabase単一HTML生成とpublishable key監査 #40192833057](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40192833057)合格。実Supabaseで`authenticated`相当のホスト/ゲストUIDに設定したSQL単一TransactionでRoom→Guest取得→Start→Snapshot→Guest入力を書き、**ROLLBACKして試験データ0行**を確認。**これは実Authサインイン成功の証拠ではない**。
+**実施していないこと:** 学校実Google Sites/旧iPad Safariでの1vs1、原作3DSと完全一致する戦闘検証、長時間通信保証。今回GitHub文書を更新する以外、戦闘コード/Google Sites本番/Supabase DBやAuth/Firebase/mainを変更しない。
 
-**未完・障害:** 実Supabase2席の初回GitHub Actionで[**`Anonymous sign-ins are disabled`**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40192624538)を確認。SDKの匿名ログイン開始段階で止まるので、Google Sites/旧Safariで実利用可能とまだ言えない。既存Supabaseプラグインの操作一覧に**Auth Anonymousを有効化する機能はない**。本人がDashboard `3d-soccer-online → Authentication → Sign In / Providers → Anonymous Sign-Ins → Enable`の1設定を有効にする必要がある。料金プラン変更や新Project作成は不要。**本人が有効にしたとは仮定しない。** その後同じ2席実クラウドQAを回してから学校配布判定。
+## 4. 次にする作業（Phase25以降）
 
-**詳細:** [Phase25 Supabaseで新たに作成したもの・実Authの未合格理由](./PHASE25_SUPABASE_HANDOFF_20261025.md)
-
-**変更先:** GitHub `feat/phase1-action-circle-lab-20261023` ＋既存Supabase`3d-soccer-online`の**妖怪用4表/RLS/トリガー**。**Firebase、本番Google Sites、GitHub main、3Dサッカー用データ、課金には変更なし**。
-
-## 4. 次にする作業（Phase25-B/学校実機ゲート）
-
-1. **必須の1手:** Supabaseダッシュボードで`3d-soccer-online`の匿名サインイン機能を有効化。SupabaseプラグインにこのAuth設定編集機能がないため君の操作が必要。**新しいSupabaseプロジェクト・料金追加不要**。
-2. **僕の仕事:** 実クラウドでホスト/ゲスト匿名Auth、6桁ルーム/ゲストclaim、RLS、操作ACK、ホスト自動行動と切断・復帰をテスト。成功したのちに開発ブランチのコードを再レビューし、学校用貼付HTMLを完成と判断する。テスト用ルームはクリーンアップする。
-3. **学校本人の試遊:** `sites-supabase-online-code.html`の全文をGoogle Sites「コードを埋め込む」へ**直接**貼り、古いiPad Safari2席で指タッチ・輪回転/技チャージ/ラグ/同期/描画を確認。GitHub Pages iframe URLでの公開ではない。
-4. **元3DS技とテンポ:** 1500ms自動行動は仮テンポ、カウンター/ノーモーション/零式妖気数値は未確定のまま。閃光魂初期オフも維持。Firebase版はバックアップとして保管。
+1. **担当AIの仕事:** 原作再現の未確定領域（ノーモーション必殺、妖気量・受取先、同値行動順、カウンター/2我慢、技別数値）を既存資料と外部根拠から再検証。新機能の前に既存研究を検索してから原作との比較テストを増やす。
+2. **担当AIの仕事:** 実Supabase 2 iframe E2E成功を基準に、通信切断/復帰・長時間操作・試験部屋クリーンアップと旧Safari最低機能を検証する。現DBのテスト行を無確認で削除しない。最新Advisor警告を匿名サインイン前提とパスワード認証部分に分類して扱う。
+3. **本人の出番（後段）:** 学校の旧iPad実機で試せるだけのHTML/手順/ブラウザQAを担当AI側で整えてから、Google Sites「コードを埋め込む」へ全文を貼り、友達と旧Safari2席の操作・同期・ラグを確認してもらう。**今は本人にAuth設定操作を頼まない。**
+4. **現在の変更先:** GitHub開発ブランチの引き継ぎ文書のみ。`main`・Googleサイト版・既存Firebase・Supabase DB・他のゲームは変更しない。
 
 ## 5. 次フェーズへ進む条件と設計逸脱を防ぐルール
 - **原作再現 → 対人戦術 → オンラインの安定 → 学校Googleサイト**の順を守る。画面装飾、独自ATB、次の5行動予測（UI標準ではOFF）、閃光魂、育成、ランキング、リプレイ、観戦は**現在のスコープに入れない**。
