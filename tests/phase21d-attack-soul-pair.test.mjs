@@ -29,7 +29,7 @@ test('21D-B4 paired synthetic hit observations report difference, NOT original-g
   assert.equal(r.originalNumericBonus,null);
   assert.equal(r.originalRuleVerified,false);
   assert.match(r.sourceTier,/secondary-qualitative/);
-  assert.match(r.limitations.join(' '),/do not specify exact Soul points/);
+  assert.match(r.limitations.join(' '),/does not specify exact Soul points/);
 });
 
 test('21D-B4 negative Inspirit eligible as different vulnerable category',()=>{
