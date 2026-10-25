@@ -138,3 +138,19 @@ test('25B late guest input does not reach a stopped host listener',async()=>{
  assert.equal(delivered,0);
  host.leaveLocal();guest.leaveLocal();
 });
+
+test('25B late state poll does not render after guest listener closes',async()=>{
+ const f=buildFake();
+ const host=createSupabaseRoomClient({client:f.client(hostUid),uid:hostUid,pollMs:100000});
+ const guest=createSupabaseRoomClient({client:f.client(guestUid),uid:guestUid,pollMs:100000});
+ await host.createRoom({code:'456789'});
+ await guest.joinRoom('456789');
+ await host.startRoom();
+ await host.publishSnapshot({revision:0,clientSequences:[0,0]});
+ let delivered=0;
+ const unsubscribe=guest.subscribeSnapshots(()=>delivered++);
+ unsubscribe();
+ await new Promise(resolve=>setTimeout(resolve,30));
+ assert.equal(delivered,0);
+ host.leaveLocal();guest.leaveLocal();
+});
