@@ -146,7 +146,8 @@ test('phase30: A5 can revive a KO A2 from the bench and restore clock action eli
  assert.equal(g.snapshot().clock.teams[0].members[1].canAct,true);
  assert.equal(g.snapshot().winner,null);
  const visual=latestBattleCue(g.snapshot().events);
- assert.equal(visual.targets[0].kind,'revive');
+ assert.equal(visual.targets.find(x=>x.id==='A2').kind,'revive');
+ assert.equal(visual.targets.find(x=>x.id==='A1').kind,'heal');
 });
 
 test('phase30: canonical match journal still replays after adding rental special kinds',()=>{
