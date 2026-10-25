@@ -125,12 +125,17 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
     };
   }
 
-  function rotate(side, direction, atMs = 0) {
+  function rotate(side, direction, atMs = 0, {automaticKo = false} = {}) {
     if (![0, 1].includes(side)) throw new RangeError('side must be 0 or 1');
     if (![1, -1].includes(direction)) throw new RangeError('direction must be +1 or -1');
     if (!Number.isFinite(atMs)) throw new TypeError('atMs must be finite');
+    if (typeof automaticKo !== 'boolean') throw new TypeError('automaticKo must be boolean');
     const team = data[side];
-    if (atMs < team.lastRotateAt + rotationCooldownMs) return { ok: false, reason: 'cooldown', remainingMs: team.lastRotateAt + rotationCooldownMs - atMs };
+    // The 3s wheel cooldown limits VOLUNTARY player input, not the
+    // mandatory replacement of three KO front members by living reserves.
+    // Automatic KO replacement must also not refresh a voluntary cooldown.
+    if (!automaticKo && atMs < team.lastRotateAt + rotationCooldownMs)
+      return { ok: false, reason: 'cooldown', remainingMs: team.lastRotateAt + rotationCooldownMs - atMs };
     const oldFront = new Set(frontline(team));
     team.offset = (team.offset + direction + 6) % 6;
     const newFront = new Set(frontline(team)), rotatedIn=[], rotatedOut=[];
@@ -144,8 +149,9 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
       m.wait=m.canAct?(credit?m.researchedOpeningWait:m.cost):null;
       rotatedIn.push(m.id);
     }
-    team.lastRotateAt = atMs;
-    return { ok: true, side, offset: team.offset, frontIds: frontline(team).map(x => x.id),rotatedIn,rotatedOut };
+    if (!automaticKo) team.lastRotateAt = atMs;
+    return { ok: true, side, offset: team.offset, frontIds: frontline(team).map(x => x.id),rotatedIn,rotatedOut,
+      ...(automaticKo ? {automaticKo:true} : {}) };
   }
 
   function setCanAct(id, allowed) {
