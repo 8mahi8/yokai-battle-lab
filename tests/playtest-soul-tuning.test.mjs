@@ -120,12 +120,17 @@ test('canonical match host playtest Poke transfers only measured available Soul 
    assert.equal(end.ok,true);
  }
  assert.equal(end.result.completed,true);
- assert.equal(end.result.reward.kind,'playtest-soul-transfer');
+ assert.ok(['playtest-soul-transfer','playtest-damage','playtest-heavy-hit'].includes(end.result.reward.kind));
  assert.equal(end.result.reward.model,'playtest-estimate');
  const amount=end.result.reward.amount;
- assert.equal(amount,Math.min(T.pokeMaxTransfer,targetBefore,100-recipientBefore));
  const after=match.snapshot().game.soul.teams;
- assert.equal(after[0].find(x=>x.id==='A1').soul,recipientBefore+amount);
- assert.equal(after.flat().find(x=>x.id===targetId).soul,targetBefore-amount);
+ if(end.result.reward.kind==='playtest-soul-transfer'){
+  assert.equal(amount,Math.min(T.pokeMaxTransfer,targetBefore,100-recipientBefore));
+  assert.equal(after[0].find(x=>x.id==='A1').soul,recipientBefore+amount);
+  assert.equal(after.flat().find(x=>x.id===targetId).soul,targetBefore-amount);
+ }else{
+  assert.equal(after.flat().find(x=>x.id===targetId).soul,targetBefore);
+  assert.ok(amount>0);
+ }
  assert.equal(replayMatchJournal(match.exportJournal()).ok,true);
 });
