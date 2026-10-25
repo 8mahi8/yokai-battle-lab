@@ -152,6 +152,9 @@ export function createFirebaseMatchGuest({roomClient,onSnapshot=()=>{},onAck=()=
  const initialSession=roomClient.active().session;
  let stopped=false,started=false,unsub=null,revision=-1,acked=0;
  let pending=null,attempt=0,latestState=null,queue=[];
+ // UI presence (/.info/connected + peer presence) gates only NEW inputs;
+ // the one already written may have reached Firebase before disconnection.
+ let deliveryEnabled=true;
  function check(){
   const room=validateRoom(roomClient,1);
   if(stopped||room.session!==initialSession)throw new Error('guest session changed');
@@ -185,7 +188,7 @@ export function createFirebaseMatchGuest({roomClient,onSnapshot=()=>{},onAck=()=
   return {ok:true,queued:false,clientSeq:command.clientSeq};
  }
  function flushQueue(){
-  if(!stopped&&started&&revision>=0&&!pending&&queue.length){
+  if(!stopped&&deliveryEnabled&&started&&revision>=0&&!pending&&queue.length){
    const next=queue.shift();
    sendNormalized(next);
   }
@@ -193,6 +196,7 @@ export function createFirebaseMatchGuest({roomClient,onSnapshot=()=>{},onAck=()=
  function enqueue(intent){
   check();
   if(!started||revision<0)return {ok:false,reason:'awaiting_initial_state'};
+  if(!deliveryEnabled)return {ok:false,reason:'connection_paused'};
   const normalized=normalizeMatchCommand(1,intent);
   if(!pending&&!queue.length)return sendNormalized(normalized);
   if(queue.length>=maxQueuedInputs)return {ok:false,reason:'input_buffer_full'};
@@ -237,16 +241,35 @@ export function createFirebaseMatchGuest({roomClient,onSnapshot=()=>{},onAck=()=
  function submit(intent){
   check();
   if(!started||revision<0)return {ok:false,reason:'awaiting_initial_state'};
+  if(!deliveryEnabled)return {ok:false,reason:'connection_paused'};
   if(pending)return {ok:false,reason:'pending_ack',clientSeq:pending.clientSeq};
   return sendNormalized(normalizeMatchCommand(1,intent));
  }
  function retry(){
   check();
+  if(!deliveryEnabled)return Promise.resolve({ok:false,reason:'connection_paused'});
   if(!pending)return Promise.resolve({ok:false,reason:'no_pending_command'});
   return deliver(pending);
  }
+ /** Never replay a burst of stale touch/rotate commands after a disconnect.
+  * Preserve the single in-flight seq for idempotent explicit retry after
+  * presence is restored; its Firebase write may already be committed.
+  * Setting false is idempotent so repeated presence events don't reset it.
+  */
+ function setDeliveryEnabled(enabled){
+  check();
+  if(typeof enabled!=='boolean')throw new TypeError('delivery switch must be boolean');
+  if(deliveryEnabled===enabled)return {ok:true,enabled,dropped:0,
+    pendingSequence:pending?.clientSeq??null};
+  deliveryEnabled=enabled;
+  const dropped=enabled?0:queue.length;
+  if(!enabled)queue=[];
+  // Do not auto-resend the in-flight write; on reconnect the player may
+  // press Retry with the SAME seq, after reviewing the authoritative view.
+  return {ok:true,enabled,dropped,pendingSequence:pending?.clientSeq??null};
+ }
  function stop(){stopped=true;queue=[];unsub?.();unsub=null;}
  function status(){return {started,stopped,revision,acked,pendingSequence:pending?.clientSeq??null,
-  queuedInputs:queue.length,lastState:latestState===null?null:clone(latestState)};}
- return {start,submit,enqueue,retry,stop,status};
+  deliveryEnabled,queuedInputs:queue.length,lastState:latestState===null?null:clone(latestState)};}
+ return {start,submit,enqueue,retry,setDeliveryEnabled,stop,status};
 }
