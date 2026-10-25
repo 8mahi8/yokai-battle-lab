@@ -122,3 +122,19 @@ test('25A payload over 2KB refused before database writes',async()=>{
  assert.equal(f.rows.yw_inputs_v1.length,0);
  a.leaveLocal();
 });
+
+test('25B late guest input does not reach a stopped host listener',async()=>{
+ const f=buildFake();
+ const host=createSupabaseRoomClient({client:f.client(hostUid),uid:hostUid,pollMs:100000});
+ const guest=createSupabaseRoomClient({client:f.client(guestUid),uid:guestUid,pollMs:100000});
+ await host.createRoom({code:'345678'});
+ await guest.joinRoom('345678');
+ await host.startRoom();
+ await guest.sendIntent(1,{type:'rotate',direction:1});
+ let delivered=0;
+ const unsubscribe=host.subscribeInputs(()=>delivered++);
+ unsubscribe();
+ await new Promise(resolve=>setTimeout(resolve,30));
+ assert.equal(delivered,0);
+ host.leaveLocal();guest.leaveLocal();
+});
