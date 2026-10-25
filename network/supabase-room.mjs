@@ -151,13 +151,15 @@ export function createSupabaseRoomClient({client,uid,now=()=>Date.now(),onError=
  function subscribeInputs(handler){
   ensure();if(seat!==0||typeof handler!=='function')throw Error('host input listener required');
   const expected=epoch;let last=0;
+  let active=true;
   async function collect(){
-   if(expected!==epoch)return;
+   if(!active||expected!==epoch)return;
    const {data,error}=await client.from(INPUTS).select('session,client_seq,intent')
     .eq('room_code',roomCode).eq('session',session).gt('client_seq',last)
     .order('client_seq',{ascending:true}).limit(20);
    fail(error,'input_poll_failed');
    for(const item of data||[]){
+    if(!active||expected!==epoch)return;
     if(item.client_seq<=last)continue;
     last=item.client_seq;
     const command=clone(item.intent);
@@ -165,7 +167,7 @@ export function createSupabaseRoomClient({client,uid,now=()=>Date.now(),onError=
     handler({session,clientSeq:item.client_seq,intent:command});
    }
   }
-  let active=true;const deliver=items=>{if(active)return collect(items);};
+  const deliver=items=>{if(active)return collect(items);};
   const releaseRealtime=realtime(INPUTS,'INSERT',deliver);
   const releasePolling=tick(deliver);
   return ()=>{active=false;releaseRealtime();releasePolling();};
@@ -173,12 +175,13 @@ export function createSupabaseRoomClient({client,uid,now=()=>Date.now(),onError=
  function subscribeSnapshots(handler){
   ensure();if(typeof handler!=='function')throw Error('snapshot listener required');
   const expected=epoch;let last=-1;
+  let active=true;
   async function collect(){
-   if(expected!==epoch)return;
+   if(!active||expected!==epoch)return;
    const {data,error}=await client.from(STATES).select('session,revision,state_json')
     .eq('room_code',roomCode).maybeSingle();
    fail(error,'snapshot_poll_failed');
-   if(!data||data.session!==session||data.revision<=last)return;
+   if(!active||expected!==epoch||!data||data.session!==session||data.revision<=last)return;
    let state;try{state=JSON.parse(data.state_json);}catch{return;}
    if(state?.revision!==data.revision)return;
    last=data.revision;handler({session,revision:last,state});
