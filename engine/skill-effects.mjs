@@ -9,7 +9,10 @@
 export const RENTAL_SKILLS=Object.freeze({
  momentum:'まえのめり型',
  care:'おせわ型',
- sharpCrit:'いっせん型'
+ sharpCrit:'いっせん型',
+ critImmune:'つやつやボディー型',
+ lastStand:'どひょうぎわ型',
+ guardBreak:'ガードくずし型'
 });
 export const SKILL_TRIAL=Object.freeze({
  momentumStages:2,          // sourced: STR and SPR +2 stages (×1.2)
@@ -56,4 +59,24 @@ export function careOnOwnerTurn({actor,team}={}){
   remaining-=amount;
  }
  return heals;
+}
+
+/**
+ * The original "どひょうぎわ" prevents a lethal blow once per battle.
+ * The host records "spent" separately and must apply this after every
+ * source-grounded direct damage category to avoid phantom KO/winner.
+ *
+ * On subsequent hits, including another hit in the same multi-hit attack,
+ * protection is already spent. No additional RNG is involved.
+ */
+export function resolveLastStand({skill,enabled=true,spent=false,hp,amount}={}){
+ if(!Number.isInteger(hp)||hp<0||!Number.isInteger(amount)||amount<0)
+  throw new RangeError('nonnegative integer HP and incoming amount required');
+ if(typeof spent!=='boolean'||typeof enabled!=='boolean')
+  throw new TypeError('boolean spent/enabled required');
+ const activate=enabled&&skill==='lastStand'&&!spent&&hp>1&&amount>=hp;
+ const remaining=activate?1:Math.max(0,hp-amount);
+ return Object.freeze({
+  hpAfter:remaining,amount:hp-remaining,activated:activate
+ });
 }
