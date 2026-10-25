@@ -11,6 +11,8 @@ on:
       - 'lab/match-stage.css'
       - 'tools/firebase-stage-smoke.mjs'
       - 'tools/firebase-charge-smoke.mjs'
+      - 'tests/firebase-room-emulator.cjs'
+      - 'tests/firebase-match.test.mjs'
       - '.github/workflows/phase14-firebase-browser.yml'
   workflow_dispatch:
 permissions:
