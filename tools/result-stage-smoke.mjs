@@ -12,7 +12,7 @@ const browser=['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-b
 if(!browser)throw Error('Chromium required for match result smoke');
 const mime={'.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=utf-8',
  '.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8'};
-const qa=String.raw\`<!doctype html><html lang="ja"><meta charset="utf-8">
+const qa=String.raw`<!doctype html><html lang="ja"><meta charset="utf-8">
 <body><strong id="result">RESULT-QA-WAIT</strong>
 <iframe id="win" src="/lab/match-stage.html?review=winner-a" style="width:980px;height:800px"></iframe>
 <iframe id="lose" src="/lab/match-stage.html?review=winner-b" style="width:980px;height:800px"></iframe>
@@ -54,7 +54,7 @@ async function until(test,label){
  }
  result.textContent='MATCH-RESULT-PASS same winner, opposite results, read-only';
 })().catch(err=>{result.textContent='MATCH-RESULT-FAIL '+(err.stack||err.message)});
-</script></body></html>\`;
+</script></body></html>`;
 const server=createServer(async(req,res)=>{
  try{
   const name=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
