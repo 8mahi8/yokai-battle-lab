@@ -19,6 +19,7 @@ const soulCharge=(g,side,id)=>{g.giveSoul(id,100);
 test('phase30: revive/drain/composite special types validate and mark fixture-only effects',()=>{
  for(const spec of [
   {kind:'revive',scope:'one',power:85},
+  {kind:'revive-heal',scope:'team',power:85},
   {kind:'drain',scope:'front',power:80,damageKind:'technique'},
   {kind:'damage-status',scope:'one',power:145,damageKind:'technique',
    effect:'spirit-down',level:2}
@@ -29,6 +30,9 @@ test('phase30: revive/drain/composite special types validate and mark fixture-on
  }
  for(const spec of [
   {kind:'revive',scope:'front',power:85},
+  {kind:'revive-heal',scope:'one',power:85},
+  {kind:'revive-heal',scope:'front',power:85},
+  {kind:'damage',scope:'team',power:85,damageKind:'attack'},
   {kind:'revive',scope:'one',power:0},
   {kind:'drain',scope:'front',power:100},
   {kind:'damage-status',scope:'one',power:145,damageKind:'technique',effect:'unknown',level:2},
@@ -133,10 +137,11 @@ test('phase30: A5 can revive a KO A2 from the bench and restore clock action eli
  assert.equal(g.rotate(0,1).ok,true);
  assert.equal(g.rotate(0,1).ok,true);
  const heal=soulCharge(g,0,'A5');
- assert.equal(heal.impacts.length,1);
- assert.equal(heal.impacts[0].kind,'revive');
- assert.equal(heal.impacts[0].targetId,'A2');
- assert.equal(heal.impacts[0].amount,85);
+ assert.equal(heal.impacts.length,6,'all six allies get a heal or revival');
+ const revived=heal.impacts.find(x=>x.targetId==='A2');
+ assert.equal(revived.kind,'revive');
+ assert.equal(revived.amount,85);
+ assert.equal(heal.impacts.filter(x=>x.kind==='revive').length,1);
  assert.equal(g.snapshot().squads[0][1].hp,85);
  assert.equal(g.snapshot().clock.teams[0].members[1].canAct,true);
  assert.equal(g.snapshot().winner,null);
@@ -147,7 +152,7 @@ test('phase30: A5 can revive a KO A2 from the bench and restore clock action eli
 test('phase30: canonical match journal still replays after adding rental special kinds',()=>{
  const m=createMatchProtocol({battleOptions:{seed:20261026}});
  assert.deepEqual(m.snapshot().game.squads[0].map(x=>x.special.kind),
-  ['damage','drain','buff','damage-status','revive','debuff']);
+  ['damage','drain','buff','damage-status','revive-heal','debuff']);
  for(let i=0;i<20;i++)assert.equal(m.advanceAuto().ok,true);
  assert.equal(replayMatchJournal(m.exportJournal()).ok,true);
 });
