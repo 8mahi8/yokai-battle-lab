@@ -186,7 +186,7 @@ export function createSupabaseRoomClient({client,uid,now=()=>Date.now(),onError=
    if(state?.revision!==data.revision)return;
    last=data.revision;handler({session,revision:last,state});
   }
-  let active=true;const deliver=items=>{if(active)return collect(items);};
+  const deliver=()=>{if(active)return collect();};
   const releaseRealtime=realtime(STATES,'*',deliver);
   const releasePolling=tick(deliver);
   return ()=>{active=false;releaseRealtime();releasePolling();};
