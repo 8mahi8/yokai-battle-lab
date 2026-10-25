@@ -27,10 +27,13 @@ import {PLAYTEST_SOUL_TUNING} from './playtest-soul-tuning.mjs';
 export const RENTAL_SQUAD = Object.freeze([
   {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5]},
   {name:'こもれび',speed:170,maxHp:210,strength:55,spirit:125,defense:65,attackPower:40,techniquePower:50,technique:'heal',attitude:'gentle',inspirit:'strength-up',weights:[25,55,15,5]},
-  {name:'いしもり',speed:105,maxHp:310,strength:92,spirit:45,defense:145,attackPower:45,techniquePower:35,technique:'damage',attitude:'careful',inspirit:'strength-up',weights:[35,10,15,40]},
-  {name:'すずかぜ',speed:251,maxHp:190,strength:73,spirit:115,defense:55,attackPower:45,techniquePower:65,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[35,50,10,5]},
+  {name:'いしもり',speed:105,maxHp:310,strength:92,spirit:45,defense:145,attackPower:45,techniquePower:35,technique:'damage',attitude:'careful',inspirit:'strength-up',weights:[35,10,15,40],
+   special:{kind:'buff',scope:'front',effect:'strength-up',level:2}},
+  {name:'すずかぜ',speed:251,maxHp:190,strength:73,spirit:115,defense:55,attackPower:45,techniquePower:65,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[35,50,10,5],
+   special:{kind:'damage',scope:'one',power:145,damageKind:'technique'}},
   {name:'ほたる',speed:195,maxHp:220,strength:66,spirit:112,defense:72,attackPower:45,techniquePower:50,technique:'heal',attitude:'gentle',inspirit:'strength-up',weights:[30,50,15,5]},
-  {name:'くろがね',speed:128,maxHp:305,strength:116,spirit:47,defense:130,attackPower:65,techniquePower:25,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,10,10,20]}
+  {name:'くろがね',speed:128,maxHp:305,strength:116,spirit:47,defense:130,attackPower:65,techniquePower:25,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,10,10,20],
+   special:{kind:'debuff',scope:'front',effect:'defense-down',level:2}}
 ]);
 
 function seededRandom(seed) {
@@ -468,6 +471,18 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const interruptions=[];
     for(const impact of impacts){
       const target=byId.get(impact.targetId);
+      if(impact.kind==='buff'||impact.kind==='debuff'){
+        // The existing ledger applies statuses; original move magnitudes are
+        // provisional. Seeded host RNG keeps resistance/replays reproducible.
+        const resisted=impact.kind==='debuff'&&rng()*100<target.inspiritResistance;
+        impact.resisted=resisted;
+        if(!resisted){
+          applyInspirit({id:target.id,sign:impact.statusSign,
+            effect:impact.statusEffect,level:impact.statusLevel,source:caster.id});
+          impact.applied=true;
+        }else impact.applied=false;
+        continue;
+      }
       target.hp=impact.hpAfter;
       if(impact.kind==='damage'){
         const changed=interruptOnHit(target,impact.amount,false);
