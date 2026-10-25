@@ -34,6 +34,8 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 
 > **【Phase32 初期ゲスト受信の補強／通常テンポ5ターン実通信（2026-10-26）】** [調査・修正・テスト記録](./PHASE32_GUEST_INITIAL_SYNC_AND_PACED_CLOUD_QA_20261026.md)。以前の実クラウドQA失敗はゲスト専用障害とは限らず、ホスト画面表示と**初期戦況のクラウド保存完了**を区別していなかった。実際のホスト完成メッセージを確認するテスト順序に修正。加えてゲスト側へ**一回の確定初期スナップショット直接取得**を導入し、Realtime/pollと同じセッション・最新更新番号ゲートを共用。ページ閉鎖後の同試合復帰ではない。先行取得失敗/後着旧データ/購読初期通知欠落をテスト。**[Node554/554 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40216082728)**、**[Chromeステージ/指操作/勝敗PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40216082776)**、**[実Supabase通常2席ゲストACK＋1500ms間隔の5ターン以上同期PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40216218043)**、**[Supabase高速6KO終局PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40216082806)**。断続的な通信失敗の完全解消や実学校iPad成功までは断言しない。学校用固定Phase27・main・Google Sites公開ページ・本番DB/RLSは無変更。本人が配布を明示依頼するまで新しいHTMLは渡さない。
 
+> **【Phase33 通常編成の長時間実クラウドQA（2026-10-26）】** [詳細・検証ログ・次の課題](./PHASE33_NORMAL_MATCH_ENDURANCE_20261026.md)。本人の「長時間対戦の検証とは？」に応え、**通常の同一レンタル6体**・1500ms自動時計で**60ターンの実Supabaseホスト/ゲスト連続配信＋ゲストの実入力ACK＋双方の最終Revision/ターン一致**を[実Chromium 2iframeでPASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40217794329)。合成即時終局ではない。さらに通常の自動AI同士を4seed計測し**103/127/163/180行動で双方の6体KO決着**、換算で約2分35秒〜4分30秒、全試合進行停止なし。[Node全554件PASSと自然戦闘4件](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40217799000)。**60ターンで全試合決着までをネットで通したわけではない**、人間同士/学校Safari実機の所要時間でもない。長いChrome QAの生報告方式は不安定だったため**実際に成功した元の検証スクリプトへ戻した**。ゲーム本体の戦闘値、公開Google Sites、学校固定Phase27、main、本番DB/RLSは無変更。Google Sites用最新HTMLは本人の明示依頼時のみ渡す。
+
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
