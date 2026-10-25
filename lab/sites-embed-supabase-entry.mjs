@@ -120,7 +120,8 @@ $('.yw-online-join').addEventListener('click',async()=>{
 $('.yw-online-start').addEventListener('click',async()=>{
  try{
   const begun=await room.startRoom();if(!begun.ok)throw Error(begun.reason);
-  match=createFirebaseMatchHost({roomClient:room,protocol:createMatchProtocol(),
+  match=createFirebaseMatchHost({roomClient:room,
+   protocol:createMatchProtocol({battleOptions:{playtestSoulTuning:true}}),
    onSnapshot:s=>{stage.render(s);updatePresence();},onError:err});
   const initial=await match.start();
   if(!initial.ok)throw Error(initial.reason||initial.error||'snapshot_publish_failed');
