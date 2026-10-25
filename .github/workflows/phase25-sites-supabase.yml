@@ -4,6 +4,10 @@ on:
     branches:
       - feat/phase1-action-circle-lab-20261023
     paths:
+      - 'engine/combat.mjs'
+      - 'engine/match-protocol.mjs'
+      - 'engine/playtest-soul-tuning.mjs'
+      - 'tests/playtest-soul-tuning.test.mjs'
       - 'network/supabase-room.mjs'
       - 'lab/sites-embed-supabase-entry.mjs'
       - 'tools/build-sites-supabase.mjs'
@@ -27,6 +31,9 @@ jobs:
         run: npm install --no-save --package-lock=false --ignore-scripts esbuild@0.25.12
       - name: Syntax check all new sources
         run: |
+          node --check engine/playtest-soul-tuning.mjs
+          node --check engine/combat.mjs
+          node --check engine/match-protocol.mjs
           node --check network/supabase-room.mjs
           node --check lab/sites-embed-supabase-entry.mjs
           node --check tools/build-sites-supabase.mjs
@@ -51,6 +58,8 @@ jobs:
           assert.match(online,/cdn\.jsdelivr\.net/);
           assert.doesNotMatch(online,/service_role|sb_secret_|SUPABASE_SERVICE_ROLE/);
           assert.match(online,/yw-online-auto/);
+          assert.match(online,/試遊版/);
+          assert.match(online,/調整用仮値/);
           assert.match(online,/mb-dualscreen/);
           assert.ok(online.length<450000,'Google Sites embed too large');
           console.log('SITES-SUPABASE-GATE-PASS',{bytes:Buffer.byteLength(online),onlinesdk:1});
