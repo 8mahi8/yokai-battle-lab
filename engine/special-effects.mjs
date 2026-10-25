@@ -113,6 +113,7 @@ export function planResearchSpecial({spec,caster,allies,enemies,powerMultiplier=
   // Provisional: half of REAL drained HP is shared over the living ally
   // front. No benefit from overkill, and no HP duplication or resurrection.
   let budget=Math.floor(impacts.reduce((sum,x)=>sum+x.amount,0)/2);
+  if(budget<=0)return impacts; // no enemy HP drained means no healing at all
   const recipients=allies.filter(x=>x.hp>0&&x.hp<x.maxHp);
   for(let i=0;i<recipients.length;i++){
    const target=recipients[i],share=Math.ceil(budget/(recipients.length-i));
