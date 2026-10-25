@@ -312,7 +312,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     (commandMode==='charge'&&unit.specialReady?
      '<span class="mb-special-ready">'+(t.mode==='zero'?'GわざOK':'わざOK')+'</span>':'')+
     (impact&&impact.amount>0
-     ?'<span class="mb-floating-number">'+(impact.kind==='heal'?'+':'−')+impact.amount+'</span>':
+     ?'<span class="mb-floating-number">'+(impact.kind==='heal'||impact.kind==='revive'?'+':'−')+impact.amount+'</span>':
       impact&&impact.hit===false?'<span class="mb-floating-number">MISS</span>':'')+
     '</button>';
   }).join('');
@@ -328,7 +328,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const name=escapeHTML(unit.name);
    const actor=flash?.actor===id?' mb-acting':'';
    const impact=flash?.targets?.find(x=>x.id===id);
-   const target=impact?(impact.kind==='heal'||impact.kind==='buff'?' mb-healed':impact.hit===false?' mb-missed':' mb-hit'):'';
+   const target=impact?(impact.kind==='heal'||impact.kind==='revive'||impact.kind==='buff'?' mb-healed':impact.hit===false?' mb-missed':' mb-hit'):'';
    const pinned=!isOwn&&view.teams[activeSeat].pin===id?' mb-pinned':'';
    const candidate=!isOwn&&commandMode==='target'&&!unit.ko?' mb-choice-eligible':'';
    const tonedDown=!isOwn&&commandMode==='target'&&unit.ko?' mb-choice-ineligible':'';
@@ -343,8 +343,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     '<span class="mb-bars"><i style="width:'+pct(unit.hp,unit.maxHp)+'%"></i></span>'+
     (isOwn?'<span class="mb-bars mb-soulbar"><i style="width:'+pct(unit.soul,unit.capacity)+'%"></i></span>':'')+
     '<small>'+unit.hp+'/'+unit.maxHp+'</small>'+status+'</span>'+
-    (impact&&(impact.kind==='buff'||impact.kind==='debuff')&&impact.hit!==false?
-     '<span class="mb-floating-number">'+(impact.kind==='buff'?'強化':'弱体化')+'</span>':
+    (impact&&(impact.kind==='buff'||impact.kind==='debuff'||impact.kind==='revive')&&impact.hit!==false?
+     '<span class="mb-floating-number">'+(impact.kind==='buff'?'強化':impact.kind==='revive'?'復活':'弱体化')+'</span>':
      impact&&impact.amount>0?
      '<span class="mb-floating-number">'+(impact.kind==='heal'?'+':'−')+impact.amount+'</span>':
      impact&&impact.hit===false?'<span class="mb-floating-number">MISS</span>':'')+
