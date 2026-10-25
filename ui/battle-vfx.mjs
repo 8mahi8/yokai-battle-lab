@@ -10,7 +10,8 @@ export function latestBattleCue(events){
   if(event.type==='special'){
    const targets=Array.isArray(event.impacts)?event.impacts.filter(x=>x&&
     typeof x.targetId==='string'&&Number.isFinite(x.amount)).map(x=>({
-     id:x.targetId,amount:x.amount,kind:x.kind==='heal'?'heal':'damage',hit:true
+     id:x.targetId,amount:x.amount,kind:['heal','buff','debuff'].includes(x.kind)?x.kind:'damage',
+     hit:x.kind==='buff'||x.kind==='debuff'?x.applied!==false:true
     })):[];
    return {key:'special:'+i+':'+JSON.stringify(event),type:'special',actor:event.actor,
     mode:event.mode,kind:'special',targets,target:targets[0]?.id??null,
