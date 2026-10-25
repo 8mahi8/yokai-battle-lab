@@ -64,6 +64,8 @@ jobs:
           assert.match(online,/試遊版/);
           assert.match(online,/調整用仮値/);
           assert.match(online,/mb-dualscreen/);
+          assert.match(online,/mb-finish-screen/);
+          assert.match(online,/勝利！/);
           assert.ok(online.length<450000,'Google Sites embed too large');
           console.log('SITES-SUPABASE-GATE-PASS',{bytes:Buffer.byteLength(online),onlinesdk:1});
           EOF
