@@ -12,6 +12,7 @@ on:
       - 'lab/yw2-layout.css'
       - 'tools/build-sites-online.mjs'
       - 'tools/sites-online-smoke.mjs'
+      - 'tools/sites-online-build-gate.mjs'
       - '.github/workflows/phase24-sites-online.yml'
   workflow_dispatch:
 permissions:
@@ -36,6 +37,9 @@ jobs:
           node --check lab/sites-embed-online-entry.mjs
           node --check tools/build-sites-online.mjs
           node --check tools/sites-online-smoke.mjs
+          node --check tools/sites-online-build-gate.mjs
+      - name: Verify cloud config guard without contacting any Firebase service
+        run: node tools/sites-online-build-gate.mjs
       - name: Produce disabled setup and local emulator test builds
         run: |
           node tools/build-sites-online.mjs
