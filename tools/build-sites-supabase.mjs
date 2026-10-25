@@ -49,7 +49,7 @@ const fragment=['<!-- Phase25 Supabase: '+mode+'; real iPad/Sites not yet proven
  '</style>',
  '<section id="yw-sites-online" aria-label="輪戦 オンライン通信開発版">',
  '<div class="yw-online-bar"><strong>輪戦｜オンライン対戦</strong>',
- '<span>開発版：元3DSの一部仕様と旧iPad実機は未検証。ホスト画面が開いている間だけ進行します。</span>',
+ '<span>試遊版：攻撃・妖術・つつくの妖気は調整用仮値です。旧iPad実機は未検証。ホスト画面が開いている間だけ進行します。</span>',
  '<button class="yw-online-make" disabled type="button">ホスト：部屋作成</button>',
  '<input class="yw-online-code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="6桁番号" aria-label="部屋番号">',
  '<button class="yw-online-join" disabled type="button">ゲスト：参加</button>',
