@@ -22,6 +22,8 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 
 > **【Phase29 対戦終了UI／最新版の配布は本人の依頼時のみ（2026-10-26）】** 本人の「Googleサイトに貼るやつちょうだい」と言われるまでは**開発・QA・記録だけ続行**。旧Phase27学校試遊ファイルと学校公開版は触らず、未依頼の配布ファイル/Drive複製は作らない。[Phase29詳細](./PHASE29_MATCH_FINISH_UI_20261026.md)。確定winnerのみを使う**「勝利！」「敗北…」の結果画面**と試合後の操作無効化を実装。ローカル/ネット画面とも同じステージUI。**[Node534/534 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40208856871)**、**[実Chromium result UI含むPASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40208856856)**。次は実Supabaseの全6体KOまで両席一致を検証。未実施の学校SafariやGoogle Sites実貼付を「検証済み」と呼ばない。
 
+> **【Phase28-B 実Supabaseの最終勝敗まで（2026-10-26）】** [実クラウド最終決着検証・通常版との分離と未検証事項](./PHASE28B_REAL_SUPABASE_FULL_MATCH_20261026.md)。Google Sites想定2 iframeが別匿名Authで実Supabaseルームを作成・参加し、**実ホストの戦闘6体KO→クラウド配信→ゲストの同じ勝者受信→勝利/敗北の逆画面→終了後操作無効**まで [CI成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40209857257)。専用ビルドだけに**高速進行/合成攻守ステータス**を入れ、通常公開用HTMLへ漏れていないこともCIでチェック。**通常レンタル同士の1500ms全ターン配信、学校Safari/Google Sitesでの実機対戦はまだ未検証**。本人が「Googleサイトに貼るやつちょうだい」と言うまでは新しい配布ファイルを生成して渡さず、学校の旧Phase27版と公開ページは固定。次は必殺/つつくの基本効果種の完成と、通常ペースのクラウド連続試合QA。
+
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
