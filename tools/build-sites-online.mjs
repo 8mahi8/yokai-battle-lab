@@ -76,6 +76,7 @@ const fragment=['<!-- Phase24B: '+mode+'; iframe/Safari/real cloud not yet prove
  '<button class="yw-online-start" disabled type="button">ホスト：試合開始</button>',
  '<button class="yw-online-connect" disabled type="button">ゲスト：戦闘接続</button>',
  '<button class="yw-online-retry" disabled type="button">未確定入力を再送</button>',
+ '<button class="yw-online-auto" disabled hidden type="button" aria-pressed="false">自動進行 OFF</button>',
  '<span class="yw-online-presence">未接続</span><b class="yw-online-role">席未選択</b>',
  '</div><div class="yw-online-status" role="status">接続初期化中</div>',
  '<div id="battle-stage"></div></section>',
