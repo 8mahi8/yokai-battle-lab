@@ -142,6 +142,16 @@ async function main(){
   // This uses the real SDK and the same room. A newly created host engine
   // must not publish revision=0 over the already accepted battle.
   const oldRevision=hostMatch.snapshot().revision;
+  // The host applies commands synchronously but publishes the latest
+  // authoritative RTDB snapshot asynchronously. A remote host-restart
+  // preflight must compare against what is actually stored, not a newer
+  // in-memory revision that has not finished publishing yet.
+  await spin(()=>hostMatch.status().lastPublished>=oldRevision,
+   'host persisted all commands before restart fence check');
+  await spin(()=>guestMatch.status().revision>=oldRevision,
+   'guest received final published host revision before restart fence check');
+  const storedBeforeRestart=await hostB.readPublishedSnapshot();
+  assert.equal(storedBeforeRestart.revision,oldRevision);
   const restoredAttempt=createFirebaseMatchHost({roomClient:hostB});
   const refused=await restoredAttempt.start();
   assert.equal(refused.ok,false);
