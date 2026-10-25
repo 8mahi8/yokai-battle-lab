@@ -38,7 +38,7 @@ try{
  const child=spawn(browser,['--headless=new','--no-sandbox','--disable-gpu',
   '--disable-dev-shm-usage','--disable-extensions','--no-first-run',
   '--user-data-dir='+path.join(tmp,'profile'),
-  '--window-size=1160,900','--virtual-time-budget=155000',url],
+  '--window-size=1160,900','--virtual-time-budget=130000','--dump-dom',url],
   {stdio:['ignore','ignore','pipe']});
  child.stderr.on('data',x=>{stderr+=String(x).slice(-1000);
   if(stderr.length>4000)stderr=stderr.slice(-4000);});
