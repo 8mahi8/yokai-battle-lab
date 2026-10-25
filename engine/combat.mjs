@@ -23,7 +23,7 @@ import {calculateTurnInspirit} from './turn-inspirit.mjs';
 import {calculateHeal} from './heal-model.mjs';
 import {yw2HitProbability,yw2CriticalProbability,rollPercent} from './hit-model.mjs';
 import {PLAYTEST_SOUL_TUNING,choosePlaytestPokeOutcome} from './playtest-soul-tuning.mjs';
-import {validateRentalSkill,skillMomentumStage,critSkillBonus,careOnOwnerTurn,resolveLastStand,SKILL_TRIAL} from './skill-effects.mjs';
+import {validateRentalSkill,skillMomentumStage,critSkillBonus,careAtActionBoundary,resolveLastStand,SKILL_TRIAL} from './skill-effects.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
   {name:'あかねこ',skill:'momentum',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5]},
@@ -938,8 +938,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         priorityConfidence:'research-fixture'}:{})};
     events.push(action);
     if(enableRentalSkills){
-      for(const heal of careOnOwnerTurn({actor,team:squads[actor.side]})){
-        actor.hp=Math.min(actor.maxHp,actor.hp+heal.amount);
+      // Both sides' adjacent living units heal at every action boundary,
+      // even when the active actor belongs to the OTHER team.
+      for(const heal of careAtActionBoundary({teams:squads})){
+        const recipient=byId.get(heal.targetId);
+        recipient.hp=Math.min(recipient.maxHp,recipient.hp+heal.amount);
         events.push({type:'skill',...heal,label:'おせわ型',kind:'回復'});
       }
       const active=skillBoosts.get(actor.id);
