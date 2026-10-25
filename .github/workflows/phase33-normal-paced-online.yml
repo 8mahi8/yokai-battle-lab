@@ -1,0 +1,42 @@
+name: Phase33 real Supabase long normal-speed 6v6 match
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+    paths:
+      - 'engine/combat.mjs'
+      - 'engine/match-protocol.mjs'
+      - 'engine/phase1.mjs'
+      - 'engine/special-effects.mjs'
+      - 'engine/playtest-soul-tuning.mjs'
+      - 'network/firebase-match.mjs'
+      - 'network/supabase-room.mjs'
+      - 'lab/sites-embed-supabase-entry.mjs'
+      - 'lab/match-stage.css'
+      - 'ui/match-stage.mjs'
+      - 'tools/build-sites-supabase.mjs'
+      - 'tools/supabase-sites-normal-paced-smoke.mjs'
+      - '.github/workflows/phase33-normal-paced-online.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  normal-paced-duel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build UNMODIFIED six-rental owner HTML
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts esbuild@0.25.12
+          node --check tools/supabase-sites-normal-paced-smoke.mjs
+          node tools/build-sites-supabase.mjs --public-config
+          if grep -q 'QA-ONLY-NEVER-DEPLOY\|yw-online-qa-finish' dist/sites-supabase-online-code.html; then
+            echo 'FATAL: QA-only accelerated fixture entered normal HTML'
+            exit 1
+          fi
+      - name: Run normal 1.5 second paced 6v6 duel for sixty actions, confirm remote ACK and final sync
+        run: node tools/supabase-sites-normal-paced-smoke.mjs
