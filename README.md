@@ -1,3 +1,5 @@
+> **【2026-10-25最新入口】** この`main`由来のREADME本文は旧2.5D造形デモの記録です。**現在の開発状況は[再監査済み引き継ぎ](./docs/HANDOFF_VERIFIED_20261025.md)と[設計全体図](./docs/PROJECT_MAP_AND_PROGRESS.md)**を参照（開発ブランチ`feat/phase1-action-circle-lab-20261023`）。Phase25でSupabase実2 iframe E2EとNode497/497テストに成功。実Google Sites／学校iPad Safari／原作完全一致は未検証。以下のPhase20などの古い記述は履歴です。
+
 > **2026-10-24｜このREADMEは古い2.5Dキャラ研究デモの説明です。今の対戦ゲーム完成状況ではありません。**
 > 最新の原作再現1vs1と現在の開発位置は **[設計全体図・進捗管理](./docs/PROJECT_MAP_AND_PROGRESS.md)** を先に確認し、詳細は [最新引き継ぎ](./docs/HANDOFF_LATEST_20261024.md) を参照してください。
 > 現在の開発はブランチ `feat/phase1-action-circle-lab-20261023`。Phase 20A（攻撃/妖術＋多段計算の対戦統合）が完了し、Phase 20B（とりつき・回復の根拠確認）が次。原作の完全再現・Googleサイト直貼り・学校実機検証は未完了です。**この下は歴史的な旧デモの説明で、現行仕様として採用しないこと。**
