@@ -46,3 +46,7 @@
 - [特殊技4例の原典再監査](./PHASE21D_B3_NAMED_SPECIAL_RECHARGE_20261025.md)を追加。既存`engine/phase21d-soul-rate-evidence.mjs`に4名の条件（うち3名の容量は「?」）と独立動画解説の追加回復観測2件を保存。**新しい別エンジンは作成せず**既存比較コードを拡張した。
 - [Node503/503](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40201933897) PASS。オンライン正式`createMatchProtocol()`の妖気計算・通常戦闘・学校サイトは変更しない。
 - **残る原作証拠**：攻撃/妖術後の妖気増分、つつくの確率・受取先・量、3名の「max?」の実上限、既存130の13vs14差。動画や実機の独立観測がなければ本番の仮数値を増やさない。
+
+## 2026-10-25 追記｜Phase21D-B4までの再利用境界
+- **今回実際に追加したのは既存の`engine/phase21d-soul-observation.mjs`への`auditDamagingActionSoulPair`だけ**。[資料](./PHASE21D_B4_ATTACK_SOUL_BONUS_AUDIT_20261025.md)と新規`tests/phase21d-attack-soul-pair.test.mjs`（10件）に紐づけ。原作資料に通常攻撃/妖術の確定ポイントはなく、攻略資料が報告する「サボり/悪いとりつき中の敵への攻撃は妖気が増えやすい」は定性的な主張。比較器は同一条件が揃えば**観測差だけ**返し、推測で正規Soul量を変えない。
+- 最新[Node513/513](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40202609186)・[Chrome指操作](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40202609177)成功。**次に原作の生データが得られない限り、同じ数値を繰り返し推測しない**。既存の通信復帰・旧Safari/Google Sites前検証など独立に進められる未完ゲートを優先してよい。
