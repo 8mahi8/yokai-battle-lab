@@ -22,6 +22,7 @@ jobs:
           node --check ui/soultimate-ready.mjs
           node --check ui/match-stage.mjs
           node --check tools/stage-smoke.mjs
+          node --check tools/result-stage-smoke.mjs
       - name: Verify original match renderer state
         run: node --test tests/match-stage.test.mjs tests/character-art.test.mjs tests/phase17-interaction-vfx.test.mjs tests/soultimate-readiness-parity.test.mjs
       - name: Install CJK font for truthful Japanese screenshot QA
@@ -32,6 +33,8 @@ jobs:
         run: node tools/stage-smoke.mjs
       - name: Verify actual PointerEvents across 10 touch trials
         run: node tools/gesture-stage-smoke.mjs
+      - name: Verify result UI on both ends with a real Chromium DOM
+        run: node tools/result-stage-smoke.mjs
       - name: Preserve actual stage screenshot for visual review
         if: always()
         uses: actions/upload-artifact@v4
