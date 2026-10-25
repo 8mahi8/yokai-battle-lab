@@ -1,0 +1,27 @@
+name: Phase25 real Supabase two-iframe Google Sites Chrome QA
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+    paths:
+      - 'tools/supabase-sites-browser-smoke.mjs'
+      - '.github/workflows/phase25-supabase-browser.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-two-iframe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build actual Google Sites online HTML
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts esbuild@0.25.12
+          node --check tools/supabase-sites-browser-smoke.mjs
+          node tools/build-sites-supabase.mjs --public-config
+      - name: Test two embedded frames in real Chromium against connected Supabase
+        run: node tools/supabase-sites-browser-smoke.mjs
