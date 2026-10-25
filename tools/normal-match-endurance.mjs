@@ -28,7 +28,7 @@ for(const seed of seeds){
      throw new Error('invalid HP in normal endurance');
    }
   }
-  if(state.game.winner!==null)break;
+  if(state.game.winner!==null){steps++;break;}
  }
  const snapshot=m.snapshot();
  // Measuring and limiting the test is intentional: no artificial forced
