@@ -203,11 +203,10 @@ export function createFirebaseMatchGuest({roomClient,onSnapshot=()=>{},onAck=()=
   queue.push(normalized);
   return {ok:true,queued:true,position:queue.length};
  }
- function start(){
-  check();
-  if(started)throw new Error('guest session already started');
-  started=true;
-  unsub=roomClient.subscribeSnapshots(packet=>{
+ // All inbound snapshots, including a direct initial fetch, MUST pass the
+ // same monotonic revision, session and ACK checks. This avoids the guest
+ // waiting forever if its first Realtime notification/poll is delayed.
+ function receiveSnapshot(packet){
    if(stopped||packet.session!==initialSession||packet.revision<=revision)return;
    const state=packet.state,seq=state.clientSequences?.[1];
    if(!isInteger(seq))return;
@@ -235,7 +234,24 @@ export function createFirebaseMatchGuest({roomClient,onSnapshot=()=>{},onAck=()=
    onSnapshot(clone(state));
    // Drain exactly one input per authoritative ACK, preserving tap order.
    flushQueue();
-  });
+  }
+ function start(){
+  check();
+  if(started)throw new Error('guest session already started');
+  started=true;
+  unsub=roomClient.subscribeSnapshots(receiveSnapshot);
+  // Bootstrap the existing in-page match from the authoritative database
+  // once, independently of the Postgres Changes subscription and poll loop.
+  // This is NOT a browser-reload restore: the host and guest are already in
+  // the same live room. Delayed/stale fetches cannot roll back newer updates.
+  if(typeof roomClient.readPublishedSnapshot==='function'){
+    void Promise.resolve().then(()=>roomClient.readPublishedSnapshot())
+     .then(state=>{
+       if(state&&!stopped&&started)receiveSnapshot({
+         session:initialSession,revision:state.revision,state
+       });
+     }).catch(error=>{if(!stopped)onError(error);});
+  }
   return {ok:true};
  }
  function submit(intent){
