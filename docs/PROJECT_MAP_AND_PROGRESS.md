@@ -3,7 +3,7 @@
 更新: 2026-10-25 JST
 Repository: https://github.com/8mahi8/yokai-battle-lab
 Development branch: `feat/phase1-action-circle-lab-20261023`
-**現在（2026-10-25）:** Phase20/21の根拠ある原作操作とPhase22B/Cの4種必殺/ゲストACKは正規2席へ実装。Phase23A/B/CでFirebaseローカル2席の通信断/古いFIFO破棄/ホストdirty再配信/ACK復旧を検証。Phase24A/BでGoogle Sites「コードを埋め込む」用の単一HTML（オフライン/オンライン）を実装、オンラインは設定無しでクラウド接続しない版・localhost限定Firebase Emulator版・明示承認を要する実クラウド設定版を分離。Phase24C1でホスト明示ONの研究用自動進行（1500ms仮値、断線/非表示/未保存時一時停止）をChrome2席で検証。**今回Phase24C2-Aでは、生成された実オンラインHTMLをChromiumのiframe.srcdocで横幅1024/820/568/390pxに縮め、上下画面・輪・4コマンドの視認性、横方向はみ出し無し、実要素ヒットテストに全合格。旧SafariのPointer Events/安全HTTPS/暗号用乱数/TextEncoderをFirebase Auth開始前にチェックし、不足時に理由を日本語表示する機構を追加。[Node479/479 #40176060547](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40176060547)、[Chrome2席ローカルFirebase＋4画面幅 #40176060551](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40176060551)とも成功。**本物の学校iPad Safari、Google Sites実編集画面への貼付、実クラウドFirebase、原作未確定値は依然未検証。**Firebase方針更新:** 新規の専用Firebaseプロジェクトは作らず、すでにBRAWL/小国戦線IIIが利用している既存RTDBプロジェクト`mygame-df915`を再利用する。保存先は専用`/yokaiRoomsV1`、Auth/Rulesは既存ゲームを維持する形で同じRTDBの対象パスだけ統合する（実Rules変更なし）。[既存Firebase共用方針と仮設定のみのビルドQA](./PHASE24C_SHARED_FIREBASE_DECISION_20261025.md)。次は実Web公開設定とルールの確認・旧iPad実機ゲート。
+**現在（2026-10-25）:** Phase20–22で根拠のある本家戦闘処理/4種の必殺操作・ゲストACKは正規2席へ実装。Phase23で切断・順序/再送・ホストdirty再配信のFirebase Emulator2席QA成功。Phase24A/BでGoogle Sitesへコード直接貼付の単一HTMLオフライン/オンラインを作成し、オンライン版はローカルFirebase Emulatorの2つのChrome iframeでゲームルーム/操作/ACK/断線復帰PASS。Phase24C1はホストだけが有効化する仮テンポ1500msの自動進行と切断/非表示/未publish時の一時停止を検証。Phase24C2は狭い埋込枠4サイズの操作ヒット、旧Safariの基本機能事前診断を検証。**今回Phase24C3:** 本人委任で**プレイヤー操作ゼロのFirebase匿名認証を継続採用**し、BRAWL/小国戦線IIIが既に使う**同じ`mygame-df915`のRTDBを共用**する（新プロジェクト不要）。ゲームの保存先は別の`/yokaiRoomsV1`。ただし既存RTDB Rulesを上書きせず統合する必要があるため、現行RulesのJSONを後から安全に読み取って**子ノードだけ追加するオフライン専用マージプレビュー**を実装。親`.read/.write`に許可され得るルールやroot wildcardがあれば停止。**[Node484/484成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40179904769)、[合成共有Rules16項目＋既存33項目/Chrome2席Firebase Emulator PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40179904784)**。実`mygame-df915`のRules/Auth/Web app構成/クラウドには未接続・未変更。Google Sites実編集、学校旧iPad Safari物理2端末、原作未測定の技/時間は引き続き未検証。
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
@@ -34,29 +34,30 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 | 21 | 原作ルール一致度 | **21A/B:** 3秒回転制限・ゲスト拒否。**21C:** 94行速度表＋初手比較器（原作同着は未完）。**21D-A/B:** 妖気24条件と矛盾分析。**21D-C1/C2:** 正規ホストつつく/12体妖気観測。**21D-C3:** 2014年通信対戦の「妖気を奪われたあと必殺」記録と2020年の連続吸収/複数必殺の戦術編成を確認（どちらも数値未取得）。 | 妖気受取先・回収量・発生確率を元の対人映像で照合し、数値が固まるまで通常版へ追加しない | **原作PvP定性資料と研究試験あり／数値未検証** |
 | 22 | 原作PvP深層戦術 | Phase5ノーモーション・回転・カウンターの独立研究。**22A:** 仮妖気回収による研究用連射。**22B:** 正規ホスト4種チャージ/G技。**22C:** ゲストACKとChrome Firebaseローカル2席6タップの同期PASS。**22D-A/B:** 2我慢のcut-in回転例外は原作ロック時刻を未確定とし仮HPを止めた。cut-in中の前衛候補と仮想時刻64記録、3回以上回転との二重原因保持、2015年の両視点ノーモーション実験候補映像を特定。Node463/463、Chromeステージ・Firebase Emulator 2席PASS | **22D-C:** 2015年両視点映像から同期したフレーム時刻が実測できるときにだけ反映。2我慢例外の回転中ロック時刻、3回以上回転と追加効果は未定。Phase23/24旧iPad Safari実機・Google Sites直接コード貼り付け | **定性資料・研究診断・ブラウザ通信QA済／3DS実フレームと本番公開未検証** |
 | 23 | 本番向け1vs1同期 | Firebase Auth+RTDB **ローカルエミュレーター2Chrome**、33権限チェック・必殺6タップACK、23Aのオフライン古い操作FIFO破棄と同一番号再送、23Bの権威dirty再publish・120行動書込集約・91入力順序検証。**23C:** 実Chrome2席で研究ホストアダプタに一度だけpublish故障注入。ゲストの本物の輪操作はホスト内部1回だけ実行され、未配信間はゲスト画面が進まず、同番号再送でも二重回転せず、ホスト再配信ボタンで同じrevisionを公開するとゲストの前衛・ACKが追いつく。Node469/469、Chrome2席Firebase QA PASS | **Phase24-A:** Google Sites HTML/CSS/JSを直接貼るためのバンドルとSafari互換ゲート。実クラウド/学校2端末での長時間ネットワーク・負荷検証は未実施。22D原作フレーム調査は別途継続 | **研究アダプタ故障注入→実Chrome2席ACK復旧 PASS／物理iPad・本番Firebaseは未検証** |
-| 24 | 学校iPad・Google Sites直接埋込配布 | **24A/B:** 研究用一台オフラインと2席Firebaseオンラインを単一HTML化。未設定/localhost Emulator/本人承認済みクラウドの安全3モード。**24C1:** ホストのみ明示ONの自動進行、接続中・画面前面・Firebase最新publish済み/未勝敗時のみ1500ms仮テンポで実行、断線・非表示・未保存/勝敗時は停止。**24C2-A:** Chrome iframe.srcdocで1024×768、820×620、568×520、390×760の4サイズを実測。上画面、下メダル、輪、回転ボタン、4コマンドが表示され横はみ出し無し、`elementFromPoint`で実タップ対象が他のUIに遮られないことを確認。旧SafariのHTTPS/Pointer Events/Web Crypto/TextEncoder不足を通信開始前に報告し中止する。Node479/479+Chrome2席Firebase Emulator PASS | **24C2-B:** 実Google Sitesのコード入力/保存・ページ表示、本人承認済み既存共有Firebase Auth/専用`yokaiRoomsV1` RTDB Rules、本物の学校旧iPad Safari 2台の接続/縦画面/横画面/タッチ/フレーム負荷/断線の最終ゲート。未測定の原作行動間隔は推測しない | **Chromeの寸法・実タップヒットとローカル2席はPASS／Safari実機・Google Sites編集・実クラウド未検証** |
+| 24 | 学校iPad・Google Sites直接埋込配布 | **24A/B:** 1ファイル貼付のオフライン/オンラインHTML、Firebase Auth+RTDB Emulatorと2Chrome iframeで実2席/権威ACK/断線復帰PASS。**24C1:** ホスト明示ONの仮テンポ自動進行、未接続/バックグラウンド/未publish時停止。**24C2:** 1024/820/568/390pxの狭いChrome埋込枠で4コマンド/輪の表示・実tapヒット、旧SafariのSecure Context/Pointer Events/Web Crypto/TextEncoder事前診断。**24C3:** 共用プロジェクト`mygame-df915`＋独立パス`yokaiRoomsV1`・匿名認証維持を決定。現在のRulesを後で読み込んで旧ゲームを保持した新JSONだけを生成するオフラインプレビュー追加。親read/write grant・wildcard衝突を保守的に拒否。Node484/484、合成共有Rules+Auth/RTDB実Emulator16権限チェック＋既存33チェック、Chrome本家UI/チャージともPASS | **次:** `mygame-df915`実Rules・Anonymous Auth状態・Web公開設定を確認し、既存ゲームを壊さない統合方法を合意してからHTMLビルド。学校旧iPad Safari2台/Google Sites編集画面で最終試遊。原作技タイミング数値は未確定のまま維持 | **ローカルコード・合成Rules・2Chrome QAまでPASS／実Firebase/本物のGoogle Sites/旧Safari実機は未試験** |
 
-## 3. 今回した作業（Phase24-C2-A／2026-10-25）
+## 3. 今回した作業（Phase24-C3／2026-10-25）
 
-**全体のどこ:** 原作正規`match-protocol`（Phase20-22）→ Firebase通信の権威ACK/同期（Phase23）→ Google Sitesへコード直貼りするオンライン単一HTMLとホスト自動進行（Phase24A/B/C1）→ **狭い埋込枠と古いSafariへの互換性・実タップ位置の受入（24C2-A）** → 最後に学校旧iPad Safariと本人承認済みFirebase/Google Sites本物で検証（24C2-B）。
+**全体設計のどこ:** 原作研究エンジン（Phase20–22）→ ホスト権威・Firebase Room/Authと再送（Phase23）→ 単一HTMLのGoogle Sitesオンライン2席（Phase24A/B/C1）→ 旧Safari UI/タッチ検証（Phase24C2）→ **既存RTDB共有とプレイヤー操作不要の匿名Authを非破壊Rulesで両立する準備（今回C3）** → 本物のRTDB/Google Sites/学校旧iPad受入（次）。
 
-**今回修正/追加:** `tools/sites-online-smoke.mjs`の実Chrome+Auth/RTDB Emulatorの2席`iframe.srcdoc`試験へ、**1024×768、820×620、568×520、390×760**の4フレームを追加。実`documentElement.clientWidth`/scrollWidth、上画面・下画面・B輪・回転ボタン・4コマンドが横枠内/非ゼロサイズかを判定。タッチ位置が見た目だけでなく操作対象へ当たるか`document.elementFromPoint`で確認。どのサイズでもPASS。対戦部屋/権威ACK/3秒輪ロック/自動行動ON→切断中停止→復帰→手動OFFも同じ最終QAで引き続きPASS。
+**今回の方針決定:** ユーザーから匿名Authの採否を委任。Firebase Auth`signInAnonymously()`を現行コードのまま維持。BRAWL/小国戦線IIIは共用の`mygame-df915` RTDBを使い、妖怪対戦はすでに独立の`/yokaiRoomsV1`を使用する。**新Firebaseプロジェクトは不要**。ただし親の`.read/.write`に許可を与えている既存Rulesでは、子の匿名Auth専用`.read/.write`が安全な制限として効かない（[公式Firebase文書](https://firebase.google.com/docs/rules/rules-behavior#realtime_database)）。**本番の現行Rulesを見るまでは安全確認済みとしない。**
 
-**Safari事前診断:** `ui/sites-browser-capabilities.mjs`新規。Google Sites iframeの中の`isSecureContext`、`PointerEvent`、`crypto.getRandomValues`、`TextEncoder`をローカルで確認し、足りない機能を日本語で表示。`lab/sites-embed-online-entry.mjs`でFirebase匿名Authを開始する前に拒否し、非対応の旧Safariが半分だけ動いた状態で部屋を作らない。`tests/sites-browser-capabilities.test.mjs`を新規5件追加し、正常/Pointer Events無し/HTTPS・乱数無し/TextEncoder無し/全機能無しを確認。
+**今回の実装:** `tools/preview-shared-rtdb-rules.mjs`を新規追加。Firebase管理画面等で後から得られる**現行RulesをJSONファイルとして読み込むだけ**で、元のBRAWL/小国戦線データ権限を一切書き換えず、`yokaiRoomsV1`用ルールだけ加えた**別ファイル**を安全レビュー用に生成する。親で許可され得るread/write、未レビューのwildcard、親validateや既存`yokaiRoomsV1`衝突があれば自動拒否。**クラウドAPI、実Rules配備、認証設定変更、課金は0**。ソースファイルも生成物も上書き禁止。
 
-**技術資料との照合:** [Google Sites公式](https://support.google.com/sites/answer/90569?hl=en)はHTML/CSS/JS直接埋込をサポートするがコード文字数上限や古いiPad Safari実動作を保証していない。[Pointer Events互換性表](https://caniuse.com/pointer)では古いiOS Safari 12.5以前は非対応、iOS Safari 13は部分対応で、学校の実OSバージョンは未確認。Firebaseの`Persistence.NONE`は[公式](https://firebase.google.com/docs/auth/web/auth-state-persistence)に従いメモリだけに保持（ページ再読み込みで消える）ので、完全再起動後に同一試合へ復帰する機能はない。リダイレクトログインの他社Cookie問題と今回の**匿名Auth**は混同しない。
+**根拠と自動QA:** 新規`tests/shared-firebase-rules-merge.test.mjs`5件は旧ゲームRulesの保持・広い親許可の拒否・wildcard/validation衝突の拒否・元Rulesファイルの不変更を検証。さらに`tests/firebase-shared-rules-emulator.cjs`を追加し、本物の**ローカルAuth+RTDB Emulator**上で合成のBRAWL/小国戦線相当の従来の許可を保ちつつ、匿名Authで妖怪戦のホスト/ゲストだけが書込でき第三者は偽装できない**16項目**を検証。先行のEmulator試験と重複するルーム番号を分けた。**[Node484/484](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40179904769)、[合成共有Rules16検査＋従来33検査＋Chrome2席/必殺チャージの最終run](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40179904784) は全成功。** デモRulesを本番へ丸ごと上書きすることは禁止。
 
-**受入結果:** [**Node479/479**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40176060547) 全件合格（従来474件＋5件）。[**実Chrome 2席 Google Sites型iframe幅4通り＆Firebase Emulator #40176060551**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40176060551) 成功、設定未登録時の安全な通信拒否・架空の公開設定しか用いないクラウド生成ゲートもPASS。**本物のGoogle Sitesへの貼付、実クラウド、iPad実機、旧Safariメモリ・性能は一切試験していない**。
+**詳細記録:** [Phase24-C3 既存Firebase共用・匿名Auth/Rules非破壊マージの受入](./PHASE24C3_SHARED_ANONYMOUS_AUTH_RULES_REVIEW_20261025.md)。
 
-**詳細記録:** [Phase24-C2埋込画面幅とSafari起動前機能診断](./PHASE24C2_EMBED_WIDTH_AND_OLD_SAFARI_PREFLIGHT_20261025.md)。
+**本人の出番:** **現段階では不要**。本番ルールとWeb app公開構成の確認/配布段階で、本人が既存Firebase Consoleの現行設定を共有する操作が必要になる可能性がある。そのとき具体的に一回の操作を頼む。新しいFirebaseプロジェクト・契約は不要。
 
-**変更先:** GitHub開発ブランチ`feat/phase1-action-circle-lab-20261023`のみ。main、学校のGoogleサイト版、本番Firebase・料金・資格情報は未変更。本人の作業はまだ必要なし。
+**変更先:** `feat/phase1-action-circle-lab-20261023`の開発ブランチのみ。`main`、現在の学校Google Sites版、既存Firebase/Rules/Auth、他ゲームのコード、料金は未変更。
 
-## 4. 次にする作業（24C2-B・原作照合残）
-1. **既存Firebaseをそのまま共用して最終接続:** 既存の無料枠Firebaseプロジェクト `mygame-df915`/Auth匿名/RTDB専用`yokaiRoomsV1`セキュリティルールと公開Web configが揃うまで、クラウド設定済みHTMLを実際に生成・配布・接続しない。誰かの既存ゲームのDBを無断で流用せず、課金変更しない。
-2. **本物の学校旧iPad Safari 2台:** Google Sitesで**「コードを埋め込む」へHTMLを直接貼付**できるか・編集欄のサイズ上限・iframeの縦方向高さ、SDK読み込み、匿名Auth、6桁ルーム接続、操作/4コマンド/自動進行/切断復帰/低スペック描画を本人の実機試遊でチェック。実公開操作は本人が行う。旧SafariのOSバージョンがわからなければ、そのまま非対応だと推測しない。
-3. **原作深層戦術:** ノーモーション/カウンターの原作ロック時刻、零式つつく妖気受取数値、研究用1.5秒の行動進行テンポは未測定として維持。閃光魂は初期に入れない。学校の操作感が確認できてから原作忠実性とテンポ調整を進める。
-4. **動作負荷:** iPad実機を使うまで、Chromeのフレーム幅・Node結果をiPad Safari実測性能と混同しない。必要なら研究用描画スロットリング／旧端末を模した長時間描画試験を追加。
+## 4. 次にする作業（Phase24-C4／本物の学校ゲート）
+
+1. **既存Firebaseの状態確認:** 共用`mygame-df915`について、公開用Web app設定（`apiKey`/`authDomain`/`appId`/`databaseURL`）、匿名Authの有効/無効、**現在のRTDB Security Rules**の3点を確定する。既存BRAWL/小国戦線の保存先と現在のアクセスを絶対変更しない。既存ルートで広く許可していて厳格なルールを子に追加できない場合は、危険なルールを強制配布せず構成を再検討。
+2. **承認済みクラウドビルドとGoogle Sites実貼付:** 正しい公開Web設定と整合するRulesが用意されて初めて、現行`tools/build-sites-online.mjs`でFirebase接続済み直接貼付HTMLを生成する。Google Sitesの公開版は本人が貼付した場合のみ変更。
+3. **学校旧iPad Safari 2台で試遊:** 同じ6桁部屋/メダル/4コマンド/指ジェスチャー/匿名Auth/自動行動/バックグラウンド停止/回線復帰、表示のスクロールや遅延/負荷を確認する。
+4. **原作研究は平行継続:** 1.5秒の仮行動テンポ、零式の妖気取得先/量、ノーモーション・2我慢回転の原作フレームを未測定のまま正規へ混入しない。初期閃光魂は無し。
 
 ## 5. 次フェーズへ進む条件と設計逸脱を防ぐルール
 - **原作再現 → 対人戦術 → オンラインの安定 → 学校Googleサイト**の順を守る。画面装飾、独自ATB、次の5行動予測（UI標準ではOFF）、閃光魂、育成、ランキング、リプレイ、観戦は**現在のスコープに入れない**。
