@@ -99,6 +99,7 @@ export function makeStageView(state,side=0){
     specialReady:readiness[unit.id]?.ready??false,
     front:front.has(unit.id),ko:unit.hp<=0,
     negative:(game.inspirits[unit.id]||[]).some(x=>x.sign==='negative'),
+    positive:(game.inspirits[unit.id]||[]).some(x=>x.sign==='positive'),
     slot:(idx-clock.offset+6)%6};
   });
   return {side:index,members,frontIds:clock.frontIds,benchIds:clock.benchIds,
@@ -305,12 +306,13 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const name=escapeHTML(unit.name);
    const actor=flash?.actor===id?' mb-acting':'';
    const impact=flash?.targets?.find(x=>x.id===id);
-   const target=impact?(impact.kind==='heal'?' mb-healed':impact.hit===false?' mb-missed':' mb-hit'):'';
+   const target=impact?(impact.kind==='heal'||impact.kind==='buff'?' mb-healed':impact.hit===false?' mb-missed':' mb-hit'):'';
    const pinned=!isOwn&&view.teams[activeSeat].pin===id?' mb-pinned':'';
    const candidate=!isOwn&&commandMode==='target'&&!unit.ko?' mb-choice-eligible':'';
    const tonedDown=!isOwn&&commandMode==='target'&&unit.ko?' mb-choice-ineligible':'';
    const ko=unit.ko?' mb-ko':'';
-   const status=unit.negative?'<span class="mb-condition-icon" aria-label="悪いとりつき">⚠</span>':'';
+   const status=(unit.positive?'<span class="mb-condition-icon" aria-label="良いとりつき">↑</span>':'')+
+    (unit.negative?'<span class="mb-condition-icon" aria-label="悪いとりつき">⚠</span>':'');
    return '<button type="button" data-unit="'+id+'" class="mb-fighter'+
     actor+target+pinned+ko+candidate+tonedDown+'" aria-label="'+name+
     (isOwn?' 味方前衛':' 敵前衛')+(candidate?' 選択可能':'')+'">'+
@@ -319,7 +321,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     '<span class="mb-bars"><i style="width:'+pct(unit.hp,unit.maxHp)+'%"></i></span>'+
     (isOwn?'<span class="mb-bars mb-soulbar"><i style="width:'+pct(unit.soul,unit.capacity)+'%"></i></span>':'')+
     '<small>'+unit.hp+'/'+unit.maxHp+'</small>'+status+'</span>'+
-    (impact&&impact.amount>0?
+    (impact&&(impact.kind==='buff'||impact.kind==='debuff')&&impact.hit!==false?
+     '<span class="mb-floating-number">'+(impact.kind==='buff'?'強化':'弱体化')+'</span>':
+     impact&&impact.amount>0?
      '<span class="mb-floating-number">'+(impact.kind==='heal'?'+':'−')+impact.amount+'</span>':
      impact&&impact.hit===false?'<span class="mb-floating-number">MISS</span>':'')+
     '</button>';
