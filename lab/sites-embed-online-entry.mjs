@@ -12,7 +12,6 @@ import {createMatchStage} from '../ui/match-stage.mjs';
 import {matchAckMessage} from '../ui/match-feedback.mjs';
 
 const config=__YW_ONLINE_CONFIG__;
-const emulator=__YW_EMULATOR_MODE__;
 const root=document.getElementById('yw-sites-online');
 if(!root)throw Error('online embed root not found');
 const $=selector=>root.querySelector(selector);
@@ -138,12 +137,12 @@ async function init(){
   say('接続設定が未登録です。オンライン通信を行わない確認用ビルドです。');
   return;
  }
- if(emulator&&!['localhost','127.0.0.1'].includes(location.hostname))
+ if(__YW_EMULATOR_MODE__&&!['localhost','127.0.0.1'].includes(location.hostname))
   throw Error('研究用エミュレーター版はlocalhost以外で起動禁止');
  if(!window.firebase?.auth||!window.firebase?.database)
   throw Error('Firebase SDKが読み込まれていません');
  const app=firebase.initializeApp(config);
- if(emulator){
+ if(__YW_EMULATOR_MODE__){
   app.auth().useEmulator('http://127.0.0.1:9099',{disableWarnings:true});
   app.database().useEmulator('127.0.0.1',9000);
  }
@@ -154,7 +153,7 @@ async function init(){
  room=createFirebaseRoomClient({database,uid:signedIn.user.uid,onError:err});
  $('.yw-online-make').disabled=false;
  $('.yw-online-join').disabled=false;
- say(emulator?'ローカルFirebase試験版：匿名認証OK。2席で部屋を作成してください。':
+ say(__YW_EMULATOR_MODE__?'ローカルFirebase試験版：匿名認証OK。2席で部屋を作成してください。':
   '匿名認証OK。2席の接続準備ができました。');
 }
 init().catch(err);
