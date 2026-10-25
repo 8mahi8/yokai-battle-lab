@@ -4,7 +4,9 @@
  * Dependency-injected Firebase compat Database (database.ref(path)) plus a
  * Firebase Anonymous Auth UID. This is NOT a server: a player/browser host can
  * cheat or disconnect. Real RTDB Rules must bind UID -> seat and protect writes.
- * Do not point at an existing game's Firebase instance without its own Rules.
+ * Sharing an existing Firebase PROJECT is fine (BRAWL and Shokoku do).
+ * Keep the yokaiRoomsV1 namespace and merge its own Auth/RTDB rules into
+ * existing rules without replacing or weakening the other games' paths.
  *
  * No Firebase URL or keys, imports, billing actions, or production mutations.
  */
