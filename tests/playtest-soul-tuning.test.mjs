@@ -33,7 +33,8 @@ test('damaging technique has its own provisional tuneable gain',()=>{
 });
 
 test('vulnerable target bonus applies only if attack lands',()=>{
- const g=createCombat({seed:53,teams:[party([100,0,0,0]),party([0,0,0,100])],playtestSoulTuning:true});
+ const g=createCombat({seed:53,teams:[party([100,0,0,0]),party([0,0,0,100])],
+   playtestSoulTuning:true,researchDamageModel:true,researchStatInspirits:true});
  for(const id of ['B1','B2','B3'])g.applyInspirit({id,sign:'negative',effect:'strength-down'});
  let found=false;
  for(let i=0;i<20;i++){
