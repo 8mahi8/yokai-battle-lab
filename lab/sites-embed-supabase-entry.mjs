@@ -6,7 +6,7 @@
  * No production Supabase project, credentials or Rules are bundled here.
  */
 import {createSupabaseRoomClient} from '../network/supabase-room.mjs';
-import {createSupabaseMatchHost,createSupabaseMatchGuest} from '../network/firebase-match.mjs';
+import {createFirebaseMatchHost,createFirebaseMatchGuest} from '../network/firebase-match.mjs';
 import {createMatchProtocol} from '../engine/match-protocol.mjs';
 import {createMatchStage} from '../ui/match-stage.mjs';
 import {matchAckMessage} from '../ui/match-feedback.mjs';
@@ -120,7 +120,7 @@ $('.yw-online-join').addEventListener('click',async()=>{
 $('.yw-online-start').addEventListener('click',async()=>{
  try{
   const begun=await room.startRoom();if(!begun.ok)throw Error(begun.reason);
-  match=createSupabaseMatchHost({roomClient:room,protocol:createMatchProtocol(),
+  match=createFirebaseMatchHost({roomClient:room,protocol:createMatchProtocol(),
    onSnapshot:s=>{stage.render(s);updatePresence();},onError:err});
   const initial=await match.start();
   if(!initial.ok)throw Error(initial.reason||initial.error||'snapshot_publish_failed');
@@ -133,7 +133,7 @@ $('.yw-online-connect').addEventListener('click',async()=>{
   if(!room)throw Error('部屋未参加');
    const phase=await room.readPhase();
   if(phase!=='playing')throw Error('ホストがまだ開始していません');
-  match=createSupabaseMatchGuest({roomClient:room,
+  match=createFirebaseMatchGuest({roomClient:room,
    onSnapshot:s=>{stage.render(s);updatePresence();},
    onAck:result=>{say(matchAckMessage(result));updatePresence();},
    onError:err});
