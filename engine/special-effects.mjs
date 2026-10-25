@@ -8,10 +8,27 @@
  * original per-move effects, elemental bonuses, skill stacks and animations.
  * "power", heal flat values and targets are test fixture values only.
  */
+// Preserve the original attack/heal research API. Status types reuse the
+// already-tested Inspirit ledger; they are role-inspired PLAYTEST effects,
+// not an assertion of exact Yo-kai 2 character move/level data.
+const SPECIAL_STATUS_EFFECTS=Object.freeze({
+ buff:Object.freeze(['strength-up']),
+ debuff:Object.freeze(['strength-down','defense-down','spirit-down','sleep'])
+});
 export function validateSpecialSpec(spec) {
  if(!spec||typeof spec!=='object'||Array.isArray(spec))throw new TypeError('research special config required');
- if(!['damage','heal'].includes(spec.kind))throw new RangeError('special.kind damage/heal required');
+ if(!['damage','heal','buff','debuff'].includes(spec.kind))throw new RangeError('unsupported special.kind');
  if(!['one','front'].includes(spec.scope))throw new RangeError('special.scope one/front required');
+ if(spec.kind==='buff'||spec.kind==='debuff'){
+  if(!SPECIAL_STATUS_EFFECTS[spec.kind].includes(spec.effect))
+   throw new RangeError('unsupported special status effect');
+  if(!Number.isInteger(spec.level)||spec.level<1||spec.level>4)
+   throw new RangeError('status level 1..4 required');
+  if(spec.scope!=='front')
+   throw new RangeError('status specials currently target the living front');
+  return Object.freeze({kind:spec.kind,scope:spec.scope,power:1,
+   damageKind:null,effect:spec.effect,level:spec.level});
+ }
  if(!Number.isInteger(spec.power)||spec.power<1||spec.power>999)throw new RangeError('special.power 1..999 required');
  if(spec.kind==='damage'&&!['attack','technique'].includes(spec.damageKind))throw new RangeError('damageKind attack/technique required');
  if(spec.kind==='heal'&&spec.scope==='one')throw new RangeError('heal-one not researched yet');
@@ -35,10 +52,18 @@ export function planResearchSpecial({spec,caster,allies,enemies,powerMultiplier=
  if(!Number.isFinite(powerMultiplier)||powerMultiplier<1||powerMultiplier>10)
   throw new RangeError('invalid G power multiplier');
  const power=rule.power*powerMultiplier;
- const living=rule.kind==='heal'?allies.filter(x=>x.hp>0):enemies.filter(x=>x.hp>0);
+ const friendly=rule.kind==='heal'||rule.kind==='buff';
+ const living=(friendly?allies:enemies).filter(x=>x.hp>0);
  const targets=rule.scope==='front'?living:
   [(living.find(x=>x.id===pinnedId)||living[0])].filter(Boolean);
  return targets.map(target=>{
+  if(rule.kind==='buff'||rule.kind==='debuff'){
+   return {targetId:target.id,kind:rule.kind,amount:0,deltaHp:0,
+    hpBefore:target.hp,hpAfter:target.hp,predictedKO:false,
+    statusEffect:rule.effect,statusSign:rule.kind==='buff'?'positive':'negative',
+    statusLevel:Math.min(4,Math.max(1,Math.floor(rule.level*powerMultiplier))),
+    model:'status-playtest-fixture'};
+  }
   let amount;
   if(rule.kind==='heal') {
    // Placeholder flat healing; an original healing equation is NOT established.
