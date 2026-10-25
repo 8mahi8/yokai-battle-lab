@@ -6,7 +6,17 @@ export function latestBattleCue(events){
  if(!Array.isArray(events))throw new TypeError('battle events array required');
  for(let i=events.length-1;i>=0;i--){
   const event=events[i];
-  if(!event||!['action','special'].includes(event.type))continue;
+  if(!event||!['action','special','poke'].includes(event.type))continue;
+  if(event.type==='poke'){
+   const reward=event.reward||{};
+   const kind=reward.kind||'unresolved';
+   const damaging=kind==='playtest-damage'||kind==='playtest-heavy-hit';
+   const targets=damaging?[{id:event.targetId,kind:'damage',
+     amount:reward.amount??0,hit:true}]:[];
+   return {key:'poke:'+i+':'+JSON.stringify(event),type:'poke',
+    kind:'poke',actor:null,side:event.side,mode:null,rewardKind:kind,
+    targets,target:event.targetId,amount:reward.amount??0};
+  }
   if(event.type==='special'){
    const targets=Array.isArray(event.impacts)?event.impacts.filter(x=>x&&
     typeof x.targetId==='string'&&Number.isFinite(x.amount)).map(x=>({
