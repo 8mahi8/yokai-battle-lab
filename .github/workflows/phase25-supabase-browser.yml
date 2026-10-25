@@ -5,6 +5,9 @@ on:
       - feat/phase1-action-circle-lab-20261023
     paths:
       - 'engine/combat.mjs'
+      - 'ui/battle-vfx.mjs'
+      - 'ui/match-stage.mjs'
+      - 'engine/special-effects.mjs'
       - 'engine/match-protocol.mjs'
       - 'engine/playtest-soul-tuning.mjs'
       - 'lab/sites-embed-supabase-entry.mjs'
