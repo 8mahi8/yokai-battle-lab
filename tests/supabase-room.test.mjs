@@ -16,7 +16,7 @@ const buildFake=()=>{
     for(const [op,key,value] of q.conditions){
      if(op==='eq')r=r.filter(x=>x[key]===value);
      if(op==='gt')r=r.filter(x=>x[key]>value);
-     if(op==='is')r=r.filter(x=>x[key]===value);
+     if(op==='is')r=r.filter(x=>(x[key]??null)===value);
      if(op==='not')r=r.filter(x=>x[key]!==value);
     }
     if(q.orderKey)r.sort((a,b)=>a[q.orderKey]-b[q.orderKey]);
@@ -40,7 +40,7 @@ const buildFake=()=>{
       // UPDATE .. WHERE returns the updated row even if the changed column
       // no longer matches the original predicate (e.g. guest_uid IS NULL).
       const matches=rows[table].filter(row=>q.conditions.every(([op,key,v])=>
-       op==='eq'?row[key]===v:op==='is'?row[key]===v:op==='not'?row[key]!==v:row[key]>v));
+       op==='eq'?row[key]===v:op==='is'?(row[key]??null)===v:op==='not'?row[key]!==v:row[key]>v));
       if(matches.length===0)return Promise.resolve({data:null,error:null});
       Object.assign(matches[0],q.set);
       const allowed=q.fields==='*'?Object.keys(matches[0]):q.fields.split(',');
