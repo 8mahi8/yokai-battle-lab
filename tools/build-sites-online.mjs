@@ -83,9 +83,10 @@ const fragment=['<!-- Phase24B: '+mode+'; iframe/Safari/real cloud not yet prove
 if((fragment.match(/<style\b/g)||[]).length!==1)throw Error('Style wrapper failed');
 if(!config&&(/firebase-app-compat\.js|demo-yokai-lab|firebaseio\.com|<script[^>]+src/i.test(fragment)))
  throw Error('Setup build must never contact Firebase');
-if(mode==='cloud-configured-not-deployed'&&
- /demo-yokai-lab|127\.0\.0\.1:9000|127\.0\.0\.1:9099/.test(fragment))
- throw Error('Cloud build contains emulator marker');
+if(mode==='cloud-configured-not-deployed'){
+ const marker=fragment.match(/demo-yokai-lab|127\.0\.0\.1:9000|127\.0\.0\.1:9099/);
+ if(marker)throw Error('Cloud build contains emulator marker: '+marker[0]);
+}
 // The minifier escapes Japanese message characters into JS unicode escapes.
 // Verify the generated hostname gate, not its localized error text.
 if(emulator&&(!fragment.includes('location.hostname')||
