@@ -15,9 +15,9 @@ export const RENTAL_SKILLS=Object.freeze({
  guardBreak:'ガードくずし型'
 });
 export const SKILL_TRIAL=Object.freeze({
- momentumStages:2,          // sourced: STR and SPR +2 stages (×1.2)
- momentumOwnerTurns:5,      // sourced: for five subsequent owner actions
- careMaxHpFraction:.02,    // sourced: 2% after each adjacent owner's action
+ momentumStages:2,          // YW1 detailed reference, YW2 exact stage count UNVERIFIED
+ momentumOwnerTurns:5,      // YW1 detailed reference, YW2 exact lifetime UNVERIFIED
+ careMaxHpFraction:.02,    // YW1 detailed reference; exact YW2 percentage UNVERIFIED
  sharpCritBonusUnits:5     // PROVISIONAL: exact skill crit-roll bonus unverified
 });
 export function validateRentalSkill(skill){
@@ -36,8 +36,8 @@ export function skillMomentumStage(boost){
 }
 /**
  * Original-style six-medal circular adjacency. An adjacent skill owner may
- * be in reserve; no passive healing from KO owners. Only when the affected
- * actor acts, and only to that living actor, never to everyone each turn.
+ * be in reserve; no passive healing from KO owners. This computes one
+ * recipient's share at a given action boundary (NOT their own turn only).
  */
 export function careOnOwnerTurn({actor,team}={}){
  if(!actor||!Array.isArray(team)||team.length!==6||
@@ -79,4 +79,23 @@ export function resolveLastStand({skill,enabled=true,spent=false,hp,amount}={}){
  return Object.freeze({
   hpAfter:remaining,amount:hp-remaining,activated:activate
  });
+}
+
+
+/**
+ * YW2 text says "once at the end of each turn" / "after each action".
+ * Recompute for every living adjacent recipient at EVERY action boundary
+ * of either team. The 2% value is a cross-version TRIAL, not confirmed YW2.
+ * A single dead skill provider is inactive, even from the rear wheel.
+ */
+export function careAtActionBoundary({teams}={}){
+ if(!Array.isArray(teams)||teams.length!==2)
+  throw new TypeError('two six-member teams required');
+ const result=[];
+ for(const team of teams){
+  if(!Array.isArray(team)||team.length!==6)
+   throw new TypeError('six-member team required');
+  for(const actor of team)result.push(...careOnOwnerTurn({actor,team}));
+ }
+ return result;
 }
