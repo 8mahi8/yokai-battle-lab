@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {RENTAL_SQUAD} from '../engine/combat.mjs';
 import {createMatchProtocol,replayMatchJournal} from '../engine/match-protocol.mjs';
-import {makeStageView} from '../ui/match-stage.mjs';
+import {makeStageView,projectMatchResult} from '../ui/match-stage.mjs';
 import {createBattle} from '../engine/phase1.mjs';
 
 /**
@@ -73,6 +73,9 @@ function matchForWinner(winningSide,{rotateLoser=false}={}){
   const view=makeStageView(finish,side);
   assert.equal(view.winner,winningSide,'both viewers must see identical winner');
   assert.equal(view.teams[side].members.length,6);
+  const result=projectMatchResult(view.winner,side);
+  assert.equal(result.didWin,side===winningSide);
+  assert.equal(result.title,side===winningSide?'勝利！':'敗北…');
  }
  const done=m.advanceAuto();
  assert.equal(done.ok,true);
