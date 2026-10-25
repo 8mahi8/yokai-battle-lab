@@ -28,7 +28,7 @@ if(sourcePaths.length<5||sourcePaths.some(x=>/network[\\/]|firebase|firebase-mat
 if(built.outputFiles.length!==1)throw Error('Expected exactly one JS bundle');
 let js=built.outputFiles[0].text;
 // Prevent HTML parsers from truncating the inlined script.
-js=js.replace(/<\\/script/gi,'<\\\\/script').replace(/<!--/g,'<\\!--');
+js=js.replace(/<\/script/gi,'<\\/script').replace(/<!--/g,'<\\!--');
 const id='yw-sites-local';
 const shell=`<section id="${id}" aria-label="輪戦 オフライン一台二席体験版">
 <div class="yw-sites-trial-bar">
