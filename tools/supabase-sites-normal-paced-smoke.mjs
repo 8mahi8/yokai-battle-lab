@@ -27,11 +27,11 @@ try{
   const child=spawn(browser,['--headless=new','--no-sandbox','--disable-gpu',
    '--disable-dev-shm-usage','--disable-extensions','--no-first-run',
    '--user-data-dir='+path.join(tmp,'profile-'+trial),
-   '--window-size=1160,900','--virtual-time-budget=190000','--dump-dom',
+   '--window-size=1160,900','--virtual-time-budget=130000','--dump-dom',
    'http://127.0.0.1:'+server.address().port+'/qa'],
    {stdio:['ignore','pipe','pipe']});
   let output='',errors='',timedOut=false;
-  const timer=setTimeout(()=>{timedOut=true;child.kill('SIGKILL')},210000);
+  const timer=setTimeout(()=>{timedOut=true;child.kill('SIGKILL')},165000);
   child.stdout.on('data',x=>output+=String(x).slice(0,600000));
   child.stderr.on('data',x=>errors+=String(x).slice(0,8000));
   const exit=await new Promise(done=>child.on('close',done));
