@@ -36,11 +36,16 @@ try{
   child.stderr.on('data',x=>errors+=String(x).slice(0,8000));
   const exit=await new Promise(done=>child.on('close',done));
   clearTimeout(timer);
-  const sentinel='SITES-SUPABASE-CHROME-PASS';
-  if(!timedOut&&exit===0&&output.includes(sentinel)){console.log(output.match(/SITES-SUPABASE-CHROME-PASS[^<]*/)?.[0]||sentinel);passed=true;break;}
+  // Chrome --dump-dom embeds our JavaScript source including PASS literal.
+  // Reading stdout.includes('PASS') is a FALSE POSITIVE; inspect the rendered
+  // result element's textContent instead. Verify an actual six-digit room.
+  const rendered=output.match(/<strong id="result">([^<]*)<\/strong>/)?.[1]||'missing-result-node';
+  if(!timedOut&&exit===0&&/^SITES-SUPABASE-CHROME-PASS room=\\d{6}\\b/.test(rendered)){
+   console.log(rendered);passed=true;break;
+  }
   console.warn('Supabase Sites iframe trial '+trial+' failed: '+
-   (output.match(/SITES-SUPABASE-FAIL[^<]*/)?.[0]||
-    'timeout='+timedOut+' exit='+exit+' '+output.slice(-600)+' '+errors.slice(-250)));
+   'rendered='+rendered.slice(0,1200)+' timeout='+timedOut+
+   ' exit='+exit+' stderr='+errors.slice(-300));
  }
  if(!passed)throw Error('Real Supabase Chromium inline Sites test failed');
 }finally{await new Promise(ok=>server.close(ok));rmSync(tmp,{recursive:true,force:true});}
