@@ -28,7 +28,7 @@ try{
    '--disable-dev-shm-usage','--disable-extensions','--no-first-run',
    '--user-data-dir='+path.join(tmp,'profile-'+trial),
    '--window-size=1160,900','--virtual-time-budget=80000','--dump-dom',
-   'http://127.0.0.1:'+server.address().port+'/qa'+],
+   'http://127.0.0.1:'+server.address().port+'/qa'],
    {stdio:['ignore','pipe','pipe']});
   let output='',errors='',timedOut=false;
   const timer=setTimeout(()=>{timedOut=true;child.kill('SIGKILL')},110000);
