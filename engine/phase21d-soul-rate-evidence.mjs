@@ -128,3 +128,63 @@ export function compareSameCapacityRateIntervals(){
   }
   return output;
 }
+
+/**
+ * Phase21D-B3: the SAME RC source reports four named/special technique rows
+ * *in addition* to the eight-grade aggregate table above. Do not overwrite
+ * or quietly recompute the original 24 observations.
+ * https://note.com/ricosama0726/n/n14710bbe446c
+ * section "隣接妖怪妖気回復魂について" (2026-10-25 source review).
+ *
+ * The article prints question marks next to max values for the last THREE
+ * examples. Their gauges are estimates, not exact published capacities.
+ * Index 0/1/2 of turnsToFull = zero/one/two adjacent Enra Souls.
+ */
+const namedRows=[
+  ['jibanyan-hyakuretsu',75,null,[15,13,10]],
+  ['nyoe',null,100,[20,17,13]],
+  ['nya-in',null,100,[20,17,13]],
+  ['komanyachi',null,115,[23,16,13]]
+];
+export const SOUL_RECHARGE_NAMED_SOURCE_CASES=Object.freeze(namedRows.map(
+  ([kind,confirmedCapacity,questionedCapacity,turnsToFull])=>Object.freeze({
+    kind,confirmedCapacity,questionedCapacity,
+    turnsToFull:Object.freeze(turnsToFull),
+    evidenceTier:'player-reported-not-ROM-verified'
+  })
+));
+
+/** Other video descriptions in the same original source report one-soul
+ * per-turn increments for named characters. These are PLAYER interpretations
+ * of gauge changes, not calibrated raw 3DS point logs. Do not infer their
+ * exact maximum capacity or fit a global formula from these statements.
+ */
+export const SOUL_RECHARGE_INCREMENT_CLAIMS=Object.freeze([
+  Object.freeze({subject:'robonyan',adjacentRecoverySouls:1,
+    reportedAdditionalPerOwnerTurn:3,evidenceTier:'player-video-description'}),
+  Object.freeze({subject:'jibanyan-hyakuretsu',adjacentRecoverySouls:1,
+    reportedAdditionalPerOwnerTurn:2,evidenceTier:'player-video-description'})
+]);
+
+/** Compare only cases whose SOURCE capacity is unqualified. Rows with a
+ * questioned 'max100?' or 'max115?' MUST remain unpredicted until a source
+ * verifies the full gauge. Capacity guesses are not hypotheses to auto-fit.
+ */
+export function compareNamedRechargeEvidence(){
+  return SOUL_RECHARGE_NAMED_SOURCE_CASES.map(row=>{
+    const comparisons=row.turnsToFull.map((observedActions,adjacentRecoverySouls)=>{
+      const predicted=row.confirmedCapacity===null?null:predictResearchRecharge({
+        capacity:row.confirmedCapacity,adjacentRecoverySouls
+      });
+      return Object.freeze({adjacentRecoverySouls,observedActions,
+        predictedActions:predicted?.actionsToFull??null,
+        agrees:predicted===null?null:predicted.actionsToFull===observedActions});
+    });
+    return Object.freeze({kind:row.kind,capacity:row.confirmedCapacity,
+      questionedCapacity:row.questionedCapacity,
+      comparisons:Object.freeze(comparisons),
+      originalParityVerified:false,
+      unresolved:row.confirmedCapacity===null?'questioned-gauge-capacity':'mechanics-not-independently-reproduced'
+    });
+  });
+}
