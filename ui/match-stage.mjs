@@ -481,7 +481,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   $('mb-active-label').textContent='PLAYER '+(activeSeat?'B':'A')+' の操作';
   const selected=own.members.find(x=>x.id===selection);
   $('mb-selected').textContent=selected?'選択: '+selected.name+(selected.front?' / 前衛':' / 後衛')+
-    (selected.skill?' / スキル '+({momentum:'撃破時強化',care:'隣接回復',sharpCrit:'会心率UP'}[selected.skill]||'未確認'):'')+
+    (selected.skill?' / スキル '+({momentum:'撃破時強化',care:'隣接回復',sharpCrit:'会心率UP',critImmune:'会心無効',lastStand:'一度HP1で耐える',guardBreak:'ガード貫通'}[selected.skill]||'未確認'):'')+
     (selected.skillBoost?' / 強化残'+selected.skillBoost+'行動':''):'妖怪を選択';
   $('mb-watch').textContent=own.mode==='zero'?'標準ウォッチへ':'零式へ切替';
   $('mb-charge').querySelector('span').textContent=own.mode==='zero'?'Gわざ':'わざ';
