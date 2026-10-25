@@ -41,3 +41,8 @@
 - `docs/HANDOFF_LATEST_20261024.md`、`docs/DEVELOPMENT_STATUS_20261023.md`、`docs/PHASE25_SUPABASE_HANDOFF_20261025.md`等の本文内には、当時の「次はPhase X」「未実装」という言葉が残る。日付を見ず最新のタスクとして再投入しない。
 - `main/README.md`由来のキャラ研究デモと、Phase14以降の本体戦闘を混同しない。
 - ブラウザ/NodeテストのPASS、原作再現のPASS、旧iPad実機のPASSは相互に代用できない。
+
+## 2026-10-25研究進捗：Phase21D-B3（追加事実）
+- [特殊技4例の原典再監査](./PHASE21D_B3_NAMED_SPECIAL_RECHARGE_20261025.md)を追加。既存`engine/phase21d-soul-rate-evidence.mjs`に4名の条件（うち3名の容量は「?」）と独立動画解説の追加回復観測2件を保存。**新しい別エンジンは作成せず**既存比較コードを拡張した。
+- [Node503/503](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40201933897) PASS。オンライン正式`createMatchProtocol()`の妖気計算・通常戦闘・学校サイトは変更しない。
+- **残る原作証拠**：攻撃/妖術後の妖気増分、つつくの確率・受取先・量、3名の「max?」の実上限、既存130の13vs14差。動画や実機の独立観測がなければ本番の仮数値を増やさない。
