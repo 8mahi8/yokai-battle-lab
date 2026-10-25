@@ -8,10 +8,12 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 
 > **Phase21D-B3 妖気研究の最新差分（2026-10-25）**：[名前付き特殊技4件・元資料の不確実性・新6テスト](./PHASE21D_B3_NAMED_SPECIAL_RECHARGE_20261025.md)。既存の24観測値・Soul回復の通常ホスト規則は維持。**Node503/503 PASS**（[実行ログ](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40201933897)）。予測に必要な上限値が原文で「?」の3体は未確認のまま。第1段階の妖気回復・零式つつくの定量原作一致は引き続き未完成。今回の変更は研究モジュール・テスト・資料だけで、Supabase/Gサイト/`main`に変更なし。\n\n> **原作妖気研究 Phase21D-B4（2026-10-25）**: [原作資料・攻撃と妖術の妖気比較・残された実測ゲート](./PHASE21D_B4_ATTACK_SOUL_BONUS_AUDIT_20261025.md)。攻略資料の「サボり/悪いとりつき中の相手への攻撃で妖気増加」は定性的情報のみ。既存`engine/phase21d-soul-observation.mjs`に**同一条件2観測の比較器**を追加。新10テストを含め[Node513/513 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40202609186)、[Chromiumステージ・実指操作PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40202609177)。原作の攻撃/妖術の回復ポイントは引き続き未確定。**正規オンラインのSoul計算・Supabase設定/DB・Googleサイト版・`main`は変更しない。**
 
+> **【2026-10-25 ユーザー指示／オンライン復旧スコープ確定】** 遊ぶ相手は友達同士のみ。**ページ再読み込み・ブラウザ再起動・タブ閉鎖後に、以前の対戦やルームへ復帰する機能は不要**。ログイン再利用/ルーム再発見/セッション永続化/完全復帰の実装・QAを新たなタスクにしない。再読み込みしたら新規ルーム・新しい対戦を始める運用でよい。一方、**同じページを開いて対戦している最中**の軽い通信遅延・短い切断による画面停止、入力重複、対戦同期の崩れは品質問題として改善する。既存の最小限の同期保護は削らない。今後の「切断復帰」の記述はこの範囲に限って解釈する。
+
 **必ずこのファイルを最新の一つの状態表として扱う。** 他の `PHASE*.md` / `DEVELOPMENT_STATUS` は当時の作業証拠と歴史であり、本文に「LATEST」とあってもこの現状を上書きしない。
 
 ## 0. 絶対仕様（ゴールは一つ）
-学校の古いiPad Safariで友達と遊ぶ、**妖怪ウォッチ2の対人戦闘ルールをまず忠実に再現した**完全無料のブラウザ1vs1。既存戦術が成立することを原作資料・実際の検証と照合した後だけ独自改善する。初期は双方同じオリジナルレンタル6体、**閃光魂なし**。本家に寄せた**上3vs3戦場／下6体メダルサークル＋4コマンド**構成。ゲームの単一HTML/CSS/JSをGoogle Sitesの「コードを埋め込む」へ**直接貼る**（GitHub Pages URLのiframeではない）。`main`・既存Googleサイト版・本番Firebaseは勝手に変更しない。完全なブラウザ再起動後の自動復元はユーザー不要の判断。
+学校の古いiPad Safariで友達と遊ぶ、**妖怪ウォッチ2の対人戦闘ルールをまず忠実に再現した**完全無料のブラウザ1vs1。既存戦術が成立することを原作資料・実際の検証と照合した後だけ独自改善する。初期は双方同じオリジナルレンタル6体、**閃光魂なし**。本家に寄せた**上3vs3戦場／下6体メダルサークル＋4コマンド**構成。ゲームの単一HTML/CSS/JSをGoogle Sitesの「コードを埋め込む」へ**直接貼る**（GitHub Pages URLのiframeではない）。`main`・既存Googleサイト版・本番Firebaseは勝手に変更しない。**再読み込み・ブラウザ再起動後の対戦復帰は不要（2026-10-25確認）**。
 
 ## 1. システム全体の配置（縦につながる）
 ```text
@@ -39,7 +41,7 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 | 22 | 原作PvP深層戦術 | Phase5ノーモーション・回転・カウンターの独立研究。**22A:** 仮妖気回収による研究用連射。**22B:** 正規ホスト4種チャージ/G技。**22C:** ゲストACKとChrome Firebaseローカル2席6タップの同期PASS。**22D-A/B:** 2我慢のcut-in回転例外は原作ロック時刻を未確定とし仮HPを止めた。cut-in中の前衛候補と仮想時刻64記録、3回以上回転との二重原因保持、2015年の両視点ノーモーション実験候補映像を特定。Node463/463、Chromeステージ・Firebase Emulator 2席PASS | **22D-C:** 2015年両視点映像から同期したフレーム時刻が実測できるときにだけ反映。2我慢例外の回転中ロック時刻、3回以上回転と追加効果は未定。Phase23/24旧iPad Safari実機・Google Sites直接コード貼り付け | **定性資料・研究診断・ブラウザ通信QA済／3DS実フレームと本番公開未検証** |
 | 23 | 本番向け1vs1同期 | Firebase Auth+RTDB **ローカルエミュレーター2Chrome**、33権限チェック・必殺6タップACK、23Aのオフライン古い操作FIFO破棄と同一番号再送、23Bの権威dirty再publish・120行動書込集約・91入力順序検証。**23C:** 実Chrome2席で研究ホストアダプタに一度だけpublish故障注入。ゲストの本物の輪操作はホスト内部1回だけ実行され、未配信間はゲスト画面が進まず、同番号再送でも二重回転せず、ホスト再配信ボタンで同じrevisionを公開するとゲストの前衛・ACKが追いつく。Node469/469、Chrome2席Firebase QA PASS | **Phase24-A:** Google Sites HTML/CSS/JSを直接貼るためのバンドルとSafari互換ゲート。実クラウド/学校2端末での長時間ネットワーク・負荷検証は未実施。22D原作フレーム調査は別途継続 | **研究アダプタ故障注入→実Chrome2席ACK復旧 PASS／物理iPad・本番Firebaseは未検証** |
 | 24 | 学校iPad・Google Sites直接埋込配布 | **24A/B:** CSS/JSとホスト/ゲストRTDB通信を直貼りHTMLへバンドル、Chrome2iframe+Firebase Auth/RTDB Emulatorで実2席ルーム/輪/チャージ/ACK/断線復帰PASS。**24C1/C2:** ホストのみ自動行動ON（1500ms仮間隔、断線/画面非表示/未publish時停止）、Chrome iframeの横幅1024/820/568/390pxで上下画面・実タップヒットPASS、旧Safari最低機能を開始前に検査。**24C3:** 既存`mygame-df915`を共用、`/yokaiRoomsV1`のみ別ルート・匿名Authはプレイヤーに操作不要のまま採用。合成共有Rulesの16条件をFirebase EmulatorでPASS。**24C4:** Web config/現行Rules/匿名Authオーナー申告を無通信で監査するツール新設、広い親RTDB権限や別プロジェクト設定をブロック、APIキー・Rulesをログへ出さず、共有Firebase設定の誤コミットを除外。Node491/491 PASS | **次:** 既存Firebase ConsoleでWeb config/匿名Authの有無と**現行RTDB Rules**を読み取り確認、出力した案をローカルエミュレーターで事前検証（実Rulesのデプロイは別承認）。実Google Sites編集/学校iPad Safari 2台で実験。原作未確定テンポ/技効果は別途研究 | **ローカルの既存プロジェクト照合器・Chrome2席QAはPASS／本番Firebase・実Google Sites・旧iPad Safariは未検証** |
-| 25 | Supabase本命・実クラウド1vs1基盤 | 開発ブランチの戦闘engineを再利用、4つの`yw_*`表/RLS/host guest分離、約175KBの直貼りHTML生成。**Node497/497、Chrome研究UI・本番Supabase 2 iframe E2EすべてPASS**。過去の匿名Auth OFF障害は解消を観測 | **残:** 実Google Sites・学校旧iPad Safari2席・長時間切断復帰・原作3DS技値/妖気/フレーム照合。クラウドQAの残存テスト部屋は勝手に消さず後片付け設計。Advisor5 WARNは匿名運用を考慮して別途レビュー | **ブラウザクラウドE2EはPASS／学校実機・原作一致は未検証** |
+| 25 | Supabase本命・実クラウド1vs1基盤 | 開発ブランチの戦闘engineを再利用、4つの`yw_*`表/RLS/host guest分離、約175KBの直貼りHTML生成。**Node497/497、Chrome研究UI・本番Supabase 2 iframe E2EすべてPASS**。過去の匿名Auth OFF障害は解消を観測 | **残:** 実Google Sites・学校旧iPad Safari2席・対戦中の通信安定性・原作3DS技値/妖気/フレーム照合。クラウドQAの残存テスト部屋は勝手に消さず後片付け設計。Advisor5 WARNは匿名運用を考慮して別途レビュー | **ブラウザクラウドE2EはPASS／学校実機・原作一致は未検証** |
 
 ## 3. 今回した作業（Phase25再監査・2026-10-25）
 
@@ -52,7 +54,7 @@ Development branch: `feat/phase1-action-circle-lab-20261023`
 ## 4. 次にする作業（Phase25以降）
 
 1. **担当AIの仕事:** 原作再現の未確定領域（ノーモーション必殺、妖気量・受取先、同値行動順、カウンター/2我慢、技別数値）を既存資料と外部根拠から再検証。新機能の前に既存研究を検索してから原作との比較テストを増やす。
-2. **担当AIの仕事:** 実Supabase 2 iframe E2E成功を基準に、通信切断/復帰・長時間操作・試験部屋クリーンアップと旧Safari最低機能を検証する。現DBのテスト行を無確認で削除しない。最新Advisor警告を匿名サインイン前提とパスワード認証部分に分類して扱う。
+2. **担当AIの仕事:** 実Supabase 2 iframe E2E成功を基準に、同一ページ内の短い通信中断時の同期・長時間操作・試験部屋クリーンアップと旧Safari最低機能を検証する。現DBのテスト行を無確認で削除しない。最新Advisor警告を匿名サインイン前提とパスワード認証部分に分類して扱う。
 3. **本人の出番（後段）:** 学校の旧iPad実機で試せるだけのHTML/手順/ブラウザQAを担当AI側で整えてから、Google Sites「コードを埋め込む」へ全文を貼り、友達と旧Safari2席の操作・同期・ラグを確認してもらう。**今は本人にAuth設定操作を頼まない。**
 4. **現在の変更先:** GitHub開発ブランチの引き継ぎ文書のみ。`main`・Googleサイト版・既存Firebase・Supabase DB・他のゲームは変更しない。
 
