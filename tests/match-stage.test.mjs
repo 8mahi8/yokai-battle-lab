@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMatchProtocol} from '../engine/match-protocol.mjs';
-import {makeStageView,matchSelectionHints} from '../ui/match-stage.mjs';
+import {makeStageView,matchSelectionHints,projectMatchResult} from '../ui/match-stage.mjs';
 
 test('Phase14 stage reads original two 6-member teams and front/bench wheel',()=>{
  const protocol=createMatchProtocol({battleOptions:{seed:212}});
@@ -77,4 +77,20 @@ test('target highlighting follows authoritative pin and watch from either seat',
  assert.deepEqual(matchSelectionHints(b,'target').enemy,['A1','A2','A3']);
  assert.equal(match.dispatch(0,2,{type:'watch',mode:'zero'}).accepted,true);
  assert.match(matchSelectionHints(makeStageView(match.snapshot(),0),'target').message,/つつく/);
+});
+
+test('authoritative match winner projects opposite win/loss for both seats',()=>{
+ assert.equal(projectMatchResult(null,0),null);
+ assert.equal(projectMatchResult(null,1),null);
+ const a=projectMatchResult(0,0),b=projectMatchResult(0,1);
+ assert.equal(a.didWin,true);assert.equal(a.title,'勝利！');
+ assert.equal(b.didWin,false);assert.equal(b.title,'敗北…');
+ assert.equal(a.winnerLabel,b.winnerLabel);
+ assert.equal(a.winnerLabel,'PLAYER A の勝ち');
+ assert.equal(projectMatchResult(1,0).didWin,false);
+ assert.equal(projectMatchResult(1,1).didWin,true);
+ assert.equal(projectMatchResult(1,1).winnerLabel,'PLAYER B の勝ち');
+ for(const invalid of [undefined,-1,2,'0',NaN])
+  assert.throws(()=>projectMatchResult(invalid,0),/winner/);
+ assert.throws(()=>projectMatchResult(0,2),/seat/);
 });
