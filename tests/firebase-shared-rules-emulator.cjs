@@ -29,7 +29,9 @@ const {initializeTestEnvironment,assertSucceeds,assertFails}=
  const b=env.authenticatedContext('guest').database();
  const c=env.authenticatedContext('intruder').database();
  const anon=env.unauthenticatedContext().database();
- const base='yokaiRoomsV1/654321',session='a'.repeat(32);
+ // Separate room number from the preceding emulator suite, which already
+ // creates room 654321 on this shared local emulator instance.
+ const base='yokaiRoomsV1/876543',session='a'.repeat(32);
  const room={version:13,phase:'lobby',hostUid:'host',session,createdAt:Date.now()};
  try{
   await allow('BRAWL legacy read/write unaffected',
