@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {RENTAL_SQUAD} from '../engine/combat.mjs';
 import {createMatchProtocol,replayMatchJournal} from '../engine/match-protocol.mjs';
 import {makeStageView} from '../ui/match-stage.mjs';
+import {createBattle} from '../engine/phase1.mjs';
 
 /**
  * This is a fast full-match regression, NOT a statement about original stats.
@@ -96,4 +97,20 @@ test('full 6v6 match works symmetrically when team B wins',()=>{
 test('manual wheel input with a real host time cannot strand KO reserves forever',()=>{
  const r=matchForWinner(0,{rotateLoser:true});
  assert.ok(r.autoRotations>0);
+});
+
+
+test('mandatory KO swap does not reset the user rotation clock or permit manual spam',()=>{
+ const wheel=createBattle({rotationCooldownMs:3000});
+ assert.equal(wheel.rotate(0,1,10000).ok,true);
+ assert.equal(wheel.rotate(0,-1,11000).reason,'cooldown',
+  'voluntary wheels still obey 3 seconds');
+ const required=wheel.rotate(0,1,0,{automaticKo:true});
+ assert.equal(required.ok,true);
+ assert.equal(required.automaticKo,true);
+ assert.equal(wheel.rotate(0,-1,11000).reason,'cooldown',
+  'compulsory replacement must not overwrite previous real host time');
+ assert.equal(wheel.rotate(0,-1,13000).ok,true,
+  'player can rotate again once their normal cooldown expires');
+ assert.throws(()=>wheel.rotate(0,1,15000,{automaticKo:'yes'}),/boolean/);
 });
