@@ -17,7 +17,7 @@ const SPECIAL_STATUS_EFFECTS=Object.freeze({
 });
 export function validateSpecialSpec(spec) {
  if(!spec||typeof spec!=='object'||Array.isArray(spec))throw new TypeError('research special config required');
- if(!['damage','heal','buff','debuff'].includes(spec.kind))throw new RangeError('unsupported special.kind');
+ if(!['damage','heal','buff','debuff','revive','drain','damage-status'].includes(spec.kind))throw new RangeError('unsupported special.kind');
  if(!['one','front'].includes(spec.scope))throw new RangeError('special.scope one/front required');
  if(spec.kind==='buff'||spec.kind==='debuff'){
   if(!SPECIAL_STATUS_EFFECTS[spec.kind].includes(spec.effect))
@@ -29,11 +29,23 @@ export function validateSpecialSpec(spec) {
   return Object.freeze({kind:spec.kind,scope:spec.scope,power:1,
    damageKind:null,effect:spec.effect,level:spec.level});
  }
- if(!Number.isInteger(spec.power)||spec.power<1||spec.power>999)throw new RangeError('special.power 1..999 required');
- if(spec.kind==='damage'&&!['attack','technique'].includes(spec.damageKind))throw new RangeError('damageKind attack/technique required');
+ if(!Number.isInteger(spec.power)||spec.power<1||spec.power>999)
+  throw new RangeError('special.power 1..999 required');
+ if(['damage','drain','damage-status'].includes(spec.kind)&&
+  !['attack','technique'].includes(spec.damageKind))
+  throw new RangeError('damageKind attack/technique required');
  if(spec.kind==='heal'&&spec.scope==='one')throw new RangeError('heal-one not researched yet');
+ if(spec.kind==='revive'&&spec.scope!=='one')
+  throw new RangeError('revive-one only until original targeting is verified');
+ if(spec.kind==='damage-status'){
+  if(!SPECIAL_STATUS_EFFECTS.debuff.includes(spec.effect))
+   throw new RangeError('unsupported damage-status effect');
+  if(!Number.isInteger(spec.level)||spec.level<1||spec.level>4)
+   throw new RangeError('damage-status level 1..4 required');
+ }
  return Object.freeze({kind:spec.kind,scope:spec.scope,power:spec.power,
-  damageKind:spec.kind==='damage'?spec.damageKind:null});
+  damageKind:['damage','drain','damage-status'].includes(spec.kind)?spec.damageKind:null,
+  ...(spec.kind==='damage-status'?{effect:spec.effect,level:spec.level}:{})});
 }
 function checkCombatant(member) {
  if(!member||!Number.isInteger(member.hp)||!Number.isInteger(member.maxHp)||
@@ -52,11 +64,21 @@ export function planResearchSpecial({spec,caster,allies,enemies,powerMultiplier=
  if(!Number.isFinite(powerMultiplier)||powerMultiplier<1||powerMultiplier>10)
   throw new RangeError('invalid G power multiplier');
  const power=rule.power*powerMultiplier;
+ // A revived ally can be a KO reserve. The caller supplies all six allies
+ // for revive, not only the current living front; a single KO is restored.
+ if(rule.kind==='revive'){
+  const target=allies.find(x=>x.hp===0);
+  if(!target)return [];
+  const amount=Math.min(target.maxHp,Math.floor(power));
+  return [{targetId:target.id,kind:'revive',amount,deltaHp:amount,
+   hpBefore:0,hpAfter:amount,predictedKO:false,revived:true,
+   model:'revival-playtest-fixture'}];
+ }
  const friendly=rule.kind==='heal'||rule.kind==='buff';
  const living=(friendly?allies:enemies).filter(x=>x.hp>0);
  const targets=rule.scope==='front'?living:
   [(living.find(x=>x.id===pinnedId)||living[0])].filter(Boolean);
- return targets.map(target=>{
+ const impacts=targets.map(target=>{
   if(rule.kind==='buff'||rule.kind==='debuff'){
    return {targetId:target.id,kind:rule.kind,amount:0,deltaHp:0,
     hpBefore:target.hp,hpAfter:target.hp,predictedKO:false,
@@ -80,7 +102,26 @@ export function planResearchSpecial({spec,caster,allies,enemies,powerMultiplier=
   return {targetId:target.id,kind:rule.kind,amount,
    deltaHp:rule.kind==='heal'?amount:-amount,
    hpBefore:target.hp,hpAfter:target.hp+(rule.kind==='heal'?amount:-amount),
-   predictedKO:rule.kind==='damage'&&target.hp<=amount,
+   predictedKO:rule.kind!=='heal'&&target.hp<=amount,
+   ...(rule.kind==='damage-status'?{
+     statusEffect:rule.effect,statusSign:'negative',
+     statusLevel:Math.min(4,Math.max(1,Math.floor(rule.level*powerMultiplier)))
+   }:{}),
    model:'one-hit-research-fixture'};
  });
+ if(rule.kind==='drain'){
+  // Provisional: half of REAL drained HP is shared over the living ally
+  // front. No benefit from overkill, and no HP duplication or resurrection.
+  let budget=Math.floor(impacts.reduce((sum,x)=>sum+x.amount,0)/2);
+  const recipients=allies.filter(x=>x.hp>0&&x.hp<x.maxHp);
+  for(let i=0;i<recipients.length;i++){
+   const target=recipients[i],share=Math.ceil(budget/(recipients.length-i));
+   const healed=Math.min(target.maxHp-target.hp,share);
+   impacts.push({targetId:target.id,kind:'heal',amount:healed,deltaHp:healed,
+     hpBefore:target.hp,hpAfter:target.hp+healed,predictedKO:false,
+     linkedDrain:true,model:'drain-team-heal-playtest-fixture'});
+   budget-=healed;
+  }
+ }
+ return impacts;
 }
