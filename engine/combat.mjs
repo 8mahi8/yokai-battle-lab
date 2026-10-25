@@ -22,7 +22,7 @@ import {ELEMENTS, validateElementResistances, calculateOneHit, deriveStatStage} 
 import {calculateTurnInspirit} from './turn-inspirit.mjs';
 import {calculateHeal} from './heal-model.mjs';
 import {yw2HitProbability,yw2CriticalProbability,rollPercent} from './hit-model.mjs';
-import {PLAYTEST_SOUL_TUNING} from './playtest-soul-tuning.mjs';
+import {PLAYTEST_SOUL_TUNING,choosePlaytestPokeOutcome} from './playtest-soul-tuning.mjs';
 
 export const RENTAL_SQUAD = Object.freeze([
   {name:'あかねこ',speed:210,maxHp:225,strength:105,spirit:55,defense:73,attackPower:55,techniquePower:45,technique:'damage',attitude:'grouchy',inspirit:'sleep',weights:[60,25,10,5]},
@@ -625,27 +625,57 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(!challenge.completed)return {ok:true,completed:false,challenge};
     pokes[side]=null;
     pokedTargets[side].add(pending.targetId);
-    // PvP playtest: Soul-drain is a documented POSSIBLE Poke outcome, but
-    // its probability, quantity and recipient selection remain unknown.
-    // For friendly matches, start with a guaranteed transferable amount;
-    // it never creates Soul when the enemy gauge is empty. Change only the
-    // small preset file after testing the feel. Research-mode stays separate.
-    const targetSoul=soul.snapshot().teams[1-side].find(x=>x.id===pending.targetId);
-    const recipient=livingFront(side)[0]??null;
-    const receiverSoul=recipient?soul.snapshot().teams[side].find(x=>x.id===recipient.id):null;
-    const transferLimit=playtestSoulTuning
-      ?PLAYTEST_SOUL_TUNING.pokeMaxTransfer:researchPokeSoulTransfer;
-    const amount=transferLimit>0&&recipient
-      ?Math.min(transferLimit,targetSoul.soul,
-        receiverSoul.capacity-receiverSoul.soul):0;
-    if(amount>0){
-      soul.setSoul(pending.targetId,targetSoul.soul-amount);
-      soul.addSoul(recipient.id,amount);
+    // YW2's versus Poke has three documented EFFECT CLASSES:
+    // HP damage, Soul drain, and rare 999-damage one-hit effect.
+    // Exact chances and standard damage are not established. Trial uses
+    // host-only seeded RNG; never allow client-specified Poke rewards.
+    // The research/default-off paths remain unchanged for evidence audits.
+    const enemy=byId.get(pending.targetId);
+    let reward;
+    if(playtestSoulTuning){
+      const chosen=choosePlaytestPokeOutcome(rng());
+      if(chosen==='damage'||chosen==='heavy-hit'){
+        const nominal=chosen==='heavy-hit'
+          ?PLAYTEST_SOUL_TUNING.pokeHeavyDamage:PLAYTEST_SOUL_TUNING.pokeNormalDamage;
+        const amount=Math.min(enemy.hp,nominal);
+        enemy.hp-=amount;
+        const interruption=interruptOnHit(enemy,amount,false);
+        if(enemy.hp===0){syncCanAct(enemy.id);syncPinned();}
+        if(squads.some(team=>team.every(unit=>unit.hp===0)))
+          winner=squads[0].every(unit=>unit.hp===0)?1:0;
+        reward={kind:chosen==='heavy-hit'?'playtest-heavy-hit':'playtest-damage',
+          effect:chosen,amount,nominalDamage:nominal,targetHpAfter:enemy.hp,
+          sourceId:enemy.id,recipientId:null,
+          ...(interruption?{interruption}:{}) ,
+          winner,model:'playtest-estimate'};
+      }else{
+        const targetSoul=soul.snapshot().teams[1-side].find(x=>x.id===enemy.id);
+        const recipient=livingFront(side)[0]??null;
+        const receiverSoul=recipient?soul.snapshot().teams[side].find(x=>x.id===recipient.id):null;
+        const amount=recipient?Math.min(PLAYTEST_SOUL_TUNING.pokeMaxTransfer,
+          targetSoul.soul,receiverSoul.capacity-receiverSoul.soul):0;
+        if(amount>0){
+          soul.setSoul(enemy.id,targetSoul.soul-amount);
+          soul.addSoul(recipient.id,amount);
+        }
+        reward={kind:'playtest-soul-transfer',effect:'soul-drain',amount,
+          recipientId:recipient?.id??null,sourceId:enemy.id,
+          model:'playtest-estimate'};
+      }
+    }else{
+      const targetSoul=soul.snapshot().teams[1-side].find(x=>x.id===enemy.id);
+      const recipient=livingFront(side)[0]??null;
+      const receiverSoul=recipient?soul.snapshot().teams[side].find(x=>x.id===recipient.id):null;
+      const amount=researchPokeSoulTransfer>0&&recipient
+        ?Math.min(researchPokeSoulTransfer,targetSoul.soul,
+          receiverSoul.capacity-receiverSoul.soul):0;
+      if(amount>0){
+        soul.setSoul(enemy.id,targetSoul.soul-amount);
+        soul.addSoul(recipient.id,amount);
+      }
+      reward={kind:researchPokeSoulTransfer>0?'research-soul-transfer':'unresolved',
+        amount,recipientId:recipient?.id??null,sourceId:enemy.id,model:'research-only'};
     }
-    const reward={kind:playtestSoulTuning?'playtest-soul-transfer':
-      researchPokeSoulTransfer>0?'research-soul-transfer':'unresolved',
-      amount,recipientId:recipient?.id??null,sourceId:pending.targetId,
-      model:playtestSoulTuning?'playtest-estimate':'research-only'};
     const event={type:'poke',side,targetId:pending.targetId,reward,
       actionCount:challenge.hits};
     events.push(event);
