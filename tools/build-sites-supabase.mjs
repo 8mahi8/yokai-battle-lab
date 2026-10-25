@@ -62,17 +62,10 @@ const fragment=['<!-- Phase25 Supabase: '+mode+'; real iPad/Sites not yet proven
  '<div id="battle-stage"></div></section>',
  scripts,'<script>',js,'</script>'].join('\n');
 if((fragment.match(/<style\b/g)||[]).length!==1)throw Error('Style wrapper failed');
-if(!config&&(/firebase-app-compat\.js|demo-yokai-lab|firebaseio\.com|<script[^>]+src/i.test(fragment)))
- throw Error('Setup build must never contact Firebase');
-if(mode==='cloud-configured-not-deployed'){
- const marker=fragment.match(/demo-yokai-lab|127\.0\.0\.1:9000|127\.0\.0\.1:9099/);
- if(marker)throw Error('Cloud build contains emulator marker: '+marker[0]);
-}
-// The minifier escapes Japanese message characters into JS unicode escapes.
-// Verify the generated hostname gate, not its localized error text.
-if(emulator&&(!fragment.includes('location.hostname')||
- !fragment.includes('127.0.0.1')||!fragment.includes('9099')))
- throw Error('Local emulator hostname/port gate absent');
+if(!config&&/<script[^>]+src/i.test(fragment))
+ throw Error('Unconfigured setup must never load a remote SDK');
+if(config&&(!fragment.includes('cdn.jsdelivr.net')||!fragment.includes('sb_publishable_')))
+ throw Error('Configured Supabase build missing external SDK or publishable key');
 const html='<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>'+fragment+'</body></html>';
 await mkdir(path.join(root,'dist'),{recursive:true});
 await writeFile(path.join(root,'dist',basename+'-code.html'),fragment);
