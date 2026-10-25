@@ -8,12 +8,16 @@ import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const args=process.argv.slice(2);
-const configured=args.length===1&&args[0]==='--public-config';
-if(args.length&&!configured)throw Error('Usage: [--public-config]');
+// The QA variant contains accelerated 6v6 fixture teams. It is NOT a
+// distributable Sites build and its filename never overlaps the owner build.
+const qaFullMatch=args.length===2&&args[0]==='--public-config'&&args[1]==='--qa-full-match';
+const configured=(args.length===1&&args[0]==='--public-config')||qaFullMatch;
+if(args.length&&!configured)throw Error('Usage: [--public-config [--qa-full-match]]');
 let config=null,mode='unconfigured',basename='sites-supabase-setup';
 if(configured){
  config=JSON.parse(await readFile(path.join(root,'supabase/yw_pvp_public_config.json'),'utf8'));
- mode='configured-not-deployed';basename='sites-supabase-online';
+ mode=qaFullMatch?'QA-ONLY-NEVER-DEPLOY':'configured-not-deployed';
+ basename=qaFullMatch?'sites-supabase-qa-full-match':'sites-supabase-online';
  if(!config||config.projectRef!=='itqimlgnrjikaamstdlp'||
   config.url!=='https://itqimlgnrjikaamstdlp.supabase.co'||
   typeof config.publishableKey!=='string'||!config.publishableKey.startsWith('sb_publishable_'))
@@ -26,7 +30,8 @@ const css=(await Promise.all(['lab/match-stage.css','lab/yw2-layout.css'].map(p=
 const built=await build({entryPoints:[path.join(root,'lab/sites-embed-supabase-entry.mjs')],
  bundle:true,write:false,format:'iife',platform:'browser',target:['safari13'],
  minify:true,metafile:true,logLevel:'silent',legalComments:'none',
- define:{__YW_SUPABASE_CONFIG__:JSON.stringify(config)}});
+ define:{__YW_SUPABASE_CONFIG__:JSON.stringify(config),
+  __YW_QA_FULL_MATCH__:String(qaFullMatch)}});
 if(built.outputFiles.length!==1)throw Error('Need one IIFE bundle');
 const modules=Object.keys(built.metafile.inputs);
 for(const dependency of ['network/supabase-room.mjs','network/firebase-match.mjs',
@@ -57,6 +62,7 @@ const fragment=['<!-- Phase25 Supabase: '+mode+'; real iPad/Sites not yet proven
  '<button class="yw-online-connect" disabled type="button">ゲスト：戦闘接続</button>',
  '<button class="yw-online-retry" disabled type="button">未確定入力を再送</button>',
  '<button class="yw-online-auto" disabled hidden type="button" aria-pressed="false">自動進行 OFF</button>',
+ ...(qaFullMatch?['<button class="yw-online-qa-finish" type="button">QA-ONLY 終局まで高速進行</button>']:[]),
  '<span class="yw-online-presence">未接続</span><b class="yw-online-role">席未選択</b>',
  '</div><div class="yw-online-status" role="status">接続初期化中</div>',
  '<div id="battle-stage"></div></section>',
