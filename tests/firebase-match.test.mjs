@@ -332,3 +332,90 @@ test('22C real guest command FIFO and verified charge ACK: 5 partial touches, fi
  assert.deepEqual(errors,[]);
  host.stop();guest.stop();
 });
+
+
+test('23A presence loss clears unsent rapid-touch FIFO while preserving one in-flight authoritative ACK',async()=>{
+ const bus=fakeTransport(),acks=[],errors=[];
+ const host=createFirebaseMatchHost({roomClient:bus.host,onError:e=>errors.push(e.message)});
+ const guest=createFirebaseMatchGuest({roomClient:bus.guest,onAck:a=>acks.push(a),
+  onError:e=>errors.push(e.message)});
+ guest.start();await host.start();
+ bus.setDrop(true);
+ assert.equal(guest.enqueue({type:'rotate',direction:1}).clientSeq,1);
+ assert.equal(guest.enqueue({type:'watch',mode:'zero'}).queued,true);
+ assert.equal(guest.enqueue({type:'watch',mode:'standard'}).queued,true);
+ assert.equal(guest.status().queuedInputs,2);
+ assert.equal(host.snapshot().clientSequences[1],1);
+ const paused=guest.setDeliveryEnabled(false);
+ assert.deepEqual(paused,{ok:true,enabled:false,dropped:2,pendingSequence:1});
+ assert.equal(guest.status().deliveryEnabled,false);
+ assert.equal(guest.status().queuedInputs,0);
+ assert.equal(guest.setDeliveryEnabled(false).dropped,0);
+ assert.equal(guest.enqueue({type:'pin',targetId:null}).reason,'connection_paused');
+ assert.equal(guest.submit({type:'rotate',direction:1}).reason,'connection_paused');
+ bus.setDrop(false);bus.replay();await tick();
+ assert.deepEqual(acks.map(x=>x.clientSeq),[1]);
+ assert.equal(guest.status().pendingSequence,null);
+ assert.equal(host.snapshot().clientSequences[1],1);
+ assert.equal(host.snapshot().game.soul.modes[1],'standard',
+  'stale offline Watch-zero input was never dispatched');
+ assert.deepEqual(bus.sent.map(x=>x.clientSeq),[1]);
+ assert.equal(guest.setDeliveryEnabled(true).pendingSequence,null);
+ assert.equal(guest.enqueue({type:'watch',mode:'zero'}).clientSeq,2);
+ await tick();await tick();
+ assert.deepEqual(acks.map(x=>x.clientSeq),[1,2]);
+ assert.equal(host.snapshot().game.soul.modes[1],'zero');
+ assert.deepEqual(errors,[]);
+ guest.stop();host.stop();
+});
+
+test('23A an uncertain in-flight write can be retried with its ORIGINAL seq only after presence restores',async()=>{
+ const bus=fakeTransport(),acks=[],protocol=createMatchProtocol();
+ const host=createFirebaseMatchHost({roomClient:bus.host,protocol});
+ const guest=createFirebaseMatchGuest({roomClient:bus.guest,onAck:a=>acks.push(a)});
+ guest.start();await host.start();
+ bus.setDrop(true);
+ assert.equal(guest.enqueue({type:'rotate',direction:1}).clientSeq,1);
+ await tick();
+ const hash=host.snapshot().hash;
+ assert.equal(host.snapshot().revision,1);
+ assert.equal(guest.setDeliveryEnabled(false).pendingSequence,1);
+ assert.deepEqual(await guest.retry(),{ok:false,reason:'connection_paused'});
+ assert.deepEqual(bus.sent.map(p=>p.clientSeq),[1]);
+ assert.equal(guest.setDeliveryEnabled(true).pendingSequence,1);
+ assert.equal((await guest.retry()).ok,true);
+ await tick();
+ assert.deepEqual(bus.sent.map(p=>p.clientSeq),[1,1]);
+ assert.equal(host.snapshot().hash,hash,'retransmission cannot rotate twice');
+ assert.equal(host.snapshot().revision,1);
+ bus.setDrop(false);bus.replay();await tick();
+ assert.deepEqual(acks.map(x=>x.clientSeq),[1]);
+ assert.equal(guest.status().pendingSequence,null);
+ assert.equal(guest.status().acked,1);
+ assert.equal(replayMatchJournal(protocol.exportJournal()).ok,true);
+ assert.equal(guest.enqueue({type:'watch',mode:'zero'}).clientSeq,2);
+ await tick();
+ assert.equal(guest.status().acked,2);
+ host.stop();guest.stop();
+});
+
+test('23A FIFO presence toggle validates boolean and does not deliver speculative offline commands',async()=>{
+ const bus=fakeTransport(),protocol=createMatchProtocol();
+ const host=createFirebaseMatchHost({roomClient:bus.host,protocol});
+ const guest=createFirebaseMatchGuest({roomClient:bus.guest});
+ guest.start();await host.start();
+ assert.throws(()=>guest.setDeliveryEnabled('no'),TypeError);
+ assert.equal(guest.setDeliveryEnabled(false).dropped,0);
+ assert.equal(guest.setDeliveryEnabled(true).dropped,0);
+ assert.equal(guest.setDeliveryEnabled(false).dropped,0);
+ assert.equal(guest.status().deliveryEnabled,false);
+ assert.equal(guest.enqueue({type:'watch',mode:'zero'}).reason,'connection_paused');
+ assert.deepEqual(bus.sent,[]);
+ assert.equal(protocol.snapshot().revision,0);
+ assert.equal(guest.setDeliveryEnabled(true).enabled,true);
+ assert.equal(guest.enqueue({type:'watch',mode:'zero'}).clientSeq,1);
+ await tick();
+ assert.equal(protocol.snapshot().revision,1);
+ assert.equal(protocol.snapshot().game.soul.modes[1],'zero');
+ host.stop();guest.stop();
+});
