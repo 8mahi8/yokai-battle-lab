@@ -59,7 +59,19 @@ el('auto').addEventListener('click',()=>{
 });
 begin();
 const review=new URL(location.href).searchParams.get('review');
-if(review==='target'){
+if(review==='winner-a'||review==='winner-b'){
+ // Result PRESENTATION fixture only: gameplay proof lives in
+ // tests/full-match-playtest-gate.test.mjs. No battle rule is faked.
+ const side=review==='winner-a'?0:1;
+ const winner=0;
+ const state=protocol.snapshot();
+ state.game.winner=winner;
+ for(const member of state.game.squads[1-winner])member.hp=0;
+ for(const member of state.game.clock.teams[1-winner].members)
+  member.canAct=false;
+ if(side===1)stage.selectSeat(1);
+ stage.render(state);
+}else if(review==='target'){
  // Local research screenshot fixture only; no network/command dispatch.
  el('battle-stage').querySelector('#mb-target').click();
 }else if(review==='special'){
