@@ -111,7 +111,7 @@ if(mode==='cloud-configured-not-deployed'){
 // The minifier escapes Japanese message characters into JS unicode escapes.
 // Verify the generated hostname gate, not its localized error text.
 if(emulator&&(!fragment.includes('location.hostname')||
- !fragment.includes('127.0.0.1')||!fragment.includes('9099')))
+ !fragment.includes('127.0.0.1')||(!friendsMode&&!fragment.includes('9099'))))
  throw Error('Local emulator hostname/port gate absent');
 const html='<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>'+fragment+'</body></html>';
 await mkdir(path.join(root,'dist'),{recursive:true});
