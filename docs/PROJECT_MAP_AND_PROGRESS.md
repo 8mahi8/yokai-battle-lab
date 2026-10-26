@@ -1,5 +1,6 @@
 # 妖怪対戦ブラウザゲーム｜設計全体図・現在地・次の一手（単一の進捗入口）
 
+> **【2026-10-26 Phase36・学校iPad匿名認証問題の再検討】** [匿名認証の必要性・RLS実DB読取・AuthとData APIの別々の到達診断](./PHASE36_AUTH_REQUIREMENT_AND_REST_DIAG_20261026.md)を追加。現行4表は全RLS有効、未ログイン `anon` 権限なし。Authをコードから消すだけでは通信不可。学校診断用に公開鍵だけのGET2系統（Auth health/Game REST limit=0）を追加し、Node **574/574 PASS**・Supabase HTMLビルドPASS・クラウドChromium2 iframeは初回失敗後の再実行PASS（タイムアウトが残る）。**学校旧iPad、Googleサイト版は未解決・未確認。** 既存Googleサイト公開版・配布済み診断TXT/HTML・main・本番Supabase Auth/RLS/DBは変更していない。最新版の学校配布は本人の明示依頼後に行う。\n\n
 更新: 2026-10-25 JST
 Repository: https://github.com/8mahi8/yokai-battle-lab
 Development branch: `feat/phase1-action-circle-lab-20261023`
