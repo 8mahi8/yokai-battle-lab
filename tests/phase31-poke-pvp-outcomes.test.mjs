@@ -23,7 +23,7 @@ function finish(g){
 test('PvP Poke has three source-reported categories; odds are labelled playtest estimates',()=>{
  assert.equal(P.pokeDamageWeight+P.pokeSoulWeight+P.pokeHeavyWeight,100);
  assert.deepEqual(
-  [0,.48,.499,.4999,.50,.98999,.9989,.999,.9999].map(choosePlaytestPokeOutcome),
+  [0,.48,.49899,.49901,.50,.98999,.99899,.99901,.9999].map(choosePlaytestPokeOutcome),
   ['damage','damage','damage','soul-drain','soul-drain','soul-drain','soul-drain','heavy-hit','heavy-hit']);
  for(const bad of [-1,1,Infinity,NaN,'0',null])
   assert.throws(()=>choosePlaytestPokeOutcome(bad));
