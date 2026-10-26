@@ -8,8 +8,8 @@
  */
 export const PLAYTEST_SOUL_TUNING=Object.freeze({
   nonAttackGain:5,          // supported by published player experiment
-  attackGain:8,             // tentative: normal physical attack
-  techniqueGain:8,          // tentative: damaging technique
+  attackGain:18,            // school playtest: previous +8 filled Soul too slowly; NOT original fact
+  techniqueGain:18,         // school playtest: previous +8 filled Soul too slowly; NOT original fact
   vulnerableHitBonus:4,    // tentative: hit loafing / negatively Inspirited foe
   pokeMaxTransfer:35,      // tentative: Soul drained from foe, first live ally recipient not source-confirmed
   pokeNormalDamage:35,    // tentative: regular Poke HP damage
