@@ -16,6 +16,14 @@
 - `tests/phase31-poke-pvp-outcomes.test.mjs`の確率境界を49.9%／99.9%に更新し、ホストシード2560の999経路は**最初のroll≒0.9991397なので0.1%版でも確定的に実行できる**。1%の表記を除外。
 - この調整は今後原作の確率・出現条件の直接データが見つかれば差し替える。効果出現率と「つつける状態」「赤黒い選択肢の表示」「成功させる入力」は別変数・別事象の可能性があるので一括で原作再現と呼ばない。
 
+## 実際に生成・配布したPhase42 V2（2026-10-27・ユーザーのDrive）
+- **更新版TXT**: https://drive.google.com/file/d/13p2-xQ1dBK5moWlsFRumB3_XdQB-YoJt/view?usp=drivesdk
+- **更新版HTML**: https://drive.google.com/file/d/13GzK54kaK6g5WA-B2xrTadkkRwCdbkZf/view?usp=drivesdk
+- 旧版と同じ[Drive内フォルダ](https://drive.google.com/drive/folders/1xgKahjwoESrIam0JnbqUYivEQ2vyqiXO)。**191,577バイト**、同一 SHA256 `346538ca6d07d80f1e6c43df6e36d61b70d6f1af8703ec37e28a2c8844e1e087`、GitHub blob `728c25431deed861f33f3c28546b644c344ab4c2`。
+- [Phase42 CI成功 #40354171436](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40354171436)：全576テスト＋6体自然終局＋Friend版安全性・0.1%境界＋TXT/HTML同一。明日用 `release/sites-firebase-friends-20261027-rare999` を別ブランチ保存。
+- Google Drive両ファイルのメタデータを読み戻し、サイズ191577、MIME `text/plain`／`text/html`、指定フォルダ保存確認。既存のPhase41最終ファイルは変更・削除していない。
+- **明日から使うときはV2のTXTを優先**。既存Phase41のFINALは1%のまま。Google Sites既存ページにはまだ反映していない。
+
 ## 明日のビルド区別
 **先にDriveへ渡した「20261027_FINAL」ファイルは1%の旧値のまま**。GitHub開発枝のコードを書き換えても、既にDrive保存済のTXT/HTMLは勝手に更新されない。新版をビルド・受入して**別名称の新しい2ファイル**としてDrive保存するときは、旧ファイルを無断上書きしない。
 
