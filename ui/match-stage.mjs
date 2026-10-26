@@ -424,6 +424,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    clearTimeout(flashTimer);
    flashTimer=setTimeout(()=>{
     flash=null;
+    $('mb-action-callout').hidden=true;
     element.querySelectorAll('.mb-acting,.mb-hit,.mb-healed,.mb-missed').forEach(el=>{
      el.classList.remove('mb-acting','mb-hit','mb-healed','mb-missed');
     });
