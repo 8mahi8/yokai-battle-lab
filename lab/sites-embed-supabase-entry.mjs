@@ -13,7 +13,7 @@ import {createMatchStage} from '../ui/match-stage.mjs';
 import {matchAckMessage} from '../ui/match-feedback.mjs';
 import {createHostAutoClock} from '../ui/host-auto-clock.mjs';
 import {checkSitesBrowserCapabilities} from '../ui/sites-browser-capabilities.mjs';
-import {classifySupabaseAuthFailure,checkSupabaseAuthReachability} from '../ui/supabase-auth-diagnostics.mjs';
+import {classifySupabaseAuthFailure,checkSupabaseAuthReachability,checkSupabaseGameApiReachability} from '../ui/supabase-auth-diagnostics.mjs';
 
 const config=__YW_SUPABASE_CONFIG__;
 // Injected at BUILD TIME ONLY, false in the released HTML. Never trust URL
@@ -243,11 +243,16 @@ async function init(){
   const rawMessage=String(authError?.message||'登録応答がありません').slice(0,130);
   say('認証失敗 ['+issue.code+']：'+issue.message+
     ' / 原因を診断しています…');
-  const health=await checkSupabaseAuthReachability({
-    url:config.url,publishableKey:config.publishableKey});
+  // Both requests are GETs with only the publishable key, no session or room data.
+  // HTTP 401/403 from the Game API counts as "reached", NOT as game access.
+  const [health,gameApi]=await Promise.all([
+   checkSupabaseAuthReachability({url:config.url,publishableKey:config.publishableKey}),
+   checkSupabaseGameApiReachability({url:config.url,publishableKey:config.publishableKey})
+  ]);
   say('認証失敗 ['+issue.code+']：'+rawMessage+
-    ' / 接続診断 ['+health.code+']：'+health.description+
-    ' / 学校のネットワーク制限・Safariの通信環境を確認。再試行ボタンも利用できます。');
+    ' / 認証API ['+health.code+(health.httpStatus?' HTTP '+health.httpStatus:'')+']：'+health.description+
+    ' / ゲームAPI ['+gameApi.code+(gameApi.httpStatus?' HTTP '+gameApi.httpStatus:'')+']：'+gameApi.description+
+    ' / どちらも通信不可なら認証を省いても解決しません。再試行できます。');
   return;
  }
  room=createSupabaseRoomClient({client,uid:authData.user.id,onError:err});
