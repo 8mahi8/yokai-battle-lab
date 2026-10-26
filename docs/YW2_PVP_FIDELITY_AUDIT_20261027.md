@@ -2,6 +2,13 @@
 監査日：2026-10-27 00時台 JST
 対象：**Google Sitesに貼る配布実物 Phase41 Firebase Friends 20261027**／GitHub固定配布ブランチ `release/sites-firebase-friends-20261027-final`。ローカル研究画面や将来案を、現在の学校版に混ぜない。
 
+## 2026-10-27 追加反証：999の頻度・配布版V2
+当初の配布Phase41の999=1%は原作資料がない試遊仮値で、ユーザーの「通信対戦で見たことがない」「他プレイヤーもほとんど見ない」という証言、通常バトルの極レア目撃談と相性が悪い。**正確な原作の数字は未解明。**そのため後発Phase42では、試遊上の一撃を**0.1%（仮）**へ縮小した。原作の頻度を確定したわけではない。赤黒い希少ツボの事前表示や選択条件などのUI相違も残る。
+- [Phase42根拠資料](./PHASE42_POKE_999_RARITY_REVIEW_20261027.md)
+- [Phase42学校Google Sites用V2 TXT](https://drive.google.com/file/d/13p2-xQ1dBK5moWlsFRumB3_XdQB-YoJt/view?usp=drivesdk)
+- [Phase42学校Google Sites用V2 HTML](https://drive.google.com/file/d/13GzK54kaK6g5WA-B2xrTadkkRwCdbkZf/view?usp=drivesdk)
+- **表に残る「49/50/1」はPhase41初期配布の旧設定の履歴**。更新版V2の実値は通常49.9%、妖気50%、一撃0.1%。両方とも未検証の実機確率であり、原作の計測値と扱わない。
+
 ## 判定規則（重要）
 - **構造再現**：原作と同じ基本操作・対象・状態遷移を実装。細かい数値の完全一致は含めない。
 - **部分再現**：似た機能があるが条件・効果・値・速度・表示が異なる、または原作と照合できていない。
