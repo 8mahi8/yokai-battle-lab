@@ -444,7 +444,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    $('mb-cue-summary').textContent=(caster?.name||'')+(victim?' → '+victim.name:'')+
      (impact?.hit===false?' ミス！':impact?.amount>0?' '+impact.amount:'');
    callout.dataset.kind=flash.kind||flash.type;
-   callout.hidden=false;
+   // Soultimates already have their own prominent full-field cut-in.
+   // Do not overlay a second announcement on top of the named special.
+   callout.hidden=flash.type==='special';
   }else callout.hidden=true;
   $('mb-special-title').textContent=flash?.type==='special'
    ?(flash.mode==='g-tech'?'Gわざ発動！':'ひっさつわざ！'):'';
