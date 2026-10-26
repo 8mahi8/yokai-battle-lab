@@ -14,9 +14,9 @@ export const PLAYTEST_SOUL_TUNING=Object.freeze({
   pokeMaxTransfer:35,      // tentative: Soul drained from foe, first live ally recipient not source-confirmed
   pokeNormalDamage:35,    // tentative: regular Poke HP damage
   pokeHeavyDamage:999,   // PvP effect category and 999 are described in YW2 PvP sources
-  pokeDamageWeight:49,   // unverified friendly-match outcome odds (%)
+  pokeDamageWeight:49.9, // PROVISIONAL: ordinary damage; frequency not source verified
   pokeSoulWeight:50,     // unverified friendly-match outcome odds (%)
-  pokeHeavyWeight:1      // unverified friendly-match outcome odds (%)
+  pokeHeavyWeight:0.1    // VERY RARE provisional 1/1000; NOT actual original odds, reduced after user + community rarity reports
 });
 
 /** Source-grounded PvP categories, UNVERIFIED odds. Host-seeded RNG chooses.
