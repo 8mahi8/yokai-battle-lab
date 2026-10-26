@@ -30,6 +30,11 @@ if(friends){
   "await until(()=>el(h,'.yw-online-auto')?.getAttribute('aria-pressed')==='true','friends host automatic match start');"
  );
  qa=qa.replace(
+  "el(g,'.yw-online-connect').click();",
+  "await until(()=>el(g,'.yw-online-connect')?.disabled,'friends guest joined battle without extra connect tap');"
+ );
+
+ qa=qa.replace(
   "assert(el(h,'.yw-online-auto').getAttribute('aria-pressed')==='true',",
   "assert(el(h,'.yw-online-auto').getAttribute('aria-pressed')==='true',"
  );
