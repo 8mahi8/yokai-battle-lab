@@ -13,6 +13,7 @@ import {createMatchStage} from '../ui/match-stage.mjs';
 import {matchAckMessage} from '../ui/match-feedback.mjs';
 import {createHostAutoClock} from '../ui/host-auto-clock.mjs';
 import {checkSitesBrowserCapabilities} from '../ui/sites-browser-capabilities.mjs';
+import {classifySupabaseAuthFailure,checkSupabaseAuthReachability} from '../ui/supabase-auth-diagnostics.mjs';
 
 const config=__YW_SUPABASE_CONFIG__;
 // Injected at BUILD TIME ONLY, false in the released HTML. Never trust URL
@@ -31,6 +32,7 @@ if(!root)throw Error('online embed root not found');
 const $=selector=>root.querySelector(selector);
 let client=null,room=null,match=null,stage=null,seat=null,autoClock=null;
 let localConnected=false,peerConnected=null,lastAvailable=false;
+let authBusy=false;
 const say=message=>{
  $('.yw-online-status').textContent=String(message);
  if(stage)stage.alert(String(message));
@@ -208,6 +210,11 @@ $('.yw-online-retry').addEventListener('click',async()=>{
  }catch(error){err(error);}
 });
 async function init(){
+ if(room||authBusy)return;
+ authBusy=true;
+ const authButton=$('.yw-online-auth-retry');
+ authButton.disabled=true;
+ try{
  if(!config){
   say('接続設定が未登録です。オンライン通信を行わない確認用ビルドです。');
   return;
@@ -224,16 +231,39 @@ async function init(){
  client=window.supabase.createClient(config.url,config.publishableKey,{
    auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:false}
  });
- const {data,error:authError}=await client.auth.signInAnonymously();
- if(authError||!data?.user?.id){
-  const disabled=String(authError?.message||'').toLowerCase().includes('anonymous sign-ins are disabled');
-  throw Error(disabled?
-   'このSupabaseでは匿名ログインが無効です。管理者がAuthのAnonymousを有効にするまで部屋を作成できません。':
-   '匿名認証できません：'+(authError?.message||'接続設定が未完了です'));
+ say('匿名認証中…（サーバーへ接続しています）');
+ let authData=null,authError=null;
+ try{
+  const response=await client.auth.signInAnonymously();
+  authData=response.data;
+  authError=response.error;
+ }catch(error){authError=error;}
+ if(authError||!authData?.user?.id){
+  const issue=classifySupabaseAuthFailure(authError||'auth response missing user id');
+  const rawMessage=String(authError?.message||'登録応答がありません').slice(0,130);
+  say('認証失敗 ['+issue.code+']：'+issue.message+
+    ' / 原因を診断しています…');
+  const health=await checkSupabaseAuthReachability({
+    url:config.url,publishableKey:config.publishableKey});
+  say('認証失敗 ['+issue.code+']：'+rawMessage+
+    ' / 接続診断 ['+health.code+']：'+health.description+
+    ' / 学校のネットワーク制限・Safariの通信環境を確認。再試行ボタンも利用できます。');
+  return;
  }
- room=createSupabaseRoomClient({client,uid:data.user.id,onError:err});
+ room=createSupabaseRoomClient({client,uid:authData.user.id,onError:err});
  $('.yw-online-make').disabled=false;
  $('.yw-online-join').disabled=false;
  say('Supabase匿名認証OK。2席の接続準備ができました。');
+ }finally{
+  authBusy=false;
+  authButton.disabled=!!room;
+ }
 }
-init().catch(err);
+function runAuthInit(){
+ void init().catch(error=>{
+  err(error);
+  $('.yw-online-auth-retry').disabled=!!room;
+ });
+}
+$('.yw-online-auth-retry').addEventListener('click',runAuthInit);
+runAuthInit();
