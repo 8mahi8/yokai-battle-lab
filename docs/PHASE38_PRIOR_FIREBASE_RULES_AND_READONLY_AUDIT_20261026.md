@@ -36,3 +36,11 @@
 - 学校で部屋作成・参加が通れば**Google Sites版の2人対戦**としてはまず合格。ただし11月8日以降は現Rulesの期限が切れるため、利用継続には再設定が必要になる。
 - 2026-11-08までの短期試遊では、**本人の既存Rulesが変わっていなければ、本番Rules・Auth設定を触らずPhase37 `--friends`を試す**のが最短ルート。
 - 保存・配布が必要ならTXTとHTMLを**別々**にGoogle Drive保存する。本人の明示的な配布依頼より前にGoogle Sitesや本番設定を勝手に更新しない。今はGitHub開発ブランチの変更のみ。
+
+
+## 2026-10-26 実行結果（Phase38 PASS）
+- [GitHub Actions **#40327052173**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40327052173) 全ジョブPASS。
+- **元の厳しい実験用Rules**でも `FIREBASE-FRIENDS-NOAUTH-PASS`（2人で作成/参加/入力/状態）と `SITES-FIREBASE-FRIENDS-EMULATOR-PASS`（実Chromium 2 iframe）を再確認。
+- **2026-10-22のスクリーンショットと全文一致する「期限付きroot .read/.write」ルール**を別のローカルFirebase emulatorに適用し、同じ**実Chromium 2 iframeでGoogle Sites型コードの認証なし作成→参加→試合操作→切断復帰PASS**。ログに `HISTORICAL-RULES-EXACT-MATCH`、二度目の `SITES-FIREBASE-FRIENDS-EMULATOR-PASS` を確認。これは**当時のルールが現行だった場合の互換性実証**。
+- **実本番RTDBへ無認証GET** 1回：`FIREBASE-SCHOOL-READONLY {"status":"UNAUTH_READ_HTTP_OK","httpStatus":200,"readOnly":true,"bodyInspected":false,"writeTested":false,"schoolSafariTested":false}`。空の診断用非ルームキーに対する読取だけで本文は捨てた。**現在の本番Firebaseの認証なしREAD経路はGitHub Actionsから成功した。**
+- **未検証**：本番WRITE、現在のRules本文、学校iPad SafariからのRTDB通信、本物のGoogle Sites iframe、長期安定、11月8日以降の利用可否。Firebaseの本番データとRules、学校サイト、GitHub mainは無変更。
