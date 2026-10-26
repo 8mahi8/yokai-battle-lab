@@ -10,14 +10,26 @@ import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const args=process.argv.slice(2);
-const emulator=args.length===1&&args[0]==='--emulator';
+const friends=args.length===1&&args[0]==='--friends';
+const emulatorFriends=args.length===1&&args[0]==='--emulator-friends';
+const emulator=args.length===1&&args[0]==='--emulator'||emulatorFriends;
 const cloud=args.length===2&&args[0]==='--config'&&Boolean(args[1]);
-if(args.length&&!emulator&&!cloud)throw Error('Usage: [--emulator | --config <file>]');
+const friendsMode=friends||emulatorFriends;
+if(args.length&&!emulator&&!cloud&&!friends)
+ throw Error('Usage: [--emulator | --config <file> | --friends | --emulator-friends]');
 let config=null,mode='unconfigured',basename='sites-online-setup';
+if(friends){
+ mode='friends-no-auth-not-deployed';basename='sites-online-friends';
+ // Existing school-proven BRAWL/Shokoku RTDB; NO secret, Auth SDK or sign-in.
+ config={databaseURL:'https://mygame-df915-default-rtdb.firebaseio.com/'};
+}
 if(emulator){
- mode='emulator-localhost-only';basename='sites-online-emulator-qa';
- config={apiKey:'demo-key',authDomain:'demo-yokai-lab.firebaseapp.com',
-  projectId:'demo-yokai-lab',databaseURL:'https://demo-yokai-lab-default-rtdb.firebaseio.com'};
+ mode=emulatorFriends?'emulator-friends-no-auth-localhost-only':'emulator-localhost-only';
+ basename=emulatorFriends?'sites-online-emulator-friends-qa':'sites-online-emulator-qa';
+ config=emulatorFriends?
+  {databaseURL:'https://demo-yokai-lab-default-rtdb.firebaseio.com'}:
+  {apiKey:'demo-key',authDomain:'demo-yokai-lab.firebaseapp.com',
+   projectId:'demo-yokai-lab',databaseURL:'https://demo-yokai-lab-default-rtdb.firebaseio.com'};
 }
 if(cloud){
  if(process.env.YW_CLOUD_BUILD_APPROVED!=='1')
@@ -47,7 +59,8 @@ const css=(await Promise.all(['lab/match-stage.css','lab/yw2-layout.css'].map(p=
 const built=await build({entryPoints:[path.join(root,'lab/sites-embed-online-entry.mjs')],
  bundle:true,write:false,format:'iife',platform:'browser',target:['safari13'],
  minify:true,metafile:true,logLevel:'silent',legalComments:'none',
- define:{__YW_ONLINE_CONFIG__:JSON.stringify(config),__YW_EMULATOR_MODE__:String(emulator)}});
+ define:{__YW_ONLINE_CONFIG__:JSON.stringify(config),__YW_EMULATOR_MODE__:String(emulator),
+  __YW_FRIENDS_MODE__:String(friendsMode)}});
 if(built.outputFiles.length!==1)throw Error('Need one IIFE bundle');
 const modules=Object.keys(built.metafile.inputs);
 for(const dependency of ['network/firebase-room.mjs','network/firebase-match.mjs',
@@ -57,7 +70,7 @@ for(const dependency of ['network/firebase-room.mjs','network/firebase-match.mjs
 if(modules.some(m=>/sites-embed-local-entry|firebase-match-stage\.html/.test(m)))
  throw Error('Offline fixture accidentally imported into online game');
 const js=built.outputFiles[0].text.replace(/<\/script/gi,'<\\/script').replace(/<!--/g,'<\\!--');
-const scripts=config?['app','auth','database'].map(name=>
+const scripts=config?['app',...(friendsMode?[]:['auth']),'database'].map(name=>
  '<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-'+name+'-compat.js"></script>').join('\n'):'';
 const fragment=['<!-- Phase24B: '+mode+'; iframe/Safari/real cloud not yet proven -->',
  '<style>',css,
@@ -84,6 +97,13 @@ const fragment=['<!-- Phase24B: '+mode+'; iframe/Safari/real cloud not yet prove
 if((fragment.match(/<style\b/g)||[]).length!==1)throw Error('Style wrapper failed');
 if(!config&&(/firebase-app-compat\.js|demo-yokai-lab|firebaseio\.com|<script[^>]+src/i.test(fragment)))
  throw Error('Setup build must never contact Firebase');
+if(friends&&!fragment.includes('mygame-df915-default-rtdb.firebaseio.com'))
+ throw Error('Friend mode must reuse established school RTDB');
+if(friendsMode&&(/firebase-auth-compat\.js/.test(fragment)||
+ /signInAnonymously\(/.test(fragment)))
+ throw Error('Friend mode must not embed Auth SDK or anonymous signup');
+if(friends&&!fragment.includes('yokaiRoomsV1'))
+ throw Error('Friend mode lost isolated game room path');
 if(mode==='cloud-configured-not-deployed'){
  const marker=fragment.match(/demo-yokai-lab|127\.0\.0\.1:9000|127\.0\.0\.1:9099/);
  if(marker)throw Error('Cloud build contains emulator marker: '+marker[0]);
@@ -98,4 +118,4 @@ await mkdir(path.join(root,'dist'),{recursive:true});
 await writeFile(path.join(root,'dist',basename+'-code.html'),fragment);
 await writeFile(path.join(root,'dist',basename+'-preview.html'),html);
 console.log('SITES-ONLINE-BUILD-PASS '+JSON.stringify({mode,bytes:Buffer.byteLength(fragment),
- sourceModules:modules.length,externalSDKs:config?3:0,basename}));
+ sourceModules:modules.length,externalSDKs:config?(friendsMode?2:3):0,basename}));
