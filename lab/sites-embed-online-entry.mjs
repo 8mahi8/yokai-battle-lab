@@ -14,6 +14,18 @@ import {createHostAutoClock} from '../ui/host-auto-clock.mjs';
 import {checkSitesBrowserCapabilities} from '../ui/sites-browser-capabilities.mjs';
 
 const config=__YW_ONLINE_CONFIG__;
+/**
+ * Phase37 friend-only Firebase mode: same BRAWL/Shokoku project, no
+ * Firebase Authentication, no Google sign-in, no anonymous signup.
+ * This ID is a per-page client label, NOT proof of identity. RTDB
+ * rules must explicitly support friend-mode and cannot authenticate it.
+ */
+function makeFriendClientId(){
+ if(!window.crypto?.getRandomValues)throw Error('参加者ID用の安全な乱数が利用できません');
+ const bytes=new Uint8Array(16);
+ window.crypto.getRandomValues(bytes);
+ return Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('');
+}
 const root=document.getElementById('yw-sites-online');
 if(!root)throw Error('online embed root not found');
 const $=selector=>root.querySelector(selector);
@@ -120,7 +132,7 @@ $('.yw-online-join').addEventListener('click',async()=>{
 $('.yw-online-start').addEventListener('click',async()=>{
  try{
   const begun=await room.startRoom();if(!begun.ok)throw Error(begun.reason);
-  match=createFirebaseMatchHost({roomClient:room,protocol:createMatchProtocol(),
+  match=createFirebaseMatchHost({roomClient:room,protocol:createMatchProtocol({battleOptions:__YW_FRIENDS_MODE__?{playtestSoulTuning:true,enableRentalSkills:true}:{}}),
    onSnapshot:s=>{stage.render(s);updatePresence();},onError:err});
   const initial=await match.start();
   if(!initial.ok)throw Error(initial.reason||initial.error||'snapshot_publish_failed');
@@ -185,21 +197,36 @@ async function init(){
  const capability=checkSitesBrowserCapabilities(window);
  if(!capability.ok)
   throw Error('このブラウザではオンライン対戦を開始できません：'+capability.message);
- if(!window.firebase?.auth||!window.firebase?.database)
+ if(!window.firebase?.database||(!__YW_FRIENDS_MODE__&&!window.firebase?.auth))
   throw Error('Firebase SDKが読み込まれていません');
+ if(__YW_FRIENDS_MODE__&&
+   (!config||config.databaseURL!=='https://mygame-df915-default-rtdb.firebaseio.com/'&&
+     !__YW_EMULATOR_MODE__))
+  throw Error('友達対戦用の接続先が不正です');
  const app=firebase.initializeApp(config);
  if(__YW_EMULATOR_MODE__){
-  app.auth().useEmulator('http://127.0.0.1:9099',{disableWarnings:true});
+  if(!__YW_FRIENDS_MODE__)
+   app.auth().useEmulator('http://127.0.0.1:9099',{disableWarnings:true});
   app.database().useEmulator('127.0.0.1',9000);
  }
- const auth=app.auth();
- await auth.setPersistence(firebase.auth.Auth.Persistence.NONE);
- const signedIn=await auth.signInAnonymously();
+ let uid;
+ if(__YW_FRIENDS_MODE__){
+  uid=makeFriendClientId();
+ }else{
+  const auth=app.auth();
+  await auth.setPersistence(firebase.auth.Auth.Persistence.NONE);
+  const signedIn=await auth.signInAnonymously();
+  uid=signedIn.user.uid;
+ }
  database=app.database();
- room=createFirebaseRoomClient({database,uid:signedIn.user.uid,onError:err});
+ // Confirm the SDK has connected before enabling room buttons. No room read
+ // is performed here, so an existing game cannot be modified accidentally.
+ room=createFirebaseRoomClient({database,uid,onError:err});
  $('.yw-online-make').disabled=false;
  $('.yw-online-join').disabled=false;
- say(__YW_EMULATOR_MODE__?'ローカルFirebase試験版：匿名認証OK。2席で部屋を作成してください。':
+ say(__YW_FRIENDS_MODE__?
+  'Firebase友達対戦：認証不要。6桁のルーム番号で遊べます。':
+  __YW_EMULATOR_MODE__?'ローカルFirebase試験版：匿名認証OK。2席で部屋を作成してください。':
   '匿名認証OK。2席の接続準備ができました。');
 }
 init().catch(err);
