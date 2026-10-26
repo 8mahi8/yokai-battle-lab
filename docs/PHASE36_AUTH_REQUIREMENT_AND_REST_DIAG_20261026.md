@@ -33,3 +33,11 @@ Authだけ失敗してData APIに到達できることが確認されれば、Au
 | 匿名認証OK | ルーム作成失敗 | RESTの権限・RLS・部屋作成APIレスポンスを見る |
 
 未検証事項：学校Safariのネットワーク、CORSと実際の `/signup` POST、Google Sites iframeからの同一端末別回線、対戦1vs1。サーバーログだけで学校原因を断定しない。
+
+
+## Phase36のGitHub Actions検証結果（同日）
+- 新しい診断3件を含む **Node 574/574 PASS**：https://github.com/8mahi8/yokai-battle-lab/actions/runs/40314057566
+- Supabase Google Sites HTML ビルド PASS（約196KB）：https://github.com/8mahi8/yokai-battle-lab/actions/runs/40314051460
+- 実Supabase + Chromium 2 iframe通信: https://github.com/8mahi8/yokai-battle-lab/actions/runs/40314051420 初回は「ホスト初期snapshot待ち10秒超」でFAIL、**失敗ジョブだけ再実行したattempt 2でPASS**。偶発的タイムアウトの原因は未確定。常時安定を証明するものではない。
+- 汎用browser-smokeを含む研究単体ワークフロー: https://github.com/8mahi8/yokai-battle-lab/actions/runs/40314064411 初回はChromium起動/描画タイムアウト（Node574/574と4seed自然戦闘はPASS）、**失敗ジョブを再実行したattempt 2でPASS**。
+- これは**GitHub Linux/Chromium上の検証**であって学校の旧iPad Safariではない。今後も一時的な通信/描画失敗を恒久解消済みと誤報しない。
