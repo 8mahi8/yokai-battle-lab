@@ -31,6 +31,7 @@ if(!root)throw Error('online embed root not found');
 const $=selector=>root.querySelector(selector);
 let database=null,room=null,match=null,stage=null,seat=null,autoClock=null;
 let localConnected=false,peerConnected=null,lastAvailable=false;
+let friendsAutoStarted=false; // one-time automatic start; user pause stays paused
 const say=message=>{
  $('.yw-online-status').textContent=String(message);
  if(stage)stage.alert(String(message));
@@ -54,7 +55,9 @@ function updateAutoButton(){
  const enabled=autoClock?.status().enabled===true;
  const canStep=canHostAdvance();
  button.disabled=!enabled&&!canStep;
- button.textContent=enabled?(canStep?'自動進行 ON':'自動進行 一時停止'):'自動進行 OFF';
+ button.textContent=__YW_FRIENDS_MODE__?
+  (enabled?(canStep?'戦闘進行中・一時停止':'戦闘一時停止中'):'戦闘を再開'):
+  (enabled?(canStep?'自動進行 ON':'自動進行 一時停止'):'自動進行 OFF');
  button.setAttribute('aria-pressed',String(enabled));
 }
 function updatePresence(){
@@ -78,6 +81,15 @@ function updatePresence(){
  $('.yw-online-retry').disabled=!ready||!status||
   (seat===0?!status.started||!status.dirty:
    seat!==1||!status.pendingSequence);
+ // School-friends PvP should not depend on a second, non-original
+ // manual "auto advance ON" action after both players are connected.
+ // Start only once after the authoritative initial snapshot is published;
+ // explicitly pausing the game never silently re-enables it.
+ if(__YW_FRIENDS_MODE__&&seat===0&&!friendsAutoStarted&&autoClock&&
+   canHostAdvance()){
+  const started=autoClock.start();
+  if(started.ok)friendsAutoStarted=true;
+ }
  updateAutoButton();
 }
 function guard(){
@@ -104,6 +116,7 @@ function setupSeat(role){
  const debugStep=$('#mb-step');
  if(debugStep){debugStep.hidden=true;debugStep.setAttribute('aria-hidden','true');}
  if(role===0){
+  friendsAutoStarted=false;
   autoClock=createHostAutoClock({
    step:()=>match.advanceAuto(),
    canAdvance:canHostAdvance,
@@ -137,7 +150,8 @@ $('.yw-online-start').addEventListener('click',async()=>{
   const initial=await match.start();
   if(!initial.ok)throw Error(initial.reason||initial.error||'snapshot_publish_failed');
   $('.yw-online-start').disabled=true;
-  say('ホスト開始。ゲストの戦闘接続を待っています。');updatePresence();
+  say('ホスト開始。ゲストの戦闘接続を待っています。'+
+   (__YW_FRIENDS_MODE__?' 2人が接続すると戦闘が自動で進みます。':''));updatePresence();
  }catch(error){err(error);}
 });
 $('.yw-online-connect').addEventListener('click',async()=>{
@@ -160,11 +174,16 @@ $('.yw-online-connect').addEventListener('click',async()=>{
 $('.yw-online-auto').addEventListener('click',()=>{
  try{
   if(seat!==0||!autoClock)throw Error('自動進行はホスト専用です');
-  if(autoClock.status().enabled){autoClock.stop();say('自動進行 OFF');}
+  if(autoClock.status().enabled){
+   autoClock.stop();
+   say(__YW_FRIENDS_MODE__?'戦闘を一時停止しました。再開するには「戦闘を再開」を押してください。':
+    '自動進行 OFF');
+  }
   else{
    const state=autoClock.start();
    if(!state.ok)throw Error(state.reason||'auto_clock_unavailable');
-   say('研究用の自動進行を開始しました。切断時は一時停止します。');
+   say(__YW_FRIENDS_MODE__?'戦闘を再開しました。切断中は自動的に一時停止します。':
+     '研究用の自動進行を開始しました。切断時は一時停止します。');
   }
   updateAutoButton();
  }catch(error){err(error);}
