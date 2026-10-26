@@ -29,6 +29,12 @@ export function actionWeights(actor,{allies,enemies,enemyPin=null,negativeCounts
   if(healer&&below(allies,.25)){w[1]*=4;attitudeRuleApplied=true;}
   else if(actor.hp/actor.maxHp>=.25&&actor.hp/actor.maxHp<=.5){w[3]*=5;attitudeRuleApplied=true;}
   else if(actor.hp/actor.maxHp<.25){w[3]*=10;attitudeRuleApplied=true;}
+ } else if(actor.attitude==='brainy'){
+  // YW2 Zunouteki: offensive technique priority; multiplier is provisional.
+  if(actor.technique==='damage'){w[1]*=4;attitudeRuleApplied=true;}
+ } else if(actor.attitude==='cruel'){
+  // YW2 Hidou: negative Inspirit priority; eligibility filtered below.
+  if(NEGATIVE_INSPIRITS.has(actor.inspirit)){w[2]*=4;attitudeRuleApplied=true;}
  } else if(actor.attitude==='grouchy'){
   if(healer&&below(allies,.25)){w[1]*=3;attitudeRuleApplied=true;}
   else if(actor.strength>Math.min(...enemies.map(x=>x.defense))){w[0]*=3;attitudeRuleApplied=true;}
