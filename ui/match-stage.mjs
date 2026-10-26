@@ -542,7 +542,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  }
  function handleClick(event){
   const b=event.target.closest('button');
-  if(suppressWheelClick&&b?.closest('.mb-wheel')){
+  if(suppressWheelClick&&b?.closest('.mb-wheel')&&!b.matches('.mb-center-symbol')){
    suppressWheelClick=false;
    event.preventDefault();return;
   }
