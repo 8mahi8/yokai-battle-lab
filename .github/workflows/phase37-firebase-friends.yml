@@ -11,6 +11,9 @@ on:
       - 'tools/build-sites-online.mjs'
       - 'tools/sites-online-smoke.mjs'
       - 'tests/firebase-friends-noauth-emulator.cjs'
+      - 'network/emulator/database.historical-20261022.rules.json'
+      - 'network/emulator/firebase.historical-20261022.json'
+      - 'tools/firebase-school-readonly-probe.mjs'
       - '.github/workflows/phase37-firebase-friends.yml'
   workflow_dispatch:
 permissions:
@@ -63,5 +66,24 @@ jobs:
           --only database --project demo-yokai-lab
           --config network/emulator/firebase.friends-noauth.json
           "node tests/firebase-friends-noauth-emulator.cjs && node tools/sites-online-smoke.mjs --emulator-friends"
+      - name: Reproduce owner's prior Firebase time-limited Rules in isolated emulator
+        run: |
+          node --input-type=module <<'EOF'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          const r=JSON.parse(readFileSync('network/emulator/database.historical-20261022.rules.json','utf8'));
+          assert.deepEqual(r,{rules:{
+            '.read':'now < 1794063600000',
+            '.write':'now < 1794063600000'
+          }});
+          console.log('HISTORICAL-RULES-EXACT-MATCH deadline=2026-11-08T00:00:00+09:00');
+          EOF
+          if node -e 'process.exit(Date.now()<1794063600000?0:1)'; then
+            ./node_modules/.bin/firebase emulators:exec --only database --project demo-yokai-lab --config network/emulator/firebase.historical-20261022.json "node tools/sites-online-smoke.mjs --emulator-friends"
+          else
+            echo 'HISTORICAL-RULES-EXPIRED: old screenshot rules no longer allow no-Auth access'
+          fi
+      - name: Probe LIVE shared Firebase with one unauthenticated GET only
+        run: node tools/firebase-school-readonly-probe.mjs
       - name: Publish no Google Sites files until explicitly requested
         run: echo 'Code stays on development branch; no cloud Rules, auth settings, or site deployed'
