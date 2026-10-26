@@ -8,7 +8,7 @@ const soul=(g,id)=>g.snapshot().soul.teams.flat().find(u=>u.id===id).soul;
 const pokeComplete=g=>{let r;for(let i=0;i<12;i++)r=g.pokeInput(0,{type:'tap',x:.5,y:.5});return r;};
 
 test('playtest Soul preset is centralized, labelled temporary, and nonattack grants +5',()=>{
- assert.deepEqual([T.nonAttackGain,T.attackGain,T.techniqueGain,T.vulnerableHitBonus,T.pokeMaxTransfer],[5,8,8,4,35]);
+ assert.deepEqual([T.nonAttackGain,T.attackGain,T.techniqueGain,T.vulnerableHitBonus,T.pokeMaxTransfer],[5,18,18,4,35]);
  assert.ok(Object.isFrozen(T));
  const g=createCombat({teams:[party([0,0,0,100]),party([0,0,0,100])],playtestSoulTuning:true});
  const e=g.step();assert.equal(e.kind,'guard');
