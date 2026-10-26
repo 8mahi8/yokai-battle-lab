@@ -1,0 +1,67 @@
+name: Phase37 Firebase friends no Auth QA
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+    paths:
+      - 'network/firebase-room.mjs'
+      - 'network/emulator/database.friends-noauth.rules.json'
+      - 'network/emulator/firebase.friends-noauth.json'
+      - 'lab/sites-embed-online-entry.mjs'
+      - 'tools/build-sites-online.mjs'
+      - 'tools/sites-online-smoke.mjs'
+      - 'tests/firebase-friends-noauth-emulator.cjs'
+      - '.github/workflows/phase37-firebase-friends.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  friends-local:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned build and emulator dependencies
+        run: npm install --no-save --package-lock=false esbuild@0.25.12 firebase-tools@14.24.0 @firebase/rules-unit-testing@5.0.0
+      - name: Static source and build for emulator and existing school Firebase
+        run: |
+          node --check lab/sites-embed-online-entry.mjs
+          node --check tools/build-sites-online.mjs
+          node --check tools/sites-online-smoke.mjs
+          node --check tests/firebase-friends-noauth-emulator.cjs
+          node tools/build-sites-online.mjs --emulator-friends
+          node tools/build-sites-online.mjs --friends
+      - name: Browser-free login-free build guard
+        run: |
+          node --input-type=module <<'EOF'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          for(const name of ['sites-online-friends','sites-online-emulator-friends-qa']){
+            const html=readFileSync('dist/'+name+'-code.html','utf8');
+            assert.match(html,/firebase-app-compat\.js/);
+            assert.match(html,/firebase-database-compat\.js/);
+            assert.doesNotMatch(html,/firebase-auth-compat\.js|signInAnonymously\(/);
+            assert.match(html,/yokaiRoomsV1/);
+            assert.doesNotMatch(html,/supabase\.co/);
+          }
+          const published=readFileSync('dist/sites-online-friends-code.html','utf8');
+          assert.match(published,/mygame-df915-default-rtdb\.firebaseio\.com/);
+          assert.doesNotMatch(published,/demo-yokai-lab|127\.0\.0\.1:9000|127\.0\.0\.1:9099/);
+          assert.ok(Buffer.byteLength(published)<450000);
+          console.log('FIREBASE-FRIENDS-BUILD-PASS');
+          EOF
+      - name: Actual two-client unauthenticated Rules and full two-iframe Chromium PvP
+        run: >
+          ./node_modules/.bin/firebase emulators:exec
+          --only database --project demo-yokai-lab
+          --config network/emulator/firebase.friends-noauth.json
+          "node tests/firebase-friends-noauth-emulator.cjs && node tools/sites-online-smoke.mjs --emulator-friends"
+      - name: Publish no Google Sites files until explicitly requested
+        run: echo 'Code stays on development branch; no cloud Rules, auth settings, or site deployed'
