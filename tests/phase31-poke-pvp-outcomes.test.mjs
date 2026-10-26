@@ -23,11 +23,12 @@ function finish(g){
 test('PvP Poke has three source-reported categories; odds are labelled playtest estimates',()=>{
  assert.equal(P.pokeDamageWeight+P.pokeSoulWeight+P.pokeHeavyWeight,100);
  assert.deepEqual(
-  [0,.48,.49,.50,.98999,.99,.9999].map(choosePlaytestPokeOutcome),
-  ['damage','damage','soul-drain','soul-drain','soul-drain','heavy-hit','heavy-hit']);
+  [0,.48,.499,.4999,.50,.98999,.9989,.999,.9999].map(choosePlaytestPokeOutcome),
+  ['damage','damage','damage','soul-drain','soul-drain','soul-drain','soul-drain','heavy-hit','heavy-hit']);
  for(const bad of [-1,1,Infinity,NaN,'0',null])
   assert.throws(()=>choosePlaytestPokeOutcome(bad));
  assert.equal(P.pokeHeavyDamage,999);
+ assert.equal(P.pokeHeavyWeight,0.1,'rare-hit rate is a provisional 0.1%, not an original rate');
  assert.ok(Object.isFrozen(P));
 });
 
@@ -50,8 +51,8 @@ test('ordinary damage result subtracts only enemy HP and cannot repeat same vuln
   [['B1',P.pokeNormalDamage,'damage']]);
 });
 
-test('1%-fixture rare 999 effect respects remaining HP and real KO clock',()=>{
- const g=setup(2560); // fixed host seed: first effect RNG in [99%,100%)
+test('0.1%-fixture rare 999 effect respects remaining HP and real KO clock',()=>{
+ const g=setup(2560); // fixed host seed: first effect RNG ~0.99913973, inside [99.9%,100%)
  const result=finish(g);
  assert.equal(result.kind,'playtest-heavy-hit');
  assert.equal(result.effect,'heavy-hit');
