@@ -122,7 +122,7 @@ function setupSeat(role){
    step:()=>match.advanceAuto(),
    canAdvance:canHostAdvance,
    getWinner:()=>match?.snapshot().game.winner??null,
-   intervalMs:1500,onUpdate:updateAutoButton,onError:err
+   intervalMs:2600,onUpdate:updateAutoButton,onError:err
   });
  }else autoClock=null;
  if(__YW_FRIENDS_MODE__&&role===1){
@@ -189,7 +189,7 @@ async function connectGuestMatch(){
  finally{friendsGuestConnectPending=false;}
 }
 $('.yw-online-connect').addEventListener('click',()=>{void connectGuestMatch();});
-// 1500 ms is only a research-pilot cadence, NOT the Nintendo 3DS step timing.
+// 2600 ms is a school-observed readability trial, NOT original frame timing., NOT the Nintendo 3DS step timing.
 // A human host enables it deliberately after both peers have joined.
 $('.yw-online-auto').addEventListener('click',()=>{
  try{
