@@ -32,6 +32,7 @@ const $=selector=>root.querySelector(selector);
 let database=null,room=null,match=null,stage=null,seat=null,autoClock=null;
 let localConnected=false,peerConnected=null,lastAvailable=false;
 let friendsAutoStarted=false; // one-time automatic start; user pause stays paused
+let friendsGuestConnectPending=false; // guards repeated Firebase phase events
 const say=message=>{
  $('.yw-online-status').textContent=String(message);
  if(stage)stage.alert(String(message));
@@ -124,6 +125,15 @@ function setupSeat(role){
    intervalMs:1500,onUpdate:updateAutoButton,onError:err
   });
  }else autoClock=null;
+ if(__YW_FRIENDS_MODE__&&role===1){
+  // On a friend-only match, join + host start is enough. The 3DS-style
+  // battle should not demand a hidden extra "connect to battle" tap.
+  const phaseRef=database.ref('yokaiRoomsV1/'+room.active().roomCode+'/phase');
+  phaseRef.on('value',snapshot=>{
+   if(seat===1&&!match&&snapshot.val()==='playing')
+    void connectGuestMatch();
+  },err);
+ }
  room.watchPresence(v=>{localConnected=v;updatePresence();});
  room.watchPeerPresence(v=>{peerConnected=v;updatePresence();});
  updatePresence();
@@ -139,7 +149,9 @@ $('.yw-online-join').addEventListener('click',async()=>{
  try{
   const result=await room.joinRoom($('.yw-online-code').value.trim());
   if(!result.ok)throw Error(result.reason);
-  setupSeat(1);say('参加しました。ホストの試合開始後に「戦闘接続」を押してください。');
+  setupSeat(1);say(__YW_FRIENDS_MODE__?
+   '参加しました。ホストが試合開始すると自動で戦闘に入ります。':
+   '参加しました。ホストの試合開始後に「戦闘接続」を押してください。');
  }catch(error){err(error);}
 });
 $('.yw-online-start').addEventListener('click',async()=>{
@@ -154,21 +166,29 @@ $('.yw-online-start').addEventListener('click',async()=>{
    (__YW_FRIENDS_MODE__?' 2人が接続すると戦闘が自動で進みます。':''));updatePresence();
  }catch(error){err(error);}
 });
-$('.yw-online-connect').addEventListener('click',async()=>{
+async function connectGuestMatch(){
+ if(seat!==1||match||friendsGuestConnectPending)return;
+ friendsGuestConnectPending=true;
  try{
   if(!room)throw Error('部屋未参加');
   const code=room.active().roomCode;
   const phase=(await database.ref('yokaiRoomsV1/'+code+'/phase').once('value')).val();
   if(phase!=='playing')throw Error('ホストがまだ開始していません');
-  match=createFirebaseMatchGuest({roomClient:room,
+  if(match)return;
+  const next=createFirebaseMatchGuest({roomClient:room,
    onSnapshot:s=>{stage.render(s);updatePresence();},
    onAck:result=>{say(matchAckMessage(result));updatePresence();},
    onError:err});
-  match.start();
+  next.start();
+  match=next;
   $('.yw-online-connect').disabled=true;
-  say('ゲスト接続。ホストの初期状態を待っています。');updatePresence();
+  say(__YW_FRIENDS_MODE__?'対戦に自動接続しました。戦況を受信しています。':
+   'ゲスト接続。ホストの初期状態を待っています。');
+  updatePresence();
  }catch(error){err(error);}
-});
+ finally{friendsGuestConnectPending=false;}
+}
+$('.yw-online-connect').addEventListener('click',()=>{void connectGuestMatch();});
 // 1500 ms is only a research-pilot cadence, NOT the Nintendo 3DS step timing.
 // A human host enables it deliberately after both peers have joined.
 $('.yw-online-auto').addEventListener('click',()=>{
