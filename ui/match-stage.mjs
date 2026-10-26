@@ -624,66 +624,78 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    wheel.style.removeProperty('--wheel-drag-angle');
   }
  }
- function onWheelDown(event){
-  if(!view||view.winner!==null||view.gesture||event.button!==0||
-     event.isPrimary===false||wheelPointer!==null)return;
-  const wheel=event.target.closest('.mb-wheel');
+ function startWheelFinger(id,x,y,target,source){
+  if(!view||view.winner!==null||view.gesture||wheelPointer)return;
+  const wheel=target.closest?.('.mb-wheel');
   if(!wheel||!element.contains(wheel)||wheel.closest('[hidden]'))return;
-  // A fresh down marks a new medal tap, not the synthetic click following
-  // the last successful drag. Prevent sticky click suppression after a swipe.
-  suppressWheelClick=false;
-  clearTimeout(wheelClickTimer);
-  const bounds=wheel.getBoundingClientRect();
-  const centerX=bounds.left+bounds.width/2,centerY=bounds.top+bounds.height/2;
-  const radius=Math.min(bounds.width,bounds.height)/2;
-  if(Math.hypot(event.clientX-centerX,event.clientY-centerY)<radius*.22)return;
-  wheelPointer={id:event.pointerId,seat:activeSeat,centerX,centerY,radius,
-   startAngle:wheelAngle(event.clientX,event.clientY,centerX,centerY),
-   latestDelta:0,direction:0,captured:false};
-  // Do NOT capture at pointerdown: ordinary medal taps must retain their
-  // original button click target on iPad Safari. Capture only after a drag.
+  if(target.closest?.('.mb-center-symbol'))return;
+  suppressWheelClick=false;clearTimeout(wheelClickTimer);
+  const b=wheel.getBoundingClientRect(),centerX=b.left+b.width/2,centerY=b.top+b.height/2;
+  const radius=Math.min(b.width,b.height)/2,d=Math.hypot(x-centerX,y-centerY);
+  if(d<radius*.22||d>radius*1.12)return;
+  wheelPointer={id,source,seat:activeSeat,centerX,centerY,radius,
+   startAngle:wheelAngle(x,y,centerX,centerY),direction:0,dragging:false,captured:false};
  }
- function onWheelMove(event){
-  const p=wheelPointer;
-  if(!p||p.id!==event.pointerId||p.seat!==activeSeat)return;
-  const gesture=wheelGestureAt({x:event.clientX,y:event.clientY,
-   centerX:p.centerX,centerY:p.centerY,radius:p.radius,startAngle:p.startAngle});
-  if(!gesture)return;
-  p.latestDelta=gesture.delta;p.direction=gesture.direction;
-  if(Math.abs(gesture.delta)>Math.PI/15){
-   event.preventDefault();
-   if(!p.captured){
-    p.captured=true;
-    // Capture a stable ancestor only after angular intent is established.
-    try{element.setPointerCapture(event.pointerId);}catch(_){}
+ function moveWheelFinger(x,y,event){
+  const p=wheelPointer;if(!p||p.seat!==activeSeat)return;
+  const g=wheelGestureAt({x,y,centerX:p.centerX,centerY:p.centerY,
+   radius:p.radius,startAngle:p.startAngle});
+  if(!g)return;
+  p.direction=g.direction;
+  if(Math.abs(g.delta)>Math.PI/15){
+   p.dragging=true;event.preventDefault?.();
+   if(p.source==='pointer'&&!p.captured){
+    p.captured=true;try{element.setPointerCapture(p.id);}catch(_){}
    }
    const wheel=element.querySelector('#mb-team'+activeSeat+' .mb-wheel');
    if(wheel){
     wheel.classList.add('mb-wheel-dragging');
-    // Preview ring only; actor text does not spin. Engine will snap medals
-    // to its accepted canonical offset after the single command.
-    wheel.style.setProperty('--wheel-drag-angle',
-     Math.max(-60,Math.min(60,gesture.degrees))+'deg');
+    wheel.style.setProperty('--wheel-drag-angle',Math.max(-60,Math.min(60,g.degrees))+'deg');
    }
   }
  }
- function finishWheel(event,cancelled=false){
+ function onWheelDown(event){
+  if(event.pointerType==='touch'||event.button!==0||event.isPrimary===false)return;
+  startWheelFinger(event.pointerId,event.clientX,event.clientY,event.target,'pointer');
+ }
+ function onWheelMove(event){
+  if(wheelPointer?.source==='pointer'&&wheelPointer.id===event.pointerId)
+   moveWheelFinger(event.clientX,event.clientY,event);
+ }
+ function touchFor(event,id){return Array.from(event.changedTouches||[]).find(t=>t.identifier===id);}
+ function onWheelTouchStart(event){
+  if(event.touches?.length!==1)return;
+  const t=event.changedTouches?.[0];
+  if(t)startWheelFinger(t.identifier,t.clientX,t.clientY,event.target,'touch');
+ }
+ function onWheelTouchMove(event){
+  const p=wheelPointer;if(p?.source!=='touch')return;
+  const t=touchFor(event,p.id);
+  if(t)moveWheelFinger(t.clientX,t.clientY,event);
+ }
+ function onWheelTouchEnd(event){
   const p=wheelPointer;
-  if(!p||p.id!==event.pointerId)return;
+  if(p?.source==='touch'&&touchFor(event,p.id))finishWheel(event,false);
+ }
+ function onWheelTouchCancel(event){
+  const p=wheelPointer;
+  if(p?.source==='touch'&&touchFor(event,p.id))finishWheel(event,true);
+ }
+ function finishWheel(event,cancelled=false){
+  const p=wheelPointer;if(!p||(p.source==='pointer'&&p.id!==event.pointerId))return;
   wheelPointer=null;resetWheelVisual();
-  if(cancelled||!p.direction||p.seat!==activeSeat)return;
-  event.preventDefault();
-  suppressWheelClick=true;
-  clearTimeout(wheelClickTimer);
+  if(cancelled||!p.dragging||!p.direction||p.seat!==activeSeat){
+   if(wireState)render(wireState);return;
+  }
+  event.preventDefault?.();
+  suppressWheelClick=true;clearTimeout(wheelClickTimer);
   wheelClickTimer=setTimeout(()=>{suppressWheelClick=false;},460);
-  commandMode=null;
-  command({type:'rotate',direction:p.direction});
-  // Async guest commands await host ACK; never rotate the local battle model.
+  commandMode=null;command({type:'rotate',direction:p.direction});
   if(wireState)render(wireState);
  }
- function onWheelUp(event){finishWheel(event,false);}
- function onWheelCancel(event){finishWheel(event,true);}
- function onWheelLost(event){finishWheel(event,true);}
+ function onWheelUp(event){if(wheelPointer?.source==='pointer')finishWheel(event,false);}
+ function onWheelCancel(event){if(wheelPointer?.source==='pointer')finishWheel(event,true);}
+ function onWheelLost(event){if(wheelPointer?.source==='pointer')finishWheel(event,true);}
  function onDown(event){
   if(!view?.gesture||event.button!==0)return;
   const pad=event.target.closest('#mb-touch-pad');if(!pad)return;
@@ -719,6 +731,10 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  function onCancel(event){finishPointer(event,true);}
  function onLostCapture(event){if(pointer===event.pointerId)finishPointer(event,true);}
  element.addEventListener('click',handleClick);
+ element.addEventListener('touchstart',onWheelTouchStart,{passive:false});
+ element.addEventListener('touchmove',onWheelTouchMove,{passive:false});
+ element.addEventListener('touchend',onWheelTouchEnd,{passive:false});
+ element.addEventListener('touchcancel',onWheelTouchCancel,{passive:false});
  element.addEventListener('pointerdown',onWheelDown);
  element.addEventListener('pointermove',onWheelMove);
  element.addEventListener('pointerup',onWheelUp);
@@ -732,6 +748,10 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  function setConnection(label){$('mb-connection').textContent=String(label);}
  function destroy(){clearTimeout(flashTimer);clearTimeout(wheelClickTimer);
   element.removeEventListener('click',handleClick);
+  element.removeEventListener('touchstart',onWheelTouchStart);
+  element.removeEventListener('touchmove',onWheelTouchMove);
+  element.removeEventListener('touchend',onWheelTouchEnd);
+  element.removeEventListener('touchcancel',onWheelTouchCancel);
   element.removeEventListener('pointerdown',onWheelDown);
   element.removeEventListener('pointermove',onWheelMove);
   element.removeEventListener('pointerup',onWheelUp);
