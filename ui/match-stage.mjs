@@ -188,7 +188,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     <div class="mb-battle-backdrop">
      <div class="mb-scenery mb-scenery-back" aria-hidden="true"></div>
      <div id="mb-special-flare" class="mb-special-flare" hidden aria-hidden="true"><span id="mb-special-title"></span></div>
-     <div class="mb-foe-line" id="mb-foe-line"></div>
+     <div class="mb-foe-line" id="mb-foe-line"></div><div id="mb-action-callout" class="mb-action-callout" hidden><b id="mb-cue-kind"></b><span id="mb-cue-summary"></span></div>
      <div class="mb-scenery mb-scenery-floor" aria-hidden="true"></div>
      <div class="mb-ally-line" id="mb-ally-line"></div>
     </div>
@@ -224,7 +224,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
      </div>
     </div>
     <div class="mb-command-footer">
-     <button type="button" data-act="watch" id="mb-watch">零式へ切替</button>
+     <button type="button" data-act="watch" id="mb-watch" hidden tabindex="-1" aria-hidden="true">零式へ切替</button>
      <button type="button" data-act="pin-clear">ピン解除</button>
      <button type="button" data-act="mode-cancel" id="mb-mode-cancel">選択をやめる</button>
      <span class="mb-footnote" id="mb-mode-hint">サークルで前衛を回転できます</span>
@@ -320,7 +320,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   return '<div class="mb-team-heading"><span class="mb-team-icon">'+(t.side===0?'A':'B')+'</span>'+
    '<div><b>PLAYER '+(t.side===0?'A':'B')+'</b><small>妖怪6体 / '+(t.mode==='zero'?'零式':'標準')+'ウォッチ</small></div>'+
    '<span class="mb-team-control-indicator">'+(activeSeat===t.side?'操作中':'')+'</span></div>'+
-   '<div class="mb-wheel"><div class="mb-wheel-ring"></div><div class="mb-center-symbol">輪</div>'+chunks+'</div>';
+   '<div class="mb-wheel"><div class="mb-wheel-ring"></div>'+
+   '<button type="button" data-act="watch" class="mb-center-symbol" title="中央でウォッチ切替" aria-label="ウォッチ切替・現在'+(t.mode==='zero'?'零式':'標準')+'">'+
+   (t.mode==='zero'?'零式':'標準')+'</button>'+chunks+'</div>';
  }
  function frontlineHTML(team,isOwn){
   return team.frontIds.map(id=>{
@@ -428,9 +430,21 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     element.querySelectorAll('.mb-floating-number').forEach(el=>el.remove());
     $('mb-special-flare').hidden=true;
     teamDrawCache[0]=null;teamDrawCache[1]=null;battleDrawCache=null;
-   },cue.type==='special'?1050:780);
+   },cue.type==='special'?2300:1900);
   }
   $('mb-special-flare').hidden=flash?.type!=='special';
+  const callout=$('mb-action-callout');
+  if(flash){
+   const names={attack:'こうげき！',technique:'ようじゅつ！',heal:'かいふく！',inspirit:'とりつく！',guard:'ガード！',loaf:'サボり…',poke:'つつく！',special:'ひっさつわざ！'};
+   const caster=view.teams[flash.actor?.startsWith('B')?1:0]?.members.find(u=>u.id===flash.actor);
+   const impact=flash.targets?.[0];
+   const victim=impact&&view.teams[impact.id?.startsWith('B')?1:0]?.members.find(u=>u.id===impact.id);
+   $('mb-cue-kind').textContent=flash.mode==='g-tech'?'Gわざ！':names[flash.kind]||names[flash.type]||'行動';
+   $('mb-cue-summary').textContent=(caster?.name||'')+(victim?' → '+victim.name:'')+
+     (impact?.hit===false?' ミス！':impact?.amount>0?' '+impact.amount:'');
+   callout.dataset.kind=flash.kind||flash.type;
+   callout.hidden=false;
+  }else callout.hidden=true;
   $('mb-special-title').textContent=flash?.type==='special'
    ?(flash.mode==='g-tech'?'Gわざ発動！':'ひっさつわざ！'):'';
 
@@ -451,7 +465,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   for(let index=0;index<2;index++){
    const key=JSON.stringify({team:view.teams[index],seat:activeSeat,selection,
     ownerPin:view.teams[activeSeat].pin,flash,commandMode});
-   if(key!==teamDrawCache[index]){
+   if(key!==teamDrawCache[index]&&!(wheelPointer&&wheelPointer.seat===index)){
     $('mb-team'+index).innerHTML=teamHTML(view.teams[index]);
     teamDrawCache[index]=key;
    }
@@ -502,7 +516,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   $('mb-mode-cancel').disabled=commandMode===null;
   $('mb-mode-hint').textContent=commandMode?matchSelectionHints(view,commandMode).message:
     own.mode==='zero'?'零式モード：つつくは条件がそろった敵に使用'
-    :'サークルを回して前衛3体を入れ替えよう';
+    :'指でサークルを回転・中央タップで零式切替';
   $('mb-activity').textContent=recentMessage;
   $('mb-feed-list').innerHTML=feedHTML();
   $('mb-revision').textContent='REV '+view.revision+' / A '+view.clientSequences[0]+' ・ B '+view.clientSequences[1];
