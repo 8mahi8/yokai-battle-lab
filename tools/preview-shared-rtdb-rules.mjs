@@ -74,12 +74,15 @@ export async function previewRulesFiles({basePath,outPath,
 
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const args=process.argv.slice(2);
- if(args.length!==4||args[0]!=='--base'||args[2]!=='--out'){
-  console.error('Usage: node tools/preview-shared-rtdb-rules.mjs --base exported-current.rules.json --out merged-review.rules.json');
+ const friends=args.length===5&&args[4]==='--friends';
+ if((args.length!==4&&!friends)||args[0]!=='--base'||args[2]!=='--out'){
+  console.error('Usage: node tools/preview-shared-rtdb-rules.mjs --base exported-current.rules.json --out merged-review.rules.json [--friends]');
   process.exitCode=2;
  }else{
   try{
-   const result=await previewRulesFiles({basePath:args[1],outPath:args[3]});
+   const result=await previewRulesFiles({basePath:args[1],outPath:args[3],
+    yokaiPath:friends?'network/emulator/database.friends-noauth.rules.json':
+     'network/emulator/database.rules.json'});
    console.log('SHARED-RTDB-RULES-PREVIEW-PASS',JSON.stringify(result));
    console.log('Review ONLY; NEVER upload it as a replacement without independent owner approval and emulator tests.');
   }catch(e){console.error('SHARED-RTDB-RULES-PREVIEW-REFUSED:',e.message);process.exitCode=1;}
