@@ -25,6 +25,14 @@ if(friends){
   "assert(doc(h).querySelectorAll('script[src]').length===3,'online emulator needs pinned Firebase SDKs');",
   "assert(doc(h).querySelectorAll('script[src]').length===2,'friends build must have only app and database SDKs');"+
   "assert(typeof h.contentWindow.firebase.auth==='undefined','friend mode unexpectedly loaded Firebase Auth');");
+ qa=qa.replace(
+  "await until(()=>!el(h,'.yw-online-auto')?.disabled,'host auto progression ready');\\n el(h,'.yw-online-auto').click();",
+  "await until(()=>el(h,'.yw-online-auto')?.getAttribute('aria-pressed')==='true','friends host automatic match start');"
+ );
+ qa=qa.replace(
+  "assert(el(h,'.yw-online-auto').getAttribute('aria-pressed')==='true',",
+  "assert(el(h,'.yw-online-auto').getAttribute('aria-pressed')==='true',"
+ );
  qa=qa.replace('SITES-ONLINE-EMULATOR-PASS real two-iframe inline HTML, auth/RTDB',
   'SITES-FIREBASE-FRIENDS-EMULATOR-PASS real two-iframe inline HTML, no Auth/RTDB');
 }
