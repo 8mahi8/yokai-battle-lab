@@ -1,0 +1,67 @@
+name: Phase39 Firebase friends Google Sites paste files
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+    paths:
+      - '.github/workflows/phase39-firebase-friends-school-delivery.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build-and-save:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned bundler
+        run: npm install --no-save --package-lock=false --ignore-scripts esbuild@0.25.12
+      - name: Check all battle-engine test cases
+        run: node --test tests/*.test.mjs
+      - name: Build Firebase Friends direct-paste Google Sites HTML
+        run: node tools/build-sites-online.mjs --friends
+      - name: Validate actual code (no Auth or Supabase, Firebase existing RTDB only)
+        run: |
+          node --input-type=module <<'EOF'
+          import assert from 'node:assert/strict';
+          import {readFileSync,statSync} from 'node:fs';
+          const name='dist/sites-online-friends-code.html';
+          const source=readFileSync(name,'utf8');
+          assert.ok(source.length>150000&&source.length<400000);
+          assert.ok(statSync(name).size<450000);
+          assert.match(source,/mygame-df915-default-rtdb\.firebaseio\.com/);
+          assert.match(source,/yokaiRoomsV1/);
+          assert.match(source,/yw-online-make/);
+          assert.match(source,/yw-online-join/);
+          assert.match(source,/yw-online-start/);
+          assert.match(source,/mb-finish-screen/);
+          assert.match(source,/firebase-app-compat\.js/);
+          assert.match(source,/firebase-database-compat\.js/);
+          assert.doesNotMatch(source,/firebase-auth-compat\.js|signInAnonymously\(/);
+          assert.doesNotMatch(source,/supabase\.co|service_role|sb_secret_|127\.0\.0\.1:9099|demo-yokai-lab/);
+          assert.equal((source.match(/<style\b/g)||[]).length,1);
+          console.log('PHASE39-FIREBASE-FRIENDS-PASTE-GATE-PASS bytes='+statSync(name).size);
+          EOF
+      - name: Save separate TXT and HTML on delivery-only branch
+        run: |
+          git switch -c release/sites-firebase-friends-20261026
+          mkdir -p delivery
+          cp dist/sites-online-friends-code.html delivery/YW2_Firebase_Friends_20261026_GoogleSites_PASTE.txt
+          cp dist/sites-online-friends-code.html delivery/YW2_Firebase_Friends_20261026_GoogleSites_PASTE.html
+          cmp delivery/YW2_Firebase_Friends_20261026_GoogleSites_PASTE.txt delivery/YW2_Firebase_Friends_20261026_GoogleSites_PASTE.html
+          git add -f delivery/YW2_Firebase_Friends_20261026_GoogleSites_PASTE.txt delivery/YW2_Firebase_Friends_20261026_GoogleSites_PASTE.html
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'build: friend-only Firebase Google Sites paste TXT and HTML [skip ci]'
+          git push origin HEAD:refs/heads/release/sites-firebase-friends-20261026
+          echo 'PHASE39-TXT-HTML-DELIVERY-BRANCH-PASS'
+      - name: Preserve separately named code files in CI artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase39-firebase-friends-paste-txt-and-html
+          path: |
+            delivery/YW2_Firebase_Friends_20261026_GoogleSites_PASTE.txt
+            delivery/YW2_Firebase_Friends_20261026_GoogleSites_PASTE.html
+          retention-days: 14
+          if-no-files-found: error
