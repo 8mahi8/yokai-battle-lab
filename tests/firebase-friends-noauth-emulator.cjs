@@ -73,7 +73,7 @@ async function main(){
   assert.equal((await gClient.sendIntent(1,{type:'rotate',direction:1})).ok,true);
   for(let i=0;i<75&&!received.length;i++)await new Promise(resolve=>setTimeout(resolve,40));
   assert.equal(received.length,1,'real guest intent reaches host');
-  const match=createMatchProtocol({battleOptions:{seed:212,playtestSoulTuning:true,enableRentalSkills:true}});
+  const match=createMatchProtocol({battleOptions:{seed:212,playtestSoulTuning:true}});
   const ack=match.dispatch(1,received[0].clientSeq,received[0].intent);
   assert.equal(ack.accepted,true);
   assert.equal((await hClient.publishSnapshot(match.snapshot())).ok,true);
