@@ -34,3 +34,14 @@
 
 ## 今後の研究
 原作の戦闘テンポを録画から測定、個別技モーションを長短分けて見せる、妖気の自然蓄積/ランク差/とりつき対象ボーナス等を実証する。次の校内試遊で「輪ドラッグ」「中央零式」「防御/とりつき/回復/妖術」「約2.6秒ごとの更新」「妖気が溜まる感覚」を再評価して微調整する。原作再現前の別ゲーム化はしない。
+
+## V3 リリース受け入れと Google Drive 実保存
+- **Google Sitesに貼るTXT**: https://drive.google.com/file/d/15nuR52ZJSxEyuA09gW8MPOmhPBePuidu/view?usp=drivesdk
+- **同一内容のHTML**: https://drive.google.com/file/d/1MSvwv8HGbFCLPggbrN-nLMXkmk7jPOQ9/view?usp=drivesdk
+- 保存先: https://drive.google.com/drive/folders/1xgKahjwoESrIam0JnbqUYivEQ2vyqiXO （既存V1/V2を残した）。
+- [Phase43最終 CI #40422630040](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40422630040) **SUCCESS**。576/576戦闘回帰、レンタル6体4seed自然決着、実ChromiumでTouchEvent/ペン・中央切替・途中DOM再描画のテスト、Google Sites用の単体HTML生成と配置/依存検査まで通過。
+- 生成実物のTXT/HTMLそれぞれ**196810バイト**、ZIP展開前/後の実バイト同一、SHA256 `254e2eb80b4b654d9754cd7eb7fc1e3878b6bc6039d717b65e4ed36e4341f0da`。Git Blob SHA `4f60c3fb77f22a2ef1260788126170c595cb47a9`。Google Driveに別ファイルで保存し、両方のサイズ・MIME (`text/plain`/`text/html`)・親フォルダをDriveから読み戻し確認。
+- 固定リリースブランチ: `release/sites-firebase-friends-20261027-v3-touch-tempo`。
+- **これをGoogle Sites「埋め込む→コード」に貼るまでは、旧Google Sites版が表示されたまま**。既存サイトのHTMLや本番Firebaseルール・データ、GitHub main は変更していない。
+- V3を本人と友人が学校のiPad2台で実機再テストした結果は**未到着**。Chromeの擬似TouchEvent成功は旧Safariの完全な実機保証ではない。
+
