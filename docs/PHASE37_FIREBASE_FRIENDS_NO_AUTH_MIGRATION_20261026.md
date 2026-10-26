@@ -40,3 +40,22 @@ Firebase公式：
 - 従来の匿名Firebaseエミュレーター版・Supabase版に影響を与えない、ビルド時条件分岐。
 - 2026-10-26 Phase37初回CIでは `--emulator-friends` のSDK Auth 9099ゲートが旧検証条件に残りビルド停止。FriendsモードではAuthエミュレーターを使わないため、`tools/build-sites-online.mjs`のゲートを修正。
 - [Phase37 friends Firebaseエミュレーター/2画面CI](https://github.com/8mahi8/yokai-battle-lab/actions/workflows/phase37-firebase-friends.yml) を必ず確認し、完了結果を追記。CI成功でも**学校実機成功ではない**。
+
+
+## Phase37の実検証完了（追記）
+[GitHub Actions #40324796346](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40324796346) **PASS**：
+- `--friends` のGoogle Sites直貼り用HTMLビルド **191,017 bytes**。外部SDK2本（firebase-app-compat / firebase-database-compat）、**Firebase Auth SDK・`signInAnonymously()`なし**。本番の`mygame-df915` URL参照のみ（**接続・書込していない**）。
+- `--emulator-friends` のQA用HTMLビルド **191,276 bytes**。
+- Firebase **認証なし**RTDB実Emulator: 未認証ホストの部屋作成、未認証ゲストの参加、試合開始、ゲスト入力とホスト受信、戦闘エンジンのACK、ゲストへの初期戦況とRevision、他ゲームへの書込拒否、悪い入力・同一番号再送を含む制御 PASS。`FIREBASE-FRIENDS-NOAUTH-PASS`。
+- **実Chromium 2 iframe**：Google Sites型単一HTML×2によるルーム作成・加入・試合開始・4コマンド・サークル回転ACK・ホスト自動進行・切断停止/復帰・4種の画面幅確認まで `SITES-FIREBASE-FRIENDS-EMULATOR-PASS`。
+- 過去のFirebase匿名Auth版のブラウザE2E/既存Node研究テストも別CIで成功（従来モードを維持）。
+- これは**localhostのFirebase RTDB emulator**での証拠であり、実共有Firebase Rules・学校Safari Google Sites直接貼付の許可は確認していない。
+
+### 実本番Rulesを取得できたとき
+既存BRAWL/小国戦線のRulesを壊さず **新規/独立**`yokaiRoomsV1`の追加差分をレビューするため、既存 `tools/preview-shared-rtdb-rules.mjs` を`--friends`に対応させた：
+
+```bash
+node tools/preview-shared-rtdb-rules.mjs --base private/mygame-current.rules.json --out private/mygame-friends-review.json --friends
+```
+
+これは**ローカルだけのプレビュー**で、Firebaseルール公開はしない。元Rulesのroot権限が広い・rootワイルドカード・既存`yokaiRoomsV1`がある場合は人間のレビューを要求し停止する。`tests/firebase-friends-merge-preview.test.mjs` は既存BRAWL・小国戦線のルールが変わらないことと既存ルール衝突の拒否を確認する。
