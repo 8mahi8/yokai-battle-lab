@@ -102,7 +102,7 @@ document.getElementById('frame').addEventListener('load',()=>{
   const cx=bounds.left+bounds.width/2,cy=bounds.top+bounds.height/2;
   const radius=Math.min(bounds.width,bounds.height)*.32;
   const pointer=(type,x,y,id=81)=>new PointerEvent(type,{bubbles:true,cancelable:true,
-   pointerId:id,button:0,pointerType:'touch',isPrimary:true,clientX:x,clientY:y});
+   pointerId:id,button:0,pointerType:'pen',isPrimary:true,clientX:x,clientY:y});
   const record=x=>Number(pick('#battle-stage').dataset.stageRevision);
   const beforeDrag=record();
   wheel.dispatchEvent(pointer('pointerdown',cx+radius,cy-radius));
@@ -131,7 +131,31 @@ document.getElementById('frame').addEventListener('load',()=>{
    'normal medal tap must remain selectable immediately after a wheel drag');
   check(record()===tiny,'medal selection must not secretly rotate or advance the battle');
 
-  pick('#mb-watch').click();
+  // Old Safari must rotate from native finger TouchEvents, not only pen PointerEvents.
+  // The wheel must remain mounted across an unrelated UI rerender during drag.
+  const schoolWheel=pick('#mb-team0 .mb-wheel');
+  const sr=schoolWheel.getBoundingClientRect();
+  const sx=sr.left+sr.width/2,sy=sr.top+sr.height/2,rr=Math.min(sr.width,sr.height)*.32;
+  const TouchCtor=root.defaultView.Touch,EventCtor=root.defaultView.TouchEvent;
+  check(typeof TouchCtor==='function'&&typeof EventCtor==='function','native TouchEvent QA unsupported');
+  const finger=(x,y)=>new TouchCtor({identifier:97,target:schoolWheel,
+     clientX:x,clientY:y,pageX:x,pageY:y,screenX:x,screenY:y});
+  const sendTouch=(target,type,touches,changedTouches)=>
+   target.dispatchEvent(new EventCtor(type,{bubbles:true,cancelable:true,
+      touches,targetTouches:touches,changedTouches}));
+  const startFinger=finger(sx+rr,sy-rr),endFinger=finger(sx+rr,sy+rr),beforeTouch=record();
+  sendTouch(schoolWheel,'touchstart',[startFinger],[startFinger]);
+  sendTouch(pick('#battle-stage'),'touchmove',[endFinger],[endFinger]);
+  pick('#mb-charge').click(); // calls render while the gesture is active
+  check(pick('#mb-team0 .mb-wheel')===schoolWheel,
+    'battle UI rerender detached wheel from Safari finger');
+  sendTouch(pick('#battle-stage'),'touchend',[],[endFinger]);
+  check(record()===beforeTouch+1,'native TouchEvents must submit one real wheel rotation');
+  check(pick('#mb-action-callout')!==null,'action callout missing');
+  const center=pick('#mb-team0 .mb-center-symbol');
+  check(center.tagName==='BUTTON'&&center.dataset.act==='watch',
+    'center must be an actual tappable zero Watch toggle');
+  center.click();
   check(pick('#mb-watch').textContent.includes('標準ウォッチ'),'standard -> zero watch toggle failed');
   check(pick('#mb-target').textContent.includes('つつく'),'zero mode should swap target into poke');
   check(pick('#mb-charge').textContent.includes('Gわざ'),'zero mode must label special button Gわざ');
