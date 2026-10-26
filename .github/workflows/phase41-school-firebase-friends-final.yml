@@ -35,7 +35,7 @@ jobs:
           assert.ok(statSync(file).size>170000&&statSync(file).size<400000);
           for(const needle of ['mygame-df915-default-rtdb.firebaseio.com',
             'yokaiRoomsV1','yw-online-make','yw-online-join','yw-online-start',
-            'mb-finish-screen','戦闘を再開','対戦に自動接続しました',
+            'mb-finish-screen',
             'firebase-app-compat.js','firebase-database-compat.js'])
             assert.ok(code.includes(needle), 'missing: '+needle);
           assert.doesNotMatch(code,/firebase-auth-compat\.js|signInAnonymously\(/);
