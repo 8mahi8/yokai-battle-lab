@@ -59,3 +59,6 @@ node tools/preview-shared-rtdb-rules.mjs --base private/mygame-current.rules.jso
 ```
 
 これは**ローカルだけのプレビュー**で、Firebaseルール公開はしない。元Rulesのroot権限が広い・rootワイルドカード・既存`yokaiRoomsV1`がある場合は人間のレビューを要求し停止する。`tests/firebase-friends-merge-preview.test.mjs` は既存BRAWL・小国戦線のルールが変わらないことと既存ルール衝突の拒否を確認する。
+
+## Phase38で追加された本番読み取り証拠（2026-10-26）
+[別チャットの2026-10-22 Firebase Console Rules・2026-10-25変更なし確認・実本番READ診断・2iframe検証](./PHASE38_PRIOR_FIREBASE_RULES_AND_READONLY_AUDIT_20261026.md)に進捗追加。過去のルールは全DB `.read/.write` が `now < 1794063600000`（**2026-11-08 00:00 JST失効**）。その旧ルールのローカル再現でGoogle Sites型2画面対戦はPASS。GitHub Actionsから実共有Firebaseの**未認証READ HTTP 200**を確認。**本番の書込許可と学校Safariの実プレイは未確認**のため、Rules変更不要「確定」とは言わない。現時点で本番Firebaseルール変更は実施していない。
