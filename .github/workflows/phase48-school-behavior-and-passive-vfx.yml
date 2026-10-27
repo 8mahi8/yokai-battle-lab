@@ -21,10 +21,6 @@ jobs:
         run: node --test tests/*.test.mjs
       - name: Four natural 6v6 seeded outcomes
         run: node tools/normal-match-endurance.mjs
-      - name: Font to inspect Japanese action labels in actual Chrome pixels
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq fonts-noto-cjk
       - name: Real Chrome wheel touch, normal actions and authentic Skill reaction
         run: node tools/stage-smoke.mjs
       - name: Build actual Firebase Friends no-Auth single-file Google Sites HTML
