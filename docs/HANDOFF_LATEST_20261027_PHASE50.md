@@ -1,5 +1,8 @@
 # 妖怪ウォッチ2 オンライン対戦再現｜最新引き継ぎ【2026-10-27 Phase50】
 
+> **2026-10-28｜ADR-0003：オリジナル妖怪キャラ定義V1**：原作の4技（攻撃/妖術/とりつく/必殺）+固有スキル+5能力+種族/ランク+2軸性格+属性/装備を別フィールド化。新規 `content/yokai-definition.mjs`（検証・不変コピー）、`content/rental-yokai-definitions.mjs`（既存6体の学校/研究両定義）、`tests/yokai-definition-schema.test.mjs`（6体/24技ID/未知値/多段と範囲の区別/深いimmutability）を追加。[ADR-0003 完全設計](./ADR_0003_YOKAI_CHARACTER_DEFINITION_V1_20261028.md)。**いまは戦闘エンジン未接続、学校版・main・Firebase本番無変更**。コミット`4c3e8c493`のResearch Unit [608/608 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40531692654)＋Stage QA [SUCCESS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40531692592)。資料だけの後続コミットは別検証。
+
+
 > **2026-10-28｜基盤再設計判断（ADR-0002）**：本人が「原作再現のため開発基盤を見直す」と提案。新たな設計入口は [ADR-0002｜原作PvPコアの段階的再編](./ADR_0002_ORIGINAL_PVP_CORE_REARCHITECTURE_20261028.md)。既存Firebase Friends/ホスト権威/Google Sites直貼りを維持し、正規の技ID→ヒット結果→演出・プレイヤー別表示を段階抽出する。**この段階は設計と現状監査のみ。戦闘コードやGoogle Sites公開版は変更していない。** また学校Friendsの回転制約は`createMatchProtocol`既定**3000ms**。Phase51研究の旧記述「指定なし→0」は訂正済み。原作での正確な値は未検証。
 
 
