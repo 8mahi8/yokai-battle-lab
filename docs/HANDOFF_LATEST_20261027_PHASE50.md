@@ -1,5 +1,8 @@
 # 妖怪ウォッチ2 オンライン対戦再現｜最新引き継ぎ【2026-10-27 Phase50】
 
+> **Phase51実装済（2026-10-27）**：原作映像で見える上画面の戦闘を、チャージ・おはらい操作が隠してしまう問題を解消。`#mb-modal`を下画面内に配置し、タッチ中の上画面更新を実ブラウザで確認。[実装とQA記録](./PHASE51_LOWER_SCREEN_GESTURE_PRESENTATION_20261027.md)。初回Stage QAは失敗→コード未変更で再実行し **Stage/Pointer10種類/勝敗 PASS**。Research 604/604 PASS。2〜4試合目の動画実フレームは依然未取得。**main・学校Google Sites稼働版・本番Firebaseは未変更。**
+
+
 > **動画2〜4の再読込試行（2026-10-27）**：[障害の切り分けと復旧手順](./ORIGINAL_PVP_MATCH02_TO04_VIDEO_ACCESS_RETRY_20261027.md)。MP4は登録確認済だが、`container.exec`、`python.exec`、可視Pythonの全てが短い最小コマンドにも`ClientError`。**動画を読めたとは扱わない**。第1試合の既存画像は再読できた。映像の再送を先に求めず、実行環境の復旧を優先。
 
 
