@@ -398,3 +398,24 @@
  .mb-yw2 .mb-fighter.mb-inspirited .mb-character-art,
  .mb-yw2 .mb-creature.mb-inspirited .mb-character-art{animation:none!important}
 }
+
+
+/* Phase46 screenshot finding: 170px-wide centered callout occluded BOTH
+   acting and targeted sprites. Keep readable label in unused field margin. */
+.mb-yw2 .mb-action-callout{
+ left:10px;top:24px;transform:none;
+ width:clamp(102px,18%,165px);min-width:0;max-width:165px;
+ text-align:left;padding:6px 8px;box-shadow:0 2px 7px #060c1755;
+ border-width:1px;animation:mb-callout-side .22s ease-out both}
+.mb-yw2 .mb-action-callout b{font-size:14px;letter-spacing:0}
+.mb-yw2 .mb-action-callout span{font-size:11px}
+@keyframes mb-callout-side{from{opacity:.2;transform:translateX(-8px)}
+ to{opacity:1;transform:translateX(0)}}
+@media(max-width:680px){
+ .mb-yw2 .mb-action-callout{left:3px;top:28px;width:86px;padding:4px}
+ .mb-yw2 .mb-action-callout b{font-size:12px}
+ .mb-yw2 .mb-action-callout span{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+ .mb-yw2 .mb-action-callout{animation:none}
+}
