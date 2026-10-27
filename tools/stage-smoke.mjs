@@ -163,6 +163,12 @@ document.getElementById('frame').addEventListener('load',()=>{
   check(pick('#mb-choice-status').textContent.includes('つつく'),'zero poke command prompt missing');
   pick('#mb-mode-cancel').click();
   pick('#mb-step').click();
+  check(pick('.mb-battle-backdrop').dataset.scenePhase==='anticipation',
+    'new action must begin with wind-up, not immediately jump to impact');
+  check(pick('.mb-battle-backdrop').dataset.sceneKind!=='none',
+    'canonical action kind must select a visual motion');
+  check(root.querySelectorAll('.mb-floating-number').length===0,
+    'damage or healing number was exposed before the impact phase');
   check(Number(pick('#mb-turn').textContent)===1,'actual automatic battle action failed');
   check(!pick('#mb-action-label').textContent.includes('待機中'),'canonical actor summary not shown');
   check(root.querySelectorAll('.mb-fighter.mb-acting').length===1,'actual fighter should flash once');
