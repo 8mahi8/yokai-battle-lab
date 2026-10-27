@@ -119,7 +119,7 @@ function checkOptions(options){
  const allow=new Set(['seed','teams','autoRotateReserves','enableLoafing','rotationCooldownMs',
   'researchSoulRecoveryMode','researchDamageModel','researchMultiHit',
   'researchStatInspirits','researchTurnInspirits','researchHealingVariance','researchSpecialEffects',
-  'playtestSoulTuning']);
+  'catalogAttackResolution','playtestSoulTuning']);
  for(const key of Object.keys(options))if(!allow.has(key))
   throw new RangeError('initial online contract forbids option '+key);
  // The user-approved playtest option is a boolean; individual gain values
