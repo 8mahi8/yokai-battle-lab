@@ -30,7 +30,9 @@
 - `tests/action-outcome-v2.test.mjs`を追加。MISS、KO中断、ありえないHP/偽状態の拒否、未知キャラ拒否、旧スナップとの不変性、実ホスト→実画面演出の一気通貫など**6ケース**。過去の619テストに追加。
 - **実行と演出の時間はまだ独立していないヒット表示の段階**：1ヒットごとのメタデータは保存済みだが、映像上は従来の集約ヒット演出を続ける。原作ヒット間隔の秒数は未確定。
 - 今回の変更は**戦闘イベントの翻訳と表示側の検証**であり、旧ホストのRNG、HP、妖気、行動順、Firebaseの通信契約、学校Google Sites版、mainを変えていない。
-- **検証**：最新のResearch unit・Chromium Stage・Firebase Emulator・Google SitesビルドのGitHub Actionsリンクは下に追加し、完了後は成功/失敗を正確に記載。Chromium QAはSafari実機ではない。
+- **検証済**（契約モジュールを`contracts/`へ分離したコード、コミット`fe70ca419`）：[Research Unit 625/625 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40548481623)、[Chromium Stage QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40548481738)、[Firebase emulator QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40548481443)、[Sites online emulator/build QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40548481405)。
+- **注意**：今回のFirebase QAには旧匿名認証を利用する研究経路も含まれる。学校向けの**AuthなしFriends実戦2台**をこの合格だけから断言しない。学校Safari実機未検証。現在の表示は旧画面の集計ヒットで、ヒットごとのアニメ再生はまだ。原作の時間は未確定。
+- **途中の失敗も記録**：`presentation/action-choreography.mjs`から`engine/`へ共通契約を直接importしてしまい、[アーキテクチャ境界テストが失敗](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40548270683)。テストを弱めず、`contracts/action-outcome-v2.mjs`へ移動し、以後625件全合格で再確認。
 
 ## 次する作業（Phase 1 / サブステップ1.3）
 **最優先は新V2結果を参照して命中ごとに見せる処理の設計と原作比較**。ただしヒット間隔や追加効果の裏付けがない箇所は再現済みとはしない。並行して、攻撃処理本体の1技を新しい共通技データで処理できるよう移行し、同一seedの従来結果と比較する。次に特殊攻撃の共通化を始める。
