@@ -12,7 +12,7 @@
 ## ロードマップ
 | Phase | 目的 | 2026-10-28時点 | 次の受け入れ条件 |
 |---|---|---|---|
-| **Phase 1** | **戦闘基盤の統一** | **進行中（1.7 完了）**：通常攻撃・攻撃/回復妖術に加え、とりつくの効果ID・良悪・対象・試遊レベルを共通データ化し、ホストの実行判定・AIへ接続。旧/新seedの正規状態一致 | 次Phase1.8：必殺の技固有の効果・対象/多段を台帳へ移し、原作動画で検証できた範囲だけ忠実化する |
+| **Phase 1** | **戦闘基盤の統一** | **進行中（1.8 完了）**：通常攻撃・妖術・とりつくに加え、6必殺の種別/対象/威力/追加状態を単一技データからホストへ供給。単発/多段は未確認のため`unknown`。旧/新シード比較で結果一致 | 次Phase1.9：既存6スキル台帳の発動条件をホスト処理へ段階接続→ActionOutcomeの正規結果へ。原作の技別ヒット列はPhase2で動画観察とともに実装 |
 | Phase 2 | 戦闘ルールを原作へ近づける | 後続（現在は一部の研究ルール・試遊値が存在） | 単発/多段/範囲、妖術、回復、とりつく、必殺、スキル、性格等をルールごと検証。元データ確度を維持 |
 | Phase 3 | 行動順と戦闘の時間 | 後続（現行は待ちポイント研究＋ホスト2600ms固定） | 原作に準拠した論理行動順とモーション/操作タイミングの対応を確認 |
 | Phase 4 | 操作と対人戦特有の仕組み | 後続（下画面ミニゲームとサークル等の既存実装あり） | おはらい/必殺/つつく/零式と**双方の表示保留**を原作局面で検証 |
@@ -20,6 +20,19 @@
 | Phase 6 | オンライン総合/学校試遊 | 後続（Firebase Friends試遊基盤とChrome QAあり） | Firebaseホスト/ゲストの判定一致と学校Safari 2端末の操作・長試合が実証される |
 
 **「進行中/後続」は研究や既存試作品が存在しない意味ではない**。現在の仕事の優先レーンを示す。個々の機能はPhaseをまたいで縦切り実装し、テストする。
+
+## 今回した作業（Phase1 / サブステップ1.8：必殺技の統一マスター・実ホスト接続）
+- **技定義の一元化**：新`content/rental-soultimate-moves.mjs`に6体の必殺技（通常ダメージ/ドレイン/バフ/ダメージ+状態変化/蘇生+回復/デバフ）の型・対象・Power・付与状態を記録。全て**試遊fixture**。範囲に複数対象がいても**多段ヒットではない**。元ゲームの打数が確認できていないダメージ系は`hitPattern:{type:'unknown',count:null}`、攻撃以外の技は`none,0`。
+- `content/rental-roster.mjs`にあった個別の5つの`special`直書きを除去、共通マスターから互換用`special`を生成。`content/rental-move-master.mjs`は技のID/対象/型/状態情報を上記単一ソースから生成。
+- **戦闘エンジンへ接続**：`engine/catalog-soultimate-spec.mjs`でキャラ・5能力・スキル・技ID・Power・対象・追加状態/不明HitCountの整合を厳密検査。`engine/combat.mjs`のホスト必殺効果解決は新`catalogSoultimateResolution`使用時マスターの技定義を採用。元のHP/KO/Soul/状態/計算式/乱数は変えず、レンタルの開発版`MatchProtocol`で既定true、custom teamはfalse。
+- **試験**：新`tests/phase1-8-soultimate-catalog-host-parity.test.mjs`に5ケース追加。6種の必殺を実際に発動し、旧/新のホスト結果・HP・状態・勝敗を同seed比較。**[研究単体654/654＆耐久PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40603028705)**、**[実Chromium Stage/Gesture/Result PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40603028781)**。途中の1件失敗は状態ダウンの実験フラグ不足で、テスト条件を修正して通過。既存ゲーム本体のルール制限は緩めていない。
+- **原作**：[Mt Wildwood YW2 Moves](https://mtwildwood.net/yw2/moves) と [攻略大百科の必殺一覧](https://gamepedia.jp/youkai-yw2/specials)を確認、**敵一体/複数と1hit/多hitを明確に分離**。本人提供MP4第1試合の従来観察記録と第2試合の実フレームサンプルを再確認。録画の全打数/アニメ時間の確定は未実施。
+- **未完**：必殺ごとの本物の多段/全体命中回数・原作数値、スキルの実行効果統合、学校Safari二台対戦。**学校Google Sites稼働版・GitHub main・Firebase本番ルール/DBは無変更**。全証拠：[Phase1.8](./PHASE1_8_SOULTIMATE_MASTER_HOST_PARITY_20261028.md)。
+
+## 次する作業（Phase1 / サブステップ1.9）
+**固有スキルの共通台帳→ホスト発火条件/効果の縦切り接続**。最初の1スキルについて従来の戦闘結果と同seed比較し、ほかの5スキルへ安全に展開。特殊技の多段ヒットは別レーンで原作の録画と資料に一致した段階で実装する。学校試遊は実機の受け入れ条件が揃うまで保留。
+
+## 前回の作業（Phase1.7）
 
 ## 今回した作業（Phase1 / サブステップ1.7：とりつく共通データ化）
 - `content/inspirit-effect-master.mjs`：現行の研究用7効果のID・正負・分類・未確定持続を共通管理。`content/rental-inspirit-moves.mjs`：6体のとりつき効果（sleep / strength-up）、対象、仮レベル1を単一の著者データへ移した。**原作の確定技名/確率/時間ではない**。
