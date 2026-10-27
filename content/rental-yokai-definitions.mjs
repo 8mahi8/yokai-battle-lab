@@ -12,7 +12,7 @@ const hitPattern=count=>count>1?{type:'multi',count}:{type:'single',count:1};
 function makeMove(id,slot,{category,power=null,element=null,targetScope='unknown',
  hitPattern:pattern={type:'unknown',count:null},statusEffect=null}){
  return {id:id+':'+slot,slot,displayName:null,category,power,element,
-  targetScope,hitPattern:pattern,statusEffect,evidence:'fixture'};
+  targetScope,hitPattern:pattern,statusEffect,evidence:'fixture',sourceRefs:[]};
 }
 function specialOf(x){
  // Same exact fallback as engine/combat.mjs, but explicitly marked a fixture.
@@ -62,10 +62,14 @@ function build(index,mode){
    actionWeights:[...behavior.weights],
    loafChancePercent:mode==='school'?school.loafChance:(x.loafChance??0)},
   moves:moveSet(id,x),
-  skill:{id:'skill:'+x.skill,displayName:null,trigger:null,effect:null,evidence:'fixture'},
+  skill:{id:'skill:'+x.skill,displayName:null,trigger:null,effect:null,
+   evidence:'fixture',sourceRefs:[]},
   provenance:{identity:'fixture',stats:'fixture',moves:'fixture',
    skill:'fixture',personality:'fixture',tribe:'unknown',rank:'unknown',
-   faction:'unknown',resistances:'unknown',equipment:'unknown'}
+   faction:'unknown',resistances:'unknown',equipment:'unknown'},
+  fieldSourceRefs:Object.fromEntries(['identity','stats','moves','skill',
+   'personality','tribe','rank','faction','resistances','equipment']
+   .map(field=>[field,[]]))
  });
 }
 export const RENTAL_YOKAI_LAB=Object.freeze(
