@@ -753,7 +753,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       skillBoosts:Object.fromEntries([...skillBoosts].map(([id,boost])=>[id,{...boost}])),
       spentLastStand:[...spentLastStand],
       squads:squads.map(t=>t.map(m=>({...m,weights:[...m.weights],
-      elementResistances:{...m.elementResistances}}))),events:events.slice(-80).map(e=>({...e})),soul:soul.snapshot(),
+      elementResistances:{...m.elementResistances}}))),// Event IDs are absolute in this match, not indices in the sliding last-80 window.
+      // This is DISPLAY metadata only and never advances the battle/RNG.
+      events:events.slice(-80).map((e,i)=>({...e,eventId:events.length-Math.min(events.length,80)+i+1})),soul:soul.snapshot(),
       guided:guided.map(g=>g?{token:g.token,id:g.id,kind:g.kind,challenge:g.trial.snapshot()}:null),
       purification:purification.map(p=>p?{id:p.id,challenge:p.trial.snapshot()}:null),
       poke:{active:pokes.map(p=>p?{targetId:p.targetId,challenge:p.trial.snapshot()}:null),
