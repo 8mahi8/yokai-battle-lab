@@ -491,11 +491,18 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    if(maxId>lastEventId){
     lastEventId=maxId;
     if(!document.hidden&&seen.cues.length){
-     pendingCues.push(...seen.cues);
-     // Bounded catchup: never leave Safari seconds/minutes behind the match.
-     if(pendingCues.length>MAX_VISUAL_CATCHUP_CUES)
-      pendingCues=pendingCues.slice(-MAX_VISUAL_CATCHUP_CUES);
-     if(!scenePlan)beginScene(pendingCues.shift(),previousView);
+     if(seen.skipped>0){
+      // Huge sync jump: skip old visuals, show the latest meaningful action.
+      // The live host snapshot is already authoritative. Do not spend many
+      // seconds replaying outdated actions (or hide its real passive notice).
+      pendingCues=[];cancelScene();
+      beginScene(seen.cues.at(-1),previousView);
+     }else{
+      pendingCues.push(...seen.cues);
+      if(pendingCues.length>MAX_VISUAL_CATCHUP_CUES)
+       pendingCues=pendingCues.slice(-MAX_VISUAL_CATCHUP_CUES);
+      if(!scenePlan)beginScene(pendingCues.shift(),previousView);
+     }
     }
     if(seen.cues.length)seenCueKey=seen.cues.at(-1).key;
    }
