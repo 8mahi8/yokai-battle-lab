@@ -22,7 +22,7 @@ function moveSetFromIds(reference){
  }
  return moves;
 }
-function build(index,mode){
+function buildReference(index,mode){
  const x=RENTAL_SQUAD[index],school=SCHOOL_RENTAL_PERSONALITIES[index];
  const ref=RENTAL_CHARACTER_MOVE_REFS[index];
  if(ref.name!==x.name||ref.skillId!=='skill:'+x.skill)
@@ -31,7 +31,7 @@ function build(index,mode){
  const behavior=mode==='school'?school:x;
  const passive=findSkill(PLAYTEST_SKILL_CATALOG,'skill:'+x.skill);
  if(!passive)throw new TypeError('missing rental skill catalog entry: '+x.skill);
- return defineYokai({
+ return Object.freeze({
   schema:YOKAI_DEFINITION_SCHEMA,id,name:x.name,
   tribe:null,rank:null,faction:null,
   stats:{hp:x.maxHp,strength:x.strength,spirit:x.spirit,
@@ -40,7 +40,7 @@ function build(index,mode){
   personality:{seriousnessTier:null,attitude:behavior.attitude,
    actionWeights:[...behavior.weights],
    loafChancePercent:mode==='school'?school.loafChance:(x.loafChance??0)},
-  moves:moveSetFromIds(ref),
+  moveIds:ref.moveIds,
   skill:{id:passive.id,displayName:passive.displayName,
    trigger:passive.trigger,effect:passive.effect,
    evidence:passive.evidence,sourceRefs:[...passive.sourceRefs]},
@@ -52,7 +52,19 @@ function build(index,mode){
    .map(field=>[field,[]]))
  });
 }
+// Primary authoring representation: compact character record + four move IDs.
+export const RENTAL_YOKAI_REFERENCES_LAB=Object.freeze(
+ RENTAL_SQUAD.map((_,i)=>buildReference(i,'lab')));
+export const RENTAL_YOKAI_REFERENCES_SCHOOL=Object.freeze(
+ RENTAL_SQUAD.map((_,i)=>buildReference(i,'school')));
+
+// Schema V1 full-inline forms exist ONLY as compatibility projections for
+// old tests/tools. Normal catalog assembly consumes REFERENCES + MOVE MASTER.
+function expandForLegacy(reference){
+ const {moveIds,...fields}=reference;
+ return defineYokai({...fields,moves:moveSetFromIds({moveIds})});
+}
 export const RENTAL_YOKAI_LAB=Object.freeze(
- RENTAL_SQUAD.map((_,i)=>build(i,'lab')));
+ RENTAL_YOKAI_REFERENCES_LAB.map(expandForLegacy));
 export const RENTAL_YOKAI_SCHOOL=Object.freeze(
- RENTAL_SQUAD.map((_,i)=>build(i,'school')));
+ RENTAL_YOKAI_REFERENCES_SCHOOL.map(expandForLegacy));
