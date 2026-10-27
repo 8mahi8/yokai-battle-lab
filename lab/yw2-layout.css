@@ -340,3 +340,40 @@
 .mb-creature.mb-acting,.mb-creature.mb-hit,.mb-creature.mb-healed{animation-duration:1.65s}
 @media(max-width:680px){.mb-action-callout b{font-size:16px}.mb-action-callout span{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.mb-action-callout{animation:none}}
+
+
+/* Phase46: the host resolves effects; these graphics only replay the result.
+   Each action's anticipation is different. The stage reports data-scene-phase,
+   so no effects or HP numbers appear before the impact frame. */
+.mb-yw2 .mb-battle-backdrop[data-scene-phase="anticipation"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-physical .52s ease-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-kind="technique"][data-scene-phase="anticipation"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-magic .7s ease-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-kind="heal"][data-scene-phase="anticipation"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-heal .65s ease-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-kind="inspirit"][data-scene-phase="anticipation"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-inspirit .65s ease-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-kind="guard"][data-scene-phase="anticipation"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-guard .4s ease-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-kind="loaf"][data-scene-phase="anticipation"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-loaf .6s ease-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-phase="impact"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-strike .6s ease-in-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-kind="guard"][data-scene-phase="impact"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-guard .63s ease-in-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-kind="heal"][data-scene-phase="impact"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-heal .48s ease-in-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-kind="inspirit"][data-scene-phase="impact"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-inspirit .45s ease-in-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-phase="recovery"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-recover-caster .7s ease-in-out both}
+@keyframes mb-windup-physical{from{transform:translateY(0) scale(1)}to{transform:translateY(-11px) scale(1.08)}}
+@keyframes mb-windup-magic{0%{transform:translateY(0) rotate(0deg)}60%{transform:translateY(-9px) rotate(-10deg)}100%{transform:translateY(-10px) rotate(9deg)}}
+@keyframes mb-windup-heal{0%{transform:translateY(0) scale(1)}100%{transform:translateY(-7px) scale(1.19)}}
+@keyframes mb-windup-inspirit{0%{transform:rotate(0deg) scale(1)}50%{transform:rotate(11deg) scale(1.12)}100%{transform:rotate(-9deg) scale(1.1)}}
+@keyframes mb-windup-guard{0%{transform:scale(1)}100%{transform:translateY(7px) scale(1.18,.80)}}
+@keyframes mb-windup-loaf{0%{transform:translateY(0) rotate(0)}50%{transform:translateY(5px) rotate(12deg)}100%{transform:translateY(4px) rotate(-9deg)}}
+@keyframes mb-recover-caster{0%{transform:translateY(-5px) scale(1.07)}100%{transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){
+ .mb-yw2 .mb-battle-backdrop .mb-fighter.mb-acting .mb-character-art{animation:none!important}
+}
