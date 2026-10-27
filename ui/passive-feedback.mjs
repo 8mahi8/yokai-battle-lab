@@ -20,7 +20,7 @@ function display(effect){
   ?' +'+effect.amount+'HP':
   effect.kind==='終了'?' 終了':' 発動';
  return Object.freeze({eventId:effect.eventId,key:'skill:'+effect.eventId,
-  actorId:effect.actor??null,targetId:effect.targetId??null,
+  actorId:effect.actor??null,targetId:n==='care'?effect.targetId??null:null,
   label:label+result,kind:n});
 }
 /** Only effects linked to the latest canonical auto action, not older turns.
