@@ -4,11 +4,14 @@
  * Rental weights and excluded skill/soultimate conditions are NOT original values.
  * Weight indices: Attack, Technique, Inspirit, Guard.
  */
+import {INSPIRIT_EFFECT_MASTER} from '../content/inspirit-effect-master.mjs';
 export const ACTION_KINDS = Object.freeze(['attack','technique','inspirit','guard']);
 const below = (members,limit) => members.some(m=>m.hp/m.maxHp<limit);
 const allAbove = (members,limit) => members.every(m=>m.hp/m.maxHp>=limit);
-const NEGATIVE_INSPIRITS=new Set(['sleep','strength-down','defense-down','spirit-down','hp-loss']);
-const POSITIVE_INSPIRITS=new Set(['strength-up','hp-regen']);
+const NEGATIVE_INSPIRITS=new Set(INSPIRIT_EFFECT_MASTER
+ .filter(effect=>effect.sign==='negative').map(effect=>effect.id));
+const POSITIVE_INSPIRITS=new Set(INSPIRIT_EFFECT_MASTER
+ .filter(effect=>effect.sign==='positive').map(effect=>effect.id));
 
 export function actionWeights(actor,{allies,enemies,enemyPin=null,negativeCounts={},positiveCounts={}}={}){
  if(!Array.isArray(actor.weights)||actor.weights.length!==4||actor.weights.some(n=>!Number.isFinite(n)||n<0))
