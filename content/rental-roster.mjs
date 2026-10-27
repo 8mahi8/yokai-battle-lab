@@ -22,13 +22,16 @@ export const RENTAL_SQUAD = Object.freeze([
 ]);
 
 export const SCHOOL_RENTAL_PERSONALITIES=Object.freeze([
- {attitude:'grouchy',weights:[50,20,25,5]},  // physical attacker
- {attitude:'gentle',weights:[10,65,20,5]},  // healing technique / ally buff
- {attitude:'careful',weights:[15,10,20,55]}, // protective guard
- {attitude:'brainy',weights:[15,65,15,5]},  // offensive technique
- {attitude:'gentle',weights:[10,65,20,5]},  // healing / support
- {attitude:'cruel',weights:[25,10,55,10]}   // negative Inspirit
+ {attitude:'grouchy',weights:[50,20,25,5],loafChance:3},  // physical attacker
+ {attitude:'gentle',weights:[10,65,20,5],loafChance:2},  // healing technique / ally buff
+ {attitude:'careful',weights:[15,10,20,55],loafChance:1}, // protective guard
+ {attitude:'brainy',weights:[15,65,15,5],loafChance:3},  // offensive technique
+ {attitude:'gentle',weights:[10,65,20,5],loafChance:2},  // healing / support
+ {attitude:'cruel',weights:[25,10,55,10],loafChance:5}   // negative Inspirit
 ]);
+// Original YW2 separates seriousness (loafing) from action preference.
+ // The 1-5% per-action odds here are SCHOOL PLAYTEST GUESSES, not researched
+ // original YW2 probability. Previously online loafing was disabled outright.
 // Original YW2 attitude categories are documented; these six numeric weights
 // are school-playtest estimates, NOT original internals. Preserve legacy rental
 // fixture for deterministic research comparisons.
