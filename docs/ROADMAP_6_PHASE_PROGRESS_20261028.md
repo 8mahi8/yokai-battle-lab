@@ -26,7 +26,7 @@
 - **一次観察記録の再読**：第1試合00:44–00:52、01:29–01:35の「ひゃくれつ肉球」カットイン→複数ヒットの順次表示を確認。トホホの砲など別の技とは演出・効果が違う。1試合目の**以前に実フレームを観察した記録**に基づく。**今回新たに元MP4を直接再生できたわけではなく、2～4試合目は依然として実フレーム未確認**。Files検索でMP4を取得できず、コンテナ/ローカルPython環境も起動できなかった。映像の時間値・回数は確定しない。
 - **実装**：`presentation/action-choreography.mjs`でV2の`hitResults`から表示用`hitIndex/currentHit/nextHitAtMs`を投影し、`ui/match-stage.mjs`がヒット境界で対象の命中/MISS/数字/HPを順次描画する。**予定攻撃数ではなく実記録されたヒットだけ**。既存のimpact表示時間を均等分割するのは**試遊仮タイミング**、原作同等ではない。
 - ヒット途中の`hpBefore/hpAfter`はホストのヒット記録からのみ取得。新しいダメージ/ヒット数/状態変化を作らない。戦闘エンジン、RNG、行動順、Firebase wire、学校本番は不変更。
-- テスト：単一実行ヒット（KOで後続なし）、MISS→命中、HP変化、表示境界を`tests/action-outcome-v2.test.mjs`に追加。GitHub Actions **[研究単体 627/627 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40550496995)**。画面Chromium QAの最新判定を確定後に追記する。
+- テスト：単一実行ヒット（KOで後続なし）、MISS→命中、HP変化、表示境界を`tests/action-outcome-v2.test.mjs`に追加。GitHub Actions **[研究単体 627/627 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40550496995)**。同じUI実装コミット`477033242`の[Stage Chromium QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40550338560)、[Firebase emulator QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40550338614)、[Sites Emulator QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40550338538)を確認。後続の`6079d441`では表示コードは変更せずコメントと単体テストを修正。後続の[最新Stage再実行](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40550496951)は確認時点で実行中のため成功扱いにしない。
 - テスト途中の静的純粋性検査は追加コメントの`window`語に反応して失敗。時間依存APIはコードに使っておらず、コメント修正後に627件成功。失敗を緩めたり無視していない。
 - **残作業**：具体的な本家ヒット間隔、原作の多段必殺の正確な回数と技固有の表示、学校iPad Safari実機、原作4試合を使った画面目視比較は未完了。
 
