@@ -800,6 +800,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     // A guard lasts until the next time that actor begins an action.
     actor.guard=false;
     const kind=enableLoafing&&rng()*100<actor.loafChance?'loaf':choice(actor);
+    // Resolve before branches: event metadata is emitted after every kind,
+    // and the legacy source fields remain the exact fallback.
+    const attackSpec=kind==='attack'?catalogAttackByActor?.get(actor.id):null;
+    const attackPower=attackSpec?.power??actor.attackPower;
     let target=null,amount=0,hit=true,critical=false,effect=null,resisted=false,interruption=null,damageResearch=null,
       hitResearch=null,criticalResearch=null,multiHitDetails=null,healingResearch=null;
     if(kind==='guard'){
@@ -843,8 +847,6 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     }else{
       const opponents=livingFront(1-actor.side);
       target=opponents.find(m=>m.id===pins[actor.side])??opponents[Math.floor(rng()*opponents.length)];
-      const attackSpec=kind==='attack'?catalogAttackByActor?.get(actor.id):null;
-      const attackPower=attackSpec?.power??actor.attackPower;
       const attemptedHits=researchMultiHit
         ?(kind==='attack'?(attackSpec?.hits??actor.attackHits):actor.techniqueHits):1;
       if(researchMultiHit)multiHitDetails=[];
