@@ -23,6 +23,7 @@
 <script type="module">
 import {createMatchProtocol} from '../engine/match-protocol.mjs';
 import {createMatchStage} from '../ui/match-stage.mjs';
+import {passiveSkillNoticesForAction} from '../ui/passive-feedback.mjs';
 const el=id=>document.getElementById(id);
 let protocol=null,autoTimer=null;
 function begin(){
@@ -84,8 +85,7 @@ if(review==='winner-a'||review==='winner-b'){
   if(!next.ok||next.result.type!=='action')break;
   const snap=protocol.snapshot(),events=snap.game.events;
   const action=events.filter(e=>e.type==='action').at(-1);
-  const notes=action&&events.some(e=>e.type==='skill'&&
-    Math.abs(e.eventId-action.eventId)<=6);
+  const notes=action&&passiveSkillNoticesForAction(events,action.eventId).length>0;
   if(notes){
    stage.render(snap);
    el('lab-state').textContent='REAL-SKILL-REVIEW';
