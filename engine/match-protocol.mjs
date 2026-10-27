@@ -162,6 +162,9 @@ export function createMatchProtocol({battleOptions={},hostNowMs=()=>performance.
  const options=clone({rotationCooldownMs:3000,
    researchSoulRecoveryMode:'owner-nonattack',
    researchDamageModel:true,researchMultiHit:true,
+   // Only unchanged built-in rental matches have a verified catalog ID.
+   // Custom teams retain legacy resolution unless explicitly rejected.
+   catalogAttackResolution:battleOptions.teams===undefined,
    researchStatInspirits:battleOptions.researchDamageModel===false?false:true,
    researchSpecialEffects:true,...battleOptions});
  function newBattle(){return createCombat(options);}
