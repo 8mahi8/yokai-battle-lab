@@ -8,7 +8,7 @@ import {projectAttackOutcomeV2}
 import {createMatchProtocol} from '../engine/match-protocol.mjs';
 import {makeStageView} from '../ui/match-stage.mjs';
 import {latestBattleCue} from '../ui/battle-vfx.mjs';
-import {planActionChoreography}
+import {planActionChoreography,choreographyFrame}
  from '../presentation/action-choreography.mjs';
 
 const deep=x=>JSON.parse(JSON.stringify(x));
@@ -138,4 +138,54 @@ test('historical cue without V2 keeps working, inconsistent new cue is rejected'
   key:'event:42',moveId:correct.moveId,amount:999,
   actionOutcomeV2:correct};
  assert.throws(()=>planActionChoreography(forged),/conflicts/);
+});
+
+test('visual trial steps through exactly recorded hits, preserves miss and interim HP',()=>{
+ const outcome=projected();
+ const plan=planActionChoreography({type:'action',kind:'attack',
+  actor:'A1',target:'B2',amount:35,key:'event:42',
+  moveId:outcome.moveId,hitResults:outcome.outcome.hits,actionOutcomeV2:outcome});
+ const start=plan.phases[1].startMs,end=plan.phases[1].endMs;
+ const mid=(start+end)/2;
+ let state=choreographyFrame(plan,start-1);
+ assert.equal(state.currentHit,null);
+ assert.equal(state.hitIndex,null);
+ state=choreographyFrame(plan,start);
+ assert.equal(state.hitIndex,0);
+ assert.equal(state.currentHit.hit,false);
+ assert.equal(state.currentHit.damage,0);
+ assert.equal(state.currentHit.hpAfter,100);
+ assert.equal(state.nextHitAtMs,mid);
+ state=choreographyFrame(plan,mid);
+ assert.equal(state.hitIndex,1);
+ assert.equal(state.currentHit.hit,true);
+ assert.equal(state.currentHit.damage,35);
+ assert.equal(state.currentHit.hpBefore,100);
+ assert.equal(state.currentHit.hpAfter,65);
+ assert.equal(state.nextHitAtMs,null);
+ state=choreographyFrame(plan,end+1);
+ assert.equal(state.phase,'recovery');
+ assert.equal(state.hitIndex,1);
+ assert.equal(state.currentHit.hpAfter,65);
+ assert.equal(state.impacts[0].amount,35,'legacy aggregate remains for compatibility');
+ assert.equal(plan.actionOutcomeV2.outcome.totalDamage,35,
+  'the visual timeline cannot change authoritative damage');
+});
+test('single-recorded hit has one visual state; KO cannot animate planned unexecuted hits',()=>{
+ const raw=legacy();
+ raw.multiHit.planned=4;
+ raw.multiHit.hits=[{index:1,hit:true,critical:false,amount:100,targetHpAfter:0}];
+ raw.amount=100;raw.targetHp=0;
+ const verified=projectAttackOutcomeV2(raw,teams());
+ const plan=planActionChoreography({
+  type:'action',kind:'attack',actor:'A1',target:'B2',amount:100,
+  key:'event:42',moveId:verified.moveId,
+  hitResults:verified.outcome.hits,actionOutcomeV2:verified
+ });
+ const frame=choreographyFrame(plan,plan.phases[1].startMs);
+ assert.equal(frame.hitIndex,0);
+ assert.equal(frame.currentHit.hpAfter,0);
+ assert.equal(frame.nextHitAtMs,null);
+ assert.equal(plan.hitResults.length,1);
+ assert.equal(plan.actionOutcomeV2.outcome.plannedHitCount,4);
 });
