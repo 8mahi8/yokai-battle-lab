@@ -22,6 +22,15 @@ function moveSetFromIds(reference){
  }
  return moves;
 }
+// References are exported publicly; nested arrays and stat dictionaries must
+// not be mutable by a playtest or a downstream authoring tool.
+function freezeReference(value){
+ if(value&&typeof value==='object'){
+  for(const child of Object.values(value))freezeReference(child);
+  Object.freeze(value);
+ }
+ return value;
+}
 function buildReference(index,mode){
  const x=RENTAL_SQUAD[index],school=SCHOOL_RENTAL_PERSONALITIES[index];
  const ref=RENTAL_CHARACTER_MOVE_REFS[index];
@@ -31,7 +40,7 @@ function buildReference(index,mode){
  const behavior=mode==='school'?school:x;
  const passive=findSkill(PLAYTEST_SKILL_CATALOG,'skill:'+x.skill);
  if(!passive)throw new TypeError('missing rental skill catalog entry: '+x.skill);
- return Object.freeze({
+ return freezeReference({
   schema:YOKAI_DEFINITION_SCHEMA,id,name:x.name,
   tribe:null,rank:null,faction:null,
   stats:{hp:x.maxHp,strength:x.strength,spirit:x.spirit,
