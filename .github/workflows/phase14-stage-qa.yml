@@ -47,4 +47,6 @@ jobs:
             phase16-target-selection-preview.png
             phase17-special-cutin-preview.png
             phase18-g-soultimate-ready.png
+            phase46-action-windup.png
+            phase46-action-impact.png
           if-no-files-found: ignore
