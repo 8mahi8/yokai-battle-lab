@@ -6,14 +6,12 @@
  * Skill means a PASSIVE automatic ability, never the same thing as a
  * Soultimate, Technique, Inspirit, or the motion visibility gate.
  */
-export const RENTAL_SKILLS=Object.freeze({
- momentum:'まえのめり型',
- care:'おせわ型',
- sharpCrit:'いっせん型',
- critImmune:'つやつやボディー型',
- lastStand:'どひょうぎわ型',
- guardBreak:'ガードくずし型'
-});
+import {PLAYTEST_SKILL_CATALOG} from '../content/skill-catalog.mjs';
+// Descriptive names now have ONE source of truth in the content registry.
+// Existing effect logic and experimental values below are unchanged.
+export const RENTAL_SKILLS=Object.freeze(Object.fromEntries(
+ PLAYTEST_SKILL_CATALOG.map(({legacyKey,displayName})=>[legacyKey,displayName])
+));
 export const SKILL_TRIAL=Object.freeze({
  momentumStages:2,          // YW1 detailed reference, YW2 exact stage count UNVERIFIED
  momentumOwnerTurns:5,      // YW1 detailed reference, YW2 exact lifetime UNVERIFIED
