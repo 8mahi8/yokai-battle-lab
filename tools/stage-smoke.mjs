@@ -360,6 +360,28 @@ try{
  if(gReadyExit!==0||!existsSync(gReadyShot))
   throw new Error('G ready screenshot failed: '+gReadyError.slice(-400));
  console.log('SCREENSHOT-READY phase18-g-soultimate-ready.png');
+
+ // Review actual seed-resolved ordinary action before its hit and after its
+ // impact, so aesthetic/fidelity regressions can be inspected as real pixels.
+ for(const [label,budget] of [['windup',310],['impact',1110]]){
+  const file='phase46-action-'+label+'.png',dest=path.join(root,file);
+  const child=spawn(browser,[
+   '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+   '--no-first-run','--disable-extensions','--hide-scrollbars',
+   '--user-data-dir='+path.join(tmp,'phase46-'+label),
+   '--window-size=1024,768','--virtual-time-budget='+budget,
+   '--screenshot='+dest,
+   'http://127.0.0.1:'+server.address().port+'/lab/match-stage.html?review=action-motion'
+  ],{stdio:['ignore','pipe','pipe']});
+  let error='';
+  child.stderr.on('data',b=>error+=String(b).slice(0,3000));
+  const timeout=setTimeout(()=>child.kill('SIGKILL'),18000);
+  const code=await new Promise(resolve=>child.on('close',resolve));
+  clearTimeout(timeout);
+  if(code!==0||!existsSync(dest))throw Error('Phase46 '+label+' screenshot failed: '+error.slice(-700));
+  console.log('SCREENSHOT-READY '+file);
+ }
+
 }finally{
  await new Promise(resolve=>server.close(resolve));
  rmSync(tmp,{recursive:true,force:true});
