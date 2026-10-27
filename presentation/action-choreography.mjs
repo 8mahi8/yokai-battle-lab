@@ -55,6 +55,22 @@ export function planActionChoreography(event){
  const preset=ACTION_VISUAL_CATALOG[kind];
  const durationMs=preset.windupMs+preset.impactMs+preset.recoveryMs;
  const impacts=normalizeImpacts(event,kind);
+ // V2 migration: ordered, already-resolved hit metadata (NOT damage logic).
+ // The existing renderer still presents one aggregate damage cue; a future
+ // phase can schedule the individual hits without guessing outcomes.
+ const moveId=typeof event.moveId==='string'&&event.moveId?event.moveId:null;
+ const hitResults=Array.isArray(event.hitResults)?
+  Object.freeze(event.hitResults.map((hit,index)=>{
+   if(!hit||!isUnit(hit.targetId)||hit.sequence!==index+1||
+      typeof hit.hit!=='boolean'||typeof hit.critical!=='boolean'||
+      !Number.isSafeInteger(hit.damage)||hit.damage<0||
+      !Number.isSafeInteger(hit.hpBefore)||hit.hpBefore<0||
+      !Number.isSafeInteger(hit.hpAfter)||hit.hpAfter<0||
+      hit.hpBefore-hit.hpAfter!==hit.damage)
+    throw new TypeError('invalid resolved hit metadata');
+   return Object.freeze({...hit});
+  })):Object.freeze([]);
+ if(hitResults.length>12)throw new RangeError('too many resolved hits');
  const key=typeof event.key==='string'&&event.key?event.key:
   event.type==='action'&&Number.isInteger(event.turn)&&event.turn>0?
    'action:'+event.turn:null;
@@ -66,7 +82,8 @@ export function planActionChoreography(event){
  ]);
  return Object.freeze({
   schema:CHOREOGRAPHY_SCHEMA,eventKey:key,kind,actorId,
-  label:preset.label,pose:preset.pose,durationMs,phases,impacts
+  label:preset.label,pose:preset.pose,durationMs,phases,impacts,
+  moveId,hitResults
  });
 }
 /**
