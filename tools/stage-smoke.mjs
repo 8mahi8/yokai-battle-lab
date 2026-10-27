@@ -406,19 +406,19 @@ try{
   throw Error('Phase48 passive skill VFX invisible at impact phase: '+
     (visual?.[0]||'missing'));
  console.log('PHASE48-SCHOOL-REAL-SKILL-VISIBLE '+visual[0].slice(0,260));
- const shot=path.join(root,'phase48-real-passive-skill.png');
+ const skillShot=path.join(root,'phase48-real-passive-skill.png');
  const renderChild=spawn(browser,[
   ...skillCmd.filter(x=>x!=='--dump-dom').map(x=>
     x.startsWith('--user-data-dir=')?'--user-data-dir='+path.join(tmp,'phase48-skill-shot'):x)
     .filter(x=>x!==skillUrl),
-   '--screenshot='+shot,skillUrl
+   '--screenshot='+skillShot,skillUrl
  ],{stdio:['ignore','pipe','pipe']});
  let screenError='';
  renderChild.stderr.on('data',b=>screenError+=String(b).slice(0,3000));
  const screenTimeout=setTimeout(()=>renderChild.kill('SIGKILL'),18000);
  const screenExit=await new Promise(resolve=>renderChild.on('close',resolve));
  clearTimeout(screenTimeout);
- if(screenExit!==0||!existsSync(shot))
+ if(screenExit!==0||!existsSync(skillShot))
   throw Error('Phase48 skill screenshot failed: '+screenError.slice(-600));
  console.log('SCREENSHOT-READY phase48-real-passive-skill.png');
 
