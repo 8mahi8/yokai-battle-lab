@@ -10,8 +10,9 @@ import {YOKAI_ACTION_SLOTS,defineYokai}
  from './yokai-definition.mjs';
 import {validateSkillEntry,PLAYTEST_SKILL_CATALOG}
  from './skill-catalog.mjs';
-import {RENTAL_YOKAI_LAB,RENTAL_YOKAI_SCHOOL}
+import {RENTAL_YOKAI_REFERENCES_LAB,RENTAL_YOKAI_REFERENCES_SCHOOL}
  from './rental-yokai-definitions.mjs';
+import {RENTAL_MOVE_MASTER} from './rental-move-master.mjs';
 
 export const COMBAT_CATALOG_SCHEMA=1;
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -24,7 +25,8 @@ const frozenSkill=s=>Object.freeze({...s,
  * exposed to clients, so no caller can mutate catalog entries mid-match.
  * A duplicate moveId is allowed ONLY when its full definition is identical.
  */
-export function createCombatCatalog({characters,skills=PLAYTEST_SKILL_CATALOG}={}){
+export function createCombatCatalog({characters,skills=PLAYTEST_SKILL_CATALOG,
+ moveMaster=null}={}){
  if(!Array.isArray(characters)||characters.length===0||
    !Array.isArray(skills)||skills.length===0)
   throw new TypeError('catalog requires nonempty characters and skills');
@@ -35,10 +37,37 @@ export function createCombatCatalog({characters,skills=PLAYTEST_SKILL_CATALOG}={
   skillById.set(candidate.id,frozenSkill(candidate));
  }
  const characterById=new Map(),moveById=new Map();
+ const masterById=new Map();
+ if(moveMaster!==null){
+  if(!Array.isArray(moveMaster)||!moveMaster.length)
+   throw new TypeError('moveMaster must be a nonempty array');
+  for(const move of moveMaster){
+   if(!move||typeof move.id!=='string'||masterById.has(move.id))
+    throw new TypeError('duplicate or invalid move ID in master');
+   masterById.set(move.id,move);
+  }
+ }
  for(const raw of characters){
-  // Defining a frozen copy validates the complete character and all its
-  // references, even when the caller supplies mutable authoring objects.
-  const character=defineYokai(raw);
+  // Reference-only authoring definitions get expanded for V1 compatibility,
+  // but never own copies of move power, hit count or other effects.
+  let expanded=raw;
+  if(raw?.moveIds!==undefined){
+   if(raw.moves!==undefined||!moveMaster)
+    throw new TypeError('reference-only characters require a move master');
+   if(!raw.moveIds||Object.keys(raw.moveIds).length!==4)
+    throw new TypeError('four move ID references required');
+   const resolved={};
+   for(const slot of YOKAI_ACTION_SLOTS){
+    const moveId=raw.moveIds[slot],move=masterById.get(moveId);
+    if(!move||move.slot!==slot)
+     throw new TypeError('missing or wrong-slot move reference: '+slot);
+    resolved[slot]=move;
+   }
+   const {moveIds,...rest}=raw;
+   expanded={...rest,moves:resolved};
+  }
+  // Validate the full character and all its references before using it.
+  const character=defineYokai(expanded);
   if(characterById.has(character.id))
    throw new TypeError('duplicate character ID: '+character.id);
   if(!skillById.has(character.skill.id))
@@ -69,8 +98,8 @@ export function createCombatCatalog({characters,skills=PLAYTEST_SKILL_CATALOG}={
 }
 /** Explicit authoring catalog for the frozen six rentals in both modes. */
 export const RENTAL_LAB_CATALOG=createCombatCatalog({
- characters:RENTAL_YOKAI_LAB
+ characters:RENTAL_YOKAI_REFERENCES_LAB,moveMaster:RENTAL_MOVE_MASTER
 });
 export const RENTAL_SCHOOL_CATALOG=createCombatCatalog({
- characters:RENTAL_YOKAI_SCHOOL
+ characters:RENTAL_YOKAI_REFERENCES_SCHOOL,moveMaster:RENTAL_MOVE_MASTER
 });
