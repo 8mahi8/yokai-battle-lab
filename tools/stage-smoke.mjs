@@ -405,6 +405,11 @@ try{
     !/おせわ|どひょうぎわ|まえのめり/.test(visual[0]))
   throw Error('Phase48 passive skill VFX invisible at impact phase: '+
     (visual?.[0]||'missing'));
+ const message=visual[0].replace(/<[^>]+>/g,'');
+ for(const line of message.split(' / ')){
+  if(line.includes('まえのめり')&&line.includes(' → '))
+   throw Error('Phase48 misleading momentum buff target: '+line);
+ }
  console.log('PHASE48-SCHOOL-REAL-SKILL-VISIBLE '+visual[0].slice(0,260));
  const skillShot=path.join(root,'phase48-real-passive-skill.png');
  const renderChild=spawn(browser,[
