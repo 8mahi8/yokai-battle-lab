@@ -57,8 +57,9 @@ function buildMoves(i){
 }
 const moveById=new Map();
 for(let i=0;i<RENTAL_SQUAD.length;i++){
+ const moves=buildMoves(i);
  for(const slot of YOKAI_ACTION_SLOTS){
-  const move=buildMoves(i)[slot];
+  const move=moves[slot];
   if(moveById.has(move.id))throw new TypeError('duplicate move '+move.id);
   moveById.set(move.id,move);
  }
