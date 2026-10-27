@@ -432,3 +432,88 @@
 .mb-yw2 .mb-passive-notice[hidden]{display:none!important}
 @media(max-width:680px){.mb-yw2 .mb-passive-notice{
  right:3px;top:28px;width:91px;padding:4px;font-size:10px}}
+
+
+/*
+ * Phase49: directly observed in user-provided edited 3DS PvP footage:
+ * - 01:12-01:15 and 01:28 cut away from the battle scene to a large character
+ *   on a vivid, contrasting special-move background;
+ * - 00:37-00:43 a bright circular target reticle, not a plain arrow;
+ * - 00:44-00:48 status marks beside the subject, separate from HP bars.
+ *
+ * The original character art is NOT copied. Existing original embedded SVGs
+ * and CSS geometric backgrounds make a recognizably different but readable
+ * scene. Timings are presentation trial values, not 3DS measured seconds.
+ */
+.mb-yw2 .mb-special-flare{
+ inset:0;left:0;top:0;width:100%;height:100%;transform:none;z-index:12;
+ display:grid;grid-template-columns:minmax(110px,44%) 1fr;
+ align-items:center;justify-content:center;gap:8px;
+ padding:10px 20px;overflow:hidden;isolation:isolate;
+ --special-accent:#e1a36d;
+ background:radial-gradient(circle at 32% 51%,#c5d5f3 0%,#363c76 30%,#162846 73%,#181d39 100%);
+ box-shadow:inset 0 0 0 3px #f1da9bcc}
+.mb-yw2 .mb-special-flare[data-creature="1"]{--special-accent:#ffae79;background:radial-gradient(circle at 32% 45%,#f7bf7a,#9b4247 34%,#542a4c 72%,#222038)}
+.mb-yw2 .mb-special-flare[data-creature="2"]{--special-accent:#b7f09b;background:radial-gradient(circle at 36% 47%,#b6e8a1,#348a79 34%,#214d64 72%,#17344d)}
+.mb-yw2 .mb-special-flare[data-creature="3"]{--special-accent:#c8e0e8;background:radial-gradient(circle at 36% 47%,#d6edee,#587f9d 34%,#354968 72%,#1b2946)}
+.mb-yw2 .mb-special-flare[data-creature="4"]{--special-accent:#bef4ff;background:radial-gradient(circle at 36% 47%,#caf9fa,#428bb3 35%,#364d86 70%,#171e4b)}
+.mb-yw2 .mb-special-flare[data-creature="5"]{--special-accent:#ffe5a4;background:radial-gradient(circle at 36% 47%,#ffeab2,#b28554 34%,#69476c 70%,#27233d)}
+.mb-yw2 .mb-special-flare[data-creature="6"]{--special-accent:#dae9f6;background:radial-gradient(circle at 36% 47%,#c8e9fa,#5b7890 34%,#394263 70%,#181e37)}
+.mb-yw2 .mb-special-flare[data-mode="g"]{filter:saturate(1.12)}
+.mb-yw2 .mb-special-flare:before{
+ content:'';position:absolute;inset:-30%;border:0;border-radius:0;pointer-events:none;
+ background:repeating-conic-gradient(from 0deg at 37% 50%,transparent 0deg 10deg,#ffffff14 11deg 13deg,transparent 14deg 25deg);
+ opacity:.55;animation:mb-special-shine 1.25s ease-out both}
+.mb-yw2 .mb-special-cutin-lines{position:absolute;inset:8px;z-index:0;
+ border-top:3px solid var(--special-accent);border-bottom:3px solid var(--special-accent);
+ transform:skewY(-5deg);box-shadow:0 0 14px #ffe8ba44;pointer-events:none}
+.mb-yw2 .mb-special-portrait{position:relative;z-index:2;display:grid;place-items:center;
+ height:100%;overflow:visible;filter:drop-shadow(0 6px 2px #15203677);
+ animation:mb-special-portrait-enter .46s cubic-bezier(.16,.8,.26,1) both}
+.mb-yw2 .mb-special-portrait .mb-character-art{height:min(175px,92%);width:min(175px,100%);
+ max-width:100%;transform:scale(1.2);transform-origin:center center}
+.mb-yw2 .mb-special-copy{position:relative;z-index:3;display:flex;flex-direction:column;
+ align-items:flex-start;justify-content:center;min-width:0;line-height:1.18;
+ padding-right:8px;text-shadow:0 3px 4px #070d27dd}
+.mb-yw2 .mb-special-copy small{font-size:17px;font-weight:900;line-height:1.25;
+ padding:3px 8px;background:#1d2b4eaa;color:var(--special-accent);
+ border-left:3px solid var(--special-accent);border-radius:2px}
+.mb-yw2 .mb-special-copy span{font-size:clamp(22px,3.9vw,37px);
+ font-weight:1000;letter-spacing:.05em;text-align:left;line-height:1.3;
+ color:#fff3c7;animation:none;max-width:100%}
+@keyframes mb-special-shine{from{opacity:0;transform:rotate(-12deg) scale(.82)}
+ 40%{opacity:.8}to{opacity:.55;transform:rotate(10deg) scale(1.05)}}
+@keyframes mb-special-portrait-enter{from{opacity:0;transform:translateX(-30px) scale(.83)}
+ to{opacity:1;transform:translateX(0) scale(1)}}
+.mb-yw2 .mb-pin-reticle{
+ position:absolute;z-index:5;pointer-events:none;left:50%;top:29px;
+ width:51px;height:51px;border-radius:50%;transform:translate(-50%,-50%);
+ border:3px solid #ffce83;background:#b83b5355;
+ box-shadow:0 0 0 2px #922c49,0 0 10px #ffb767bb,inset 0 0 0 2px #ffe5ae;
+ animation:mb-pin-breathe 1.45s ease-in-out infinite}
+.mb-yw2 .mb-pin-reticle:before{content:'';position:absolute;left:50%;top:50%;
+ width:13px;height:13px;border:2px solid #fff1bb;border-radius:50%;transform:translate(-50%,-50%)}
+.mb-yw2 .mb-pin-reticle:after{content:'';position:absolute;left:50%;top:50%;
+ width:78%;height:78%;transform:translate(-50%,-50%);
+ background:linear-gradient(transparent calc(50% - 1px),#fff0bc calc(50% - 1px),#fff0bc calc(50% + 1px),transparent calc(50% + 1px)),
+ linear-gradient(90deg,transparent calc(50% - 1px),#fff0bc calc(50% - 1px),#fff0bc calc(50% + 1px),transparent calc(50% + 1px));opacity:.78}
+@keyframes mb-pin-breathe{0%,100%{opacity:.79;transform:translate(-50%,-50%) scale(.94)}
+ 50%{opacity:1;transform:translate(-50%,-50%) scale(1.04)}}
+.mb-yw2 .mb-status-marker{
+ position:absolute;z-index:6;right:2px;top:32px;min-width:20px;height:20px;
+ display:grid;place-items:center;border:2px solid #f7f5d8;border-radius:8px;
+ font-weight:1000;font-size:15px;line-height:1;pointer-events:none;text-shadow:0 1px #10102077}
+.mb-yw2 .mb-status-bad{background:#853a9d;color:#ffe6ff;box-shadow:0 0 7px #b843daaa}
+.mb-yw2 .mb-status-good{background:#378c68;color:#dcffdf;box-shadow:0 0 7px #7aeec1aa}
+@media(max-width:680px){
+ .mb-yw2 .mb-special-flare{grid-template-columns:42% 1fr;gap:4px;padding:6px 9px}
+ .mb-yw2 .mb-special-copy small{font-size:12px}
+ .mb-yw2 .mb-special-copy span{font-size:19px}
+ .mb-yw2 .mb-special-portrait .mb-character-art{max-height:135px}
+ .mb-yw2 .mb-pin-reticle{width:42px;height:42px;top:24px}
+ .mb-yw2 .mb-status-marker{right:-2px;top:25px;font-size:12px;min-width:17px;height:17px}
+}
+@media(prefers-reduced-motion:reduce){
+ .mb-yw2 .mb-special-flare:before,.mb-yw2 .mb-special-portrait,
+ .mb-yw2 .mb-pin-reticle{animation:none!important}
+}
