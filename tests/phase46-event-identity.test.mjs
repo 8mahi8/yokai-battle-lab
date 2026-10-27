@@ -42,3 +42,13 @@ test('identical poke/special cue keeps identity when window index changes',()=>{
  assert.equal(s1.key,s2.key);
  assert.equal(planActionChoreography(s1).impacts[0].amount,19);
 });
+
+
+test('a status-type event never becomes a fake damage flash',()=>{
+ const event={type:'action',eventId:19,turn:11,actor:'A1',kind:'inspirit',
+  target:'B3',hit:true,amount:0,effect:'sleep'};
+ const cue=latestBattleCue([event]);
+ assert.equal(cue.targets[0].kind,'status');
+ const plan=planActionChoreography(cue);
+ assert.equal(plan.impacts[0].effect,'status');
+});
