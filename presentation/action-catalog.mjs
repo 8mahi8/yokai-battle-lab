@@ -17,7 +17,7 @@ export const ACTION_VISUAL_CATALOG=Object.freeze({
  poke:preset('つつく','poke',360,470,610),
  // Source footage at 01:12 and 01:28 shows a distinct portrait/cutin BEFORE
  // effect. Internal original timings are unknown; retain the 2450ms total
- // trial window but budget more time for an identifiable 1250ms cutin.
+ // trial visual duration but budget more time for an identifiable 1250ms cutin.
  special:preset('ひっさつわざ','special',1250,570,630)
 });
 export const ACTION_VISUAL_KINDS=Object.freeze(Object.keys(ACTION_VISUAL_CATALOG));
