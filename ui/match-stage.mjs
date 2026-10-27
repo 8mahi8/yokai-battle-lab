@@ -244,6 +244,15 @@ export function createMatchStage({element,onAction,onStep=()=>{},
      <div class="mb-feed-list" id="mb-feed-list"></div>
      <small class="mb-revision" id="mb-revision">REV 0</small>
     </div>
+  <div class="mb-modal" id="mb-modal" hidden>
+   <div class="mb-modal-surface" role="dialog" aria-modal="false" aria-label="タッチ操作">
+    <div class="mb-command-head"><b id="mb-gesture-title">操作</b><button type="button" data-act="cancel">中止 ✕</button></div>
+    <p id="mb-gesture-help">指で操作</p>
+    <div class="mb-touch-pad" id="mb-touch-pad"><div id="mb-touch-points"></div></div>
+    <div class="mb-meter"><i id="mb-gesture-bar"></i></div>
+    <small id="mb-gesture-progress"></small>
+   </div>
+  </div>
    </section>
   </div>
   <section class="mb-finish-screen" id="mb-finish-screen" hidden role="status" aria-live="polite" aria-label="対戦結果">
@@ -256,15 +265,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     <button type="button" data-act="result-close" class="mb-finish-close">試合結果を閉じて戦況を見る</button>
    </div>
   </section>
-  <div class="mb-modal" id="mb-modal" hidden>
-   <div class="mb-modal-surface" role="dialog" aria-modal="true" aria-label="タッチ操作">
-    <div class="mb-command-head"><b id="mb-gesture-title">操作</b><button type="button" data-act="cancel">中止 ✕</button></div>
-    <p id="mb-gesture-help">指で操作</p>
-    <div class="mb-touch-pad" id="mb-touch-pad"><div id="mb-touch-points"></div></div>
-    <div class="mb-meter"><i id="mb-gesture-bar"></i></div>
-    <small id="mb-gesture-progress"></small>
-   </div>
-  </div>
+
  </div>`;
  const $=id=>element.querySelector('#'+id);
  // Presentation-only clock. All authoritative results already come from host.
