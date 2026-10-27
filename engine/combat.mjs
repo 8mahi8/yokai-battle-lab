@@ -7,6 +7,7 @@
  * coalescing) remain opt-in. NO multiplayer protocol or Google Sites release.
  */
 import {RENTAL_SQUAD,SCHOOL_RENTAL_PERSONALITIES} from '../content/rental-roster.mjs';
+import {resolveRentalAttackSpec} from './catalog-attack-spec.mjs';
 export {RENTAL_SQUAD,SCHOOL_RENTAL_PERSONALITIES} from '../content/rental-roster.mjs';
 import { createBattle } from './phase1.mjs';
 import { createInspiritLedger } from './inspirit.mjs';
@@ -104,7 +105,8 @@ export function baseDamage(attacker,target,kind,critical=false) {
 export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,rotationCooldownMs=0,researchSoulGainPerAction=0,researchSpecialEffects=false,
   researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false,
   researchWheelCoalescing=false,researchOpeningPriority=null,
-  researchPokeSoulTransfer=0,playtestSoulTuning=false,researchDamageModel=false,researchMultiHit=false,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false,enableRentalSkills=playtestSoulTuning}={}) {
+  researchPokeSoulTransfer=0,playtestSoulTuning=false,researchDamageModel=false,researchMultiHit=false,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false,enableRentalSkills=playtestSoulTuning,
+  catalogAttackResolution=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof enableRentalSkills!=='boolean')throw new TypeError('enableRentalSkills must be boolean');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
@@ -113,6 +115,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   if(typeof researchWheelCoalescing!=='boolean')throw new TypeError('researchWheelCoalescing must be boolean');
   if(typeof researchDamageModel!=='boolean')throw new TypeError('researchDamageModel must be boolean');
   if(typeof researchMultiHit!=='boolean')throw new TypeError('researchMultiHit must be boolean');
+  if(typeof catalogAttackResolution!=='boolean')throw new TypeError('catalogAttackResolution must be boolean');
+  if(catalogAttackResolution&&teams!==undefined)
+    throw new RangeError('catalog attack mode only supports unchanged built-in rentals');
   if(researchMultiHit&&!researchDamageModel)
     throw new RangeError('researchMultiHit requires researchDamageModel');
   if(typeof researchStatInspirits!=='boolean')
@@ -152,6 +157,13 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const source=teams??[rentals,rentals];
   if(!Array.isArray(source)||source.length!==2||!source.every(x=>Array.isArray(x)&&x.length===6))throw new TypeError('requires two rosters of six');
   const squads=source.map((team,side)=>team.map((member,i)=>buildMember(member,side,i)));
+  // Resolve ONCE at battle start. The only changed input to the existing
+  // physical-hit loop is the definition of power and hit count.
+  // Unsupported/custom teams never silently inherit an original-rental ID.
+  const catalogAttackByActor=catalogAttackResolution?new Map(
+   squads.flatMap(team=>team.map((member,index)=>[
+    member.id,resolveRentalAttackSpec(member,index,{school:playtestSoulTuning})
+   ]))):null;
   // Stat reductions and HP-over-time are distinct move categories.
   // Do not enable unverified negative HP-loss math to use real debuff types.
   const statDebuffs=['strength-down','defense-down','spirit-down'];
@@ -831,8 +843,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     }else{
       const opponents=livingFront(1-actor.side);
       target=opponents.find(m=>m.id===pins[actor.side])??opponents[Math.floor(rng()*opponents.length)];
+      const attackSpec=kind==='attack'?catalogAttackByActor?.get(actor.id):null;
+      const attackPower=attackSpec?.power??actor.attackPower;
       const attemptedHits=researchMultiHit
-        ?(kind==='attack'?actor.attackHits:actor.techniqueHits):1;
+        ?(kind==='attack'?(attackSpec?.hits??actor.attackHits):actor.techniqueHits):1;
       if(researchMultiHit)multiHitDetails=[];
       hit=false;critical=false;
       for(let index=0;index<attemptedHits;index++){
@@ -861,7 +875,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
             const elemental=kind==='technique'&&actor.technique==='damage'
               ?target.elementResistances[actor.techniqueElement]??1:1;
             damageResearch=calculateOneHit({
-              kind,power:kind==='attack'?actor.attackPower:actor.techniquePower,
+              kind,power:kind==='attack'?attackPower:actor.techniquePower,
               strength:actor.strength,spirit:actor.spirit,defense:target.defense,
               criticalDefense:target.criticalDefense,critical:oneCritical,
               guarded:target.guard,guardBreak:actor.guardBreak||(enableRentalSkills&&actor.skill==='guardBreak'),
@@ -871,7 +885,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
           }else{
             const momentum=enableRentalSkills?skillMomentumStage(skillBoosts.get(actor.id)):0;
             const extra=momentum?1.2:1;
-            damage=baseDamage({...actor,
+            damage=baseDamage({...actor,attackPower,
               strength:Math.floor(actor.strength*(statuses.has(actor.id,'strength-up')?1.10:1)*extra),
               spirit:Math.floor(actor.spirit*extra)},target,kind,oneCritical);
             if(target.guard&&!(actor.guardBreak||enableRentalSkills&&actor.skill==='guardBreak')&&kind==='attack')damage=Math.max(1,Math.floor(damage*.5));
@@ -915,7 +929,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       ...(turnInspirit?{turnInspirit:{...turnInspirit}}:{}),
       ...(healingResearch?{healingResearch:{...healingResearch}}:{}),
       ...(multiHitDetails?{multiHit:{attempted:multiHitDetails.length,
-        planned:kind==='attack'?actor.attackHits:actor.techniqueHits,
+        planned:kind==='attack'?(attackSpec?.hits??actor.attackHits):actor.techniqueHits,
         totalDamage:amount,landed:multiHitDetails.filter(x=>x.hit).length,
         criticalHits:multiHitDetails.filter(x=>x.critical).length,
         hits:multiHitDetails.map(x=>({...x,interruption:x.interruption?{...x.interruption}:null})),
@@ -926,7 +940,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       }:{}),
       ...(damageResearch?{damageResearch:{
         ...damageResearch,techniqueElement:kind==='technique'?actor.techniqueElement:'neutral',
-        sourceMovePower:kind==='attack'?actor.attackPower:actor.techniquePower,
+        sourceMovePower:kind==='attack'?attackPower:actor.techniquePower,
         targetId:target?.id??null
       }}:{}),
       ...(researchOpeningPriority?{priorityKind:clockEvent.priorityKind,
