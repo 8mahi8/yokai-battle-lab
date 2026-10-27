@@ -7,51 +7,27 @@ import {RENTAL_SQUAD,SCHOOL_RENTAL_PERSONALITIES} from './rental-roster.mjs';
 import {YOKAI_DEFINITION_SCHEMA,defineYokai}
  from './yokai-definition.mjs';
 import {PLAYTEST_SKILL_CATALOG,findSkill} from './skill-catalog.mjs';
+import {RENTAL_CHARACTER_MOVE_REFS} from './rental-character-move-refs.mjs';
+import {rentalMoveById} from './rental-move-master.mjs';
 
-const baseId=i=>'rental-'+String(i+1).padStart(2,'0');
-const hitPattern=count=>count>1?{type:'multi',count}:{type:'single',count:1};
-function makeMove(id,slot,{category,power=null,element=null,targetScope='unknown',
- hitPattern:pattern={type:'unknown',count:null},statusEffect=null}){
- return {id:id+':'+slot,slot,displayName:null,category,power,element,
-  targetScope,hitPattern:pattern,statusEffect,evidence:'fixture',sourceRefs:[]};
-}
-function specialOf(x){
- // Same exact fallback as engine/combat.mjs, but explicitly marked a fixture.
- return x.special??(x.technique==='heal'?
-  {kind:'heal',scope:'front',power:75}:
-  {kind:'damage',scope:'front',power:100,damageKind:'attack'});
-}
-function specialTarget(spec){
- if(spec.kind==='revive-heal')return 'ally_team';
- if(spec.kind==='revive')return 'single_ally';
- if(spec.kind==='heal'||spec.kind==='buff')return 'ally_front';
- return spec.scope==='one'?'single_enemy':'enemy_front';
-}
-function moveSet(id,x){
- const special=specialOf(x);
- const nonDamage=new Set(['heal','buff','debuff','revive','revive-heal']);
- const inspiritPositive=String(x.inspirit).endsWith('-up');
- return {
-  attack:makeMove(id,'attack',{category:'physical_damage',power:x.attackPower,
-   targetScope:'single_enemy',hitPattern:hitPattern(x.attackHits??1)}),
-  technique:makeMove(id,'technique',{category:x.technique==='heal'?'heal':'technique_damage',
-   power:x.techniquePower,targetScope:x.technique==='heal'?'single_ally':'single_enemy',
-   hitPattern:x.technique==='heal'?{type:'none',count:0}:hitPattern(x.techniqueHits??1)}),
-  inspirit:makeMove(id,'inspirit',{
-   category:inspiritPositive?'status_positive':'status_negative',
-   targetScope:inspiritPositive?'single_ally':'single_enemy',
-   statusEffect:x.inspirit,hitPattern:{type:'none',count:0}}),
-  soultimate:makeMove(id,'soultimate',{category:special.kind,
-   power:special.power??null,targetScope:specialTarget(special),
-   statusEffect:special.effect??null,
-   // An AoE impact list is NOT a multi-hit. Original hit count is unknown.
-   hitPattern:nonDamage.has(special.kind)?
-    {type:'none',count:0}:{type:'unknown',count:null}})
- };
+// Schema V1 expansion is compatibility only. The authoring source is
+// (character -> move IDs), and each full move lives in one move master.
+function moveSetFromIds(reference){
+ const moves={};
+ for(const [slot,id] of Object.entries(reference.moveIds)){
+  const move=rentalMoveById(id);
+  if(!move||move.slot!==slot)
+   throw new TypeError('missing or mismatched rental move '+id);
+  moves[slot]=move;
+ }
+ return moves;
 }
 function build(index,mode){
  const x=RENTAL_SQUAD[index],school=SCHOOL_RENTAL_PERSONALITIES[index];
- const id=baseId(index);
+ const ref=RENTAL_CHARACTER_MOVE_REFS[index];
+ if(ref.name!==x.name||ref.skillId!=='skill:'+x.skill)
+  throw new TypeError('rental character identity/skill reference mismatch');
+ const id=ref.id;
  const behavior=mode==='school'?school:x;
  const passive=findSkill(PLAYTEST_SKILL_CATALOG,'skill:'+x.skill);
  if(!passive)throw new TypeError('missing rental skill catalog entry: '+x.skill);
@@ -64,7 +40,7 @@ function build(index,mode){
   personality:{seriousnessTier:null,attitude:behavior.attitude,
    actionWeights:[...behavior.weights],
    loafChancePercent:mode==='school'?school.loafChance:(x.loafChance??0)},
-  moves:moveSet(id,x),
+  moves:moveSetFromIds(ref),
   skill:{id:passive.id,displayName:passive.displayName,
    trigger:passive.trigger,effect:passive.effect,
    evidence:passive.evidence,sourceRefs:[...passive.sourceRefs]},
