@@ -1,5 +1,8 @@
 # 妖怪ウォッチ2 オンライン対戦再現｜最新引き継ぎ【2026-10-27 Phase50】
 
+> **2026-10-28｜Phase 1.2 完了：ActionOutcome V2の独立契約と実試合接続**：以後の各返答も必ず**今回の作業・次の作業・6段階の現在地**を報告。最新入口は[ROADMAP_6_PHASE_PROGRESS_20261028](./ROADMAP_6_PHASE_PROGRESS_20261028.md)。`contracts/action-outcome-v2.mjs`は攻撃命中の共通型/不変性/HP連続性/KO中止/MISSと総ダメージ一致を検証し、`presentation/legacy-attack-to-v2.mjs`で既存ホスト結果からだけ変換。旧イベントを変更せず`makeStageView`→`battle-vfx`→`action-choreography`へ**V2の読み取り専用データ**を渡す。途中、表示`presentation/`が`engine/`をimportする設計境界違反を修正して契約を`contracts/`へ移動。最新コード`fe70ca419`の[Research Unit **625/625 PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40548481623)、[Chromium Stage PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40548481738)、[Firebase emulator QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40548481443)、[Sites build/emulator QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40548481405)。**一部QAは旧匿名Auth経路であり、学校のAuthなしFriends+Safari実機の完成証明ではない**。次はPhase1.3「実ヒットごとの表示へ移す設計・原作比較」及び「新データを1技の解決器へ段階接続して同seed比較」。main/学校Sites稼働版/本番Firebaseは無変更。
+
+
 > **2026-10-28｜6段階ロードマップ確定・Phase1最初の縦切り実装**：ユーザーが「作業完了ごとに**今回した作業・次する作業・ロードマップの現在地**の3つを必ず報告」と指定。[進捗の単一入口・報告形式](./ROADMAP_6_PHASE_PROGRESS_20261028.md)を確認すること。Phase1（戦闘基盤統一）進行中：既存ホスト物理攻撃`multiHit.hits`を原作仮値のまま、正規台帳の技IDへ照合→`makeStageView`→`battle-vfx`→`action-choreography`まで**読み取り専用**で貫通。原作で確定した数字と誤認させない。カスタムチームは5能力/威力を確認できない限りIDを割り当てない。最新コード`97a115e`の[Node 619/619 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40546708006)、[Chromium Stage QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40546708048)。次は**ActionOutcome v2の正規契約と通常攻撃1技の段階移行**。独立ヒットアニメ表示はまだ未実装、ホスト戦闘・Firebase通信・main・学校Google Sites稼働版は無変更。
 
 
