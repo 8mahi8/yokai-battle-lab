@@ -114,9 +114,24 @@ export function choreographyFrame(plan,elapsedMs){
  const timeMs=Math.min(elapsedMs,plan.durationMs);
  const finished=elapsedMs>=plan.durationMs;
  const phase=plan.phases.find(x=>timeMs<x.endMs)?.name??'done';
- const impactVisible=timeMs>=plan.phases[1].startMs;
+ const impactStart=plan.phases[1].startMs;
+ const impactEnd=plan.phases[1].endMs;
+ const impactVisible=timeMs>=impactStart;
+ // Phase1.3 VISUAL TRIAL: divide the existing impact window among the
+ // recorded hits. This spacing is NOT a sourced original 3DS timing; only
+ // the sequence, target, miss/critical, HP and damage came from the host.
+ // A multi-target single hit must not use this timeline (no hit ledger).
+ const hits=plan.hitResults??[];
+ const hitIndex=impactVisible&&hits.length?
+  Math.min(hits.length-1,Math.floor(
+   (Math.min(timeMs,impactEnd)-impactStart)/(impactEnd-impactStart)*hits.length
+  )):null;
+ const currentHit=hitIndex===null?null:hits[hitIndex];
+ const nextHitAtMs=phase==='impact'&&hitIndex!==null&&hitIndex+1<hits.length?
+  impactStart+(hitIndex+1)*(impactEnd-impactStart)/hits.length:null;
  return Object.freeze({eventKey:plan.eventKey,timeMs,phase,finished,
   actorPose:finished?'idle':phase==='anticipation'?plan.pose:
     phase==='impact'?plan.pose:'recover',
-  impactVisible,impacts:impactVisible?plan.impacts:Object.freeze([])});
+  impactVisible,impacts:impactVisible?plan.impacts:Object.freeze([]),
+  hitIndex,currentHit,nextHitAtMs});
 }
