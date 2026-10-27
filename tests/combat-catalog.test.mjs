@@ -64,8 +64,9 @@ test('adding shared moves preserves one canonical definition; conflicting IDs ar
  characters[1].moves.attack=copy(characters[0].moves.attack);
  const shared=createCombatCatalog({characters});
  assert.equal(shared.moves.length,7,'two characters share one attack; other 6 slots differ');
- assert.strictEqual(shared.getMove(characters[0].moves.attack.id),
-  shared.getCharacter(characters[1].id).moves.attack);
+ assert.deepEqual(shared.getMove(characters[0].moves.attack.id),
+  shared.getCharacter(characters[1].id).moves.attack,
+  'same move ID must resolve to identical data, even after cloning authoring records');
  const conflicting=copy(RENTAL_YOKAI_LAB.slice(0,2));
  conflicting[1].moves.attack.id=conflicting[0].moves.attack.id;
  assert.throws(()=>createCombatCatalog({characters:conflicting}),/move ID collision/);
