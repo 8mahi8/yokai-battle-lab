@@ -40,7 +40,7 @@ jobs:
           assert.ok(statSync('dist/sites-online-friends-code.html').size>180000);
           for(const marker of ['mygame-df915-default-rtdb.firebaseio.com',
            'yokaiRoomsV1','mb-special-portrait','mb-special-cutin-lines',
-           'mb-pin-reticle','mb-status-marker','mb-passive-notice',
+           'mb-pin-reticle','mb-status-marker','mb-passive-notice','火花乱れ爪',
            'firebase-app-compat.js','firebase-database-compat.js']){
             assert.ok(html.includes(marker),'missing '+marker);
           }
