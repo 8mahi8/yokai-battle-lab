@@ -36,7 +36,10 @@ export function latestBattleCue(events){
    // Already validated against the actual host rental squad by makeStageView.
    // This is presentation metadata and never a second damage calculation.
    ...(event.attackProjection?{moveId:event.attackProjection.moveId,
-     hitResults:event.attackProjection.hitResults}:{} )};
+     hitResults:event.attackProjection.hitResults}:{} ),
+   // New canonical-shaped read-only result travels beside old event data.
+   // The actual host v1 protocol/HP state is still the sole authority.
+   ...(event.actionOutcomeV2?{actionOutcomeV2:event.actionOutcomeV2}:{} )};
  }
  return null;
 }
