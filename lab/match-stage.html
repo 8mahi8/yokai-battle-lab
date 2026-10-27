@@ -71,6 +71,9 @@ if(review==='winner-a'||review==='winner-b'){
   member.canAct=false;
  if(side===1)stage.selectSeat(1);
  stage.render(state);
+}else if(review==='action-motion'){
+ // Actual canonical engine step. Never inject fake combat damage for QA.
+ step();
 }else if(review==='target'){
  // Local research screenshot fixture only; no network/command dispatch.
  el('battle-stage').querySelector('#mb-target').click();
