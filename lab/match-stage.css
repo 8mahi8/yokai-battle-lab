@@ -170,3 +170,38 @@ button:focus-visible{outline:3px solid #ffe5a9;outline-offset:2px}
  .mb-finish-screen{padding:8px}
  .mb-finish-card{padding:20px 12px}
 }
+
+
+/* Phase51: original 3DS two-screen touch interactions.
+   The upper battlefield stays visible and keeps rendering while the
+   *lower* screen switches from the medal wheel to a gesture challenge.
+   Never recreate a viewport-wide modal which obscures battle information.
+   The lower screen is a positioned/overflow-hidden container in
+   lab/yw2-layout.css. This overlay is display-only; the host owns actions. */
+.mb-yw2 .mb-lower-screen>.mb-modal{
+ position:absolute;inset:0;z-index:40;
+ background:linear-gradient(140deg,rgba(30,25,54,.98),rgba(20,34,57,.98));
+ display:grid;place-items:center;padding:6px;overscroll-behavior:contain;
+}
+.mb-yw2 .mb-lower-screen>.mb-modal[hidden]{display:none!important}
+.mb-yw2 .mb-lower-screen .mb-modal-surface{
+ width:min(360px,100%);max-height:100%;
+ padding:8px 11px;border-radius:13px;box-shadow:0 4px 15px #0005;
+ display:flex;flex-direction:column;align-items:stretch;gap:3px;overflow-y:auto;
+}
+.mb-yw2 .mb-lower-screen .mb-modal-surface .mb-command-head{min-height:27px}
+.mb-yw2 .mb-lower-screen .mb-modal-surface .mb-command-head button{min-height:30px}
+.mb-yw2 .mb-lower-screen .mb-modal-surface p{margin:1px 0;line-height:1.2}
+.mb-yw2 .mb-lower-screen .mb-touch-pad{
+ width:min(26vh,202px);height:min(26vh,202px);min-width:112px;min-height:112px;
+ flex-shrink:0;margin:1px auto;border-width:4px;
+}
+.mb-yw2 .mb-lower-screen .mb-meter{margin-top:1px}
+.mb-yw2 .mb-lower-screen #mb-gesture-progress{margin-top:1px}
+@media(max-height:560px) and (orientation:landscape){
+ .mb-yw2 .mb-lower-screen .mb-modal-surface{padding:4px 8px;gap:1px}
+ .mb-yw2 .mb-lower-screen .mb-modal-surface p{font-size:11px}
+ .mb-yw2 .mb-lower-screen .mb-touch-pad{
+  width:min(24vh,148px);height:min(24vh,148px);min-width:106px;min-height:106px;
+ }
+}
