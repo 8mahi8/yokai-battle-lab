@@ -13,6 +13,7 @@ import {passiveSkillNoticesForAction} from './passive-feedback.mjs';
 import {soultimateDisplayTitle} from '../content/presentation-labels.mjs';
 import {planActionChoreography,choreographyFrame} from '../presentation/action-choreography.mjs';
 import {projectLegacyAttackOutcome} from '../presentation/legacy-attack-outcome.mjs';
+import {projectAttackOutcomeV2} from '../presentation/legacy-attack-to-v2.mjs';
 import {soultimateReadiness} from './soultimate-ready.mjs';
 import {matchAckMessage,matchRuleFailureMessage} from './match-feedback.mjs';
 const ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
@@ -121,7 +122,11 @@ export function makeStageView(state,side=0){
  // the host's canonical event array, RNG, Soul, HP, or wire fingerprint.
  const live=(game.events?.slice(-20)||[]).map(event=>{
   const projection=projectLegacyAttackOutcome(event,game.squads);
-  return projection?{...event,attackProjection:projection}:event;
+  const actionOutcomeV2=projectAttackOutcomeV2(event,game.squads);
+  return projection||actionOutcomeV2?{...event,
+   ...(projection?{attackProjection:projection}:{}),
+   ...(actionOutcomeV2?{actionOutcomeV2}:{})
+  }:event;
  });
  const roster=teams[side];
  return {revision:state.revision,turn:game.clock.turn,winner:game.winner,
@@ -525,6 +530,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   // renderer. Do not display internal IDs as if they were original move names.
   backdrop.dataset.moveId=scenePlan?.moveId??'';
   backdrop.dataset.recordedHits=String(scenePlan?.hitResults?.length??0);
+  backdrop.dataset.outcomeSchema=String(scenePlan?.actionOutcomeV2?.schema??'');
   // Passive Skill events are resolved by the host. During the impact/recovery
   // phase, explain any automatically applied ability without a fake attack.
   const notice=$('mb-passive-notice');
