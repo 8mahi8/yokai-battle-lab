@@ -187,6 +187,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  let wheelPointer=null,suppressWheelClick=false,wheelClickTimer=null;
  let seenCueKey=null,flash=null,scenePlan=null,scenePhase='done',sceneStartedAt=0,sceneTimer=null,lastEventId=0;
  let pendingCues=[]; // read-only display queue; never delays authoritative host
+ let sceneHitIndex=null; // presentation only: index into host-confirmed attack hits
  const stagedHealth=new Map();
  let commandMode=null,battleDrawCache=null,resultDismissed=false;
  const teamDrawCache=[null,null];let forecastDrawCache=null;
@@ -281,11 +282,27 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  const $=id=>element.querySelector('#'+id);
  // Presentation-only clock. All authoritative results already come from host.
  const showImpact=()=>scenePhase==='impact'||scenePhase==='recovery';
- const visibleHit=id=>showImpact()?flash?.targets?.find(x=>x.id===id):null;
- const shownHp=unit=>!showImpact()&&stagedHealth.has(unit.id)?stagedHealth.get(unit.id):unit.hp;
+ const visibleHit=id=>{
+  if(!showImpact())return null;
+  if(flash?.type==='action'&&scenePlan?.hitResults?.length){
+   const h=scenePlan.hitResults[sceneHitIndex??0];
+   return h?.targetId===id?{id,hit:h.hit,kind:'damage',amount:h.damage}:null;
+  }
+  return flash?.targets?.find(x=>x.id===id)??null;
+ };
+ const shownHp=unit=>{
+  if(flash?.type==='action'&&scenePlan?.hitResults?.length){
+   const first=scenePlan.hitResults[0];
+   if(first.targetId===unit.id){
+    if(!showImpact())return first.hpBefore;
+    return scenePlan.hitResults[sceneHitIndex??0].hpAfter;
+   }
+  }
+  return !showImpact()&&stagedHealth.has(unit.id)?stagedHealth.get(unit.id):unit.hp;
+ };
  function cancelScene(){
   clearTimeout(sceneTimer);sceneTimer=null;flash=null;scenePlan=null;
-  scenePhase='done';stagedHealth.clear();
+  scenePhase='done';sceneHitIndex=null;stagedHealth.clear();
  }
  function advanceScene(){
   if(!scenePlan)return;
@@ -298,20 +315,22 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    if(wireState)render(wireState);
    return;
   }
-  const changed=frame.phase!==scenePhase;
+  const changed=frame.phase!==scenePhase||frame.hitIndex!==sceneHitIndex;
   scenePhase=frame.phase;
+  sceneHitIndex=frame.hitIndex;
   if(changed&&wireState)render(wireState);
   if(!scenePlan)return;
   const next=scenePlan.phases.find(p=>p.endMs>elapsed);
+  const at=Math.min(next?.endMs??Infinity,frame.nextHitAtMs??Infinity);
   clearTimeout(sceneTimer);
-  if(next)sceneTimer=setTimeout(advanceScene,Math.max(8,next.endMs-elapsed+1));
+  if(Number.isFinite(at))sceneTimer=setTimeout(advanceScene,Math.max(8,at-elapsed+1));
  }
  function beginScene(cue,previousView){
   cancelScene();
   if(document.hidden)return;
   try{scenePlan=planActionChoreography(cue);}
   catch(error){onError(error);cancelScene();return;}
-  flash=cue;scenePhase='anticipation';sceneStartedAt=performance.now();
+  flash=cue;scenePhase='anticipation';sceneHitIndex=null;sceneStartedAt=performance.now();
   for(const impact of cue.targets||[]){
    const side=impact.id?.startsWith('B')?1:0;
    const old=previousView?.teams?.[side]?.members.find(m=>m.id===impact.id);
@@ -531,6 +550,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   backdrop.dataset.moveId=scenePlan?.moveId??'';
   backdrop.dataset.recordedHits=String(scenePlan?.hitResults?.length??0);
   backdrop.dataset.outcomeSchema=String(scenePlan?.actionOutcomeV2?.schema??'');
+  backdrop.dataset.activeHit=sceneHitIndex===null?'':String(sceneHitIndex+1);
   // Passive Skill events are resolved by the host. During the impact/recovery
   // phase, explain any automatically applied ability without a fake attack.
   const notice=$('mb-passive-notice');
@@ -563,7 +583,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   if(flash){
    const names={attack:'こうげき！',technique:'ようじゅつ！',heal:'かいふく！',inspirit:'とりつく！',guard:'ガード！',loaf:'サボり…',poke:'つつく！',special:'ひっさつわざ！'};
    const caster=view.teams[flash.actor?.startsWith('B')?1:0]?.members.find(u=>u.id===flash.actor);
-   const impact=showImpact()?flash.targets?.[0]:null;
+   const impact=showImpact()?
+    (scenePlan?.hitResults?.length&&sceneHitIndex!==null?
+      visibleHit(scenePlan.hitResults[sceneHitIndex].targetId):flash.targets?.[0]):null;
    const victim=impact&&view.teams[impact.id?.startsWith('B')?1:0]?.members.find(u=>u.id===impact.id);
    $('mb-cue-kind').textContent=flash.mode==='g-tech'?'Gわざ！':names[flash.kind]||names[flash.type]||'行動';
    $('mb-cue-summary').textContent=(caster?.name||'')+(victim?' → '+victim.name:'')+
@@ -582,7 +604,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   $('mb-team0').hidden=activeSeat!==0;
   $('mb-team1').hidden=activeSeat!==1;
   const fieldKey=JSON.stringify({side:activeSeat,own:view.teams[activeSeat],
-   enemy:view.teams[1-activeSeat],flash,phase:scenePhase,staged:[...stagedHealth],commandMode});
+   enemy:view.teams[1-activeSeat],flash,phase:scenePhase,hitIndex:sceneHitIndex,staged:[...stagedHealth],commandMode});
   if(fieldKey!==battleDrawCache){
    $('mb-foe-line').innerHTML=frontlineHTML(view.teams[1-activeSeat],false);
    $('mb-ally-line').innerHTML=frontlineHTML(view.teams[activeSeat],true);
@@ -592,7 +614,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   // The SVG cards must not be torn down for each tiny touch update.
   for(let index=0;index<2;index++){
    const key=JSON.stringify({team:view.teams[index],seat:activeSeat,selection,
-    ownerPin:view.teams[activeSeat].pin,flash,phase:scenePhase,staged:[...stagedHealth],commandMode});
+    ownerPin:view.teams[activeSeat].pin,flash,phase:scenePhase,hitIndex:sceneHitIndex,staged:[...stagedHealth],commandMode});
    if(key!==teamDrawCache[index]&&!(wheelPointer&&wheelPointer.seat===index)){
     $('mb-team'+index).innerHTML=teamHTML(view.teams[index]);
     teamDrawCache[index]=key;
