@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createCombat} from '../engine/combat.mjs';
-import {latestBattleCue} from '../ui/battle-vfx.mjs';
+import {latestBattleCue,visualReactionClass} from '../ui/battle-vfx.mjs';
 import {planActionChoreography} from '../presentation/action-choreography.mjs';
 
 test('long battle event IDs are monotonic across the 80-event snapshot sliding window',()=>{
@@ -51,4 +51,13 @@ test('a status-type event never becomes a fake damage flash',()=>{
  assert.equal(cue.targets[0].kind,'status');
  const plan=planActionChoreography(cue);
  assert.equal(plan.impacts[0].effect,'status');
+});
+
+test('missed statuses are MISS, not a false status grant, across all renderer callers',()=>{
+ const miss={id:'B2',kind:'status',hit:false,amount:0};
+ const applied={id:'B2',kind:'status',hit:true,amount:0};
+ assert.equal(visualReactionClass(miss),'mb-missed');
+ assert.equal(visualReactionClass(applied),'mb-inspirited');
+ assert.equal(visualReactionClass({id:'B2',kind:'damage',hit:true}),'mb-hit');
+ assert.equal(visualReactionClass({id:'A1',kind:'heal',hit:true}),'mb-healed');
 });
