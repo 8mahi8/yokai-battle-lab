@@ -7,7 +7,7 @@
  */
 import {renderSpiritPortrait} from './character-art.mjs';
 import {wheelAngle,wheelGestureAt} from './wheel-gesture.mjs';
-import {latestBattleCue} from './battle-vfx.mjs';
+import {latestBattleCue,visualReactionClass} from './battle-vfx.mjs';
 import {planActionChoreography,choreographyFrame} from '../presentation/action-choreography.mjs';
 import {soultimateReadiness} from './soultimate-ready.mjs';
 import {matchAckMessage,matchRuleFailureMessage} from './match-feedback.mjs';
@@ -338,8 +338,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const pinned=t.side!==activeSeat&&unit.id===view.teams[activeSeat].pin?' mb-pinned':'';
    const disabled=shownHp(unit)===0?' mb-ko':'';
    const impact=visibleHit(unit.id);
-   const animated=flash?.actor===unit.id?' mb-acting':impact
-    ?(impact.kind==='heal'?' mb-healed':impact.hit===false?' mb-missed':impact.kind==='status'?' mb-inspirited':' mb-hit'):'';
+   const animated=flash?.actor===unit.id?' mb-acting':impact?' '+visualReactionClass(impact):'';
    const benched=unit.front?'':' mb-bench';
    const ineligible=commandMode&&t.side===activeSeat&&!choice?' mb-choice-ineligible':'';
    const name=escapeHTML(unit.name);
@@ -372,7 +371,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const name=escapeHTML(unit.name);
    const actor=flash?.actor===id?' mb-acting':'';
    const impact=visibleHit(id);
-   const target=impact?(impact.kind==='heal'||impact.kind==='revive'||impact.kind==='buff'?' mb-healed':impact.hit===false?' mb-missed':impact.kind==='status'?' mb-inspirited':' mb-hit'):'';
+   const target=impact?' '+visualReactionClass(impact):'';
    const pinned=!isOwn&&view.teams[activeSeat].pin===id?' mb-pinned':'';
    const candidate=!isOwn&&commandMode==='target'&&!unit.ko?' mb-choice-eligible':'';
    const tonedDown=!isOwn&&commandMode==='target'&&unit.ko?' mb-choice-ineligible':'';
