@@ -21,6 +21,8 @@ jobs:
         run: node --test tests/*.test.mjs
       - name: Four natural 6v6 seeded outcomes
         run: node tools/normal-match-endurance.mjs
+      # Phase48 photo reviewed: passive buff notifications must be fully
+      # generated from host events and must not imply the KO victim got buffed.
       - name: Real Chrome wheel touch, normal actions and authentic Skill reaction
         run: node tools/stage-smoke.mjs
       - name: Build actual Firebase Friends no-Auth single-file Google Sites HTML
