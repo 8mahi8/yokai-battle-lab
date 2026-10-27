@@ -419,3 +419,16 @@
 @media(prefers-reduced-motion:reduce){
  .mb-yw2 .mb-action-callout{animation:none}
 }
+
+
+/* Host-resolved passive skills: show near the opposing field margin, not on
+   top of acting fighters or the touch wheel. Read-only and phase-delayed. */
+.mb-yw2 .mb-passive-notice{
+ position:absolute;z-index:8;right:8px;top:28px;width:clamp(110px,20%,165px);
+ padding:6px 8px;background:#244460e8;border:1px solid #a7d5ee;
+ color:#e1f8ff;text-align:left;border-radius:10px;
+ font-size:11px;line-height:1.35;font-weight:800;pointer-events:none;
+ box-shadow:0 2px 7px #060c1755}
+.mb-yw2 .mb-passive-notice[hidden]{display:none!important}
+@media(max-width:680px){.mb-yw2 .mb-passive-notice{
+ right:3px;top:28px;width:91px;padding:4px;font-size:10px}}
