@@ -34,8 +34,14 @@ export function projectLegacyAttackOutcome(event,squads,
  // A1/B1 identifies a slot, NOT an original rental identity:
  // custom-team matches must NOT receive a fabricated move ID.
  if(!actor||actor.id!==event.actor||!character||
-    actor.name!==character.name)return null;
+    actor.name!==character.name||
+    actor.maxHp!==character.stats.hp||
+    actor.speed!==character.stats.speed||
+    actor.strength!==character.stats.strength||
+    actor.spirit!==character.stats.spirit||
+    actor.defense!==character.stats.defense)return null;
  const move=character.moves?.attack;
+ if(actor.attackPower!==move?.power)return null;
  if(!move||move.category!=='physical_damage'||
     !Array.isArray(event.multiHit?.hits))return null;
  const recorded=event.multiHit.hits;
