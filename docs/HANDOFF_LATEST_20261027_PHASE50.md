@@ -1,5 +1,8 @@
 # 妖怪ウォッチ2 オンライン対戦再現｜最新引き継ぎ【2026-10-27 Phase50】
 
+> **2026-10-28｜ADR-0004：技・スキル台帳V1**：`content/skill-catalog.mjs`に6つの試遊スキルの発動トリガーと効果識別子を宣言、`content/combat-catalog.mjs`で既存6体×4技の24技IDを衝突・参照の検査付きで検索可能にした。学校/研究両モードに適用。エンジンのスキル**名称**は台帳を唯一の情報源に変更（数値/発動判定/ゲームの結果は不変更）。[設計・外部資料・移行計画](./ADR_0004_MOVE_SKILL_REGISTRY_V1_20261028.md)、[614件PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40534532696)、[実Chromium QA成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40534532969)、[Firebase emulator QA成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40534489173)。**新台帳の戦闘判定への接続は次工程。学校公開版・main・Firebase本番無変更**。
+
+
 > **2026-10-28｜ADR-0003：オリジナル妖怪キャラ定義V1**：原作の4技（攻撃/妖術/とりつく/必殺）+固有スキル+5能力+種族/ランク+2軸性格+属性/装備を別フィールド化。新規 `content/yokai-definition.mjs`（検証・不変コピー）、`content/rental-yokai-definitions.mjs`（既存6体の学校/研究両定義）、`tests/yokai-definition-schema.test.mjs`（6体/24技ID/未知値/多段と範囲の区別/深いimmutability）を追加。[ADR-0003 完全設計](./ADR_0003_YOKAI_CHARACTER_DEFINITION_V1_20261028.md)。**いまは戦闘エンジン未接続、学校版・main・Firebase本番無変更**。コミット`4c3e8c493`のResearch Unit [608/608 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40531692654)＋Stage QA [SUCCESS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40531692592)。資料だけの後続コミットは別検証。
 
 
