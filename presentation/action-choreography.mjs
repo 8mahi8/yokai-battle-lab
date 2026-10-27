@@ -117,7 +117,7 @@ export function choreographyFrame(plan,elapsedMs){
  const impactStart=plan.phases[1].startMs;
  const impactEnd=plan.phases[1].endMs;
  const impactVisible=timeMs>=impactStart;
- // Phase1.3 VISUAL TRIAL: divide the existing impact window among the
+ // Phase1.3 VISUAL TRIAL: divide the existing impact interval among the
  // recorded hits. This spacing is NOT a sourced original 3DS timing; only
  // the sequence, target, miss/critical, HP and damage came from the host.
  // A multi-target single hit must not use this timeline (no hit ledger).
