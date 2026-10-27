@@ -339,7 +339,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const disabled=shownHp(unit)===0?' mb-ko':'';
    const impact=visibleHit(unit.id);
    const animated=flash?.actor===unit.id?' mb-acting':impact
-    ?(impact.kind==='heal'?' mb-healed':impact.hit===false?' mb-missed':' mb-hit'):'';
+    ?(impact.kind==='heal'?' mb-healed':impact.kind==='status'?' mb-inspirited':impact.hit===false?' mb-missed':' mb-hit'):'';
    const benched=unit.front?'':' mb-bench';
    const ineligible=commandMode&&t.side===activeSeat&&!choice?' mb-choice-ineligible':'';
    const name=escapeHTML(unit.name);
@@ -372,7 +372,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const name=escapeHTML(unit.name);
    const actor=flash?.actor===id?' mb-acting':'';
    const impact=visibleHit(id);
-   const target=impact?(impact.kind==='heal'||impact.kind==='revive'||impact.kind==='buff'?' mb-healed':impact.hit===false?' mb-missed':' mb-hit'):'';
+   const target=impact?(impact.kind==='heal'||impact.kind==='revive'||impact.kind==='buff'?' mb-healed':impact.kind==='status'?' mb-inspirited':impact.hit===false?' mb-missed':' mb-hit'):'';
    const pinned=!isOwn&&view.teams[activeSeat].pin===id?' mb-pinned':'';
    const candidate=!isOwn&&commandMode==='target'&&!unit.ko?' mb-choice-eligible':'';
    const tonedDown=!isOwn&&commandMode==='target'&&unit.ko?' mb-choice-ineligible':'';
