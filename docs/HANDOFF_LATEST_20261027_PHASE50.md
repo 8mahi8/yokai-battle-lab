@@ -1,5 +1,8 @@
 # 妖怪ウォッチ2 オンライン対戦再現｜最新引き継ぎ【2026-10-27 Phase50】
 
+> **2026-10-28｜6段階ロードマップ確定・Phase1最初の縦切り実装**：ユーザーが「作業完了ごとに**今回した作業・次する作業・ロードマップの現在地**の3つを必ず報告」と指定。[進捗の単一入口・報告形式](./ROADMAP_6_PHASE_PROGRESS_20261028.md)を確認すること。Phase1（戦闘基盤統一）進行中：既存ホスト物理攻撃`multiHit.hits`を原作仮値のまま、正規台帳の技IDへ照合→`makeStageView`→`battle-vfx`→`action-choreography`まで**読み取り専用**で貫通。原作で確定した数字と誤認させない。カスタムチームは5能力/威力を確認できない限りIDを割り当てない。最新コード`97a115e`の[Node 619/619 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40546708006)、[Chromium Stage QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40546708048)。次は**ActionOutcome v2の正規契約と通常攻撃1技の段階移行**。独立ヒットアニメ表示はまだ未実装、ホスト戦闘・Firebase通信・main・学校Google Sites稼働版は無変更。
+
+
 > **2026-10-28｜最上位アーキテクチャV2設計**：ユーザーが「原作対戦の全体像を踏まえ、効率的・原作に近い開発基盤を設計できるはず」と指摘。既存ファイルを直接監査し、[ARCHITECTURE_V2_SOURCE_FIRST_FULL_BATTLE_BLUEPRINT_20261028](./ARCHITECTURE_V2_SOURCE_FIRST_FULL_BATTLE_BLUEPRINT_20261028.md) に**1つのホスト権威戦闘コア、共通技ID、命中単位のActionOutcome、Logical Wait/Host Wall/Client Presentationの3時計、相手別の表示保留、下画面入力をつなぐ実装順**を確定した。まず旧通常攻撃1技を正規データからヒット結果・表示まで貫く縦切りにし、**新しい未接続研究モジュールを増やさない**。元のFirebase Friends/Google Sitesの配布方式を維持。**このターンは設計資料のみ、戦闘ソース、main、学校Sites稼働版、本番Firebase変更なし。テストは過去合格の614件が直近の既知ベースラインで、新しいルール実装の検証はまだ。**
 
 
