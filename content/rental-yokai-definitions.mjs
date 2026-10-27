@@ -6,6 +6,7 @@
 import {RENTAL_SQUAD,SCHOOL_RENTAL_PERSONALITIES} from './rental-roster.mjs';
 import {YOKAI_DEFINITION_SCHEMA,defineYokai}
  from './yokai-definition.mjs';
+import {PLAYTEST_SKILL_CATALOG,findSkill} from './skill-catalog.mjs';
 
 const baseId=i=>'rental-'+String(i+1).padStart(2,'0');
 const hitPattern=count=>count>1?{type:'multi',count}:{type:'single',count:1};
@@ -52,6 +53,8 @@ function build(index,mode){
  const x=RENTAL_SQUAD[index],school=SCHOOL_RENTAL_PERSONALITIES[index];
  const id=baseId(index);
  const behavior=mode==='school'?school:x;
+ const passive=findSkill(PLAYTEST_SKILL_CATALOG,'skill:'+x.skill);
+ if(!passive)throw new TypeError('missing rental skill catalog entry: '+x.skill);
  return defineYokai({
   schema:YOKAI_DEFINITION_SCHEMA,id,name:x.name,
   tribe:null,rank:null,faction:null,
@@ -62,8 +65,9 @@ function build(index,mode){
    actionWeights:[...behavior.weights],
    loafChancePercent:mode==='school'?school.loafChance:(x.loafChance??0)},
   moves:moveSet(id,x),
-  skill:{id:'skill:'+x.skill,displayName:null,trigger:null,effect:null,
-   evidence:'fixture',sourceRefs:[]},
+  skill:{id:passive.id,displayName:passive.displayName,
+   trigger:passive.trigger,effect:passive.effect,
+   evidence:passive.evidence,sourceRefs:[...passive.sourceRefs]},
   provenance:{identity:'fixture',stats:'fixture',moves:'fixture',
    skill:'fixture',personality:'fixture',tribe:'unknown',rank:'unknown',
    faction:'unknown',resistances:'unknown',equipment:'unknown'},
