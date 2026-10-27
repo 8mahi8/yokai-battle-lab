@@ -371,7 +371,7 @@ try{
  const hasPortrait=cutiDom.includes('id="mb-special-portrait"')&&
    cutiDom.includes('data-design="embercat"');
  const hasActor=cutiDom.includes('id="mb-special-actor"');
- if(!cutinTag||/\bhidden\b/.test(cutinTag)||
+ if(!cutinTag||/\shidden(?:\s|>|=)/.test(cutinTag)||
     !/data-creature="1"/.test(cutinTag)||!hasPortrait||!hasActor)
   throw Error('Soultimate cutin incomplete: tag='+cutinTag+
     '; portrait='+hasPortrait+' actor='+hasActor);
