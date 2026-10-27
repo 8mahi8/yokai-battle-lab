@@ -8,6 +8,7 @@
 import {renderSpiritPortrait} from './character-art.mjs';
 import {wheelAngle,wheelGestureAt} from './wheel-gesture.mjs';
 import {latestBattleCue,visualReactionClass} from './battle-vfx.mjs';
+import {collectNewBattleCues,MAX_VISUAL_CATCHUP_CUES} from './battle-cue-sequence.mjs';
 import {passiveSkillNoticesForAction} from './passive-feedback.mjs';
 import {soultimateDisplayTitle} from '../content/presentation-labels.mjs';
 import {planActionChoreography,choreographyFrame} from '../presentation/action-choreography.mjs';
@@ -174,6 +175,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  let recentMessage='準備中',pointer=null,lastMove=0;
  let wheelPointer=null,suppressWheelClick=false,wheelClickTimer=null;
  let seenCueKey=null,flash=null,scenePlan=null,scenePhase='done',sceneStartedAt=0,sceneTimer=null,lastEventId=0;
+ let pendingCues=[]; // read-only display queue; never delays authoritative host
  const stagedHealth=new Map();
  let commandMode=null,battleDrawCache=null,resultDismissed=false;
  const teamDrawCache=[null,null];let forecastDrawCache=null;
@@ -278,7 +280,12 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   if(document.hidden){cancelScene();if(wireState)render(wireState);return;}
   const elapsed=Math.max(0,performance.now()-sceneStartedAt);
   const frame=choreographyFrame(scenePlan,elapsed);
-  if(frame.finished){cancelScene();if(wireState)render(wireState);return;}
+  if(frame.finished){
+   cancelScene();
+   if(!document.hidden&&pendingCues.length)beginScene(pendingCues.shift(),null);
+   if(wireState)render(wireState);
+   return;
+  }
   const changed=frame.phase!==scenePhase;
   scenePhase=frame.phase;
   if(changed&&wireState)render(wireState);
@@ -301,7 +308,10 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   sceneTimer=setTimeout(advanceScene,scenePlan.phases[0].endMs+1);
  }
  function onSceneVisibility(){
-  if(document.hidden&&scenePlan){cancelScene();if(wireState)render(wireState);}
+  if(document.hidden){
+   pendingCues=[]; // suspended iframe must not replay stale cues
+   if(scenePlan){cancelScene();if(wireState)render(wireState);}
+  }
   else if(scenePlan)advanceScene();
  }
  // A five-next-action forecast is a developer research aid, NOT an original
@@ -468,11 +478,29 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   element.dataset.matchFinished=String(view.winner!==null);
   const action=view.events.slice().reverse().find(e=>e.type==='action')??null;
   const cue=latestBattleCue(view.events);
-  const maxId=Math.max(0,...view.events.map(e=>e.eventId||0));
-  if(maxId<lastEventId){cancelScene();seenCueKey=null;}
-  lastEventId=maxId;
-  if(seenCueKey===null)seenCueKey=cue?.key??'initial';
-  else if(cue&&cue.key!==seenCueKey){
+  const seen=collectNewBattleCues(view.events,lastEventId);
+  const maxId=seen.latestEventId;
+  if(maxId>0&&maxId<lastEventId){
+   cancelScene();pendingCues=[];seenCueKey=null;
+  }
+  // Initial attach shows current truth; old events must not replay on join.
+  if(seenCueKey===null){
+   seenCueKey=cue?.key??'initial';
+   lastEventId=maxId;
+  }else if(maxId>0){
+   if(maxId>lastEventId){
+    lastEventId=maxId;
+    if(!document.hidden&&seen.cues.length){
+     pendingCues.push(...seen.cues);
+     // Bounded catchup: never leave Safari seconds/minutes behind the match.
+     if(pendingCues.length>MAX_VISUAL_CATCHUP_CUES)
+      pendingCues=pendingCues.slice(-MAX_VISUAL_CATCHUP_CUES);
+     if(!scenePlan)beginScene(pendingCues.shift(),previousView);
+    }
+    if(seen.cues.length)seenCueKey=seen.cues.at(-1).key;
+   }
+  }else if(cue&&cue.key!==seenCueKey){
+   // Backward-compatible old snapshots lacking host event IDs.
    seenCueKey=cue.key;
    beginScene(cue,previousView);
   }
@@ -823,7 +851,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  element.addEventListener('pointercancel',onCancel);
  element.addEventListener('lostpointercapture',onLostCapture);
  function setConnection(label){$('mb-connection').textContent=String(label);}
- function destroy(){cancelScene();clearTimeout(wheelClickTimer);
+ function destroy(){pendingCues=[];cancelScene();clearTimeout(wheelClickTimer);
   document.removeEventListener('visibilitychange',onSceneVisibility);
   element.removeEventListener('click',handleClick);
   element.removeEventListener('touchstart',onWheelTouchStart);
@@ -842,5 +870,6 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   if(fixedSeat!==null)throw new Error('network seat fixed');
   if(![0,1].includes(nextSeat))throw new RangeError('unknown seat');
   activeSeat=nextSeat;selection=null;if(wireState)render(wireState);
- },getStatus:()=>({activeSeat,selected:selection,revision:view?.revision??-1})};
+ },getStatus:()=>({activeSeat,selected:selection,revision:view?.revision??-1,
+  sceneEventKey:flash?.key??null,pendingVisualCues:pendingCues.length})};
 }
