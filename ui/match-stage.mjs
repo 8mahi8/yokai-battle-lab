@@ -8,6 +8,7 @@
 import {renderSpiritPortrait} from './character-art.mjs';
 import {wheelAngle,wheelGestureAt} from './wheel-gesture.mjs';
 import {latestBattleCue,visualReactionClass} from './battle-vfx.mjs';
+import {passiveSkillNoticesForAction} from './passive-feedback.mjs';
 import {planActionChoreography,choreographyFrame} from '../presentation/action-choreography.mjs';
 import {soultimateReadiness} from './soultimate-ready.mjs';
 import {matchAckMessage,matchRuleFailureMessage} from './match-feedback.mjs';
@@ -190,7 +191,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     <div class="mb-battle-backdrop">
      <div class="mb-scenery mb-scenery-back" aria-hidden="true"></div>
      <div id="mb-special-flare" class="mb-special-flare" hidden aria-hidden="true"><span id="mb-special-title"></span></div>
-     <div class="mb-foe-line" id="mb-foe-line"></div><div id="mb-action-callout" class="mb-action-callout" hidden><b id="mb-cue-kind"></b><span id="mb-cue-summary"></span></div>
+     <div class="mb-foe-line" id="mb-foe-line"></div><div id="mb-action-callout" class="mb-action-callout" hidden><b id="mb-cue-kind"></b><span id="mb-cue-summary"></span></div><div id="mb-passive-notice" class="mb-passive-notice" hidden aria-live="off"></div>
      <div class="mb-scenery mb-scenery-floor" aria-hidden="true"></div>
      <div class="mb-ally-line" id="mb-ally-line"></div>
     </div>
@@ -469,6 +470,19 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   const backdrop=element.querySelector('.mb-battle-backdrop');
   backdrop.dataset.sceneKind=scenePlan?.kind??'none';
   backdrop.dataset.scenePhase=scenePhase;
+  // Passive Skill events are resolved by the host. During the impact/recovery
+  // phase, explain any automatically applied ability without a fake attack.
+  const notice=$('mb-passive-notice');
+  const displayActionId=flash?.type==='action'&&flash.key?.startsWith('event:')
+   ?Number(flash.key.slice(6)):null;
+  const skillNotes=showImpact()&&displayActionId!==null
+   ?passiveSkillNoticesForAction(view.events,displayActionId):[];
+  notice.hidden=skillNotes.length===0;
+  if(skillNotes.length){
+   const labelName=id=>view.teams[id?.startsWith('B')?1:0]?.members.find(u=>u.id===id)?.name||'妖怪';
+   notice.textContent=skillNotes.map(n=>labelName(n.actorId)+' '+n.label+
+     (n.targetId?' → '+labelName(n.targetId):'')).join(' / ');
+  }else notice.textContent='';
   $('mb-special-flare').hidden=flash?.type!=='special';
   const callout=$('mb-action-callout');
   if(flash){
