@@ -12,6 +12,7 @@ import {collectNewBattleCues,MAX_VISUAL_CATCHUP_CUES} from './battle-cue-sequenc
 import {passiveSkillNoticesForAction} from './passive-feedback.mjs';
 import {soultimateDisplayTitle} from '../content/presentation-labels.mjs';
 import {planActionChoreography,choreographyFrame} from '../presentation/action-choreography.mjs';
+import {projectLegacyAttackOutcome} from '../presentation/legacy-attack-outcome.mjs';
 import {soultimateReadiness} from './soultimate-ready.mjs';
 import {matchAckMessage,matchRuleFailureMessage} from './match-feedback.mjs';
 const ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
@@ -116,7 +117,12 @@ export function makeStageView(state,side=0){
  if(guided)gesture={kind:'charge',id:guided.id,challenge:guided.challenge};
  else if(purify)gesture={kind:'purify',id:purify.id,challenge:purify.challenge};
  else if(poke)gesture={kind:'poke',id:poke.targetId,challenge:poke.challenge};
- const live=game.events?.slice(-20)||[];
+ // Only the presentation view receives the catalog projection. Never alter
+ // the host's canonical event array, RNG, Soul, HP, or wire fingerprint.
+ const live=(game.events?.slice(-20)||[]).map(event=>{
+  const projection=projectLegacyAttackOutcome(event,game.squads);
+  return projection?{...event,attackProjection:projection}:event;
+ });
  const roster=teams[side];
  return {revision:state.revision,turn:game.clock.turn,winner:game.winner,
   side,teams,gesture,events:live,forecast:state.forecast||[],
@@ -515,6 +521,10 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   const backdrop=element.querySelector('.mb-battle-backdrop');
   backdrop.dataset.sceneKind=scenePlan?.kind??'none';
   backdrop.dataset.scenePhase=scenePhase;
+  // Machine-readable evidence of the actual move connected through the
+  // renderer. Do not display internal IDs as if they were original move names.
+  backdrop.dataset.moveId=scenePlan?.moveId??'';
+  backdrop.dataset.recordedHits=String(scenePlan?.hitResults?.length??0);
   // Passive Skill events are resolved by the host. During the impact/recovery
   // phase, explain any automatically applied ability without a fake attack.
   const notice=$('mb-passive-notice');
