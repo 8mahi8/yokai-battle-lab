@@ -9,7 +9,7 @@
  * pose keyframes require actual video comparison, not invented parity claims.
  */
 import {ACTION_VISUAL_CATALOG} from './action-catalog.mjs';
-import {defineActionOutcomeV2} from '../engine/action-outcome-v2.mjs';
+import {defineActionOutcomeV2} from '../contracts/action-outcome-v2.mjs';
 export const CHOREOGRAPHY_SCHEMA=1;
 const allowedTargets=new Set(['damage','heal','revive','buff','debuff','status','miss']);
 const freezeTargets=values=>Object.freeze(values.map(e=>Object.freeze({...e})));
