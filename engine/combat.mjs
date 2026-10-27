@@ -8,6 +8,7 @@
  */
 import {RENTAL_SQUAD,SCHOOL_RENTAL_PERSONALITIES} from '../content/rental-roster.mjs';
 import {resolveRentalAttackSpec} from './catalog-attack-spec.mjs';
+import {resolveRentalTechniqueSpec} from './catalog-technique-spec.mjs';
 export {RENTAL_SQUAD,SCHOOL_RENTAL_PERSONALITIES} from '../content/rental-roster.mjs';
 import { createBattle } from './phase1.mjs';
 import { createInspiritLedger } from './inspirit.mjs';
@@ -106,7 +107,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false,
   researchWheelCoalescing=false,researchOpeningPriority=null,
   researchPokeSoulTransfer=0,playtestSoulTuning=false,researchDamageModel=false,researchMultiHit=false,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false,enableRentalSkills=playtestSoulTuning,
-  catalogAttackResolution=false}={}) {
+  catalogAttackResolution=false,catalogTechniqueResolution=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof enableRentalSkills!=='boolean')throw new TypeError('enableRentalSkills must be boolean');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
@@ -118,6 +119,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   if(typeof catalogAttackResolution!=='boolean')throw new TypeError('catalogAttackResolution must be boolean');
   if(catalogAttackResolution&&teams!==undefined)
     throw new RangeError('catalog attack mode only supports unchanged built-in rentals');
+  if(typeof catalogTechniqueResolution!=='boolean')throw new TypeError('catalogTechniqueResolution must be boolean');
+  if(catalogTechniqueResolution&&teams!==undefined)
+    throw new RangeError('catalog Technique mode only supports unchanged built-in rentals');
   if(researchMultiHit&&!researchDamageModel)
     throw new RangeError('researchMultiHit requires researchDamageModel');
   if(typeof researchStatInspirits!=='boolean')
@@ -163,6 +167,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const catalogAttackByActor=catalogAttackResolution?new Map(
    squads.flatMap(team=>team.map((member,index)=>[
     member.id,resolveRentalAttackSpec(member,index,{school:playtestSoulTuning})
+   ]))):null;
+  const catalogTechniqueByActor=catalogTechniqueResolution?new Map(
+   squads.flatMap(team=>team.map((member,index)=>[
+    member.id,resolveRentalTechniqueSpec(member,index,{school:playtestSoulTuning})
    ]))):null;
   // Stat reductions and HP-over-time are distinct move categories.
   // Do not enable unverified negative HP-loss math to use real debuff types.
@@ -804,6 +812,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     // and the legacy source fields remain the exact fallback.
     const attackSpec=kind==='attack'?catalogAttackByActor?.get(actor.id):null;
     const attackPower=attackSpec?.power??actor.attackPower;
+    const techniqueSpec=kind==='technique'?catalogTechniqueByActor?.get(actor.id):null;
+    const techniquePower=techniqueSpec?.power??actor.techniquePower;
+    const techniqueKind=techniqueSpec?.kind??actor.technique;
+    const techniqueElement=techniqueSpec?.element??actor.techniqueElement;
+    const techniqueHits=techniqueSpec?.hits??actor.techniqueHits;
     let target=null,amount=0,hit=true,critical=false,effect=null,resisted=false,interruption=null,damageResearch=null,
       hitResearch=null,criticalResearch=null,multiHitDetails=null,healingResearch=null;
     if(kind==='guard'){
@@ -826,13 +839,13 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       resisted=sign==='negative'&&rng()*100<target.inspiritResistance;
       hit=!resisted;
       if(hit)applyInspirit({id:target.id,sign,effect,source:actor.id,level:actor.inspiritLevel});
-    }else if(kind==='technique'&&actor.technique==='heal'){
+    }else if(kind==='technique'&&techniqueKind==='heal'){
       const hurt=livingFront(actor.side).filter(x=>x.hp<x.maxHp).sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp);
       target=hurt[0]??null;
       if(!target)throw new Error('healing selected without injured ally');
       if(researchDamageModel){
         healingResearch=calculateHeal({
-          power:actor.techniquePower,spirit:actor.spirit,
+          power:techniquePower,spirit:actor.spirit,
           spiritStage:deriveStatStage(statuses.list(actor.id),'spirit'),
           targetHp:target.hp,maxHp:target.maxHp,
           varianceRoll:researchHealingVariance?rng():null
@@ -841,14 +854,14 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         target.hp=healingResearch.hpAfter;
       }else{
         // Provisional legacy base healing magnitude.
-        const heal=Math.max(1,Math.floor((actor.techniquePower+actor.spirit)/3));
+        const heal=Math.max(1,Math.floor((techniquePower+actor.spirit)/3));
         amount=Math.min(target.maxHp-target.hp,heal);target.hp+=amount;
       }
     }else{
       const opponents=livingFront(1-actor.side);
       target=opponents.find(m=>m.id===pins[actor.side])??opponents[Math.floor(rng()*opponents.length)];
       const attemptedHits=researchMultiHit
-        ?(kind==='attack'?(attackSpec?.hits??actor.attackHits):actor.techniqueHits):1;
+        ?(kind==='attack'?(attackSpec?.hits??actor.attackHits):techniqueHits):1;
       if(researchMultiHit)multiHitDetails=[];
       hit=false;critical=false;
       for(let index=0;index<attemptedHits;index++){
@@ -874,10 +887,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
               deriveStatStage(statuses.list(actor.id),kind==='attack'?'strength':'spirit')+
               (enableRentalSkills?skillMomentumStage(skillBoosts.get(actor.id)):0)));
             const defenseStage=deriveStatStage(statuses.list(target.id),'defense');
-            const elemental=kind==='technique'&&actor.technique==='damage'
-              ?target.elementResistances[actor.techniqueElement]??1:1;
+            const elemental=kind==='technique'&&techniqueKind==='damage'
+              ?target.elementResistances[techniqueElement]??1:1;
             damageResearch=calculateOneHit({
-              kind,power:kind==='attack'?attackPower:actor.techniquePower,
+              kind,power:kind==='attack'?attackPower:techniquePower,
               strength:actor.strength,spirit:actor.spirit,defense:target.defense,
               criticalDefense:target.criticalDefense,critical:oneCritical,
               guarded:target.guard,guardBreak:actor.guardBreak||(enableRentalSkills&&actor.skill==='guardBreak'),
@@ -926,12 +939,12 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     }
     if(squads.some(team=>team.every(member=>member.hp===0)))winner=squads[0].every(m=>m.hp===0)?1:0;
     const action={type:'action',turn:clockEvent.action,elapsed:clockEvent.elapsed,pointsElapsed:clockEvent.pointsElapsed,
-      actor:actor.id,kind:kind==='technique'&&actor.technique==='heal'?'heal':kind,target:target?.id??null,
+      actor:actor.id,kind:kind==='technique'&&techniqueKind==='heal'?'heal':kind,target:target?.id??null,
       hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,effect,resisted,interruption,winner,
       ...(turnInspirit?{turnInspirit:{...turnInspirit}}:{}),
       ...(healingResearch?{healingResearch:{...healingResearch}}:{}),
       ...(multiHitDetails?{multiHit:{attempted:multiHitDetails.length,
-        planned:kind==='attack'?(attackSpec?.hits??actor.attackHits):actor.techniqueHits,
+        planned:kind==='attack'?(attackSpec?.hits??actor.attackHits):techniqueHits,
         totalDamage:amount,landed:multiHitDetails.filter(x=>x.hit).length,
         criticalHits:multiHitDetails.filter(x=>x.critical).length,
         hits:multiHitDetails.map(x=>({...x,interruption:x.interruption?{...x.interruption}:null})),
@@ -941,8 +954,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         ...(criticalResearch?{criticalResearch:{...criticalResearch}}:{})
       }:{}),
       ...(damageResearch?{damageResearch:{
-        ...damageResearch,techniqueElement:kind==='technique'?actor.techniqueElement:'neutral',
-        sourceMovePower:kind==='attack'?attackPower:actor.techniquePower,
+        ...damageResearch,techniqueElement:kind==='technique'?techniqueElement:'neutral',
+        sourceMovePower:kind==='attack'?attackPower:techniquePower,
         targetId:target?.id??null
       }}:{}),
       ...(researchOpeningPriority?{priorityKind:clockEvent.priorityKind,
@@ -975,7 +988,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(playtestSoulTuning){
       // Friendly-match temporary pacing. NOT measured original-game numbers.
       const didDamageAction=kind==='attack'||
-        (kind==='technique'&&actor.technique==='damage');
+        (kind==='technique'&&techniqueKind==='damage');
       const vulnerableHit=didDamageAction&&hit&&target!==null&&
         (loafingActors.has(target.id)||
          statuses.list(target.id).some(x=>x.sign==='negative'));
@@ -994,7 +1007,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       // Empirical YW2 player report: +5 Soul after a nonattack owner's turn.
       // Research/default-off mode deliberately still avoids unknown attacks.
       const didNotAttack=kind==='guard'||kind==='loaf'||kind==='inspirit'||
-        (kind==='technique'&&actor.technique==='heal');
+        (kind==='technique'&&techniqueKind==='heal');
       if(didNotAttack && actor.hp>0)soul.addSoul(actor.id,5);
     }
     const expired=statuses.tick({actorId:actor.id});
