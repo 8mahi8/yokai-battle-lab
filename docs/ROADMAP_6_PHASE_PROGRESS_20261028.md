@@ -12,7 +12,7 @@
 ## ロードマップ
 | Phase | 目的 | 2026-10-28時点 | 次の受け入れ条件 |
 |---|---|---|---|
-| **Phase 1** | **戦闘基盤の統一** | **進行中（1.6完了）**：6体×4技のID参照・24技マスター、通常攻撃と攻撃/回復妖術の実ホストが台帳からPower/種類/属性/回数を解決。レガシー値は互換生成。原作4本中追加の3本も**一部フレーム直接目視** | 次はPhase1.7：とりつく効果ID/正負/状態条件の単一ソース化と同seed検証。原作の実際の効果時間・対象は動画や資料で確認してから採用 |
+| **Phase 1** | **戦闘基盤の統一** | **進行中（1.7 完了）**：通常攻撃・攻撃/回復妖術に加え、とりつくの効果ID・良悪・対象・試遊レベルを共通データ化し、ホストの実行判定・AIへ接続。旧/新seedの正規状態一致 | 次Phase1.8：必殺の技固有の効果・対象/多段を台帳へ移し、原作動画で検証できた範囲だけ忠実化する |
 | Phase 2 | 戦闘ルールを原作へ近づける | 後続（現在は一部の研究ルール・試遊値が存在） | 単発/多段/範囲、妖術、回復、とりつく、必殺、スキル、性格等をルールごと検証。元データ確度を維持 |
 | Phase 3 | 行動順と戦闘の時間 | 後続（現行は待ちポイント研究＋ホスト2600ms固定） | 原作に準拠した論理行動順とモーション/操作タイミングの対応を確認 |
 | Phase 4 | 操作と対人戦特有の仕組み | 後続（下画面ミニゲームとサークル等の既存実装あり） | おはらい/必殺/つつく/零式と**双方の表示保留**を原作局面で検証 |
@@ -20,6 +20,19 @@
 | Phase 6 | オンライン総合/学校試遊 | 後続（Firebase Friends試遊基盤とChrome QAあり） | Firebaseホスト/ゲストの判定一致と学校Safari 2端末の操作・長試合が実証される |
 
 **「進行中/後続」は研究や既存試作品が存在しない意味ではない**。現在の仕事の優先レーンを示す。個々の機能はPhaseをまたいで縦切り実装し、テストする。
+
+## 今回した作業（Phase1 / サブステップ1.7：とりつく共通データ化）
+- `content/inspirit-effect-master.mjs`：現行の研究用7効果のID・正負・分類・未確定持続を共通管理。`content/rental-inspirit-moves.mjs`：6体のとりつき効果（sleep / strength-up）、対象、仮レベル1を単一の著者データへ移した。**原作の確定技名/確率/時間ではない**。
+- `content/rental-roster.mjs`で従来の`inspirit`を共有ソースから互換生成。`content/rental-move-master.mjs`は正負・対象・状態IDを台帳から構築。`engine/selection.mjs`のAI対象飽和判定も同じ正負辞書を参照。
+- `engine/catalog-inspirit-spec.mjs`が名前/5能力/スキル/技/レベル/対象を起動時に照合し、`engine/combat.mjs`の本物のホスト行動へ接続。組込みレンタルで新方式を既定使用、customでは旧方式。旧のRNG・命中/耐性・おはらい・ledger・Soul・勝敗を変更しない。
+- `tests/phase1-7-inspirit-source-and-host.test.mjs`を6テスト追加。**Node 649/649 PASS**、複数seed×学校/研究で旧/新のイベント・HP・状態・勝敗一致、良悪とりつきの実発動とターゲット検査。独立[Chromium実画面QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40601602766)。ただし[単体ワークフロー全体](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40601602650)はChromium browser-smokeの起動タイムアウトで失敗（Node検査は全合格）。後続CI確認まで全体成功とは書かない。
+- 原作調査：[Mt Wildwood YW2 Inspirits](https://mtwildwood.net/inspirits.php?g=yw2)、[攻略大百科 おはらい](https://gamepedia.jp/youkai-yw2/archives/1397)。本人の原作動画は[Phase1.6の一部フレーム実見記録](./PHASE1_6_TECHNIQUE_CATALOG_AND_ORIGINAL_VIDEO_REVIEW_20261028.md)を参照、**今回とりつきの正確な持続・命中/抵抗率を動画から新規確定してはいない**。
+- 全証拠・コード・次工程：[Phase1.7](./PHASE1_7_INSPIRIT_EFFECT_MASTER_AND_PARITY_20261028.md)。学校Sites稼働版、GitHub main、本番Firebase Rules/DBは無変更。
+
+## 次する作業（Phase1 / サブステップ1.8）
+**必殺技の共通マスター化**。単体・範囲と単発・多段を区別し、追加効果・回復・蘇生・ドレインの専用処理を整理する。原作動画の技シーンを直接検証できた範囲と、外部資料で確認できる範囲を分ける。既存ゲームの実戦結果と同seed比較してからホストへ接続する。
+
+## 前回の作業（Phase1.6）
 
 ## 今回した作業（Phase 1 / サブステップ1.6：攻撃・回復妖術の実ホスト接続）
 - **共通技のデータ一元化**：`content/rental-technique-moves.mjs`に6体の試遊用妖術威力/攻撃・回復/仮neutral属性/ダメージ技ヒット数を一箇所で記述。`rental-roster`の`techniquePower`/`technique`は互換自動生成。`rental-move-master`は妖術の`category, power, hitPattern, element, targetScope`を技ソースから作成。
