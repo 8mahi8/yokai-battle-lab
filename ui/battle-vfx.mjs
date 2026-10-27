@@ -13,7 +13,7 @@ export function latestBattleCue(events){
    const damaging=kind==='playtest-damage'||kind==='playtest-heavy-hit';
    const targets=damaging?[{id:event.targetId,kind:'damage',
      amount:reward.amount??0,hit:true}]:[];
-   return {key:'poke:'+i+':'+JSON.stringify(event),type:'poke',
+   return {key:Number.isSafeInteger(event.eventId)&&event.eventId>0?'event:'+event.eventId:'poke:'+i+':'+JSON.stringify(event),type:'poke',
     kind:'poke',actor:null,side:event.side,mode:null,rewardKind:kind,
     targets,target:event.targetId,amount:reward.amount??0};
   }
@@ -23,12 +23,12 @@ export function latestBattleCue(events){
      id:x.targetId,amount:x.amount,kind:['heal','revive','buff','debuff'].includes(x.kind)?x.kind:'damage',
      hit:x.kind==='buff'||x.kind==='debuff'?x.applied!==false:true
     })):[];
-   return {key:'special:'+i+':'+JSON.stringify(event),type:'special',actor:event.actor,
+   return {key:Number.isSafeInteger(event.eventId)&&event.eventId>0?'event:'+event.eventId:'special:'+i+':'+JSON.stringify(event),type:'special',actor:event.actor,
     mode:event.mode,kind:'special',targets,target:targets[0]?.id??null,
     amount:targets[0]?.amount??0};
   }
   if(!Number.isFinite(event.turn))continue;
-  return {key:'action:'+event.turn,type:'action',actor:event.actor,
+  return {key:Number.isSafeInteger(event.eventId)&&event.eventId>0?'event:'+event.eventId:'action:'+event.turn,type:'action',actor:event.actor,
    kind:event.kind,targets:event.target?[{id:event.target,
     amount:Number.isFinite(event.amount)?event.amount:0,
     kind:event.kind==='heal'?'heal':'damage',hit:event.hit!==false}]:[],
