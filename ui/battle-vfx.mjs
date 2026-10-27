@@ -36,3 +36,14 @@ export function latestBattleCue(events){
  }
  return null;
 }
+
+
+/** One visual reaction across wheel medals and field fighters. Always
+ * resolve MISS before the intended effect type. Presentation only. */
+export function visualReactionClass(impact){
+ if(!impact)return '';
+ if(impact.hit===false)return 'mb-missed';
+ if(['heal','revive','buff'].includes(impact.kind))return 'mb-healed';
+ if(impact.kind==='status')return 'mb-inspirited';
+ return 'mb-hit';
+}
