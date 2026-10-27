@@ -73,6 +73,18 @@ test('authoring validation rejects missing move, fake hit count, fake evidence, 
  const fake=copy(basic);
  fake.provenance.stats='original-exact';
  assert.throws(()=>validateYokaiDefinition(fake),/provenance/);
+ const wrongProof=copy(basic);
+ wrongProof.moves.attack.evidence='documented';
+ assert.throws(()=>validateYokaiDefinition(wrongProof),/requires sourceRefs/);
+ wrongProof.moves.attack.sourceRefs=['https://example.com/verified-record'];
+ assert.equal(validateYokaiDefinition(wrongProof),true,
+  'documented claims must carry an explicit reference');
+ const falseSkillProof=copy(basic);
+ falseSkillProof.skill.evidence='observed';
+ assert.throws(()=>validateYokaiDefinition(falseSkillProof),/requires sourceRefs/);
+ const falseStatProof=copy(basic);
+ falseStatProof.provenance.stats='documented';
+ assert.throws(()=>validateYokaiDefinition(falseStatProof),/requires sourceRefs/);
  const attitude=copy(basic);
  attitude.personality.seriousnessTier=8;
  assert.throws(()=>validateYokaiDefinition(attitude),/seriousness/);
