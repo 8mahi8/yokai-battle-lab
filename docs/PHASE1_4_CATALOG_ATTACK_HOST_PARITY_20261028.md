@@ -29,7 +29,7 @@ Phase1.1～1.3では、戦闘結果を表示用にV2へ変換していたが、�
 - 旧ダメージ計算モードでも一致することを確認。
 - 組込レンタルの既定true、カスタム編成の既定falseと、ゲストからの無効な切替コマンド拒否を確認。
 - **最終コード`8f2dafebf`**： [研究単体 **633/633 PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40552398719)、[実Chromium Stage QA **PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40552398778)。この段階はiPad Safariでの二台試遊ではない。
-- 直前`afdc14bb8`（既定切替前）では[Firebase Emulator Chromium QA 成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40552008629)、[オンラインSites用ビルド検証成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40552008625)。**最終既定切替後のFirebase QA結果とは区別する**。
+- **組込レンタルでカタログを既定使用するコード`02fcf4f81`**について、[Firebase Emulator Chromium 2ブラウザQA成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40552356140)、[オンラインSites用ビルド/Emulator QA成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40552356497)も確認。これらは最後の`8f2dafebf`の**テストだけを追加する前のコード**だが、適用されるゲーム本体の挙動は同じ。**Firebase QAは旧匿名認証研究経路のため、学校AuthなしFriends実機2台の証明とは区別する**。
 - 旧Supabase二iframeの長時間QAで一度「host snapshot publish timeout」による失敗があった。同一路線の異なる試行では成功も観測されている。学校向けFirebase Friendsの再現保証とも、今回のカタログ攻撃による新バグ確定ともみなさない。
 - **途中の失敗を記録**：当初、局所スコープ内だけで宣言した`attackPower`が行動イベントのメタ情報で参照され、攻撃以外でReferenceErrorが多数発生。`attackPower`を行動分岐より前へ移し、研究単体633/633合格を再確認。テストを緩めず修正。
 
