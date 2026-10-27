@@ -190,7 +190,11 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     <div class="mb-screen-caption">BATTLE FIELD <span id="mb-choice-status" role="status">上画面 / 前衛3体ずつ</span></div>
     <div class="mb-battle-backdrop">
      <div class="mb-scenery mb-scenery-back" aria-hidden="true"></div>
-     <div id="mb-special-flare" class="mb-special-flare" hidden aria-hidden="true"><span id="mb-special-title"></span></div>
+     <div id="mb-special-flare" class="mb-special-flare" hidden aria-hidden="true">
+      <div class="mb-special-cutin-lines"></div>
+      <div id="mb-special-portrait" class="mb-special-portrait"></div>
+      <div class="mb-special-copy"><small id="mb-special-actor"></small><span id="mb-special-title"></span></div>
+     </div>
      <div class="mb-foe-line" id="mb-foe-line"></div><div id="mb-action-callout" class="mb-action-callout" hidden><b id="mb-cue-kind"></b><span id="mb-cue-summary"></span></div><div id="mb-passive-notice" class="mb-passive-notice" hidden aria-live="off"></div>
      <div class="mb-scenery mb-scenery-floor" aria-hidden="true"></div>
      <div class="mb-ally-line" id="mb-ally-line"></div>
@@ -381,8 +385,12 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     (unit.negative?'<span class="mb-condition-icon" aria-label="悪いとりつき">⚠</span>':'');
    return '<button type="button" data-unit="'+id+'" class="mb-fighter'+
     actor+target+pinned+ko+candidate+tonedDown+'" aria-label="'+name+
-    (isOwn?' 味方前衛':' 敵前衛')+(candidate?' 選択可能':'')+'">'+
+    (isOwn?' 味方前衛':' 敵前衛')+(candidate?' 選択可能':'')+
+    (pinned?' ピンでねらい中':'')+(unit.negative?' 悪いとりつき':unit.positive?' 良いとりつき':'')+'">'+
     '<span class="mb-fighter-sprite">'+renderSpiritPortrait(id)+'</span>'+
+    (pinned?'<span class="mb-pin-reticle" aria-hidden="true"></span>':'')+
+    (unit.negative?'<span class="mb-status-marker mb-status-bad" aria-hidden="true">✕</span>':
+     unit.positive?'<span class="mb-status-marker mb-status-good" aria-hidden="true">↑</span>':'')+
     '<span class="mb-fighter-meta"><strong>'+name+'</strong>'+
     '<span class="mb-bars"><i style="width:'+pct(shownHp(unit),unit.maxHp)+'%"></i></span>'+
     (isOwn?'<span class="mb-bars mb-soulbar"><i style="width:'+pct(unit.soul,unit.capacity)+'%"></i></span>':'')+
@@ -483,7 +491,21 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    notice.textContent=skillNotes.map(n=>labelName(n.actorId)+' '+n.label+
      (n.targetId?' → '+labelName(n.targetId):'')).join(' / ');
   }else notice.textContent='';
-  $('mb-special-flare').hidden=flash?.type!=='special';
+  const specialVisible=flash?.type==='special'&&scenePhase==='anticipation';
+  const cutin=$('mb-special-flare');
+  cutin.hidden=!specialVisible;
+  if(specialVisible){
+   const id=flash.actor;
+   const actor=view.teams[id?.startsWith('B')?1:0]?.members.find(x=>x.id===id);
+   const portrait=$('mb-special-portrait');
+   if(portrait.dataset.unit!==id){
+    portrait.innerHTML=id?renderSpiritPortrait(id):'';
+    portrait.dataset.unit=id??'';
+   }
+   cutin.dataset.creature=String(Number(id?.slice(1))||1);
+   cutin.dataset.mode=flash.mode==='g-tech'?'g':'normal';
+   $('mb-special-actor').textContent=actor?.name??'妖怪';
+  }
   const callout=$('mb-action-callout');
   if(flash){
    const names={attack:'こうげき！',technique:'ようじゅつ！',heal:'かいふく！',inspirit:'とりつく！',guard:'ガード！',loaf:'サボり…',poke:'つつく！',special:'ひっさつわざ！'};
@@ -499,7 +521,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    callout.hidden=flash.type==='special';
   }else callout.hidden=true;
   $('mb-special-title').textContent=flash?.type==='special'
-   ?(flash.mode==='g-tech'?'Gわざ発動！':'ひっさつわざ！'):'';
+   ?(flash.mode==='g-tech'?'Gわざ 発動！':'ひっさつわざ！'):'';
 
   const own=view.teams[activeSeat];
   if(!own.members.some(x=>x.id===selection))selection=own.frontIds[0];
