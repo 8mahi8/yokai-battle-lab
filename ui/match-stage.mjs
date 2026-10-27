@@ -336,7 +336,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const choice=commandMode&&t.side===activeSeat&&matchSelectionHints(view,commandMode).own.includes(unit.id)
     ?' mb-choice-eligible':'';
    const pinned=t.side!==activeSeat&&unit.id===view.teams[activeSeat].pin?' mb-pinned':'';
-   const disabled=unit.ko?' mb-ko':'';
+   const disabled=shownHp(unit)===0?' mb-ko':'';
    const impact=visibleHit(unit.id);
    const animated=flash?.actor===unit.id?' mb-acting':impact
     ?(impact.kind==='heal'?' mb-healed':impact.hit===false?' mb-missed':' mb-hit'):'';
@@ -347,9 +347,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     '" style="--x:'+pos.x+'%;--y:'+pos.y+'%" aria-label="'+name+(unit.front?' 前衛':' 後衛')+'">'+
     renderSpiritPortrait(unit.id)+
     '<span class="mb-name">'+name+'</span>'+
-    '<span class="mb-bars"><i style="width:'+pct(unit.hp,unit.maxHp)+'%"></i></span>'+
+    '<span class="mb-bars"><i style="width:'+pct(shownHp(unit),unit.maxHp)+'%"></i></span>'+
     '<span class="mb-bars mb-soulbar"><i style="width:'+pct(unit.soul,unit.capacity)+'%"></i></span>'+
-    '<span class="mb-unit-stat">'+unit.hp+'/'+unit.maxHp+(unit.negative?' ⚠':'')+'</span>'+
+    '<span class="mb-unit-stat">'+shownHp(unit)+'/'+unit.maxHp+(unit.negative?' ⚠':'')+'</span>'+
     (unit.front?'<span class="mb-front-badge">前衛</span>':'')+
     (commandMode==='charge'&&unit.specialReady?
      '<span class="mb-special-ready">'+(t.mode==='zero'?'GわざOK':'わざOK')+'</span>':'')+
@@ -376,7 +376,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const pinned=!isOwn&&view.teams[activeSeat].pin===id?' mb-pinned':'';
    const candidate=!isOwn&&commandMode==='target'&&!unit.ko?' mb-choice-eligible':'';
    const tonedDown=!isOwn&&commandMode==='target'&&unit.ko?' mb-choice-ineligible':'';
-   const ko=unit.ko?' mb-ko':'';
+   const ko=shownHp(unit)===0?' mb-ko':'';
    const status=(unit.positive?'<span class="mb-condition-icon" aria-label="良いとりつき">↑</span>':'')+
     (unit.negative?'<span class="mb-condition-icon" aria-label="悪いとりつき">⚠</span>':'');
    return '<button type="button" data-unit="'+id+'" class="mb-fighter'+
@@ -384,9 +384,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     (isOwn?' 味方前衛':' 敵前衛')+(candidate?' 選択可能':'')+'">'+
     '<span class="mb-fighter-sprite">'+renderSpiritPortrait(id)+'</span>'+
     '<span class="mb-fighter-meta"><strong>'+name+'</strong>'+
-    '<span class="mb-bars"><i style="width:'+pct(unit.hp,unit.maxHp)+'%"></i></span>'+
+    '<span class="mb-bars"><i style="width:'+pct(shownHp(unit),unit.maxHp)+'%"></i></span>'+
     (isOwn?'<span class="mb-bars mb-soulbar"><i style="width:'+pct(unit.soul,unit.capacity)+'%"></i></span>':'')+
-    '<small>'+unit.hp+'/'+unit.maxHp+'</small>'+status+'</span>'+
+    '<small>'+shownHp(unit)+'/'+unit.maxHp+'</small>'+status+'</span>'+
     (impact&&(impact.kind==='buff'||impact.kind==='debuff'||impact.kind==='revive')&&impact.hit!==false?
      '<span class="mb-floating-number">'+(impact.kind==='buff'?'強化':impact.kind==='revive'?'復活':'弱体化')+'</span>':
      impact&&impact.amount>0?
