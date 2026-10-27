@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {RENTAL_SQUAD} from '../content/rental-roster.mjs';
 import {ACTION_OUTCOME_SCHEMA,defineActionOutcomeV2,
- validateActionOutcomeV2} from '../engine/action-outcome-v2.mjs';
+ validateActionOutcomeV2} from '../contracts/action-outcome-v2.mjs';
 import {projectAttackOutcomeV2}
  from '../presentation/legacy-attack-to-v2.mjs';
 import {createMatchProtocol} from '../engine/match-protocol.mjs';
