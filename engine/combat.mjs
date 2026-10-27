@@ -9,6 +9,7 @@
 import {RENTAL_SQUAD,SCHOOL_RENTAL_PERSONALITIES} from '../content/rental-roster.mjs';
 import {resolveRentalAttackSpec} from './catalog-attack-spec.mjs';
 import {resolveRentalTechniqueSpec} from './catalog-technique-spec.mjs';
+import {resolveRentalInspiritSpec} from './catalog-inspirit-spec.mjs';
 export {RENTAL_SQUAD,SCHOOL_RENTAL_PERSONALITIES} from '../content/rental-roster.mjs';
 import { createBattle } from './phase1.mjs';
 import { createInspiritLedger } from './inspirit.mjs';
@@ -107,7 +108,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false,
   researchWheelCoalescing=false,researchOpeningPriority=null,
   researchPokeSoulTransfer=0,playtestSoulTuning=false,researchDamageModel=false,researchMultiHit=false,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false,enableRentalSkills=playtestSoulTuning,
-  catalogAttackResolution=false,catalogTechniqueResolution=false}={}) {
+  catalogAttackResolution=false,catalogTechniqueResolution=false,
+  catalogInspiritResolution=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof enableRentalSkills!=='boolean')throw new TypeError('enableRentalSkills must be boolean');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
@@ -122,6 +124,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   if(typeof catalogTechniqueResolution!=='boolean')throw new TypeError('catalogTechniqueResolution must be boolean');
   if(catalogTechniqueResolution&&teams!==undefined)
     throw new RangeError('catalog Technique mode only supports unchanged built-in rentals');
+  if(typeof catalogInspiritResolution!=='boolean')
+    throw new TypeError('catalogInspiritResolution must be boolean');
+  if(catalogInspiritResolution&&teams!==undefined)
+    throw new RangeError('catalog Inspirit mode only supports unchanged built-in rentals');
   if(researchMultiHit&&!researchDamageModel)
     throw new RangeError('researchMultiHit requires researchDamageModel');
   if(typeof researchStatInspirits!=='boolean')
@@ -171,6 +177,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const catalogTechniqueByActor=catalogTechniqueResolution?new Map(
    squads.flatMap(team=>team.map((member,index)=>[
     member.id,resolveRentalTechniqueSpec(member,index,{school:playtestSoulTuning})
+   ]))):null;
+  const catalogInspiritByActor=catalogInspiritResolution?new Map(
+   squads.flatMap(team=>team.map((member,index)=>[
+    member.id,resolveRentalInspiritSpec(member,index,{school:playtestSoulTuning})
    ]))):null;
   // Stat reductions and HP-over-time are distinct move categories.
   // Do not enable unverified negative HP-loss math to use real debuff types.
@@ -826,19 +836,23 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       // approximation. Source confirms loafing can trigger Zero Poke.
       loafingActors.add(actor.id);
     }else if(kind==='inspirit'){
-      const sign=['sleep','strength-down','defense-down','spirit-down','hp-loss']
-        .includes(actor.inspirit)?'negative':'positive';
+      const inspiritSpec=catalogInspiritByActor?.get(actor.id);
+      const sign=inspiritSpec?.sign??(
+       ['sleep','strength-down','defense-down','spirit-down','hp-loss']
+        .includes(actor.inspirit)?'negative':'positive');
+      const inspiritEffect=inspiritSpec?.effect??actor.inspirit;
       const group=sign==='negative'?livingFront(1-actor.side):livingFront(actor.side);
-      const candidates=group.filter(x=>!statuses.has(x.id,actor.inspirit));
+      const candidates=group.filter(x=>!statuses.has(x.id,inspiritEffect));
       if(!candidates.length)throw new Error('Inspirit selected without eligible target');
       target=sign==='negative'
        ? candidates.find(m=>m.id===pins[actor.side])??candidates[Math.floor(rng()*candidates.length)]
        : candidates[Math.floor(rng()*candidates.length)];
-      effect=actor.inspirit;
+      effect=inspiritEffect;
       // Resistance formula is cross-version research; unit resistance is a TEST fixture.
       resisted=sign==='negative'&&rng()*100<target.inspiritResistance;
       hit=!resisted;
-      if(hit)applyInspirit({id:target.id,sign,effect,source:actor.id,level:actor.inspiritLevel});
+      if(hit)applyInspirit({id:target.id,sign,effect,source:actor.id,
+       level:inspiritSpec?.level??actor.inspiritLevel});
     }else if(kind==='technique'&&techniqueKind==='heal'){
       const hurt=livingFront(actor.side).filter(x=>x.hp<x.maxHp).sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp);
       target=hurt[0]??null;
