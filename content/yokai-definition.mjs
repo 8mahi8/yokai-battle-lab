@@ -24,6 +24,11 @@ const text=x=>typeof x==='string'&&x.length>0;
 const int=x=>Number.isSafeInteger(x);
 const unknownOrText=x=>x===null||text(x);
 function fail(message){throw new TypeError('yokai definition: '+message);}
+function validateSourceRefs(refs,level,label){
+ if(!Array.isArray(refs)||refs.some(x=>!text(x)))fail(label+' sourceRefs');
+ if(['observed','documented'].includes(level)&&refs.length===0)
+  fail(label+' confirmed evidence requires sourceRefs');
+}
 function freezeDeep(value){
  if(value&&typeof value==='object'){
   for(const v of Object.values(value))freezeDeep(v);
@@ -40,6 +45,7 @@ function checkMove(move,slot){
  if(!SCOPE.has(move.targetScope))fail(slot+' targetScope');
  if(!unknownOrText(move.statusEffect))fail(slot+' statusEffect');
  if(!evidence.has(move.evidence))fail(slot+' evidence');
+ validateSourceRefs(move.sourceRefs,move.evidence,slot);
  const h=move.hitPattern;
  if(!object(h)||!PATTERN.has(h.type))fail(slot+' hitPattern');
  if(h.type==='unknown'&&h.count!==null)fail(slot+' unknown count must be null');
@@ -85,10 +91,14 @@ export function validateYokaiDefinition(definition){
  if(!object(s)||!text(s.id)||!unknownOrText(s.displayName)||
   !unknownOrText(s.trigger)||!unknownOrText(s.effect)||
   !evidence.has(s.evidence))fail('skill');
+ validateSourceRefs(s.sourceRefs,s.evidence,'skill');
  if(!object(d.provenance))fail('provenance');
  for(const k of ['identity','stats','moves','skill','personality','tribe',
-  'rank','faction','resistances','equipment'])
+  'rank','faction','resistances','equipment']){
   if(!evidence.has(d.provenance[k]))fail('provenance.'+k);
+  if(!object(d.fieldSourceRefs))fail('fieldSourceRefs');
+  validateSourceRefs(d.fieldSourceRefs[k],d.provenance[k],k);
+ }
  return true;
 }
 /** A frozen copy prevents schema consumers from altering the active roster. */
