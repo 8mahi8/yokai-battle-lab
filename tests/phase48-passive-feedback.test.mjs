@@ -16,6 +16,9 @@ test('before/after effects are attached to exactly one canonical action',()=>{
  assert.deepEqual(notices.map(n=>n.key),['skill:23','skill:24','skill:26']);
  assert.ok(notices.some(n=>n.label.includes('どひょうぎわ')));
  assert.ok(notices.some(n=>n.label.includes('+5HP')));
+ assert.equal(notices.find(n=>n.kind==='momentum').targetId,null,
+  'KO victim is not the buff recipient');
+ assert.equal(notices.find(n=>n.kind==='care').targetId,'A1');
  assert.ok(notices.every(n=>Object.isFrozen(n)));
  assert.ok(Object.isFrozen(notices));
  assert.deepEqual(passiveSkillNoticesForAction(events,25).map(x=>x.eventId),
