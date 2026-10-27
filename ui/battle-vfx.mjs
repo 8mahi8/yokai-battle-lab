@@ -31,7 +31,7 @@ export function latestBattleCue(events){
   return {key:Number.isSafeInteger(event.eventId)&&event.eventId>0?'event:'+event.eventId:'action:'+event.turn,type:'action',actor:event.actor,
    kind:event.kind,targets:event.target?[{id:event.target,
     amount:Number.isFinite(event.amount)?event.amount:0,
-    kind:event.kind==='heal'?'heal':'damage',hit:event.hit!==false}]:[],
+    kind:event.kind==='heal'?'heal':event.kind==='inspirit'?'status':'damage',hit:event.hit!==false}]:[],
    target:event.target||null,amount:event.amount??0,hit:event.hit!==false};
  }
  return null;
