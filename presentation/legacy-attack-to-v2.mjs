@@ -3,7 +3,7 @@
  * the wire protocol stays v1. No move resolution, damage, RNG or HP edits.
  */
 import {defineActionOutcomeV2}
- from '../engine/action-outcome-v2.mjs';
+ from '../contracts/action-outcome-v2.mjs';
 import {projectLegacyAttackOutcome}
  from './legacy-attack-outcome.mjs';
 
