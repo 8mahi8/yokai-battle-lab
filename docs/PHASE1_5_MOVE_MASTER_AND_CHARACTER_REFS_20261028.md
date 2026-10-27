@@ -58,7 +58,7 @@ rental-character-move-refs.mjs  : 6体の ID / 技4枠のID / skillId
 - 存在しないID、型の異なるスロット、技枠欠落、技マスターの重複、ID参照キャラの変異が拒否される。
 - 学校向けレンタル6体の`catalogAttackResolution:false/true`に対し、同seedの実ホスト結果とスナップが一致。
 
-**コミット`14ae7c688`の[Research Unit 638/638 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40597123520)**。実Chromium Stage QAは[GitHub Actions run](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40597123947)で追跡（合否は確認時点で未完了。結果が出たらこの記録を更新）。
+**コミット`14ae7c688`の[Research Unit 638/638 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40597123520)**。**[実Chromium Stage QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40597123947)**も確認。STAGE-PASS（実ホスト/ゲスト操作・サークル/ターゲット）、GESTURE-PASS（4種チャージ・5種おはらい・つつく・Pointerキャンセル・二指）、MATCH-RESULT-PASS（両者結果）を出力。PNGスクリーンショット生成成功だが、**画像を今回直接目視レビューしたとは主張しない**。
 GitHub上でこれらの外部QAはnode/Chromium実行。ローカルコンテナは利用不能だったため実Safari iPad操作確認は今回できていない。
 
 ## 次する作業 / Phase 1.6
