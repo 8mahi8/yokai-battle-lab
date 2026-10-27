@@ -64,6 +64,16 @@
 - **重要**：演出の仮秒数を元作の値と誤認しない。純モジュールを作っただけではゲーム画面の表示はまだ変わらない。次工程で対戦プレゼンテーションへ段階的に接続する。
 - 既存の無認証接続/ルーム/Google Sites版・Firebase Rules・mainには変更を入れない。
 
+## Phase45追加：妖怪データの抽出と CI 合格実績
+
+- `content/rental-roster.mjs`：レンタル6体の数値・技種・スキルと学校用性格プリセットを、既存 `engine/combat.mjs` から**ロジック変更なしで独立したデータ定義**へ移動。バランス値は引き続き開発用仮値。
+- `engine/combat.mjs`：従来 `RENTAL_SQUAD`・`SCHOOL_RENTAL_PERSONALITIES` のexport APIを維持してインポート。過去の研究用fixturesと学校6体対称性を壊さない。
+- `tests/content-catalog.test.mjs`：6体と配布用性格が同一のデータソースを参照すること、学校版と研究版の区別。
+- `tests/architecture-boundaries.test.mjs`：演出とキャラデータのファイルがネットワーク/DOM/戦闘本体に依存し始めたらテスト失敗にする**境界ガード**。
+- [研究・戦闘/通信回帰 CI #40451766510](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40451766510) **585/585 PASS**。既存4seedレンタル自然終局も検査。
+- [実Chromiumの2画面Stage QA #40451766616](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40451766616) **SUCCESS**。データ抽出後も従来レンダラで崩れない。
+- 今回のコードは**学校向け配布版の挙動を変えない基盤の整理**。実験的な `presentation/action-choreography.mjs` はまだ学校の実画面には接続していない。次に表示イベントの安定IDと二重描画対策を作る。
+
 ## Phaser/Pixi/Canvas全面移行の判断
 現状はDOM+SVGで一定程度動いている。短時間・無料・古いSafari・Google Sites直接貼付の要件から、**今は全面移行しない**。3DS再現の必要な演出品質を既存DOMで作れるかを、複数のアクションと長時間オンライン実機で確認してから判断する。新たな依存・初期ロード・iframeのフォーカス・端末タッチ互換を検証できないまま描画エンジンだけ導入しても戦闘品質は保証されない。
 
