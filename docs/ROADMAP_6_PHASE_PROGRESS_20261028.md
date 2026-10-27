@@ -12,7 +12,7 @@
 ## ロードマップ
 | Phase | 目的 | 2026-10-28時点 | 次の受け入れ条件 |
 |---|---|---|---|
-| **Phase 1** | **戦闘基盤の統一** | **進行中（1.5 完了）**：6体のキャラ定義を4つの技ID参照に正規化、全24技の共通マスターへ解決。物理Power/HitCountを単一ソース化し旧ロスタは計算生成。戦闘結果不変 | 次はPhase1.6：妖術の威力/攻撃・回復種別を技マスターへ直接移し、旧/新の全試合シード比較。とりつく/必殺の効果情報は続く工程で移行 |
+| **Phase 1** | **戦闘基盤の統一** | **進行中（1.6完了）**：6体×4技のID参照・24技マスター、通常攻撃と攻撃/回復妖術の実ホストが台帳からPower/種類/属性/回数を解決。レガシー値は互換生成。原作4本中追加の3本も**一部フレーム直接目視** | 次はPhase1.7：とりつく効果ID/正負/状態条件の単一ソース化と同seed検証。原作の実際の効果時間・対象は動画や資料で確認してから採用 |
 | Phase 2 | 戦闘ルールを原作へ近づける | 後続（現在は一部の研究ルール・試遊値が存在） | 単発/多段/範囲、妖術、回復、とりつく、必殺、スキル、性格等をルールごと検証。元データ確度を維持 |
 | Phase 3 | 行動順と戦闘の時間 | 後続（現行は待ちポイント研究＋ホスト2600ms固定） | 原作に準拠した論理行動順とモーション/操作タイミングの対応を確認 |
 | Phase 4 | 操作と対人戦特有の仕組み | 後続（下画面ミニゲームとサークル等の既存実装あり） | おはらい/必殺/つつく/零式と**双方の表示保留**を原作局面で検証 |
@@ -21,6 +21,17 @@
 
 **「進行中/後続」は研究や既存試作品が存在しない意味ではない**。現在の仕事の優先レーンを示す。個々の機能はPhaseをまたいで縦切り実装し、テストする。
 
+## 今回した作業（Phase 1 / サブステップ1.6：攻撃・回復妖術の実ホスト接続）
+- **共通技のデータ一元化**：`content/rental-technique-moves.mjs`に6体の試遊用妖術威力/攻撃・回復/仮neutral属性/ダメージ技ヒット数を一箇所で記述。`rental-roster`の`techniquePower`/`technique`は互換自動生成。`rental-move-master`は妖術の`category, power, hitPattern, element, targetScope`を技ソースから作成。
+- **戦闘エンジンの実移行**：`engine/catalog-technique-spec.mjs`でキャラの全5能力/名前/技/スキルと台帳が一致することを厳密検査。`engine/combat.mjs`では新`catalogTechniqueResolution`のとき攻撃・回復妖術の威力/種類/属性/ヒット数を台帳から取得し、既存の命中・ダメージ・回復・Soul・勝敗をそのまま利用。組込み6体は`match-protocol`既定true、custom teamsは従来動作。
+- **自動テスト**：`tests/phase1-6-technique-source-and-host.test.mjs`に5テスト追加。[**Research Unit 643/643 PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40600243250)、[**Chromium Stage/Gesture/Result QA PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40600243175)。学校/研究・複数seedで**両方の妖術（攻撃/回復）を実際に発生**させ、旧方式・新方式のHP/妖気/イベント/勝敗が一致。
+- **今回の重要な違い：ユーザー提供原作動画を実ファイルから直接レビューできた**。4つの元MP4の存在/尺を`ffprobe`で確認し、2,3,4本目の一部フレームを抽出・目視。技別カットイン/サークル/状態文字などを観察。全編を観察したとは言わず、妖術の原作威力・回復式・対象・時間は未確定。詳細は[Phase1.6原作動画・実装証拠](./PHASE1_6_TECHNIQUE_CATALOG_AND_ORIGINAL_VIDEO_REVIEW_20261028.md)。外部技資料・Type Objectも照合。
+- **未完**：とりつく・必殺技の効果データソースは旧ロスタに残存。学校Safari2台の実機試験は未実施。原作数値はあくまで`fixture`。学校Sites稼働版・GitHub main・本番Firebase Rules/DB・Drive配布は無変更。
+
+## 次する作業（Phase 1 / サブステップ1.7）
+**とりつくの共有効果マスター化**（良/悪・対象・状態効果ID・レベル/解除条件）を原作資料と本人の録画で確認する。未知の持続ターンや発生率を原作確定とはしない。既存戦闘解決を維持してデータ駆動化し、同seed・同入力で旧/新を比較する。その後必殺/スキルへ。
+
+## 前回の作業（Phase 1.5）
 ## 今回した作業（Phase 1 / サブステップ1.5：キャラID参照と24技マスター）
 - **実装済**：`content/rental-character-move-refs.mjs`がキャラ6体について4技IDとスキルIDを保持。`content/rental-move-master.mjs`が24件の技定義を一元管理し、`content/rental-yokai-definitions.mjs`がID参照の一次データから旧V1のフル技定義を**互換生成**する。`content/combat-catalog.mjs`は参照-onlyキャラとmoveMasterを直接入力として、4技ID→実技定義への照合を行う。
 - **攻撃威力の実単一ソース化**：旧`RENTAL_SQUAD`内の`attackPower`リテラルを削除。`content/rental-attack-moves.mjs`のみで6体の攻撃威力を定義し、旧`attackPower`プロパティは生成。攻撃回数は全員1ヒットのfixtureを保持。原作のヒット数と主張しない。
