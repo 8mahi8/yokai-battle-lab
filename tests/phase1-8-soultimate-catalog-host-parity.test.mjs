@@ -73,6 +73,7 @@ test('each of six Soultimate effect kinds yields identical host events and HP in
   for(const school of [false,true]){
    for(let i=0;i<6;i++){
     const options={seed,playtestSoulTuning:school,researchSpecialEffects:true,
+     researchDamageModel:true,researchStatInspirits:true,
      catalogAttackResolution:true,catalogTechniqueResolution:true,
      catalogInspiritResolution:true,catalogSoultimateResolution:false};
     const a=createCombat(options);
