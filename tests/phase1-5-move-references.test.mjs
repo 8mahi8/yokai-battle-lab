@@ -67,6 +67,10 @@ test('primary normalized catalogs generate identical full V1 compatibility recor
    const ref=references[i],old=legacy[i];
    assert.deepEqual(ref.moveIds,RENTAL_CHARACTER_MOVE_REFS[i].moveIds);
    assert.equal('moves' in ref,false);
+   assert.ok(Object.isFrozen(ref)&&Object.isFrozen(ref.stats));
+   assert.ok(Object.isFrozen(ref.personality.actionWeights));
+   assert.ok(Object.isFrozen(ref.fieldSourceRefs.identity));
+   assert.throws(()=>{ref.moveIds.attack='corrupt'},TypeError);
    assert.deepEqual(catalog.getCharacter(ref.id),old,
     'reference-only authoring must create same compiled character as old V1');
    assert.deepEqual(Object.values(old.moves).map(x=>x.id),
