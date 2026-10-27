@@ -50,7 +50,7 @@
 | A05 | 必殺チャージ4種類 | `charge-input.mjs`にspin/tap/trace/align | 4種類自体は合う。現`tap`はシードで並べ替えた6**固定ポイント**だが外部資料では**黄色い玉が飛来**。3回トレース、3時計は種類として合うが、指や画面パターン/判定しきい値は未観察 | **P1** |
 | A06 | 複数ヒット必殺 | `presentation/action-catalog.mjs`に`special:1250+570+630ms`、`ui/battle-vfx.mjs`に`targets[]`、`engine/combat.mjs`にimpacts | 1試合目ジバニャン約00:43–00:52で**カットイン後に連続ヒット**、他の必殺は別演出。現在は共通1つのimpact区間・まとめた数値表示。ゲーム内部の複数ヒットデータ≠原作の**連続する映像** | **P1** |
 | A07 | 受け側のサークル見た目保留 | Phase50 `ui/battle-cue-sequence.mjs`はアクションの表示FIFO | 確定行動のキュー ≠ **相手側に見える配置の履歴**。表示保留が発生する条件・技モーションと同時に進む操作入力/反映順は未実装（E4） | **P0研究** |
-| A08 | サークルの移動・入力 | `ui/wheel-gesture.mjs`は36°から1ステップ/指、`engine/phase1.mjs`は交代時待ち時間リセット、`createCombat`の通常rotationCooldownMs=0 | 回転はできるが学校Friendsオプションにクールダウンの指定がなく**即再回転可能**。原作の対人回転制約を正確に確定するまで**4秒や5秒を脊髄反射的に設定しない** | **P0研究** |
+| A08 | サークルの移動・入力 | `ui/wheel-gesture.mjs`は36°で1ステップ/指、`engine/phase1.mjs`は交代時待ち時間リセット。`createCombat`の直接初期値は`rotationCooldownMs=0`だが、**学校Friendsが使う`createMatchProtocol`では既定`rotationCooldownMs=3000`** | 以前の「学校では即再回転可能」という記載は**誤り**。現行学校用はホスト時計に基づく3秒の回転制約。ただし**3秒が原作2対人の厳密値かどうかは未検証**。YW1/2の資料を混同せず根拠を追う | **P0研究** |
 | A09 | 行動順と見た目のテンポ | `engine/phase1.mjs`でWait counter+速度テーブルを実装。一方`lab/sites-embed-online-entry.mjs`で**2.6秒ごと**にhost step | **行動する妖怪の順序**の研究基盤はあるが、固定intervalと、原作の行動開始/待機/結果/入力の`wall-time`を混同しない。秒数はU | **P0研究** |
 | A10 | 妖気・原作の戦術 | `combat.mjs`で`playtestSoulTuning:true`（学校Friends）、`enableLoafing:true` | 妖気の増加量はschool-playtest用の仮値。対戦研究は妖怪/技レベルで妖気の貯まる速さが違うと説明。**読み合いの基盤が違う** | **P1研究** |
 | A11 | フィールドと研究表示 | `match-stage.mjs`上画面に自作SVGキャラ、`次の5行動`・研究ノートやラベル、フィールド上下配置 | 提供映像は上画面3vs3立ち位置・下画面小さなサークル。現在の予報5行動等は原作にない**研究用独自UI**。学校版では原作に無い情報を見せるべきか別途検討（初期は原作再現優先） | **P2** |
