@@ -50,7 +50,7 @@
 初版のテストでは**参照先が同一のJavaScriptオブジェクト**であることを誤って期待して1件失敗。実装は元キャラデータを複製・凍結するため、正しい期待は**データとして同一の技定義**。テスト修正後に研究単体試験 **614件全合格**を確認。合否の最終CIは下記のリンクを参照。
 
 - [修正後の614/614合格](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40534349204)（`9bb4df6cf`時点。共有名リファクタ前）
-- 最新の公開API一元化も含む後続CI：`4b8b9efc`の [Research Unit](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40534532696)、[Chromium Stage](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40534532969)。**結果を確認するまで最新も合格とは宣言しない**。
+- 最新の公開API一元化も含む後続CI：`4b8b9efc`の [Research Unit](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40534532696)、[Chromium Stage](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40534532969)。**両ワークフローとも成功を確認済み**。最新の単体テストは614/614合格、Stage実Chromiumも成功。
 
 ## 次の実装（データ台帳ができたあと）
 1. **技の実効果の分類**を設定する（普通の物理単発、多段物理、属性妖術、回復、とりつき、単発必殺、範囲必殺、必殺多段など）。カテゴリは元の戦闘式と原作技の確定資料と紐付け、**多対象≠多ヒット**を厳守。
@@ -61,3 +61,5 @@
 6. Firebaseルーム・seq/ACK・古い学校Google Sites配布・GitHub main・Firebase Rules/DBは維持。新規依存ライブラリなし。
 
 **完了基準は「技データを書くだけで原作を再現したと主張できる」ではなく、原作の技・その発動条件・計算結果・画面演出を独立した検証で整合させること。**
+
+- `d2e1a78` 時点の[Firebaseエミュレーター実ブラウザQA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40534489173)・[学校向けコードビルドQA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40534489457)も成功。旧Supabase長時間対戦試験は別経路で失敗。学校のFirebase Friendsと混同せず、別トラックで扱う。
