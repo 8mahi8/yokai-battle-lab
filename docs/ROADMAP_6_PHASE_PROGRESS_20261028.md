@@ -36,7 +36,7 @@
 
 ### 品質・証拠
 - 初版通しテストコミット`3a412a3a`： [Research unit 619/619 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40546323564) ＋ [実Chromium Stage QA SUCCESS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40546323613)。
-- 追加のカスタムチーム誤対応防止（actorの5能力/威力を照合）は後続コミット`9172bec`・テスト更新`97a115e`。**上記CIはこれらの後続コードの確証ではない**。最終CIを確認後に本書へ別記する。
+- 最終の識別照合修正 `97a115e` まで含む[研究単体 619/619 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40546708006)・[実Chromium Stage QA成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40546708048)を確認した。カスタムチームの数値偽一致もテスト済み。
 - Google Sitesの学校iPad 2台はこの新コードで未検証。GitHub ActionsのChromium描画QAが実Safari検証の代わりとは限らない。
 
 ## 次の作業（Phase 1 / サブステップ1.2）
