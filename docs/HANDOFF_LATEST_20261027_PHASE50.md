@@ -1,5 +1,8 @@
 # 妖怪ウォッチ2 オンライン対戦再現｜最新引き継ぎ【2026-10-27 Phase50】
 
+> **2026-10-28｜基盤再設計判断（ADR-0002）**：本人が「原作再現のため開発基盤を見直す」と提案。新たな設計入口は [ADR-0002｜原作PvPコアの段階的再編](./ADR_0002_ORIGINAL_PVP_CORE_REARCHITECTURE_20261028.md)。既存Firebase Friends/ホスト権威/Google Sites直貼りを維持し、正規の技ID→ヒット結果→演出・プレイヤー別表示を段階抽出する。**この段階は設計と現状監査のみ。戦闘コードやGoogle Sites公開版は変更していない。** また学校Friendsの回転制約は`createMatchProtocol`既定**3000ms**。Phase51研究の旧記述「指定なし→0」は訂正済み。原作での正確な値は未検証。
+
+
 > **Phase51実装済（2026-10-27）**：原作映像で見える上画面の戦闘を、チャージ・おはらい操作が隠してしまう問題を解消。`#mb-modal`を下画面内に配置し、タッチ中の上画面更新を実ブラウザで確認。[実装とQA記録](./PHASE51_LOWER_SCREEN_GESTURE_PRESENTATION_20261027.md)。初回Stage QAは失敗→コード未変更で再実行し **Stage/Pointer10種類/勝敗 PASS**。Research 604/604 PASS。2〜4試合目の動画実フレームは依然未取得。**main・学校Google Sites稼働版・本番Firebaseは未変更。**
 
 
