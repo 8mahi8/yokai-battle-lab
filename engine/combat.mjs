@@ -146,6 +146,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const rentals=playtestSoulTuning
     ?RENTAL_SQUAD.map((unit,i)=>({...unit,
       attitude:SCHOOL_RENTAL_PERSONALITIES[i].attitude,
+      loafChance:SCHOOL_RENTAL_PERSONALITIES[i].loafChance,
       weights:[...SCHOOL_RENTAL_PERSONALITIES[i].weights]}))
     :RENTAL_SQUAD;
   const source=teams??[rentals,rentals];
