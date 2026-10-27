@@ -7,6 +7,7 @@
 import {RENTAL_SQUAD} from './rental-roster.mjs';
 import {RENTAL_ATTACK_MOVES} from './rental-attack-moves.mjs';
 import {RENTAL_TECHNIQUE_MOVES} from './rental-technique-moves.mjs';
+import {RENTAL_INSPIRIT_MOVES} from './rental-inspirit-moves.mjs';
 import {YOKAI_ACTION_SLOTS} from './yokai-definition.mjs';
 
 const idFor=index=>'rental-'+String(index+1).padStart(2,'0');
@@ -32,12 +33,11 @@ function specialTarget(spec){
 }
 function buildMoves(i){
  const x=RENTAL_SQUAD[i],id=idFor(i),attack=RENTAL_ATTACK_MOVES[i],
-  technique=RENTAL_TECHNIQUE_MOVES[i];
+  technique=RENTAL_TECHNIQUE_MOVES[i],inspirit=RENTAL_INSPIRIT_MOVES[i];
  if(attack.id!==id+':attack')
   throw new TypeError('rental attack master mismatch');
  const special=specialOf(x),nonDamage=
   new Set(['heal','buff','debuff','revive','revive-heal']);
- const inspiritPositive=String(x.inspirit).endsWith('-up');
  return Object.freeze({
   attack:makeMove(id,'attack',{category:'physical_damage',
    power:attack.power,targetScope:'single_enemy',hitPattern:hitPattern(attack.hits)}),
@@ -47,9 +47,9 @@ function buildMoves(i){
    targetScope:technique.kind==='heal'?'single_ally':'single_enemy',
    hitPattern:technique.kind==='heal'?{type:'none',count:0}:hitPattern(technique.hits)}),
   inspirit:makeMove(id,'inspirit',{
-   category:inspiritPositive?'status_positive':'status_negative',
-   targetScope:inspiritPositive?'single_ally':'single_enemy',
-   statusEffect:x.inspirit,hitPattern:{type:'none',count:0}}),
+   category:inspirit.sign==='positive'?'status_positive':'status_negative',
+   targetScope:inspirit.targetScope,statusEffect:inspirit.effect,
+   hitPattern:{type:'none',count:0}}),
   soultimate:makeMove(id,'soultimate',{category:special.kind,
    power:special.power??null,targetScope:specialTarget(special),
    statusEffect:special.effect??null,
