@@ -45,7 +45,9 @@ test('real host resolution parity for physical attacks and entire match, many de
  for(const seed of [1,7,73,418,20261028,20261029,0x1fa91]){
   for(const playtestSoulTuning of [false,true]){
    const settings={seed,rotationCooldownMs:0,enableLoafing:true,playtestSoulTuning};
-   const a=createMatchProtocol({battleOptions:settings});
+   const a=createMatchProtocol({battleOptions:{
+    ...settings,catalogAttackResolution:false
+   }});
    const b=createMatchProtocol({battleOptions:{
     ...settings,catalogAttackResolution:true
    }});
@@ -102,4 +104,20 @@ test('explicit mode is not inserted into wire snapshots or hidden player command
   RENTAL_LAB_CATALOG.getMove('rental-01:attack').power);
  const invalid=p.dispatch(0,2,{type:'catalogAttackResolution',enabled:false});
  assert.equal(invalid.ok,false,'guest may not toggle host battle rules');
+});
+
+test('standard rental protocols enable catalog source by default, custom teams retain legacy',()=>{
+ const standard=createMatchProtocol({battleOptions:{seed:7}});
+ const explicit=createMatchProtocol({battleOptions:{seed:7,catalogAttackResolution:true}});
+ assert.equal(standard.exportJournal().initialOptions.catalogAttackResolution,true);
+ assert.equal(explicit.exportJournal().initialOptions.catalogAttackResolution,true);
+ for(let index=0;index<20;index++){
+  const a=standard.advanceAuto(),b=explicit.advanceAuto();
+  assert.deepEqual(a,b);
+  assert.deepEqual(standard.snapshot().game,explicit.snapshot().game);
+ }
+ const custom=createMatchProtocol({battleOptions:{
+  seed:7,teams:[RENTAL_SQUAD,RENTAL_SQUAD]
+ }});
+ assert.equal(custom.exportJournal().initialOptions.catalogAttackResolution,false);
 });
