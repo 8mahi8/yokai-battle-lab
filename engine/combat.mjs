@@ -10,6 +10,7 @@ import {RENTAL_SQUAD,SCHOOL_RENTAL_PERSONALITIES} from '../content/rental-roster
 import {resolveRentalAttackSpec} from './catalog-attack-spec.mjs';
 import {resolveRentalTechniqueSpec} from './catalog-technique-spec.mjs';
 import {resolveRentalInspiritSpec} from './catalog-inspirit-spec.mjs';
+import {resolveRentalSoultimateSpec} from './catalog-soultimate-spec.mjs';
 export {RENTAL_SQUAD,SCHOOL_RENTAL_PERSONALITIES} from '../content/rental-roster.mjs';
 import { createBattle } from './phase1.mjs';
 import { createInspiritLedger } from './inspirit.mjs';
@@ -109,7 +110,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   researchWheelCoalescing=false,researchOpeningPriority=null,
   researchPokeSoulTransfer=0,playtestSoulTuning=false,researchDamageModel=false,researchMultiHit=false,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false,enableRentalSkills=playtestSoulTuning,
   catalogAttackResolution=false,catalogTechniqueResolution=false,
-  catalogInspiritResolution=false}={}) {
+  catalogInspiritResolution=false,catalogSoultimateResolution=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof enableRentalSkills!=='boolean')throw new TypeError('enableRentalSkills must be boolean');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
@@ -128,6 +129,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     throw new TypeError('catalogInspiritResolution must be boolean');
   if(catalogInspiritResolution&&teams!==undefined)
     throw new RangeError('catalog Inspirit mode only supports unchanged built-in rentals');
+  if(typeof catalogSoultimateResolution!=='boolean')
+    throw new TypeError('catalogSoultimateResolution must be boolean');
+  if(catalogSoultimateResolution&&teams!==undefined)
+    throw new RangeError('catalog Soultimate mode only supports unchanged built-in rentals');
   if(researchMultiHit&&!researchDamageModel)
     throw new RangeError('researchMultiHit requires researchDamageModel');
   if(typeof researchStatInspirits!=='boolean')
@@ -181,6 +186,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const catalogInspiritByActor=catalogInspiritResolution?new Map(
    squads.flatMap(team=>team.map((member,index)=>[
     member.id,resolveRentalInspiritSpec(member,index,{school:playtestSoulTuning})
+   ]))):null;
+  const catalogSoultimateByActor=catalogSoultimateResolution?new Map(
+   squads.flatMap(team=>team.map((member,index)=>[
+    member.id,resolveRentalSoultimateSpec(member,index,{school:playtestSoulTuning})
    ]))):null;
   // Stat reductions and HP-over-time are distinct move categories.
   // Do not enable unverified negative HP-loss math to use real debuff types.
@@ -515,7 +524,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const caster=byId.get(casterId);
     const enemies=targets?targets.map(id=>byId.get(id)).filter(m=>m&&m.hp>0):livingFront(1-side);
     const impacts=planResearchSpecial({
-      spec:caster.special,caster,
+      spec:catalogSoultimateByActor?.get(caster.id)?.definition??caster.special,caster,
       allies:['revive','revive-heal'].includes(caster.special.kind)?squads[side]:livingFront(side),enemies,
       powerMultiplier:result.powerMultiplier,pinnedId
     });
