@@ -1,5 +1,8 @@
 # 妖怪ウォッチ2 オンライン対戦再現｜最新引き継ぎ【2026-10-27 Phase50】
 
+> **2026-10-28｜最上位アーキテクチャV2設計**：ユーザーが「原作対戦の全体像を踏まえ、効率的・原作に近い開発基盤を設計できるはず」と指摘。既存ファイルを直接監査し、[ARCHITECTURE_V2_SOURCE_FIRST_FULL_BATTLE_BLUEPRINT_20261028](./ARCHITECTURE_V2_SOURCE_FIRST_FULL_BATTLE_BLUEPRINT_20261028.md) に**1つのホスト権威戦闘コア、共通技ID、命中単位のActionOutcome、Logical Wait/Host Wall/Client Presentationの3時計、相手別の表示保留、下画面入力をつなぐ実装順**を確定した。まず旧通常攻撃1技を正規データからヒット結果・表示まで貫く縦切りにし、**新しい未接続研究モジュールを増やさない**。元のFirebase Friends/Google Sitesの配布方式を維持。**このターンは設計資料のみ、戦闘ソース、main、学校Sites稼働版、本番Firebase変更なし。テストは過去合格の614件が直近の既知ベースラインで、新しいルール実装の検証はまだ。**
+
+
 > **2026-10-28｜ADR-0004：技・スキル台帳V1**：`content/skill-catalog.mjs`に6つの試遊スキルの発動トリガーと効果識別子を宣言、`content/combat-catalog.mjs`で既存6体×4技の24技IDを衝突・参照の検査付きで検索可能にした。学校/研究両モードに適用。エンジンのスキル**名称**は台帳を唯一の情報源に変更（数値/発動判定/ゲームの結果は不変更）。[設計・外部資料・移行計画](./ADR_0004_MOVE_SKILL_REGISTRY_V1_20261028.md)、[614件PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40534532696)、[実Chromium QA成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40534532969)、[Firebase emulator QA成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40534489173)。**新台帳の戦闘判定への接続は次工程。学校公開版・main・Firebase本番無変更**。
 
 
