@@ -59,6 +59,31 @@ function start(nextGroup,kind){
 }
 async function check(){
  start('charge','tap');
+ // Phase51 visual contract: a 3DS touch challenge REPLACES THE LOWER WATCH
+ // SCREEN, never the upper 3v3 battle. Verify real Chromium geometry and
+ // the ability to continue repainting battlefield state while input is open.
+ const upper=root.querySelector('.mb-upper-screen');
+ const lower=root.querySelector('.mb-lower-screen');
+ const overlay=root.querySelector('#mb-modal');
+ assert(overlay.parentElement===lower,'gesture challenge is not inside the lower screen');
+ assert(getComputedStyle(overlay).position==='absolute','gesture overlay must be lower-screen positioned');
+ assert(overlay.querySelector('[role="dialog"]').getAttribute('aria-modal')==='false',
+  'non-global lower-screen panel must not claim all other content is inaccessible');
+ const field=upper.getBoundingClientRect(),panel=overlay.getBoundingClientRect(),watch=lower.getBoundingClientRect();
+ const overlap=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*
+  Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));
+ assert(overlap(field,panel)===0,'challenge obscures the upper battlefield');
+ assert(panel.left>=watch.left-2&&panel.top>=watch.top-2&&
+  panel.right<=watch.right+2&&panel.bottom<=watch.bottom+2,
+  'challenge extends outside the lower watch screen');
+ const beforeTurn=base.game.clock.turn;
+ base.game.clock.turn=beforeTurn+1;
+ render();
+ assert(root.querySelector('#mb-turn').textContent===String(beforeTurn+1),
+  'upper battlefield state stopped updating during charge');
+ assert(!overlay.hidden,'charge gesture unexpectedly closed during upper-screen update');
+ base.game.clock.turn=beforeTurn;
+ render();
  const before=trial.snapshot().progress;
  await eventAt('pointerdown',.5,.19,90);
  await eventAt('pointercancel',.5,.19,90);
