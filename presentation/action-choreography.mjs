@@ -9,6 +9,7 @@
  * pose keyframes require actual video comparison, not invented parity claims.
  */
 import {ACTION_VISUAL_CATALOG} from './action-catalog.mjs';
+import {defineActionOutcomeV2} from '../engine/action-outcome-v2.mjs';
 export const CHOREOGRAPHY_SCHEMA=1;
 const allowedTargets=new Set(['damage','heal','revive','buff','debuff','status','miss']);
 const freezeTargets=values=>Object.freeze(values.map(e=>Object.freeze({...e})));
@@ -58,9 +59,22 @@ export function planActionChoreography(event){
  // V2 migration: ordered, already-resolved hit metadata (NOT damage logic).
  // The existing renderer still presents one aggregate damage cue; a future
  // phase can schedule the individual hits without guessing outcomes.
- const moveId=typeof event.moveId==='string'&&event.moveId?event.moveId:null;
- const hitResults=Array.isArray(event.hitResults)?
-  Object.freeze(event.hitResults.map((hit,index)=>{
+ const actionOutcomeV2=event.actionOutcomeV2?
+  defineActionOutcomeV2(event.actionOutcomeV2):null;
+ if(actionOutcomeV2&&
+   (kind!=='attack'||event.actor!==actionOutcomeV2.actorId||
+    (event.moveId!==undefined&&event.moveId!==actionOutcomeV2.moveId)||
+    (event.amount!==undefined&&event.amount!==actionOutcomeV2.outcome.totalDamage)||
+    (event.key?.startsWith('event:')&&
+      event.key!=='event:'+actionOutcomeV2.eventId)||
+    (Array.isArray(event.hitResults)&&
+      JSON.stringify(event.hitResults)!==JSON.stringify(actionOutcomeV2.outcome.hits))))
+  throw new TypeError('ActionOutcome conflicts with visual cue');
+ const moveId=actionOutcomeV2?.moveId??
+  (typeof event.moveId==='string'&&event.moveId?event.moveId:null);
+ const sourceHits=actionOutcomeV2?.outcome.hits??event.hitResults;
+ const hitResults=Array.isArray(sourceHits)?
+  Object.freeze(sourceHits.map((hit,index)=>{
    if(!hit||!isUnit(hit.targetId)||hit.sequence!==index+1||
       typeof hit.hit!=='boolean'||typeof hit.critical!=='boolean'||
       !Number.isSafeInteger(hit.damage)||hit.damage<0||
@@ -83,7 +97,7 @@ export function planActionChoreography(event){
  return Object.freeze({
   schema:CHOREOGRAPHY_SCHEMA,eventKey:key,kind,actorId,
   label:preset.label,pose:preset.pose,durationMs,phases,impacts,
-  moveId,hitResults
+  moveId,hitResults,actionOutcomeV2
  });
 }
 /**
