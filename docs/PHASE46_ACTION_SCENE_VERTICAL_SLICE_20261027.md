@@ -29,3 +29,12 @@
 3. 現在の`2.6秒/一律tick`を修正して原作の行動進行と表示がより一致するよう計測する。
 4. キャラ/技マスターデータの個別アニメ設定・状態異常表示・必殺技を強化。
 5. それらが安定して初めて学校Google Sites貼付用の新しい別名版を用意する。
+
+
+## 実施後の独立受入（2026-10-27 夜）
+- [Phase46 専用 GitHub Actions #40490152340](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40490152340) **SUCCESS**。
+- Nodeの全**589/589件PASS**、6体戦4seed自然終了、実Chromium操作/日本語画面QA PASS、攻撃準備と効果後の**1024×768実画像**を保存、Firebase Friends no-Authの直接Google Sites埋め込み単体ビルドを検証。
+- [サークル操作＋画面QA #40489675531](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40489675531)もSUCCESS。既存Firebaseエミュレータ Chrome QAは[別CI #40489666125](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40489666125)にてSUCCESS。
+- **スクリーンショット目視**：当初の中央「とりつく」表示が行動者とターゲットの上にかぶることを発見。左端の空き領域へ移し、命中失敗時は「MISS」で成功状態演出を出さないよう共通化、Chromium再撮影で重なり解消を確認。
+- 研究用既存総合CIが一時失敗した例では、**589件は全件通っていたが別のlegacy Chrome browser-smokeがDBus/zygote起動タイムアウト**。よって「全ワークフロー成功」とは書かず、独立Phase46受入PASSを記録。
+- **現在は開発ブランチの成果。** Google Sites貼り付け用新しいV4は**ビルド検査だけ**で配布保存していない。ユーザー学校サイト、Drive V3、GitHub main、本番Firebase Rule/DBも変更していない。
