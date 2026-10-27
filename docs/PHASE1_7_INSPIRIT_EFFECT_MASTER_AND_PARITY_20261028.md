@@ -38,7 +38,8 @@
 - 旧研究簡略モードとの比較、AIの飽和時の選択チェック
 
 **GitHub Actions（コード最終コミット`1ca6af81a`）**：[Research Unit](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40601602650)では**Node単体649/649 PASS**、耐久試合もPASS。一方ワークフローのブラウザスモークはGitHub Actions側のChromium起動タイムアウトで失敗（DOMを出す前に時間切れ。コードのゲーム判定エラーと断定不可）。[独立Stage実Chromium QA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40601602766)は**PASS**（操作、上下画面、両視点の勝敗）。研究単体ワークフロー全体を成功とは記載しない。
-- ドキュメント更新でCIが再走した場合には、その結果を別のコミットSHAとともに確認する。学校Safari2台、原作動画の全フレーム比較、AuthなしFirebase Friends実戦は**今の時点で未検証**。
+- **後続CIによる再実行成功**：ゲーム本体の最終コードは同じで、ドキュメント追記コミット`e4108cd74`の[Research Unit workflow全体 SUCCESS（Node649/649・耐久試合・browser smoke）](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40601951502)を確認。[Stage Chromium SUCCESS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40601888573)も確認済み。先行Chrome起動タイムアウトは消さず失敗履歴として残す。
+- 学校Safari2台、原作動画の全フレーム比較、AuthなしFirebase Friends実戦は**今の時点で未検証**。
 - 既存旧Supabaseブラウザ長時間QAの失敗は別の調査項目であり、このPhaseの原作データ整理と混同しない。
 
 ## 次の作業｜Phase1.8
