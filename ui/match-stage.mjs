@@ -496,7 +496,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
       // The live host snapshot is already authoritative. Do not spend many
       // seconds replaying outdated actions (or hide its real passive notice).
       pendingCues=[];cancelScene();
-      beginScene(seen.cues.at(-1),previousView);
+      beginScene(seen.cues.at(-1),null); // no trustworthy pre-hit HP after an event gap
      }else{
       pendingCues.push(...seen.cues);
       if(pendingCues.length>MAX_VISUAL_CATCHUP_CUES)
