@@ -9,6 +9,7 @@ import {renderSpiritPortrait} from './character-art.mjs';
 import {wheelAngle,wheelGestureAt} from './wheel-gesture.mjs';
 import {latestBattleCue,visualReactionClass} from './battle-vfx.mjs';
 import {passiveSkillNoticesForAction} from './passive-feedback.mjs';
+import {soultimateDisplayTitle} from '../content/presentation-labels.mjs';
 import {planActionChoreography,choreographyFrame} from '../presentation/action-choreography.mjs';
 import {soultimateReadiness} from './soultimate-ready.mjs';
 import {matchAckMessage,matchRuleFailureMessage} from './match-feedback.mjs';
@@ -504,7 +505,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    }
    cutin.dataset.creature=String(Number(id?.slice(1))||1);
    cutin.dataset.mode=flash.mode==='g-tech'?'g':'normal';
-   $('mb-special-actor').textContent=actor?.name??'妖怪';
+   $('mb-special-actor').textContent=(actor?.name??'妖怪')+' / '+(flash.mode==='g-tech'?'Gわざ':'必殺技');
   }
   const callout=$('mb-action-callout');
   if(flash){
@@ -521,7 +522,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    callout.hidden=flash.type==='special';
   }else callout.hidden=true;
   $('mb-special-title').textContent=flash?.type==='special'
-   ?(flash.mode==='g-tech'?'Gわざ 発動！':'ひっさつわざ！'):'';
+   ?soultimateDisplayTitle(flash.actor):'';
 
   const own=view.teams[activeSeat];
   if(!own.members.some(x=>x.id===selection))selection=own.frontIds[0];
