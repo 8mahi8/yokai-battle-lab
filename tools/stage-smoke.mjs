@@ -381,6 +381,46 @@ try{
   if(code!==0||!existsSync(dest))throw Error('Phase46 '+label+' screenshot failed: '+error.slice(-700));
   console.log('SCREENSHOT-READY '+file);
  }
+ // A real School Friends seeded match should surface an authentic passive
+ // trigger on the battle screen, not a fabricated mock event.
+ const skillUrl='http://127.0.0.1:'+server.address().port+
+  '/lab/match-stage.html?review=passive-skill';
+ const skillCmd=['--headless=new','--no-sandbox','--disable-dev-shm-usage',
+  '--disable-gpu','--no-first-run','--disable-extensions',
+  '--user-data-dir='+path.join(tmp,'phase48-skill-dump'),
+  '--window-size=1024,768','--virtual-time-budget=1100','--dump-dom',skillUrl];
+ let skillDom='',skillErr='';
+ const skillChild=spawn(browser,skillCmd,{stdio:['ignore','pipe','pipe']});
+ skillChild.stdout.on('data',b=>skillDom+=String(b));
+ skillChild.stderr.on('data',b=>skillErr+=String(b).slice(0,3000));
+ const skillTimeout=setTimeout(()=>skillChild.kill('SIGKILL'),18000);
+ const skillExit=await new Promise(resolve=>skillChild.on('close',resolve));
+ clearTimeout(skillTimeout);
+ if(skillExit!==0||!skillDom.includes('REAL-SKILL-REVIEW')){
+  throw Error('Phase48 cannot reach a REAL Skill from seeded host battle: '+
+   (skillDom.match(/NO-REAL-SKILL[^<]*/)?.[0]||skillErr.slice(-500)));
+ }
+ const visual=skillDom.match(/<div id="mb-passive-notice"[^>]*>[^<]+<\/div>/);
+ if(!visual||/\bhidden\b/.test(visual[0])||
+    !/おせわ|どひょうぎわ|まえのめり/.test(visual[0]))
+  throw Error('Phase48 passive skill VFX invisible at impact phase: '+
+    (visual?.[0]||'missing'));
+ console.log('PHASE48-SCHOOL-REAL-SKILL-VISIBLE '+visual[0].slice(0,260));
+ const shot=path.join(root,'phase48-real-passive-skill.png');
+ const renderChild=spawn(browser,[
+  ...skillCmd.filter(x=>x!=='--dump-dom').map(x=>
+    x.startsWith('--user-data-dir=')?'--user-data-dir='+path.join(tmp,'phase48-skill-shot'):x)
+    .filter(x=>x!==skillUrl),
+   '--screenshot='+shot,skillUrl
+ ],{stdio:['ignore','pipe','pipe']});
+ let screenError='';
+ renderChild.stderr.on('data',b=>screenError+=String(b).slice(0,3000));
+ const screenTimeout=setTimeout(()=>renderChild.kill('SIGKILL'),18000);
+ const screenExit=await new Promise(resolve=>renderChild.on('close',resolve));
+ clearTimeout(screenTimeout);
+ if(screenExit!==0||!existsSync(shot))
+  throw Error('Phase48 skill screenshot failed: '+screenError.slice(-600));
+ console.log('SCREENSHOT-READY phase48-real-passive-skill.png');
 
 }finally{
  await new Promise(resolve=>server.close(resolve));
