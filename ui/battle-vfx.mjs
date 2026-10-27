@@ -32,7 +32,11 @@ export function latestBattleCue(events){
    kind:event.kind,targets:event.target?[{id:event.target,
     amount:Number.isFinite(event.amount)?event.amount:0,
     kind:event.kind==='heal'?'heal':event.kind==='inspirit'?'status':'damage',hit:event.hit!==false}]:[],
-   target:event.target||null,amount:event.amount??0,hit:event.hit!==false};
+   target:event.target||null,amount:event.amount??0,hit:event.hit!==false,
+   // Already validated against the actual host rental squad by makeStageView.
+   // This is presentation metadata and never a second damage calculation.
+   ...(event.attackProjection?{moveId:event.attackProjection.moveId,
+     hitResults:event.attackProjection.hitResults}:{} )};
  }
  return null;
 }
