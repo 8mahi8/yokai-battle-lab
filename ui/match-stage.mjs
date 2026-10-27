@@ -8,6 +8,7 @@
 import {renderSpiritPortrait} from './character-art.mjs';
 import {wheelAngle,wheelGestureAt} from './wheel-gesture.mjs';
 import {latestBattleCue} from './battle-vfx.mjs';
+import {planActionChoreography,choreographyFrame} from '../presentation/action-choreography.mjs';
 import {soultimateReadiness} from './soultimate-ready.mjs';
 import {matchAckMessage,matchRuleFailureMessage} from './match-feedback.mjs';
 const ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
@@ -112,7 +113,7 @@ export function makeStageView(state,side=0){
  if(guided)gesture={kind:'charge',id:guided.id,challenge:guided.challenge};
  else if(purify)gesture={kind:'purify',id:purify.id,challenge:purify.challenge};
  else if(poke)gesture={kind:'poke',id:poke.targetId,challenge:poke.challenge};
- const live=game.events?.slice(-5)||[];
+ const live=game.events?.slice(-20)||[];
  const roster=teams[side];
  return {revision:state.revision,turn:game.clock.turn,winner:game.winner,
   side,teams,gesture,events:live,forecast:state.forecast||[],
@@ -170,7 +171,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  let activeSeat=seat??0,wireState=null,view=null,selection=null;
  let recentMessage='準備中',pointer=null,lastMove=0;
  let wheelPointer=null,suppressWheelClick=false,wheelClickTimer=null;
- let seenCueKey=null,flash=null,flashTimer=null;
+ let seenCueKey=null,flash=null,scenePlan=null,scenePhase='done',sceneStartedAt=0,sceneTimer=null,lastEventId=0;
+ const stagedHealth=new Map();
  let commandMode=null,battleDrawCache=null,resultDismissed=false;
  const teamDrawCache=[null,null];let forecastDrawCache=null;
  element.innerHTML=`
@@ -257,6 +259,45 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   </div>
  </div>`;
  const $=id=>element.querySelector('#'+id);
+ // Presentation-only clock. All authoritative results already come from host.
+ const showImpact=()=>scenePhase==='impact'||scenePhase==='recovery';
+ const visibleHit=id=>showImpact()?flash?.targets?.find(x=>x.id===id):null;
+ const shownHp=unit=>!showImpact()&&stagedHealth.has(unit.id)?stagedHealth.get(unit.id):unit.hp;
+ function cancelScene(){
+  clearTimeout(sceneTimer);sceneTimer=null;flash=null;scenePlan=null;
+  scenePhase='done';stagedHealth.clear();
+ }
+ function advanceScene(){
+  if(!scenePlan)return;
+  if(document.hidden){cancelScene();if(wireState)render(wireState);return;}
+  const elapsed=Math.max(0,performance.now()-sceneStartedAt);
+  const frame=choreographyFrame(scenePlan,elapsed);
+  if(frame.finished){cancelScene();if(wireState)render(wireState);return;}
+  const changed=frame.phase!==scenePhase;
+  scenePhase=frame.phase;
+  if(changed&&wireState)render(wireState);
+  if(!scenePlan)return;
+  const next=scenePlan.phases.find(p=>p.endMs>elapsed);
+  clearTimeout(sceneTimer);
+  if(next)sceneTimer=setTimeout(advanceScene,Math.max(8,next.endMs-elapsed+1));
+ }
+ function beginScene(cue,previousView){
+  cancelScene();
+  if(document.hidden)return;
+  try{scenePlan=planActionChoreography(cue);}
+  catch(error){onError(error);cancelScene();return;}
+  flash=cue;scenePhase='anticipation';sceneStartedAt=performance.now();
+  for(const impact of cue.targets||[]){
+   const side=impact.id?.startsWith('B')?1:0;
+   const old=previousView?.teams?.[side]?.members.find(m=>m.id===impact.id);
+   if(old)stagedHealth.set(old.id,old.hp);
+  }
+  sceneTimer=setTimeout(advanceScene,scenePlan.phases[0].endMs+1);
+ }
+ function onSceneVisibility(){
+  if(document.hidden&&scenePlan){cancelScene();if(wireState)render(wireState);}
+  else if(scenePlan)advanceScene();
+ }
  // A five-next-action forecast is a developer research aid, NOT an original
  // Yo-kai Watch 2 PvP screen feature. Default battle must never display it.
  element.querySelector('.mb-forecast-section').hidden=!showResearchForecast;
@@ -296,7 +337,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     ?' mb-choice-eligible':'';
    const pinned=t.side!==activeSeat&&unit.id===view.teams[activeSeat].pin?' mb-pinned':'';
    const disabled=unit.ko?' mb-ko':'';
-   const impact=flash?.targets?.find(x=>x.id===unit.id);
+   const impact=visibleHit(unit.id);
    const animated=flash?.actor===unit.id?' mb-acting':impact
     ?(impact.kind==='heal'?' mb-healed':impact.hit===false?' mb-missed':' mb-hit'):'';
    const benched=unit.front?'':' mb-bench';
@@ -330,7 +371,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    if(!unit)return '';
    const name=escapeHTML(unit.name);
    const actor=flash?.actor===id?' mb-acting':'';
-   const impact=flash?.targets?.find(x=>x.id===id);
+   const impact=visibleHit(id);
    const target=impact?(impact.kind==='heal'||impact.kind==='revive'||impact.kind==='buff'?' mb-healed':impact.hit===false?' mb-missed':' mb-hit'):'';
    const pinned=!isOwn&&view.teams[activeSeat].pin===id?' mb-pinned':'';
    const candidate=!isOwn&&commandMode==='target'&&!unit.ko?' mb-choice-eligible':'';
@@ -404,6 +445,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   $('mb-touch-points').innerHTML=points;
  }
  function render(state){
+  const previousView=view;
   wireState=state;
   view=makeStageView(state,activeSeat);
   if(view.winner===null)resultDismissed=false;
@@ -417,28 +459,23 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   element.dataset.matchFinished=String(view.winner!==null);
   const action=view.events.slice().reverse().find(e=>e.type==='action')??null;
   const cue=latestBattleCue(view.events);
+  const maxId=Math.max(0,...view.events.map(e=>e.eventId||0));
+  if(maxId<lastEventId){cancelScene();seenCueKey=null;}
+  lastEventId=maxId;
   if(seenCueKey===null)seenCueKey=cue?.key??'initial';
   else if(cue&&cue.key!==seenCueKey){
    seenCueKey=cue.key;
-   flash=cue;
-   clearTimeout(flashTimer);
-   flashTimer=setTimeout(()=>{
-    flash=null;
-    $('mb-action-callout').hidden=true;
-    element.querySelectorAll('.mb-acting,.mb-hit,.mb-healed,.mb-missed').forEach(el=>{
-     el.classList.remove('mb-acting','mb-hit','mb-healed','mb-missed');
-    });
-    element.querySelectorAll('.mb-floating-number').forEach(el=>el.remove());
-    $('mb-special-flare').hidden=true;
-    teamDrawCache[0]=null;teamDrawCache[1]=null;battleDrawCache=null;
-   },cue.type==='special'?2300:1900);
+   beginScene(cue,previousView);
   }
+  const backdrop=element.querySelector('.mb-battle-backdrop');
+  backdrop.dataset.sceneKind=scenePlan?.kind??'none';
+  backdrop.dataset.scenePhase=scenePhase;
   $('mb-special-flare').hidden=flash?.type!=='special';
   const callout=$('mb-action-callout');
   if(flash){
    const names={attack:'こうげき！',technique:'ようじゅつ！',heal:'かいふく！',inspirit:'とりつく！',guard:'ガード！',loaf:'サボり…',poke:'つつく！',special:'ひっさつわざ！'};
    const caster=view.teams[flash.actor?.startsWith('B')?1:0]?.members.find(u=>u.id===flash.actor);
-   const impact=flash.targets?.[0];
+   const impact=showImpact()?flash.targets?.[0]:null;
    const victim=impact&&view.teams[impact.id?.startsWith('B')?1:0]?.members.find(u=>u.id===impact.id);
    $('mb-cue-kind').textContent=flash.mode==='g-tech'?'Gわざ！':names[flash.kind]||names[flash.type]||'行動';
    $('mb-cue-summary').textContent=(caster?.name||'')+(victim?' → '+victim.name:'')+
@@ -457,7 +494,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   $('mb-team0').hidden=activeSeat!==0;
   $('mb-team1').hidden=activeSeat!==1;
   const fieldKey=JSON.stringify({side:activeSeat,own:view.teams[activeSeat],
-   enemy:view.teams[1-activeSeat],flash,commandMode});
+   enemy:view.teams[1-activeSeat],flash,phase:scenePhase,staged:[...stagedHealth],commandMode});
   if(fieldKey!==battleDrawCache){
    $('mb-foe-line').innerHTML=frontlineHTML(view.teams[1-activeSeat],false);
    $('mb-ally-line').innerHTML=frontlineHTML(view.teams[activeSeat],true);
@@ -467,7 +504,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   // The SVG cards must not be torn down for each tiny touch update.
   for(let index=0;index<2;index++){
    const key=JSON.stringify({team:view.teams[index],seat:activeSeat,selection,
-    ownerPin:view.teams[activeSeat].pin,flash,commandMode});
+    ownerPin:view.teams[activeSeat].pin,flash,phase:scenePhase,staged:[...stagedHealth],commandMode});
    if(key!==teamDrawCache[index]&&!(wheelPointer&&wheelPointer.seat===index)){
     $('mb-team'+index).innerHTML=teamHTML(view.teams[index]);
     teamDrawCache[index]=key;
@@ -482,7 +519,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const labels={'playtest-soul-transfer':'妖気吸収','playtest-damage':'HPダメージ',
      'playtest-heavy-hit':'一撃（999）','research-soul-transfer':'妖気吸収（研究）'};
    $('mb-action-label').textContent='つつく / '+(labels[flash.rewardKind]||'結果未確定')+
-    (flash.amount>0?' '+flash.amount:'');
+    (showImpact()&&flash.amount>0?' '+flash.amount:'');
   }else if(flash?.type==='special'){
    const caster=view.teams[flash.actor?.startsWith('B')?1:0]?.members.find(u=>u.id===flash.actor);
    $('mb-action-label').textContent=(caster?.name||'妖怪')+' / '+
@@ -493,7 +530,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const kindNames={attack:'攻撃',technique:'妖術',inspirit:'とりつき',guard:'ガード',heal:'回復',loaf:'サボり'};
    $('mb-action-label').textContent=(actor?.name||action.actor||'妖怪')+' → '+(target?.name||'行動')+
     ' / '+(kindNames[action.kind]||action.kind)+(action.hit===false?'（ミス）':
-    action.amount>0?' '+action.amount:'');
+    showImpact()&&flash?.type==='action'&&action.amount>0?' '+action.amount:'');
   }else $('mb-action-label').textContent='次の行動を待機中';
   $('mb-active-label').textContent='PLAYER '+(activeSeat?'B':'A')+' の操作';
   const selected=own.members.find(x=>x.id===selection);
@@ -734,6 +771,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  function onCancel(event){finishPointer(event,true);}
  function onLostCapture(event){if(pointer===event.pointerId)finishPointer(event,true);}
  element.addEventListener('click',handleClick);
+ document.addEventListener('visibilitychange',onSceneVisibility);
  element.addEventListener('touchstart',onWheelTouchStart,{passive:false});
  element.addEventListener('touchmove',onWheelTouchMove,{passive:false});
  element.addEventListener('touchend',onWheelTouchEnd,{passive:false});
@@ -749,7 +787,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  element.addEventListener('pointercancel',onCancel);
  element.addEventListener('lostpointercapture',onLostCapture);
  function setConnection(label){$('mb-connection').textContent=String(label);}
- function destroy(){clearTimeout(flashTimer);clearTimeout(wheelClickTimer);
+ function destroy(){cancelScene();clearTimeout(wheelClickTimer);
+  document.removeEventListener('visibilitychange',onSceneVisibility);
   element.removeEventListener('click',handleClick);
   element.removeEventListener('touchstart',onWheelTouchStart);
   element.removeEventListener('touchmove',onWheelTouchMove);
