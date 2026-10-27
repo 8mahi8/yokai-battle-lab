@@ -71,6 +71,28 @@ if(review==='winner-a'||review==='winner-b'){
   member.canAct=false;
  if(side===1)stage.selectSeat(1);
  stage.render(state);
+}else if(review==='passive-skill'){
+ // Real seeded authoritative school-playtest battle with actual skill rules.
+ // Step until the engine itself emits a Skill tied to the latest auto turn;
+ // never fabricate a Skill event or modify the HP/resolved mechanics.
+ protocol=createMatchProtocol({battleOptions:{seed:20261024,
+  playtestSoulTuning:true,enableLoafing:true}});
+ stage.render(protocol.snapshot());
+ let found=false;
+ for(let i=0;i<160;i++){
+  const next=protocol.advanceAuto();
+  if(!next.ok||next.result.type!=='action')break;
+  const snap=protocol.snapshot(),events=snap.game.events;
+  const action=events.filter(e=>e.type==='action').at(-1);
+  const notes=action&&events.some(e=>e.type==='skill'&&
+    Math.abs(e.eventId-action.eventId)<=6);
+  if(notes){
+   stage.render(snap);
+   el('lab-state').textContent='REAL-SKILL-REVIEW';
+   found=true;break;
+  }
+ }
+ if(!found)el('lab-state').textContent='NO-REAL-SKILL-IN-SEED';
 }else if(review==='action-motion'){
  // Actual canonical engine step. Never inject fake combat damage for QA.
  step();
