@@ -12,7 +12,7 @@ import {planActionChoreography,choreographyFrame}
 
 const copy=x=>JSON.parse(JSON.stringify(x));
 const squads=()=>[0,1].map(side=>RENTAL_SQUAD.map((r,i)=>({
- id:(side?'B':'A')+(i+1),name:r.name
+ ...r,id:(side?'B':'A')+(i+1),name:r.name
 })));
 const event=()=>({
  type:'action',eventId:42,turn:13,actor:'A1',kind:'attack',
@@ -60,6 +60,10 @@ test('unknown custom rosters, unsupported actions and incomplete legacy data nev
  const raw=event(),teams=squads();
  teams[0][0].name='オリジナル新キャラ';
  assert.equal(projectLegacyAttackOutcome(raw,teams),null);
+ const disguised=squads();
+ disguised[0][0].attackPower=123;
+ assert.equal(projectLegacyAttackOutcome(raw,disguised),null,
+  'a renamed/rebalanced custom rental is not identical to the catalog');
  const sp={...raw,kind:'special'};
  assert.equal(projectLegacyAttackOutcome(sp,squads()),null);
  const legacy=copy(raw);
