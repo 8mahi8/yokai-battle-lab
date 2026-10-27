@@ -93,6 +93,10 @@ document.getElementById('frame').addEventListener('load',()=>{
   pick('#mb-foe-line [data-unit="B1"]').click();
   check(pick('#mb-foe-line [data-unit="B1"]').classList.contains('mb-pinned'),
    'enemy pin did not follow canonical protocol');
+  check(pick('#mb-foe-line [data-unit="B1"] .mb-pin-reticle')!==null,
+   'source-recorded 3DS pin needs a visible circular crosshair on enemy');
+  check(pick('#mb-foe-line [data-unit="B1"]').getAttribute('aria-label').includes('ピンでねらい中'),
+   'the new aiming marker must keep an accessible pin label');
   check(root.querySelectorAll('#mb-foe-line .mb-fighter.mb-choice-eligible').length===0,
    'target selection visuals should clear after pin is accepted');
   pick('[data-rotate="1"]').click();
@@ -343,6 +347,31 @@ try{
  if(specialExit!==0||!existsSync(specialShot))
   throw new Error('special VFX screenshot failed: '+specialError.slice(-400));
  console.log('SCREENSHOT-READY phase17-special-cutin-preview.png');
+
+ // User-provided original footage at 01:12-01:15 confirms an enlarged,
+ // full-field Soultimate cutin followed by impact on the normal battle field.
+ const originalCutiQa=spawn(browser,[
+  '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+  '--no-first-run','--disable-extensions','--hide-scrollbars',
+  '--user-data-dir='+path.join(tmp,'phase49-cutin-dom'),
+  '--window-size=1024,768','--virtual-time-budget=450','--dump-dom',
+  'http://127.0.0.1:'+server.address().port+'/lab/match-stage.html?review=special'
+ ],{stdio:['ignore','pipe','pipe']});
+ let cutiDom='',cutiErr='';
+ originalCutiQa.stdout.on('data',b=>cutiDom+=String(b));
+ originalCutiQa.stderr.on('data',b=>cutiErr+=String(b).slice(0,2500));
+ const cutiTimer=setTimeout(()=>originalCutiQa.kill('SIGKILL'),18000);
+ const cutiExit=await new Promise(resolve=>originalCutiQa.on('close',resolve));
+ clearTimeout(cutiTimer);
+ if(cutiExit!==0)throw Error('Source-video cutin QA failed: '+cutiErr.slice(-500));
+ const cutinTag=cutiDom.match(/<div id="mb-special-flare"[^>]*>/)?.[0]||'';
+ if(!cutinTag||/\bhidden\b/.test(cutinTag)||
+    !/data-creature="1"/.test(cutinTag)||
+    !/<div id="mb-special-portrait"[^>]*>\s*<svg/.test(cutiDom)||
+    !/id="mb-special-actor"[^>]*>あかねこ</.test(cutiDom))
+  throw Error('Actual Soultimate portrait not visible: '+cutinTag);
+ console.log('PHASE49-SOURCE-VIDEO-INSPIRED-FULL-STAGE-CUTIN-PASS');
+
  const gReadyShot=path.join(root,'phase18-g-soultimate-ready.png');
  const gReadyChild=spawn(browser,[
   '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
