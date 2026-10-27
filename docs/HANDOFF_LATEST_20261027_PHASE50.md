@@ -1,5 +1,8 @@
 # 妖怪ウォッチ2 オンライン対戦再現｜最新引き継ぎ【2026-10-27 Phase50】
 
+> **2026-10-27追記：本人から追加の原作対戦動画4試合分を受領。** 第1試合のみ実フレーム観察を完了、第2〜4試合は解析環境の読み込みエラーで映像未観察。コード/公式マニュアル/対戦資料の突合は [4試合提供の監査](./ORIGINAL_PVP_FOUR_MATCH_IMPLEMENTATION_AUDIT_20261027.md)、第4試合の受領状況は [MATCH04](./ORIGINAL_PVP_VIDEO_20261027_MATCH04_OF04_INTAKE.md) に記録。全4試合を視聴したと扱わない。学校公開版・ゲームコード未変更。
+
+
 > この文書が Phase50 以降の新しい入口。詳細な原作動画観察は [Phase49](./HANDOFF_LATEST_20261027_PHASE49.md)・[動画タイムコード記録](./PHASE49_USER_SUPPLIED_ORIGINAL_PVP_VIDEO_REVIEW_20261027.md)、設計全体図は [PROJECT_MAP_AND_PROGRESS](./PROJECT_MAP_AND_PROGRESS.md)。今回の変更詳細は [Phase50](./PHASE50_BATCHED_ACTION_PRESENTATION_GUARD_20261027.md)。
 
 ## 目的・絶対条件
