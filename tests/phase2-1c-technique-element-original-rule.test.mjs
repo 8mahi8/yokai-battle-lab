@@ -21,10 +21,13 @@ test('affinity, Play 0/1/2 sources, and Penetrate are separate lanes',()=>{
  const play2=resolveTechniqueElementMultiplier({...base,playSources:2});
  assert.equal(play2.playMultiplier,1.4);
  assert.equal(play2.multiplier,.7);
- const pierce=resolveTechniqueElementMultiplier({...base,penetrate:true,playSources:2});
+ const pierce=resolveTechniqueElementMultiplier({...base,penetrate:true});
  assert.equal(pierce.resistanceAfterPenetrate,1);
  assert.equal(pierce.penetrateApplied,true);
- assert.equal(pierce.multiplier,1.4);
+ assert.equal(pierce.multiplier,1);
+ assert.throws(()=>resolveTechniqueElementMultiplier({
+  ...base,penetrate:true,playSources:2
+ }),/verified ordering/,'the combined ordering is not source-established');
 });
 
 test('Penetrate does not erase a weakness; neutral is not an elemental Play',()=>{
@@ -44,11 +47,11 @@ test('Penetrate does not erase a weakness; neutral is not an elemental Play',()=
 test('Technique damage scales full Wiki expression; physical ignores affinity',()=>{
  const input={kind:'technique',power:90,spirit:200,defense:130};
  const affinity=resolveTechniqueElementMultiplier({
-  element:'fire',resistances:{fire:.5},penetrate:true,playSources:2
+  element:'fire',resistances:{fire:.5},playSources:2
  });
  const wikiBase=(290/10+290/3-130/7);
  assert.equal(calculateOneHit({...input,elementMultiplier:affinity.multiplier}).amount,
-  Math.floor(wikiBase*1.4));
+  Math.floor(wikiBase*.7));
  assert.equal(calculateOneHit({
   kind:'attack',power:90,strength:200,defense:130,
   elementMultiplier:affinity.multiplier
@@ -79,34 +82,39 @@ test('invalid research input is rejected; built-in six keep their old shape',()=
   !Object.hasOwn(m,'techniquePlaySources')&&!Object.hasOwn(m,'techniquePenetrate')));
 });
 
-test('real host Technique uses correct affinity lane and deterministic seeded replay',()=>{
- let matchingHits=0;
- for(const seed of [21,20261028,57]){
-  const attackers=RENTAL_SQUAD.map(r=>({...r,
-    maxHp:900,speed:420,technique:'damage',
-    techniqueElement:'fire',techniquePlaySources:2,
-    techniquePenetrate:true,weights:[0,100,0,0]}));
-  const defenders=RENTAL_SQUAD.map(r=>({...r,
-    maxHp:900,speed:180,elementResistances:{fire:.5},
-    weights:[0,0,0,100]}));
-  const options={seed,teams:[attackers,defenders],
-    researchDamageModel:true,enableRentalSkills:false};
-  const left=createCombat(options),right=createCombat(options);
-  for(let i=0;i<180;i++){
-   const a=left.step(),b=right.step();
-   assert.deepEqual(a,b);
-   assert.deepEqual(left.snapshot(),right.snapshot());
-   if(a.type!=='action'||a.winner!==null)break;
-   if(a.kind==='technique'&&a.target?.startsWith('B')&&
-      a.hit&&a.damageResearch){
-    matchingHits++;
-    assert.equal(a.damageResearch.elementMultiplier,1.4);
-    assert.equal(a.damageResearch.elementResolution.resistance,.5);
-    assert.equal(a.damageResearch.elementResolution.resistanceAfterPenetrate,1);
-    assert.equal(a.damageResearch.elementResolution.playSources,2);
-    assert.equal(a.damageResearch.elementResolution.penetrateApplied,true);
+test('real host independently exercises Play and Penetrate, deterministic across seeds',()=>{
+ for(const scenario of [
+  {playSources:2,penetrate:false,multiplier:.7,after:.5,applied:false},
+  {playSources:0,penetrate:true,multiplier:1,after:1,applied:true}
+ ]){
+  let matchingHits=0;
+  for(const seed of [21,20261028,57]){
+   const attackers=RENTAL_SQUAD.map(r=>({...r,
+     maxHp:900,speed:420,technique:'damage',
+     techniqueElement:'fire',techniquePlaySources:scenario.playSources,
+     techniquePenetrate:scenario.penetrate,weights:[0,100,0,0]}));
+   const defenders=RENTAL_SQUAD.map(r=>({...r,
+     maxHp:900,speed:180,elementResistances:{fire:.5},
+     weights:[0,0,0,100]}));
+   const options={seed,teams:[attackers,defenders],
+     researchDamageModel:true,enableRentalSkills:false};
+   const left=createCombat(options),right=createCombat(options);
+   for(let i=0;i<180;i++){
+    const a=left.step(),b=right.step();
+    assert.deepEqual(a,b);
+    assert.deepEqual(left.snapshot(),right.snapshot());
+    if(a.type!=='action'||a.winner!==null)break;
+    if(a.kind==='technique'&&a.target?.startsWith('B')&&
+       a.hit&&a.damageResearch){
+     matchingHits++;
+     assert.equal(a.damageResearch.elementMultiplier,scenario.multiplier);
+     assert.equal(a.damageResearch.elementResolution.resistance,.5);
+     assert.equal(a.damageResearch.elementResolution.resistanceAfterPenetrate,scenario.after);
+     assert.equal(a.damageResearch.elementResolution.playSources,scenario.playSources);
+     assert.equal(a.damageResearch.elementResolution.penetrateApplied,scenario.applied);
+    }
    }
   }
+  assert.ok(matchingHits>=3,'must exercise actual Technique for each separate effect');
  }
- assert.ok(matchingHits>=3,'must exercise the actual host Technique damage');
 });
