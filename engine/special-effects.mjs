@@ -51,6 +51,20 @@ export function validateSpecialSpec(spec) {
   damageKind:['damage','drain','damage-status'].includes(spec.kind)?spec.damageKind:null,
   ...(spec.kind==='damage-status'?{effect:spec.effect,level:spec.level}:{})});
 }
+/**
+ * Select ally candidates from the SAME resolved Soultimate definition that
+ * planResearchSpecial will execute. Previously the host passed the catalog
+ * definition for effects, but still used caster.special.kind (legacy data)
+ * to decide whether KO reserves could be revived.
+ *
+ * This is a selection-only function; it never heals or revives anyone.
+ */
+export function researchSpecialAllies(spec,wholeTeam,livingFront){
+ const resolved=validateSpecialSpec(spec);
+ if(!Array.isArray(wholeTeam)||!Array.isArray(livingFront))
+  throw new TypeError('special ally candidate arrays required');
+ return ['revive','revive-heal'].includes(resolved.kind)?wholeTeam:livingFront;
+}
 function checkCombatant(member) {
  if(!member||!Number.isInteger(member.hp)||!Number.isInteger(member.maxHp)||
   !Number.isFinite(member.defense)||member.hp<0||member.maxHp<1||member.hp>member.maxHp)
