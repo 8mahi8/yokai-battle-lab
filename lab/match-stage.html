@@ -28,7 +28,11 @@ import {passiveSkillNoticesForAction} from '../ui/passive-feedback.mjs';
 const el=id=>document.getElementById(id);
 let protocol=null,autoTimer=null;
 function begin(){
- protocol=createMatchProtocol({battleOptions:{seed:20261024,researchSoulRecoveryMode:'owner-nonattack'}});
+ protocol=createMatchProtocol({battleOptions:{seed:20261024,
+  researchSoulRecoveryMode:'owner-nonattack',
+  // Geometry-only Chromium gestures can repeat immediately. The real Friends
+  // match still uses the original-style 3000ms host wheel cooldown.
+  ...(new URL(location.href).searchParams.get('review')==='stage-gesture-lab'?{rotationCooldownMs:0}:{})}});
  stage.render(protocol.snapshot());stage.alert('戦闘準備完了。A / B の操作を切り替えて確認できます。');
 }
 function action(side,command){
