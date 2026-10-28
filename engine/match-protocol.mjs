@@ -120,7 +120,7 @@ function checkOptions(options){
   'researchSoulRecoveryMode','researchDamageModel','researchMultiHit',
   'researchStatInspirits','researchTurnInspirits','researchHealingVariance','researchSpecialEffects',
   'catalogAttackResolution','catalogTechniqueResolution','catalogInspiritResolution',
-  'catalogSoultimateResolution','playtestSoulTuning']);
+  'catalogSoultimateResolution','catalogSkillResolution','playtestSoulTuning']);
  for(const key of Object.keys(options))if(!allow.has(key))
   throw new RangeError('initial online contract forbids option '+key);
  // The user-approved playtest option is a boolean; individual gain values
@@ -169,6 +169,7 @@ export function createMatchProtocol({battleOptions={},hostNowMs=()=>performance.
    catalogTechniqueResolution:battleOptions.teams===undefined,
    catalogInspiritResolution:battleOptions.teams===undefined,
    catalogSoultimateResolution:battleOptions.teams===undefined,
+   catalogSkillResolution:battleOptions.teams===undefined,
    researchStatInspirits:battleOptions.researchDamageModel===false?false:true,
    researchSpecialEffects:true,...battleOptions});
  function newBattle(){return createCombat(options);}
