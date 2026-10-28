@@ -18,9 +18,15 @@ export function yw2HitProbability({
   throw new RangeError('invalid speed');
  if(!Number.isFinite(moveAccuracy)||moveAccuracy<.5||moveAccuracy>4)
   throw new RangeError('attack move accuracy must be .5..4');
- // Base chance is clamped before applying a physical attack's move accuracy.
- const base=clamp(98+(attackerSpeed-targetSpeed)/5,75,98);
- const value=kind==='attack'?clamp(base*moveAccuracy,0,100):base;
+ // YW2 rolls an INTEGER 0..99, against an INTEGER threshold.
+ // The speed-based chance is truncated first, AFTER clamping to 75..98.
+ // Physical move accuracy then multiplies that integer, and its result is
+ // truncated again. Fractional probabilities must not leak into combat.
+ // Source: https://mtwildwood.net/hit-chance.php (85 vs 151 SPD => 84,
+ // not 84.8; 84 × 0.4 => 33, not 33.6). Technique ignores accuracy.
+ const base=Math.floor(clamp(98+(attackerSpeed-targetSpeed)/5,75,98));
+ const value=kind==='attack'?
+  Math.floor(clamp(base*moveAccuracy,0,100)):base;
  return {probability:value,base,moveAccuracy:kind==='attack'?moveAccuracy:1,
    kind,model:'yw2-wiki-research'};
 }
