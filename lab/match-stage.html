@@ -205,6 +205,57 @@ if(review==='winner-a'||review==='winner-b'){
     'PHASE22-REAL-HOST-PER-HIT-DOM-FAIL '+observed.join(',');
   }
  },12);
+}else if(review==='yw2-reference-front'||review==='yw2-reference-single'){
+ // Source-backed YW2 move shape, NOT the original character artwork or
+ // verified 3DS RNG/timing. The host is a separate CUSTOM research battle.
+ const front=review==='yw2-reference-front';
+ const reference=front?'yw2:tararin:hanaji-bomber':
+  'yw2:ookuwano-kami:daisetsudan';
+ const referenceName=front?'鼻血ボンバー':'大切断';
+ const rosters=[0,1].map(()=>RENTAL_SQUAD.map(u=>({...u,weights:[...u.weights]})));
+ const host=createCombat({seed:20261029,teams:rosters,
+  researchYw2Soultimate:reference,researchSpecialEffects:true,
+  researchDamageModel:true,researchStatInspirits:true});
+ host.giveSoul('A1',100);
+ const charge=host.prepareSoultimate(0,'A1');
+ if(!charge.ok)throw Error('YW2 source-backed charge refused');
+ const response=host.resolveSoultimate(0,charge.token,true);
+ if(!response.ok)throw Error('YW2 source-backed action refused');
+ const game=host.snapshot();
+ const event=game.events.findLast(e=>e.type==='special');
+ const hits=event.researchSoultimateHits.hits;
+ const want=front?3:1;
+ if(hits.length!==want||event.referenceSoultimate.id!==reference)
+  throw Error('YW2 reference source shape failed: '+hits.length);
+ stage.render({game,revision:1,clientSequences:[0,0],forecast:[]});
+ let last=-1;
+ const observed=[];
+ const observer=setInterval(()=>{
+  const field=el('battle-stage');
+  const backdrop=field.querySelector('.mb-battle-backdrop');
+  const idx=Number(backdrop?.dataset.specialHitIndex||0)-1;
+  if(idx<0||idx===last||idx>=hits.length)return;
+  last=idx;
+  const hit=hits[idx];
+  const floats=[...field.querySelectorAll('#mb-foe-line .mb-floating-number')]
+   .map(n=>({id:n.closest('.mb-fighter')?.dataset.unit,value:n.textContent}));
+  const fighter=field.querySelector('#mb-foe-line [data-unit="'+hit.targetId+'"]');
+  const hp=fighter?.querySelector('.mb-fighter-meta small')?.textContent;
+  const valid=backdrop.dataset.specialHitSchema==='1'&&
+   field.querySelector('#mb-special-title')?.textContent.includes(referenceName)&&
+   floats.length===1&&floats[0].id===hit.targetId&&
+   (hit.hit?floats[0].value?.includes(String(hit.damage)):
+     floats[0].value==='MISS')&&
+   hp?.startsWith(String(hit.hpAfter)+'/');
+  observed.push(valid?'ok:'+idx:'BAD:'+idx);
+  if(idx===hits.length-1){
+   clearInterval(observer);
+   const all=observed.length===want&&observed.every((s,i)=>s==='ok:'+i);
+   el('lab-state').textContent=all?
+    'PHASE22C-YW2-SOURCE-SHAPE-PASS-'+(front?'FRONT':'SINGLE'):
+    'PHASE22C-YW2-SOURCE-SHAPE-FAIL '+observed.join(',');
+  }
+ },16);
   }else if(review==='soul-ready'||review==='g-soul-ready'){
  // Local screenshot-only projection of a possible full Soul state.
  // No engine state is mutated, no client is given arbitrary Soul commands.
