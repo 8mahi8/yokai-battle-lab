@@ -419,6 +419,28 @@ try{
    (phase22HostState||'no observed DOM state')+' '+phase22HostErr.slice(-450));
  console.log('PHASE22-REAL-HOST-HP-LEDGER-DOM-PASS 3 canonical target HP transitions');
 
+ // Phase2.2B-2: actual host CUSTOM 3-hit experiment, not a literal DOM
+ // fixture. Every one of nine per-hit damage/HP states must appear in order.
+ const phase22HitQa=spawn(browser,[
+  '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+  '--no-first-run','--disable-extensions','--hide-scrollbars',
+  '--user-data-dir='+path.join(tmp,'phase22-hit-ledger-dump'),
+  '--window-size=1024,768','--virtual-time-budget=3600','--dump-dom',
+  'http://127.0.0.1:'+server.address().port+'/lab/match-stage.html?review=real-special-hit-ledger'
+ ],{stdio:['ignore','pipe','pipe']});
+ let phase22HitDom='',phase22HitErr='';
+ phase22HitQa.stdout.on('data',b=>phase22HitDom+=String(b));
+ phase22HitQa.stderr.on('data',b=>phase22HitErr+=String(b).slice(0,2400));
+ const phase22HitTimer=setTimeout(()=>phase22HitQa.kill('SIGKILL'),20000);
+ const phase22HitExit=await new Promise(resolve=>phase22HitQa.on('close',resolve));
+ clearTimeout(phase22HitTimer);
+ const phase22HitState=phase22HitDom.match(/<span id="lab-state">([^<]*)<[/]span>/)?.[1];
+ if(phase22HitExit!==0||phase22HitState!=='PHASE22-REAL-HOST-PER-HIT-DOM-PASS')
+  throw Error('Phase2.2B-2 actual custom host per-hit paint not proven: '+
+   (phase22HitState||'no observed per-hit DOM state')+' '+phase22HitErr.slice(-400));
+ console.log('PHASE22-REAL-HOST-PER-HIT-DOM-PASS nine host hit/HP states');
+
+
 
  const gReadyShot=path.join(root,'phase18-g-soultimate-ready.png');
  const gReadyChild=spawn(browser,[
