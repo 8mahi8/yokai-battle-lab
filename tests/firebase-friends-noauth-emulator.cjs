@@ -91,7 +91,7 @@ async function main(){
   const advanced=match.snapshot();
   assert.equal(advanced.revision,25);
   assert.equal(advanced.clientSequences[1],1,'guest wheel ACK survives auto battle');
-  assert.ok(advanced.game.turn>=20,'real combat advanced by repeated host actions');
+  assert.ok(advanced.game.clock.turn>=20,'actual scheduler advanced by repeated host actions');
   assert.ok(advanced.game.squads.flat().every(unit=>
    !Object.hasOwn(unit,'techniquePlaySources')&&
    !Object.hasOwn(unit,'techniquePenetrate')),
