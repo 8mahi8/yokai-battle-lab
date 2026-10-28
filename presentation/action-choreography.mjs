@@ -12,6 +12,7 @@ import {ACTION_VISUAL_CATALOG} from './action-catalog.mjs';
 import {defineActionOutcomeV2} from '../contracts/action-outcome-v2.mjs';
 import {assertSoultimateImpactLedger} from '../contracts/soultimate-impact-ledger-v1.mjs';
 import {assertSoultimateHitLedger} from '../contracts/soultimate-hit-ledger-v1.mjs';
+import {yw2ReferenceSoultimate} from '../content/yw2-soultimate-reference.mjs';
 export const CHOREOGRAPHY_SCHEMA=1;
 const allowedTargets=new Set(['damage','heal','revive','buff','debuff','status','miss']);
 const freezeTargets=values=>Object.freeze(values.map(e=>Object.freeze({...e})));
@@ -104,6 +105,18 @@ export function planActionChoreography(event){
   if(cursor!==specialHitLedger.hits.length)
    throw new TypeError('unmatched host Soultimate hit rows');
  }
+ const referenceSoultimate=event.referenceSoultimate??null;
+ if(referenceSoultimate){
+  const ref=yw2ReferenceSoultimate(referenceSoultimate.id);
+  if(kind!=='special'||!specialHitLedger||!specialImpactLedger||
+     ref.hitsPerTarget!==specialHitLedger.plannedPerTarget||
+     referenceSoultimate.hitCount!==ref.hitsPerTarget||
+     referenceSoultimate.scope!==ref.targetScope||
+     referenceSoultimate.evidence!==ref.evidence||
+     JSON.stringify(referenceSoultimate.sourceRefs)!==JSON.stringify(ref.sourceRefs)||
+     specialImpactLedger.impacts.length> (ref.scope==='front'?3:1))
+   throw new TypeError('source-backed YW2 visual move conflicts with host evidence');
+ }
  if(actionOutcomeV2&&
    (kind!=='attack'||event.actor!==actionOutcomeV2.actorId||
     (event.moveId!==undefined&&event.moveId!==actionOutcomeV2.moveId)||
@@ -140,7 +153,8 @@ export function planActionChoreography(event){
  return Object.freeze({
   schema:CHOREOGRAPHY_SCHEMA,eventKey:key,kind,actorId,
   label:preset.label,pose:preset.pose,durationMs,phases,impacts,
-  moveId,hitResults,actionOutcomeV2,specialImpactLedger,specialHitLedger
+  moveId,hitResults,actionOutcomeV2,specialImpactLedger,specialHitLedger,
+  referenceSoultimate
  });
 }
 /**
