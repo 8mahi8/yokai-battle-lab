@@ -1,6 +1,6 @@
 /** Phase24B: actual inline Sites HTML online acceptance via Chromium srcdoc. */
 import {createServer} from 'node:http';
-import {renderedQaResult,renderedQaPassed} from './browser-qa-result.mjs';
+import {runRealtimeQa} from './chrome-realtime-qa.mjs';
 import {spawn} from 'node:child_process';
 import {readFile} from 'node:fs/promises';
 import {existsSync,mkdtempSync,rmSync} from 'node:fs';
@@ -56,30 +56,21 @@ const tmp=mkdtempSync(path.join(tmpdir(),'yw-sites-online-'));
 try{
  await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
  let passed=false;
+ const sentinel=friends?'SITES-FIREBASE-FRIENDS-EMULATOR-PASS':
+  emulator?'SITES-ONLINE-EMULATOR-PASS':'SITES-ONLINE-SETUP-PASS';
  for(let trial=1;trial<=2;trial++){
-  const child=spawn(browser,['--headless=new','--no-sandbox','--disable-gpu',
-   '--disable-dev-shm-usage','--disable-extensions','--no-first-run',
-   '--user-data-dir='+path.join(tmp,'profile-'+trial),
-   '--window-size=1160,900','--virtual-time-budget=35000','--dump-dom',
-   'http://127.0.0.1:'+server.address().port+'/qa'+(emulator?'':'?setup')],
-   {stdio:['ignore','pipe','pipe']});
-  let output='',errors='',timedOut=false;
-  const timer=setTimeout(()=>{timedOut=true;child.kill('SIGKILL')},47000);
-  child.stdout.on('data',x=>output+=String(x).slice(0,600000));
-  child.stderr.on('data',x=>errors+=String(x).slice(0,8000));
-  const exit=await new Promise(done=>child.on('close',done));
-  clearTimeout(timer);
-  const sentinel=friends?'SITES-FIREBASE-FRIENDS-EMULATOR-PASS':
-   emulator?'SITES-ONLINE-EMULATOR-PASS':'SITES-ONLINE-SETUP-PASS';
-  // --dump-dom serializes <script> text (including literal PASS strings).
-  // Inspect ONLY the *rendered* result node, never output.includes(PASS).
-  const rendered=renderedQaResult(output)??'missing-result-node';
-  if(!timedOut&&exit===0&&renderedQaPassed(output,sentinel)){
-   console.log(rendered);passed=true;break;
-  }
+  // Remote Firebase/auth I/O is asynchronous wall-clock work. Chrome
+  // --virtual-time-budget used to advance JS timeouts *before* network
+  // responses completed, falsely failing an otherwise healthy room.
+  const proof=await runRealtimeQa({
+   browser,profile:path.join(tmp,'profile-'+trial),
+   url:'http://127.0.0.1:'+server.address().port+'/qa'+(emulator?'':'?setup'),
+   sentinel,timeoutMs:90000
+  });
+  if(proof.ok){console.log(proof.rendered);passed=true;break;}
   console.warn('Online Sites iframe trial '+trial+' failed: '+
-   'rendered='+rendered.slice(0,1000)+' timeout='+timedOut+
-   ' exit='+exit+' '+errors.slice(-250));
+   'rendered='+String(proof.rendered).slice(0,1000)+
+   ' reason='+proof.reason+' stderr='+String(proof.stderr||'').slice(-250));
  }
  if(!passed)throw Error('Actual Chromium inline online Sites test failed');
 }finally{await new Promise(ok=>server.close(ok));rmSync(tmp,{recursive:true,force:true});}
