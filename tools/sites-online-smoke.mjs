@@ -27,7 +27,7 @@ if(friends){
   "assert(doc(h).querySelectorAll('script[src]').length===2,'friends build must have only app and database SDKs');"+
   "assert(typeof h.contentWindow.firebase.auth==='undefined','friend mode unexpectedly loaded Firebase Auth');");
  qa=qa.replace(
-  "await until(()=>el(h,'.yw-online-auto')?.disabled===false,'host auto progression ready');\\n el(h,'.yw-online-auto').click();",
+  "await until(()=>el(h,'.yw-online-auto')?.disabled===false,'host auto progression ready');\n el(h,'.yw-online-auto').click();",
   "await until(()=>el(h,'.yw-online-auto')?.getAttribute('aria-pressed')==='true','friends host automatic match start');"
  );
  qa=qa.replace(
