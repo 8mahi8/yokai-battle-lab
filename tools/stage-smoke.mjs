@@ -17,7 +17,7 @@ const mime={'.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=
  '.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8'};
 const qa=String.raw`<!doctype html><html lang="ja"><meta charset="utf-8">
 <body><strong id="result">STAGE-WAIT</strong>
-<iframe id="frame" src="/lab/match-stage.html" style="width:1120px;height:740px;border:0"></iframe>
+<iframe id="frame" src="/lab/match-stage.html?review=stage-gesture-lab" style="width:1120px;height:740px;border:0"></iframe>
 <script>
 const report=document.getElementById('result');
 document.getElementById('frame').addEventListener('load',()=>{
