@@ -1,24 +1,8 @@
 name: Phase25 real Supabase two-iframe Google Sites Chrome QA
+# Archived Supabase-only QA from the pre-Firebase school design.
+# Historical workflows remain for audit; NEVER run on current dev pushes.
+# Active friends online QA uses .github/workflows/phase37-firebase-friends.yml.
 on:
-  push:
-    branches:
-      - feat/phase1-action-circle-lab-20261023
-    paths:
-      - 'engine/combat.mjs'
-      - 'engine/skill-effects.mjs'
-      - 'ui/battle-vfx.mjs'
-      - 'ui/match-stage.mjs'
-      - 'lab/match-stage.css'
-      - 'lab/yw2-layout.css'
-      - 'engine/special-effects.mjs'
-      - 'engine/match-protocol.mjs'
-      - 'network/firebase-match.mjs'
-      - 'network/supabase-room.mjs'
-      - 'engine/playtest-soul-tuning.mjs'
-      - 'lab/sites-embed-supabase-entry.mjs'
-      - 'tools/build-sites-supabase.mjs'
-      - 'tools/supabase-sites-browser-smoke.mjs'
-      - '.github/workflows/phase25-supabase-browser.yml'
   workflow_dispatch:
 permissions:
   contents: read
