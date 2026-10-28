@@ -15,6 +15,7 @@ import {planActionChoreography,choreographyFrame} from '../presentation/action-c
 import {projectLegacyAttackOutcome} from '../presentation/legacy-attack-outcome.mjs';
 import {projectAttackOutcomeV2} from '../presentation/legacy-attack-to-v2.mjs';
 import {projectSoultimateImpactLedger} from '../contracts/soultimate-impact-ledger-v1.mjs';
+import {projectSoultimateHitLedger} from '../contracts/soultimate-hit-ledger-v1.mjs';
 import {soultimateReadiness} from './soultimate-ready.mjs';
 import {matchAckMessage,matchRuleFailureMessage} from './match-feedback.mjs';
 const ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
@@ -125,10 +126,12 @@ export function makeStageView(state,side=0){
   const projection=projectLegacyAttackOutcome(event,game.squads);
   const actionOutcomeV2=projectAttackOutcomeV2(event,game.squads);
   const specialImpactLedger=projectSoultimateImpactLedger(event);
-  return projection||actionOutcomeV2||specialImpactLedger?{...event,
+  const specialHitLedger=projectSoultimateHitLedger(event);
+  return projection||actionOutcomeV2||specialImpactLedger||specialHitLedger?{...event,
    ...(projection?{attackProjection:projection}:{}),
    ...(actionOutcomeV2?{actionOutcomeV2}:{}),
-   ...(specialImpactLedger?{specialImpactLedger}:{})
+   ...(specialImpactLedger?{specialImpactLedger}:{}),
+   ...(specialHitLedger?{specialHitLedger}:{})
   }:event;
  });
  const roster=teams[side];
@@ -192,6 +195,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  let pendingCues=[]; // read-only display queue; never delays authoritative host
  let sceneHitIndex=null; // presentation only: index into host-confirmed attack hits
  let sceneSpecialTargetIndex=null; // resolved target, not a hit count
+ let sceneSpecialHitIndex=null; // custom host hit, never target count
  const stagedHealth=new Map();
  let commandMode=null,battleDrawCache=null,resultDismissed=false;
  const teamDrawCache=[null,null];let forecastDrawCache=null;
@@ -293,6 +297,10 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    return h?.targetId===id?{id,hit:h.hit,kind:'damage',amount:h.damage}:null;
   }
   if(flash?.type==='special'&&scenePlan){
+   if(scenePlan.specialHitLedger&&sceneSpecialHitIndex!==null){
+    const hit=scenePlan.specialHitLedger.hits[sceneSpecialHitIndex];
+    return hit?.targetId===id?{id,kind:'damage',amount:hit.damage,hit:hit.hit}:null;
+   }
    const current=scenePlan.impacts[sceneSpecialTargetIndex??0];
    return sceneSpecialTargetIndex!==null&&current?.targetId===id?
     {id,kind:current.effect,amount:current.amount,hit:current.hit}:null;
@@ -308,6 +316,15 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    }
   }
   if(flash?.type==='special'&&scenePlan){
+   if(scenePlan.specialHitLedger){
+    const rows=scenePlan.specialHitLedger.hits.filter(h=>h.targetId===unit.id);
+    if(rows.length){
+     if(!showImpact()||sceneSpecialHitIndex===null)return rows[0].hpBefore;
+     const preceding=scenePlan.specialHitLedger.hits.slice(0,sceneSpecialHitIndex+1)
+      .filter(h=>h.targetId===unit.id);
+     return preceding.length?preceding.at(-1).hpAfter:rows[0].hpBefore;
+    }
+   }
    const hostRows=scenePlan.specialImpactLedger?.impacts||[];
    const matches=hostRows.filter(row=>row.targetId===unit.id);
    if(matches.length){
@@ -330,7 +347,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  };
  function cancelScene(){
   clearTimeout(sceneTimer);sceneTimer=null;flash=null;scenePlan=null;
-  scenePhase='done';sceneHitIndex=null;sceneSpecialTargetIndex=null;stagedHealth.clear();
+  scenePhase='done';sceneHitIndex=null;sceneSpecialTargetIndex=null;
+  sceneSpecialHitIndex=null;stagedHealth.clear();
  }
  function advanceScene(){
   if(!scenePlan)return;
@@ -344,15 +362,17 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    return;
   }
   const changed=frame.phase!==scenePhase||frame.hitIndex!==sceneHitIndex||
-   frame.specialTargetIndex!==sceneSpecialTargetIndex;
+   frame.specialTargetIndex!==sceneSpecialTargetIndex||
+   frame.specialHitIndex!==sceneSpecialHitIndex;
   scenePhase=frame.phase;
   sceneHitIndex=frame.hitIndex;
   sceneSpecialTargetIndex=frame.specialTargetIndex;
+  sceneSpecialHitIndex=frame.specialHitIndex;
   if(changed&&wireState)render(wireState);
   if(!scenePlan)return;
   const next=scenePlan.phases.find(p=>p.endMs>elapsed);
   const at=Math.min(next?.endMs??Infinity,frame.nextHitAtMs??Infinity,
-   frame.nextSpecialImpactAtMs??Infinity);
+   frame.nextSpecialImpactAtMs??Infinity,frame.nextSpecialHitAtMs??Infinity);
   clearTimeout(sceneTimer);
   if(Number.isFinite(at))sceneTimer=setTimeout(advanceScene,Math.max(8,at-elapsed+1));
  }
@@ -362,7 +382,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   try{scenePlan=planActionChoreography(cue);}
   catch(error){onError(error);cancelScene();return;}
   flash=cue;scenePhase='anticipation';sceneHitIndex=null;
-  sceneSpecialTargetIndex=null;sceneStartedAt=performance.now();
+  sceneSpecialTargetIndex=null;sceneSpecialHitIndex=null;
+  sceneStartedAt=performance.now();
   for(const impact of cue.targets||[]){
    const side=impact.id?.startsWith('B')?1:0;
    const old=previousView?.teams?.[side]?.members.find(m=>m.id===impact.id);
@@ -588,6 +609,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   backdrop.dataset.specialTargetCount=scenePlan?.kind==='special'?
    String(scenePlan.impacts.length):'';
   backdrop.dataset.specialImpactSchema=String(scenePlan?.specialImpactLedger?.schema??'');
+  backdrop.dataset.specialHitSchema=String(scenePlan?.specialHitLedger?.schema??'');
+  backdrop.dataset.specialHitIndex=sceneSpecialHitIndex===null?'':String(sceneSpecialHitIndex+1);
   // Passive Skill events are resolved by the host. During the impact/recovery
   // phase, explain any automatically applied ability without a fake attack.
   const notice=$('mb-passive-notice');
@@ -644,7 +667,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   $('mb-team1').hidden=activeSeat!==1;
   const fieldKey=JSON.stringify({side:activeSeat,own:view.teams[activeSeat],
    enemy:view.teams[1-activeSeat],flash,phase:scenePhase,hitIndex:sceneHitIndex,
-   specialTargetIndex:sceneSpecialTargetIndex,staged:[...stagedHealth],commandMode});
+   specialTargetIndex:sceneSpecialTargetIndex,specialHitIndex:sceneSpecialHitIndex,
+   staged:[...stagedHealth],commandMode});
   if(fieldKey!==battleDrawCache){
    $('mb-foe-line').innerHTML=frontlineHTML(view.teams[1-activeSeat],false);
    $('mb-ally-line').innerHTML=frontlineHTML(view.teams[activeSeat],true);
@@ -655,7 +679,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   for(let index=0;index<2;index++){
    const key=JSON.stringify({team:view.teams[index],seat:activeSeat,selection,
     ownerPin:view.teams[activeSeat].pin,flash,phase:scenePhase,hitIndex:sceneHitIndex,
-    specialTargetIndex:sceneSpecialTargetIndex,staged:[...stagedHealth],commandMode});
+    specialTargetIndex:sceneSpecialTargetIndex,specialHitIndex:sceneSpecialHitIndex,
+   staged:[...stagedHealth],commandMode});
    if(key!==teamDrawCache[index]&&!(wheelPointer&&wheelPointer.seat===index)){
     $('mb-team'+index).innerHTML=teamHTML(view.teams[index]);
     teamDrawCache[index]=key;
