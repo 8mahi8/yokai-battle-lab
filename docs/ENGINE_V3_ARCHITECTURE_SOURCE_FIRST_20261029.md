@@ -1,6 +1,6 @@
 # YW2対戦｜ゲームエンジンV3 再設計ADR（2026-10-29）
 
-**状態：設計決定・実装移行は未完。最初のV3移行前基準テストのみ導入。**
+**状態：V3設計決定、V3-0基準テスト導入済。V3-1の最初のコマンド境界抽出に着手済み。行動/効果/時間の中核は未移行。**
 
 ## 0. いま方針転換する理由／本人の完成条件
 
@@ -156,6 +156,12 @@ exportAuditJournal(); // internal deterministic QA, not a friend replay feature
 5. Google Sites相当の実Chromium画面・Safari対応の操作。画像を見た証拠を使ってバグ検証。Chrome成功とSafari実機成功は区別。
 6. **開発ブランチ限定**。main、Google Sites公開、Firebase本番設定、Drive保存は禁止（本人が依頼する時だけ）。
 7. 作業後のユーザー報告：**今回作業／次作業／ロードマップ現在地**。
+
+## 7A. V3-0/V3-1最初の実コード変更（後続追記）
+
+- `tests/engine-v3-migration-baseline.test.mjs`に**4 seedで6+6、front/bench、HP/Soul、pin、host commandのACK/クールダウン、同一入力で同一hash/snapshot、journal再計算**の2テストを追加。現行の「変更してはいけないルール基準」が作られた。[コード`b528ecbe9a`：Node **696/696** PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40785090725)、[同版 Stage Chrome PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40785090679)。
+- さらに`engine/match-protocol.mjs`の**既存コマンド正規化とHost→Combat呼出**を、独立`engine/match-command-kernel.mjs`（約92行）へ移した。公開API`normalizeMatchCommand`は既存ファイルからそのままre-export、3秒ルール/ホスト時刻取得/seq/ACK/hash/戦闘判定は不変。`match-protocol.mjs`は約305行→**228行**。これはエンジンV3入口の第一歩であり、まだ`combat.mjs`本体を分割したわけではない。
+- 抽出は**仕様変更でなく既存と同じJS本体の移設**。既存のFirebase Friends adapterはこのmatch protocolを引き続き使うので、通信方式は変わらない。V3-1中の他の責務（時間・状態）はこれから実装する。
 
 ## 8. 今回の決定
 
