@@ -11,6 +11,7 @@
 import {ACTION_VISUAL_CATALOG} from './action-catalog.mjs';
 import {defineActionOutcomeV2} from '../contracts/action-outcome-v2.mjs';
 import {assertSoultimateImpactLedger} from '../contracts/soultimate-impact-ledger-v1.mjs';
+import {assertSoultimateHitLedger} from '../contracts/soultimate-hit-ledger-v1.mjs';
 export const CHOREOGRAPHY_SCHEMA=1;
 const allowedTargets=new Set(['damage','heal','revive','buff','debuff','status','miss']);
 const freezeTargets=values=>Object.freeze(values.map(e=>Object.freeze({...e})));
@@ -63,6 +64,7 @@ export function planActionChoreography(event){
  const actionOutcomeV2=event.actionOutcomeV2?
   defineActionOutcomeV2(event.actionOutcomeV2):null;
  const specialImpactLedger=event.specialImpactLedger??null;
+ const specialHitLedger=event.specialHitLedger??null;
  if(specialImpactLedger){
   assertSoultimateImpactLedger(specialImpactLedger);
   if(kind!=='special'||actorId!==specialImpactLedger.actorId||
@@ -79,6 +81,28 @@ export function planActionChoreography(event){
        impacts[i].hit!==source.applied))
     throw new TypeError('Soultimate visual target contradicts host ledger');
   }
+ }
+ if(specialHitLedger){
+  assertSoultimateHitLedger(specialHitLedger);
+  if(kind!=='special'||!specialImpactLedger||
+     specialHitLedger.eventId!==specialImpactLedger.eventId||
+     specialHitLedger.actorId!==actorId||
+     specialHitLedger.originalHitCount!==null)
+   throw new TypeError('Soultimate hits lack a matching host target ledger');
+  let cursor=0;
+  for(const impact of specialImpactLedger.impacts){
+   if(impact.kind!=='damage')throw new TypeError('non-damage special hit row');
+   const subset=[];
+   while(cursor<specialHitLedger.hits.length&&
+      specialHitLedger.hits[cursor].targetId===impact.targetId)
+    subset.push(specialHitLedger.hits[cursor++]);
+   if(!subset.length||subset[0].hpBefore!==impact.hpBefore||
+      subset.at(-1).hpAfter!==impact.hpAfter||
+      subset.reduce((sum,h)=>sum+h.damage,0)!==impact.amount)
+    throw new TypeError('Soultimate hit rows contradict host target totals');
+  }
+  if(cursor!==specialHitLedger.hits.length)
+   throw new TypeError('unmatched host Soultimate hit rows');
  }
  if(actionOutcomeV2&&
    (kind!=='attack'||event.actor!==actionOutcomeV2.actorId||
@@ -116,7 +140,7 @@ export function planActionChoreography(event){
  return Object.freeze({
   schema:CHOREOGRAPHY_SCHEMA,eventKey:key,kind,actorId,
   label:preset.label,pose:preset.pose,durationMs,phases,impacts,
-  moveId,hitResults,actionOutcomeV2,specialImpactLedger
+  moveId,hitResults,actionOutcomeV2,specialImpactLedger,specialHitLedger
  });
 }
 /**
@@ -165,7 +189,26 @@ export function choreographyFrame(plan,elapsedMs){
   specialTargetIndex+1<specialImpacts.length?
   impactStart+(specialTargetIndex+1)*(impactEnd-impactStart)/
    specialImpacts.length:null;
- const visibleImpacts=plan.kind==='special'?
+ // Verified *host output*, not verified original YW2 move count.
+ // Custom research may have multiple hits against the SAME target; keep
+ // target indexing separate from the hit presentation clock.
+ const specialHits=plan.specialHitLedger?.hits??[];
+ const specialHitIndex=impactVisible&&specialHits.length?
+  Math.min(specialHits.length-1,Math.floor(
+   (Math.min(timeMs,impactEnd)-impactStart)/(impactEnd-impactStart)*specialHits.length
+  )):null;
+ const currentSpecialHit=specialHitIndex===null?null:specialHits[specialHitIndex];
+ const nextSpecialHitAtMs=phase==='impact'&&specialHitIndex!==null&&
+  specialHitIndex+1<specialHits.length?
+  impactStart+(specialHitIndex+1)*(impactEnd-impactStart)/specialHits.length:null;
+ const actualTargetIndex=currentSpecialHit?
+  plan.impacts.findIndex(x=>x.targetId===currentSpecialHit.targetId):
+  specialTargetIndex;
+ const actualImpact=actualTargetIndex===null?null:plan.impacts[actualTargetIndex];
+ const visibleImpacts=currentSpecialHit?Object.freeze([Object.freeze({
+    targetId:currentSpecialHit.targetId,effect:'damage',hit:currentSpecialHit.hit,
+    amount:currentSpecialHit.damage
+  })]):plan.kind==='special'?
   (currentSpecialImpact?Object.freeze([currentSpecialImpact]):Object.freeze([])):
   impactVisible?plan.impacts:Object.freeze([]);
  return Object.freeze({eventKey:plan.eventKey,timeMs,phase,finished,
@@ -173,5 +216,7 @@ export function choreographyFrame(plan,elapsedMs){
     phase==='impact'?plan.pose:'recover',
   impactVisible,impacts:visibleImpacts,
   hitIndex,currentHit,nextHitAtMs,
-  specialTargetIndex,currentSpecialImpact,nextSpecialImpactAtMs});
+  specialTargetIndex:actualTargetIndex,currentSpecialImpact:actualImpact,
+  nextSpecialImpactAtMs:currentSpecialHit?null:nextSpecialImpactAtMs,
+  specialHitIndex,currentSpecialHit,nextSpecialHitAtMs});
 }
