@@ -100,6 +100,14 @@ if(review==='purify-e1'){
   assert(pick('#mb-purify-complete').hidden,'finish shown before input');
   assert(host.snapshot().inspirits.A4.some(x=>x.sign==='negative'),
    'fixture failed to infect rear medal');
+  // Separate online-style fixed B viewpoint: A's purification must never
+  // leak a completion banner to the opponent's lower touch screen.
+  const peerRoot=document.createElement('div');
+  peerRoot.style.cssText='position:absolute;left:-12000px;width:1100px';
+  document.body.appendChild(peerRoot);
+  const peer=createMatchStage({element:peerRoot,seat:1,
+   onAction:()=>({ok:false,reason:'qa_read_only'})});
+  peer.render(protocol.snapshot());
   pick('#mb-purify').click();
   pick('#mb-team0 [data-unit="A4"]').click();
   assert(host.snapshot().purification[0]?.challenge.kind==='mash',
@@ -145,6 +153,10 @@ if(review==='purify-e1'){
   assert(done&&done.side===0&&done.targetId==='A4'&&done.removed.length>0,
    'host failed to emit actual purification completion');
   assert(state.inspirits.A4.length===0,'actual negative status not cleared');
+  peer.render(protocol.snapshot());
+  assert(peerRoot.querySelector('#mb-purify-complete').hidden,
+   'opponent screen leaked another players purification finish');
+  peer.destroy();peerRoot.remove();
   assert(pick('#mb-modal').hidden,'touch modal did not release lower screen');
   const finish=pick('#mb-purify-complete');
   assert(!finish.hidden&&finish.textContent.includes('おはらい完了！'),
@@ -155,6 +167,16 @@ if(review==='purify-e1'){
    'finish overlay obscures upper screen');
   stage.render(protocol.snapshot());
   assert(!pick('#mb-purify-complete').hidden,'duplicate frame lost finish');
+  // Fresh join/reconnect must not replay an already-finished event.
+  const lateRoot=document.createElement('div');
+  lateRoot.style.cssText='position:absolute;left:-12000px;width:1100px';
+  document.body.appendChild(lateRoot);
+  const late=createMatchStage({element:lateRoot,seat:0,
+   onAction:()=>({ok:false,reason:'qa_read_only'})});
+  late.render(protocol.snapshot());
+  assert(lateRoot.querySelector('#mb-purify-complete').hidden,
+   'a historical purification replayed for a late joiner');
+  late.destroy();lateRoot.remove();
   setTimeout(()=>{
    const pass=pick('#mb-purify-complete').hidden&&pick('#mb-modal').hidden&&
     pick('#mb-team0 .mb-wheel')!==null&&
