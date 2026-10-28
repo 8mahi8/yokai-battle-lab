@@ -10,6 +10,7 @@
  */
 import {ACTION_VISUAL_CATALOG} from './action-catalog.mjs';
 import {defineActionOutcomeV2} from '../contracts/action-outcome-v2.mjs';
+import {assertSoultimateImpactLedger} from '../contracts/soultimate-impact-ledger-v1.mjs';
 export const CHOREOGRAPHY_SCHEMA=1;
 const allowedTargets=new Set(['damage','heal','revive','buff','debuff','status','miss']);
 const freezeTargets=values=>Object.freeze(values.map(e=>Object.freeze({...e})));
@@ -61,6 +62,24 @@ export function planActionChoreography(event){
  // phase can schedule the individual hits without guessing outcomes.
  const actionOutcomeV2=event.actionOutcomeV2?
   defineActionOutcomeV2(event.actionOutcomeV2):null;
+ const specialImpactLedger=event.specialImpactLedger??null;
+ if(specialImpactLedger){
+  assertSoultimateImpactLedger(specialImpactLedger);
+  if(kind!=='special'||actorId!==specialImpactLedger.actorId||
+     event.key!=='event:'+specialImpactLedger.eventId||
+     impacts.length!==specialImpactLedger.impacts.length)
+   throw new TypeError('Soultimate impact ledger identity/target conflict');
+  for(let i=0;i<impacts.length;i++){
+   const source=specialImpactLedger.impacts[i];
+   const expected=['heal','revive','buff','debuff'].includes(source.kind)?
+     source.kind:'damage';
+   if(impacts[i].targetId!==source.targetId||
+      impacts[i].amount!==source.amount||impacts[i].effect!==expected||
+      (['buff','debuff'].includes(source.kind)&&
+       impacts[i].hit!==source.applied))
+    throw new TypeError('Soultimate visual target contradicts host ledger');
+  }
+ }
  if(actionOutcomeV2&&
    (kind!=='attack'||event.actor!==actionOutcomeV2.actorId||
     (event.moveId!==undefined&&event.moveId!==actionOutcomeV2.moveId)||
@@ -97,7 +116,7 @@ export function planActionChoreography(event){
  return Object.freeze({
   schema:CHOREOGRAPHY_SCHEMA,eventKey:key,kind,actorId,
   label:preset.label,pose:preset.pose,durationMs,phases,impacts,
-  moveId,hitResults,actionOutcomeV2
+  moveId,hitResults,actionOutcomeV2,specialImpactLedger
  });
 }
 /**
