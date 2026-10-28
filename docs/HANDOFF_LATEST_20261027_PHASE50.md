@@ -1,4 +1,4 @@
-> **2026-10-28｜Phase2.1C-1 開発引き継ぎ追補**：最新の6段階ロードマップは[ROADMAP_6_PHASE_PROGRESS_20261028](./ROADMAP_6_PHASE_PROGRESS_20261028.md)、詳細は[PHASE2_1C_TECHNIQUE_ELEMENT_AND_DAMAGE_FORMULA_MATRIX_20261028](./PHASE2_1C_TECHNIQUE_ELEMENT_AND_DAMAGE_FORMULA_MATRIX_20261028.md)。YW2原作解析Wikiと3DS実測推定式の相違を条件表に整理。原作資料上確かな属性耐性／Play 0～2／Penetrateのみをcustom研究ホストに接続し、組込6体の未確認スキルは追加しない。**純粋計算9条件PASS、変更4ファイルのJS構文PASS。Node全体・Chromium・Firebase新CIは未確認**（以前の672/672は2.1B）。次は2.1C-2 CI／ブラウザ／Firebase回帰と原作映像照合。Google Sites稼働版・main・本番Firebase・Drive配布は無変更。
+> **2026-10-28｜Phase2.1C-1 開発引き継ぎ追補**：最新の6段階ロードマップは[ROADMAP_6_PHASE_PROGRESS_20261028](./ROADMAP_6_PHASE_PROGRESS_20261028.md)、詳細は[PHASE2_1C_TECHNIQUE_ELEMENT_AND_DAMAGE_FORMULA_MATRIX_20261028](./PHASE2_1C_TECHNIQUE_ELEMENT_AND_DAMAGE_FORMULA_MATRIX_20261028.md)。YW2原作解析Wikiと3DS実測推定式の相違を条件表に整理。原作資料上確かな属性耐性／Play 0～2／Penetrateのみをcustom研究ホストに接続し、組込6体の未確認スキルは追加しない。**純粋計算の最新8条件PASS（未証明のPlay+Penetrate順序は拒否）、変更4ファイルのJS構文PASS。Node全体・Chromium・Firebase新CIは未確認**（以前の672/672は2.1B）。次は2.1C-2 CI／ブラウザ／Firebase回帰と原作映像照合。Google Sites稼働版・main・本番Firebase・Drive配布は無変更。
 
 # 妖怪ウォッチ2 オンライン対戦再現｜最新引き継ぎ【2026-10-27 Phase50】
 
