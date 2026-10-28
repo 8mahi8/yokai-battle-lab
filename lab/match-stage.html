@@ -22,7 +22,7 @@
 <div id="battle-stage"></div>
 <script type="module">
 import {createMatchProtocol} from '../engine/match-protocol.mjs';
-import {createCombat} from '../engine/combat.mjs';
+import {createCombat,RENTAL_SQUAD} from '../engine/combat.mjs';
 import {createMatchStage} from '../ui/match-stage.mjs';
 import {passiveSkillNoticesForAction} from '../ui/passive-feedback.mjs';
 const el=id=>document.getElementById(id);
@@ -160,7 +160,52 @@ if(review==='winner-a'||review==='winner-b'){
     'PHASE22-REAL-HOST-HP-LEDGER-PASS':'PHASE22-REAL-HOST-HP-LEDGER-FAIL '+seen.join(',');
   }
  },20);
- }else if(review==='soul-ready'||review==='g-soul-ready'){
+}else if(review==='real-special-hit-ledger'){
+ // Dedicated test scenario. An explicit CUSTOM roster sets an intentionally
+ // fixture-only 3-hit special. No original move count or school roster changes.
+ const rosters=[0,1].map(()=>RENTAL_SQUAD.map(u=>({...u,weights:[...u.weights]})));
+ const host=createCombat({seed:20261029,teams:rosters,
+  researchSoultimateHitCount:3,researchSpecialEffects:true,
+  researchDamageModel:true,researchStatInspirits:true});
+ host.giveSoul('A1',100);
+ const charge=host.prepareSoultimate(0,'A1');
+ if(!charge.ok)throw Error('custom hit charge rejected');
+ const outcome=host.resolveSoultimate(0,charge.token,true);
+ if(!outcome.ok)throw Error('custom hit resolution failed');
+ const game=host.snapshot(),source=game.events.findLast(e=>e.type==='special');
+ const hits=source.researchSoultimateHits?.hits;
+ if(!hits?.length)throw Error('custom host failed to emit actual hit ledger');
+ stage.render({game,revision:1,clientSequences:[0,0],forecast:[]});
+ let last=-1;
+ const observed=[];
+ const observer=setInterval(()=>{
+  const field=el('battle-stage');
+  const backdrop=field.querySelector('.mb-battle-backdrop');
+  const idx=Number(backdrop?.dataset.specialHitIndex||0)-1;
+  if(idx<0||idx===last||idx>=hits.length)return;
+  last=idx;
+  const hit=hits[idx],target=hit.targetId;
+  const floats=[...field.querySelectorAll('#mb-foe-line .mb-floating-number')]
+   .map(n=>({id:n.closest('.mb-fighter')?.dataset.unit,value:n.textContent}));
+  const fighter=field.querySelector('#mb-foe-line [data-unit="'+target+'"]');
+  const renderedHp=fighter?.querySelector('.mb-fighter-meta small')?.textContent;
+  const correctNumber=hit.hit?
+   floats[0]?.value?.includes(String(hit.damage)) :
+   floats[0]?.value==='MISS';
+  const ok=backdrop.dataset.specialHitSchema==='1'&&
+   floats.length===1&&floats[0].id===target&&correctNumber&&
+   renderedHp?.startsWith(String(hit.hpAfter)+'/');
+  observed.push(ok?'ok:'+idx:'BAD:'+idx);
+  if(idx===hits.length-1){
+   clearInterval(observer);
+   const complete=observed.length===hits.length&&
+    observed.every((x,i)=>x==='ok:'+i);
+   el('lab-state').textContent=complete?
+    'PHASE22-REAL-HOST-PER-HIT-DOM-PASS':
+    'PHASE22-REAL-HOST-PER-HIT-DOM-FAIL '+observed.join(',');
+  }
+ },12);
+  }else if(review==='soul-ready'||review==='g-soul-ready'){
  // Local screenshot-only projection of a possible full Soul state.
  // No engine state is mutated, no client is given arbitrary Soul commands.
  const state=protocol.snapshot();
