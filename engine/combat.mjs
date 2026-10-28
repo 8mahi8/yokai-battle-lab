@@ -18,7 +18,7 @@ import { actionWeights, pickAction } from './selection.mjs';
 import { createSoulSystem, chargeInterruptChance } from './soul.mjs';
 import { chooseChargeKind, createChargeTrial } from './charge-input.mjs';
 import { soulCapacityForRank } from './soul.mjs';
-import { validateSpecialSpec, planResearchSpecial } from './special-effects.mjs';
+import { validateSpecialSpec, planResearchSpecial, researchSpecialAllies } from './special-effects.mjs';
 import { createPresentationTimeline } from './presentation-timeline.mjs';
 import { createCounterWindow } from './counter-window.mjs';
 import { createWheelCoalescing } from './wheel-coalescing.mjs';
@@ -534,9 +534,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   function applyResearchSpecial({side,casterId,result,targets=null,pinnedId=null}={}){
     const caster=byId.get(casterId);
     const enemies=targets?targets.map(id=>byId.get(id)).filter(m=>m&&m.hp>0):livingFront(1-side);
+    const resolvedSpec=catalogSoultimateByActor?.get(caster.id)?.definition??caster.special;
     const impacts=planResearchSpecial({
-      spec:catalogSoultimateByActor?.get(caster.id)?.definition??caster.special,caster,
-      allies:['revive','revive-heal'].includes(caster.special.kind)?squads[side]:livingFront(side),enemies,
+      spec:resolvedSpec,caster,
+      allies:researchSpecialAllies(resolvedSpec,squads[side],livingFront(side)),enemies,
       powerMultiplier:result.powerMultiplier,pinnedId
     });
     const interruptions=[];
