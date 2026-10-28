@@ -1,22 +1,8 @@
 name: Phase28 actual Supabase two-iframe full-match QA
+# Archived Supabase-only QA from the pre-Firebase school design.
+# Historical workflows remain for audit; NEVER run on current dev pushes.
+# Active friends online QA uses .github/workflows/phase37-firebase-friends.yml.
 on:
-  push:
-    branches:
-      - feat/phase1-action-circle-lab-20261023
-    paths:
-      - 'engine/combat.mjs'
-      - 'engine/skill-effects.mjs'
-      - 'engine/special-effects.mjs'
-      - 'engine/phase1.mjs'
-      - 'engine/match-protocol.mjs'
-      - 'network/firebase-match.mjs'
-      - 'network/supabase-room.mjs'
-      - 'lab/sites-embed-supabase-entry.mjs'
-      - 'lab/match-stage.css'
-      - 'ui/match-stage.mjs'
-      - 'tools/build-sites-supabase.mjs'
-      - 'tools/supabase-sites-full-match-smoke.mjs'
-      - '.github/workflows/phase28-full-match-supabase.yml'
   workflow_dispatch:
 permissions:
   contents: read
