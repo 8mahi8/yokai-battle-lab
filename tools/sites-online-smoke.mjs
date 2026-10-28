@@ -72,7 +72,7 @@ try{
    emulator?'SITES-ONLINE-EMULATOR-PASS':'SITES-ONLINE-SETUP-PASS';
   // --dump-dom serializes <script> text (including literal PASS strings).
   // Inspect ONLY the *rendered* result node, never output.includes(PASS).
-  const rendered=output.match(/<strong id="result">([^<]*)<\\/strong>/)?.[1]||'';
+  const rendered=output.match(/<strong id="result">([^<]*)<[/]strong>/)?.[1]||'';
   if(!timedOut&&exit===0&&rendered.startsWith(sentinel+' ')){
    console.log(rendered);passed=true;break;
   }
