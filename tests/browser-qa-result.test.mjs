@@ -16,7 +16,7 @@ test('only actual result node with PASS prefix and details can pass',()=>{
   '<script>result.textContent="SITES-ONLINE-FAIL";</script></html>';
  assert.equal(renderedQaPassed(html,'SITES-FIREBASE-FRIENDS-EMULATOR-PASS'),true);
  assert.equal(renderedQaPassed(html,'SITES-ONLINE-SETUP-PASS'),false);
- assert.equal(renderedQaPassed(html,'SITES-FIREBASE-FRIENDS-EMULATOR-PA'),false);
+ assert.throws(()=>renderedQaPassed(html,'SITES-FIREBASE-FRIENDS-EMULATOR-PA'),/PASS prefix/);
  assert.equal(renderedQaResult('no visible QA result'),null);
 });
 
