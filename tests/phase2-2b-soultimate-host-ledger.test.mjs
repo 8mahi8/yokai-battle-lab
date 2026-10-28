@@ -12,7 +12,8 @@ const deep=x=>JSON.parse(JSON.stringify(x));
 
 function realSpecial(slot,seed=20261029){
  const host=createCombat({seed,catalogSoultimateResolution:true,
-  researchSpecialEffects:true,enableRentalSkills:false});
+  researchSpecialEffects:true,researchDamageModel:true,
+  researchStatInspirits:true,enableRentalSkills:false});
  const caster='A'+slot;
  for(let i=0;i<6&&!host.snapshot().clock.teams[0].frontIds.includes(caster);i++)
   host.rotate(0,1);
