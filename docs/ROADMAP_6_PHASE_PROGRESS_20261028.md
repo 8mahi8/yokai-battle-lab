@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-29 方針訂正：学校の現行通信は Firebase Friends だけ
+- [**現行通信方式の単一資料・旧Supabaseワークフロー停止・開発優先順位の訂正**](./SCHOOL_NETWORK_SOURCE_OF_TRUTH_20261029.md)。本人の指摘を受け、2026-10-26以降の実際の方針（Firebase Realtime Database、**AuthなしFriends**、学校Google Sites単体HTML）を再確認。
+- **旧Supabase 5 workflowは開発ブランチのpush自動実行を停止し履歴用の手動dispatchのみ**に変更。失敗したSupabaseの60ターンCIを現行Firebase対戦の欠陥と混同したのは誤り。実装経路`lab/sites-embed-online-entry.mjs`/`network/firebase-room.mjs`/`network/firebase-match.mjs`を現行として維持。
+- **Firebase Friends CIはエンジン／描画／技データの更新でも起動するように拡張**。成功は現行オンライン基盤の模擬QAであり、学校Safari二台の新HEAD実機成功を意味しない。
+- **優先順位の過失**：資料上確認できた独立custom研究技の追加が続いていたが、本人の完成定義（送付原作動画のように友達と操作できる）から逸れていた。これらの研究結果を学校のプレイ可能な対戦が改善した結果として数えない。次は**既存レンタル6体の戦闘局面×両者の操作/表示×Firebase Friends通信**を一本の受入テストにする。原作に無い技追加・Supabase再実装は優先しない。
+- **main／学校Google Sites版／本番Firebase RulesとDB／旧Drive配布は未変更**。
+
 ## ロードマップ
 | Phase | 目的 | 2026-10-29時点 | 次の受け入れ条件 |
 |---|---|---|---|
