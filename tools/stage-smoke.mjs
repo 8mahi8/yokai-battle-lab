@@ -398,6 +398,28 @@ try{
    (phase22RenderedState||'no actual DOM evidence')+' '+phase22TargetErr.slice(-450));
  console.log('PHASE22-SPECIAL-TARGET-DOM-ORDER-PASS B1/B2/B3 exactly one visual impact at a time');
 
+ // Phase2.2B: verify real combat-host HP before/after reaches actual
+ // fighter DOM at each special impact interval, not just an injected cue.
+ const phase22HostQa=spawn(browser,[
+  '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+  '--no-first-run','--disable-extensions','--hide-scrollbars',
+  '--user-data-dir='+path.join(tmp,'phase22-host-ledger-dump'),
+  '--window-size=1024,768','--virtual-time-budget=3200','--dump-dom',
+  'http://127.0.0.1:'+server.address().port+'/lab/match-stage.html?review=real-special-ledger'
+ ],{stdio:['ignore','pipe','pipe']});
+ let phase22HostDom='',phase22HostErr='';
+ phase22HostQa.stdout.on('data',b=>phase22HostDom+=String(b));
+ phase22HostQa.stderr.on('data',b=>phase22HostErr+=String(b).slice(0,2500));
+ const phase22HostTimer=setTimeout(()=>phase22HostQa.kill('SIGKILL'),18000);
+ const phase22HostExit=await new Promise(resolve=>phase22HostQa.on('close',resolve));
+ clearTimeout(phase22HostTimer);
+ const phase22HostState=phase22HostDom.match(/<span id="lab-state">([^<]*)<[/]span>/)?.[1];
+ if(phase22HostExit!==0||phase22HostState!=='PHASE22-REAL-HOST-HP-LEDGER-PASS')
+  throw Error('Phase2.2B actual host special HP staging not proven: '+
+   (phase22HostState||'no observed DOM state')+' '+phase22HostErr.slice(-450));
+ console.log('PHASE22-REAL-HOST-HP-LEDGER-DOM-PASS 3 canonical target HP transitions');
+
+
  const gReadyShot=path.join(root,'phase18-g-soultimate-ready.png');
  const gReadyChild=spawn(browser,[
   '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
