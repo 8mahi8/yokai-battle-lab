@@ -188,6 +188,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  let seenCueKey=null,flash=null,scenePlan=null,scenePhase='done',sceneStartedAt=0,sceneTimer=null,lastEventId=0;
  let pendingCues=[]; // read-only display queue; never delays authoritative host
  let sceneHitIndex=null; // presentation only: index into host-confirmed attack hits
+ let sceneSpecialTargetIndex=null; // resolved target, not a hit count
  const stagedHealth=new Map();
  let commandMode=null,battleDrawCache=null,resultDismissed=false;
  const teamDrawCache=[null,null];let forecastDrawCache=null;
@@ -288,6 +289,11 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const h=scenePlan.hitResults[sceneHitIndex??0];
    return h?.targetId===id?{id,hit:h.hit,kind:'damage',amount:h.damage}:null;
   }
+  if(flash?.type==='special'&&scenePlan){
+   const current=scenePlan.impacts[sceneSpecialTargetIndex??0];
+   return sceneSpecialTargetIndex!==null&&current?.targetId===id?
+    {id,kind:current.effect,amount:current.amount,hit:current.hit}:null;
+  }
   return flash?.targets?.find(x=>x.id===id)??null;
  };
  const shownHp=unit=>{
@@ -298,11 +304,16 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     return scenePlan.hitResults[sceneHitIndex??0].hpAfter;
    }
   }
+  if(flash?.type==='special'&&scenePlan&&stagedHealth.has(unit.id)){
+   const firstTarget=scenePlan.impacts.findIndex(x=>x.targetId===unit.id);
+   if(firstTarget!==-1&&(!showImpact()||sceneSpecialTargetIndex===null||
+      firstTarget>sceneSpecialTargetIndex))return stagedHealth.get(unit.id);
+  }
   return !showImpact()&&stagedHealth.has(unit.id)?stagedHealth.get(unit.id):unit.hp;
  };
  function cancelScene(){
   clearTimeout(sceneTimer);sceneTimer=null;flash=null;scenePlan=null;
-  scenePhase='done';sceneHitIndex=null;stagedHealth.clear();
+  scenePhase='done';sceneHitIndex=null;sceneSpecialTargetIndex=null;stagedHealth.clear();
  }
  function advanceScene(){
   if(!scenePlan)return;
@@ -315,13 +326,16 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    if(wireState)render(wireState);
    return;
   }
-  const changed=frame.phase!==scenePhase||frame.hitIndex!==sceneHitIndex;
+  const changed=frame.phase!==scenePhase||frame.hitIndex!==sceneHitIndex||
+   frame.specialTargetIndex!==sceneSpecialTargetIndex;
   scenePhase=frame.phase;
   sceneHitIndex=frame.hitIndex;
+  sceneSpecialTargetIndex=frame.specialTargetIndex;
   if(changed&&wireState)render(wireState);
   if(!scenePlan)return;
   const next=scenePlan.phases.find(p=>p.endMs>elapsed);
-  const at=Math.min(next?.endMs??Infinity,frame.nextHitAtMs??Infinity);
+  const at=Math.min(next?.endMs??Infinity,frame.nextHitAtMs??Infinity,
+   frame.nextSpecialImpactAtMs??Infinity);
   clearTimeout(sceneTimer);
   if(Number.isFinite(at))sceneTimer=setTimeout(advanceScene,Math.max(8,at-elapsed+1));
  }
@@ -330,7 +344,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   if(document.hidden)return;
   try{scenePlan=planActionChoreography(cue);}
   catch(error){onError(error);cancelScene();return;}
-  flash=cue;scenePhase='anticipation';sceneHitIndex=null;sceneStartedAt=performance.now();
+  flash=cue;scenePhase='anticipation';sceneHitIndex=null;
+  sceneSpecialTargetIndex=null;sceneStartedAt=performance.now();
   for(const impact of cue.targets||[]){
    const side=impact.id?.startsWith('B')?1:0;
    const old=previousView?.teams?.[side]?.members.find(m=>m.id===impact.id);
@@ -551,6 +566,10 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   backdrop.dataset.recordedHits=String(scenePlan?.hitResults?.length??0);
   backdrop.dataset.outcomeSchema=String(scenePlan?.actionOutcomeV2?.schema??'');
   backdrop.dataset.activeHit=sceneHitIndex===null?'':String(sceneHitIndex+1);
+  backdrop.dataset.specialTargetIndex=sceneSpecialTargetIndex===null?'':
+   String(sceneSpecialTargetIndex+1);
+  backdrop.dataset.specialTargetCount=scenePlan?.kind==='special'?
+   String(scenePlan.impacts.length):'';
   // Passive Skill events are resolved by the host. During the impact/recovery
   // phase, explain any automatically applied ability without a fake attack.
   const notice=$('mb-passive-notice');
@@ -585,7 +604,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const caster=view.teams[flash.actor?.startsWith('B')?1:0]?.members.find(u=>u.id===flash.actor);
    const impact=showImpact()?
     (scenePlan?.hitResults?.length&&sceneHitIndex!==null?
-      visibleHit(scenePlan.hitResults[sceneHitIndex].targetId):flash.targets?.[0]):null;
+      visibleHit(scenePlan.hitResults[sceneHitIndex].targetId):
+      flash.type==='special'&&sceneSpecialTargetIndex!==null?
+       flash.targets?.[sceneSpecialTargetIndex]:flash.targets?.[0]):null;
    const victim=impact&&view.teams[impact.id?.startsWith('B')?1:0]?.members.find(u=>u.id===impact.id);
    $('mb-cue-kind').textContent=flash.mode==='g-tech'?'Gわざ！':names[flash.kind]||names[flash.type]||'行動';
    $('mb-cue-summary').textContent=(caster?.name||'')+(victim?' → '+victim.name:'')+
@@ -604,7 +625,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   $('mb-team0').hidden=activeSeat!==0;
   $('mb-team1').hidden=activeSeat!==1;
   const fieldKey=JSON.stringify({side:activeSeat,own:view.teams[activeSeat],
-   enemy:view.teams[1-activeSeat],flash,phase:scenePhase,hitIndex:sceneHitIndex,staged:[...stagedHealth],commandMode});
+   enemy:view.teams[1-activeSeat],flash,phase:scenePhase,hitIndex:sceneHitIndex,
+   specialTargetIndex:sceneSpecialTargetIndex,staged:[...stagedHealth],commandMode});
   if(fieldKey!==battleDrawCache){
    $('mb-foe-line').innerHTML=frontlineHTML(view.teams[1-activeSeat],false);
    $('mb-ally-line').innerHTML=frontlineHTML(view.teams[activeSeat],true);
@@ -614,7 +636,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   // The SVG cards must not be torn down for each tiny touch update.
   for(let index=0;index<2;index++){
    const key=JSON.stringify({team:view.teams[index],seat:activeSeat,selection,
-    ownerPin:view.teams[activeSeat].pin,flash,phase:scenePhase,hitIndex:sceneHitIndex,staged:[...stagedHealth],commandMode});
+    ownerPin:view.teams[activeSeat].pin,flash,phase:scenePhase,hitIndex:sceneHitIndex,
+    specialTargetIndex:sceneSpecialTargetIndex,staged:[...stagedHealth],commandMode});
    if(key!==teamDrawCache[index]&&!(wheelPointer&&wheelPointer.seat===index)){
     $('mb-team'+index).innerHTML=teamHTML(view.teams[index]);
     teamDrawCache[index]=key;
