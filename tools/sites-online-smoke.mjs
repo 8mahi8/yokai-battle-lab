@@ -40,6 +40,10 @@ if(friends){
  );
  qa=qa.replace('SITES-ONLINE-EMULATOR-PASS real two-iframe inline HTML, auth/RTDB',
   'SITES-FIREBASE-FRIENDS-EMULATOR-PASS real two-iframe inline HTML, no Auth/RTDB');
+  // Firebase Friends: actual target selection after wheel cooldown rejection.
+  // Same seeded host/guest room; never bypass the real game rules.
+  qa=qa.replace("assert(el(g,'.yw-online-auto').hidden,'guest cannot control host auto progression');","el(g,'#mb-target').click();\n el(g,'#mb-team0 [data-unit=A2]').click();\n await until(()=>el(g,'#mb-revision')?.textContent.includes('B 3')&&\n  el(h,'#mb-revision')?.textContent.includes('B 3'),\n  'guest pin command consumed by host and ACKed on both screens');\n assert(el(g,'#mb-team0 [data-unit=A2]').classList.contains('mb-pinned'),\n  'guest did not see pinned target after authoritative ACK');\n assert(el(g,'.yw-online-auto').hidden,'guest cannot control host auto progression');");
+
 }
 const server=createServer((req,res)=>{
  if(new URL(req.url,'http://localhost').pathname==='/embed'){
@@ -66,10 +70,15 @@ try{
   clearTimeout(timer);
   const sentinel=friends?'SITES-FIREBASE-FRIENDS-EMULATOR-PASS':
    emulator?'SITES-ONLINE-EMULATOR-PASS':'SITES-ONLINE-SETUP-PASS';
-  if(!timedOut&&exit===0&&output.includes(sentinel)){console.log(sentinel);passed=true;break;}
+  // --dump-dom serializes <script> text (including literal PASS strings).
+  // Inspect ONLY the *rendered* result node, never output.includes(PASS).
+  const rendered=output.match(/<strong id="result">([^<]*)<\\/strong>/)?.[1]||'';
+  if(!timedOut&&exit===0&&rendered.startsWith(sentinel+' ')){
+   console.log(rendered);passed=true;break;
+  }
   console.warn('Online Sites iframe trial '+trial+' failed: '+
-   (output.match(/SITES-ONLINE-FAIL[^<]*/)?.[0]||
-    'timeout='+timedOut+' exit='+exit+' '+output.slice(-600)+' '+errors.slice(-250)));
+   'rendered='+rendered.slice(0,1000)+' timeout='+timedOut+
+   ' exit='+exit+' '+errors.slice(-250));
  }
  if(!passed)throw Error('Actual Chromium inline online Sites test failed');
 }finally{await new Promise(ok=>server.close(ok));rmSync(tmp,{recursive:true,force:true});}
