@@ -19,6 +19,14 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-29 軌道修正実施｜Firebase Friends実戦ゲートの偽PASS修復と実合格
+
+- [**原因・GitHub変更・実ブラウザ厳密受け入れ・次の原作動画1場面**](./PHASE2_REFOCUS_FIREBASE_FRIENDS_ACCEPTANCE_20261029.md)。本人の指摘を受け、研究技追加や旧通信方式追跡を止め、**原作の操作→ホスト正規判定→ゲスト表示**に優先順位を戻した。
+- **重大なQA検証穴修正**：`tools/sites-online-smoke.mjs`は昔のChromium `--dump-dom`の**JavaScript本文に含まれたPASS文字列**を見て誤PASSできた。厳密化で未作成ボタン・srcdocローカル拒否・仮想時刻と実通信の競合・iframe幅計測の問題を発見し、Node22標準WebSocket + Chrome DevTools Protocolの**実時間画面DOM**監視へ変更。今回の`--emulator-friends`は本番Rules/DB書き込みせず、認証なしFirebaseのローカルエミュレーターだけを操作。
+- **コードSHA `a4a61d3a3d`実受入**：[**Phase37 Firebase Friends 2 iframe real Chromium SUCCESS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40725564365)＝ルーム作成/参加→ゲスト輪回転/クールダウン拒否→ゲスト「ねらう」敵タップと両画面ACK・ピン→ホスト実行→切断停止/再接続・4画面幅まで**可視結果PASS**。[**Node694/694・自然6体完走・研究Chromium SUCCESS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40725564087)、[**実Stage/タッチ/おはらい/勝敗Chromium SUCCESS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40725564084)。
+- 古い**Supabase5本＋Firebase Auth3本のCIはpush自動実行を停止**（履歴は残し手動可）。学校版は唯一`phase37-firebase-friends.yml`の認証なしルート。研究用カスタム技2件は学校のゲーム完成度向上としては数えない。
+- **次：第1試合動画00:15–00:20の「連打！→おはらい完了→サークル復帰」**。既存レンタル6体で上画面が操作中も見え、下画面タップがゲスト→ホスト→ゲストへ正規反映される**同一場面**を実装/検証する。横断的にPhase2規則/Phase4操作/Phase5画面/Phase6通信を使う。元MP4の新しい直接視聴はしていない。学校Safari実機2台で最新HEADは未試験。本番Google Sites/main/Rules/DB/Drive配布は無変更。
+
 ## 2026-10-29 方針訂正：学校の現行通信は Firebase Friends だけ
 - [**現行通信方式の単一資料・旧Supabaseワークフロー停止・開発優先順位の訂正**](./SCHOOL_NETWORK_SOURCE_OF_TRUTH_20261029.md)。本人の指摘を受け、2026-10-26以降の実際の方針（Firebase Realtime Database、**AuthなしFriends**、学校Google Sites単体HTML）を再確認。
 - **旧Supabase 5 workflowは開発ブランチのpush自動実行を停止し履歴用の手動dispatchのみ**に変更。失敗したSupabaseの60ターンCIを現行Firebase対戦の欠陥と混同したのは誤り。実装経路`lab/sites-embed-online-entry.mjs`/`network/firebase-room.mjs`/`network/firebase-match.mjs`を現行として維持。
@@ -30,7 +38,7 @@
 | Phase | 目的 | 2026-10-29時点 | 次の受け入れ条件 |
 |---|---|---|---|
 | **Phase 1** | **戦闘基盤の統一** | **完了（1.10 総合監査通過）**：6体×4技・6スキルの正規台帳→ホスト処理→攻撃V2・両視点UIの通し監査。蘇生必殺の古い対象参照を修正。原作数値はfixtureが多く残る | Phase2へ移行：原作の一次映像・文献で技ごとの本当の命中数/Power/効果を検証してから1技ずつ忠実化。学校Safari本番テストは後段 |
-| **Phase 2** | **戦闘ルールを原作へ近づける** | **進行中（2.2C-1：資料一致2技の1Hit×全体／単体をcustom実ホストと実Chromiumで証明／全原作数値は未確証）**：2.1A整数命中率＋2.1B原作確認済みの通常ガード50%・強化ガード25%をホストの物理/妖術に適用。GuardBreakは物理限定。組込6体は無変更、custom研究入力で確証 | 次2.2C-2：本人原作動画にもある「トホホの砲」の1Hit×敵全体＋速度ダウンを資料照合し、Speedデバフが行動順/時間に作用する原作の根拠を調査→研究ホストで検証。ひゃくれつ肉球5/7矛盾は保留、未検証のデバフは見た目だけで実装済みと言わない |
+| **Phase 2** | **戦闘ルールを原作へ近づける** | **進行中（2.2C-1：資料一致2技の1Hit×全体／単体をcustom実ホストと実Chromiumで証明／全原作数値は未確証）**：2.1A整数命中率＋2.1B原作確認済みの通常ガード50%・強化ガード25%をホストの物理/妖術に適用。GuardBreakは物理限定。組込6体は無変更、custom研究入力で確証 | 現在の横断受入E1：原作第1試合00:15–00:20のおはらい下画面操作→上画面視認維持→完了表示→サークル復帰を、現行Firebase Friends二視点で通す。トホホの砲SPD等の未確証研究は一時保留 |
 | Phase 3 | 行動順と戦闘の時間 | 後続（現行は待ちポイント研究＋ホスト2600ms固定） | 原作に準拠した論理行動順とモーション/操作タイミングの対応を確認 |
 | Phase 4 | 操作と対人戦特有の仕組み | 後続（下画面ミニゲームとサークル等の既存実装あり） | おはらい/必殺/つつく/零式と**双方の表示保留**を原作局面で検証 |
 | Phase 5 | 上下画面/アニメーション | 後続（見た目の研究版あり） | 技別カットイン・命中順・状態・HP・結果を動画と比較 |
