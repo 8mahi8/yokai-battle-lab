@@ -32,7 +32,7 @@
 - 実Chromiumの`lab/match-stage.html?review=yw2-reference-front` / `...-single`を加え、各技を**実際のカスタムホストで発動**させ、上画面の浮動数字/対象/HP/技名が原記録と一致することを描画DOMから検証。**[実Chromium Stage QA run 40721184436：両技ともPASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40721184436)**。実ログ `PHASE22C-YW2-SOURCE-SHAPE-CHROMIUM-PASS front`、`... single`。サークル、4種必殺チャージ、5種おはらい、両視点勝敗等も回帰PASS。
 
 - 最終ソースコード（Chromium向けQA含む）コミット：`fc66a0e29206699b2129ff984d9311ad3aa6affa`。その後のこのMarkdown追記はコードを変更しない。
-- 学校版のHTML構築・Supabase既存対戦などは、UIソース最終変更時の `ede60c7aa7` で各検証を参照可能。**[Firebase実ブラウザエミュレーターPASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40721025710)**、[Google Sites単体版ビルドPASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40721025708)。一方で、[60行動・実時間ペースSupabase長時間テストは`PACED-MATCH-WAIT`のままFAIL](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40721025699)。本件は実ゲームの停止かブラウザ/外部環境の時間制約か**未判定**。別途再実行を依頼しており、成功が出るまでは成功と扱わない。なお今回の技はあくまでcustom labなので、当該60行動テストは新技自体をプレイしていない。
+- 学校版のHTML構築・Supabase既存対戦などは、UIソース最終変更時の `ede60c7aa7` で各検証を参照可能。**[Firebase実ブラウザエミュレーターPASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40721025710)**、[Google Sites単体版ビルドPASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40721025708)。一方で、[60行動・実時間ペースSupabase長時間テストは`PACED-MATCH-WAIT`のままFAIL](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40721025699)。本件は実ゲームの停止かブラウザ/外部環境の時間制約か**未判定**。**同一runの再実行attempt 2も`PACED-MATCH-WAIT`のままFAIL**。コードを調べると、このQAのChromeは`--virtual-time-budget=130000`を使用し、成功/失敗表示が出る前に WAIT のままDOMを出力して終了している。外部サービス初期化・仮想時計・長時間試合のどの段階で進まなかったかは、WAIT文字列だけでは区別不能。**長時間オンラインQAの未完として引き継ぐ**。なお今回の技はあくまでcustom labなので、当該60行動テストは新技自体をプレイしていない。
 
 ## 非完了事項と次の優先順位
 
