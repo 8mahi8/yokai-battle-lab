@@ -1,21 +1,7 @@
 name: Phase14 real browser Firebase emulator QA
+# Archived authentication-era Firebase QA; retained for manual research.
+# The current school game uses no-Auth Firebase Friends (Phase37 workflow).
 on:
-  push:
-    branches:
-      - feat/phase1-action-circle-lab-20261023
-    paths:
-      - 'engine/**'
-      - 'network/**'
-      - 'ui/**'
-      - 'lab/firebase-match-stage.html'
-      - 'lab/match-stage.css'
-      - 'tools/firebase-stage-smoke.mjs'
-      - 'tools/firebase-charge-smoke.mjs'
-      - 'tests/firebase-room-emulator.cjs'
-      - 'tests/firebase-match.test.mjs'
-      - 'tests/firebase-shared-rules-emulator.cjs'
-      - 'tools/preview-shared-rtdb-rules.mjs'
-      - '.github/workflows/phase14-firebase-browser.yml'
   workflow_dispatch:
 permissions:
   contents: read
