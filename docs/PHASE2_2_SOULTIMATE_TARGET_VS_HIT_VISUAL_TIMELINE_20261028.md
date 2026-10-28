@@ -19,12 +19,15 @@
 1. `presentation/action-choreography.mjs` の `choreographyFrame()`：既存ホスト`special`イベントの`impacts`から、表示用の`specialTargetIndex`・`currentSpecialImpact`・`nextSpecialImpactAtMs`を算出。**既存`hitIndex/currentHit`とは別フィールド**。可視対象は順番にひとつずつとし、同一impact区間を均等に区切る。時間は**試遊用の仮設定**で、原作3DSの秒数・対象命中順とはまだ主張しない。ホスト結果・ダメージは変えない。
 2. `ui/match-stage.mjs`：同じプレゼン時刻に従って両メダルと上画面の対象へ一つの結果を浮かべ、ターゲットが変わるとレンダーキャッシュを更新。前の戦闘状態を持つ場合は未表示対象のHPを一時的に保持し、表示タイミングで新HPへ移す。**ホストSnapshot/勝敗結果はすでに確定済み**で、演出が実ダメージを順次発生させるわけではない。
 3. `tests/phase2-2-soultimate-target-vs-hit-timeline.test.mjs`：実ホスト`createCombat`が発動したA1の`special`を取得→`latestBattleCue`→`planActionChoreography`→全3ターゲットの連続表示を検証し、`hitResults=[]`・`hitIndex=null`・原作未確定`hitPattern`維持を確認。MISS・単対象・ゼロ対象・時間境界・不変性も検証。
-4. コードとテストはすべて**開発ブランチのみ**。本番のGoogle Sites、main、Firebase Rules/DB、Drive配布に変更なし。
+4. `lab/match-stage.html`と`tools/stage-smoke.mjs`：既存の専用必殺表示デモに3対象の浮動数字を設定し、正規化されたbrowser-rendered DOMからB1→B2→B3を検証。本家のヒット回数をセットしたわけではない。上記実ホスト検証とは別レーン。
+5. コードとテストはすべて**開発ブランチのみ**。本番のGoogle Sites、main、Firebase Rules/DB、Drive配布に変更なし。
 
 ## 完了した回帰テスト
-- [Node 680件中680件 PASS + 自然レンタル試合耐久](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40706955174)
-- [実Chromium一般Stage／ジェスチャー／勝敗QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40706955093)
-- **確認していないこと**：実Safari 2台、Friends学校埋込の今回変更後の独立2端末試験、必殺の現物ターゲット時間差を実Chrome画面録画した直接QA、元動画の全コマhit確定。上記のChromium一般回帰がPASSでも特定の多対象タイムラインを全フレームで目視したとは扱わない。
+- **最終QAコードコミット `608947f988`**：[Node 680件中680件 PASS + 自然レンタル試合耐久](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40707841601)。
+- [**実Chromiumで3体B1→B2→B3のダメージ表示の順序まで目視可能なDOM検証 PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40707841744)：ログ `PHASE22-SPECIAL-TARGET-DOM-ORDER-PASS B1/B2/B3 exactly one visual impact at a time`。一般Stage・上下画面・ジェスチャー・勝敗QAもPASS。
+- 観測方法：`lab/match-stage.html?review=special`の**プレゼン専用フィクスチャ**で、Chromium実画面に描画された各ターゲットの浮動数字を20ms間隔でサンプリングし、各局面で表示される数字が意図した1対象だけか実DOMで判定。`tools/stage-smoke.mjs`の`--dump-dom`から**実際に描画された`#lab-state`要素のテキスト**を検証。ソースコード中の成功文字列を見ただけでは合格にしない。
+- 検証コード作成時に`tools/stage-smoke.mjs`の正規表現のエスケープミス・既存変数名重複でCI失敗した。両方修正後の**別runが成功**。ゲームロジックの不具合と取り違えない。
+- **確認していないこと**：本家の実機5/7-hit矛盾の決着、最新開発版の学校Safari 2台実機、Google Sites Friends公開版、必殺の元動画とのフレーム単位の忠実度。新Chromeの3対象表示は**研究用fixtureであって実原作の3打を証明しない**。
 
 ## 次の受入ゲート
 - 本家動画の同じ種類の必殺について、各対象ごと・各hitごとの数字と効果の**観察された順番**を細かく分離。元映像に写らない画面外ダメージや乱数は推定で補わない。
