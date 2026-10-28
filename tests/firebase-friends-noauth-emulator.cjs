@@ -80,6 +80,28 @@ async function main(){
   const packet=await gClient.readPublishedSnapshot();
   assert.equal(packet.revision,1);
   assert.equal(packet.game.winner,null);
+
+  // Phase2.1C-2: prove the actual no-Auth Friends RTDB snapshot can carry
+  // several canonical combat results after a guest wheel command. This
+  // exercises the existing school transport, not a mock Cloud/Auth path.
+  for(let turn=0;turn<24;turn++){
+   const step=match.advanceAuto();
+   assert.equal(step.ok,true,'canonical school combat must keep stepping');
+  }
+  const advanced=match.snapshot();
+  assert.equal(advanced.revision,25);
+  assert.equal(advanced.clientSequences[1],1,'guest wheel ACK survives auto battle');
+  assert.ok(advanced.game.turn>=20,'real combat advanced by repeated host actions');
+  assert.ok(advanced.game.squads.flat().every(unit=>
+   !Object.hasOwn(unit,'techniquePlaySources')&&
+   !Object.hasOwn(unit,'techniquePenetrate')),
+   'original six keep unknown Play/Penetrate research-only');
+  assert.equal((await hClient.publishSnapshot(advanced)).ok,true,
+   'host can publish accumulated canonical actions on actual Friends RTDB');
+  const guestAdvanced=await gClient.readPublishedSnapshot();
+  assert.deepEqual(guestAdvanced,advanced,
+   'guest must read the same canonical multi-action state, not a separate damage simulation');
+  console.log('FIREBASE-FRIENDS-COMBAT-REGRESSION-PASS 24 host actions, ACK, canonical snapshot parity');
   stop();hClient.leaveLocal();gClient.leaveLocal();
   console.log('FIREBASE-FRIENDS-NOAUTH-PASS room, seat, command, snapshot, rules');
  } finally {await env.cleanup();}
