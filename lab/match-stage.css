@@ -205,3 +205,24 @@ button:focus-visible{outline:3px solid #ffe5a9;outline-offset:2px}
   width:min(24vh,148px);height:min(24vh,148px);min-width:106px;min-height:106px;
  }
 }
+
+/* Source video Match01 00:15–00:20: after a successful REAL host
+   purification event, briefly show the finish card only on the touch
+   screen. The upper battle field must remain visible and update normally. */
+.mb-yw2 .mb-lower-screen>.mb-purify-complete{
+ position:absolute;inset:0;z-index:43;display:flex;flex-direction:column;
+ align-items:center;justify-content:center;gap:9px;padding:14px;
+ pointer-events:none;text-align:center;
+ background:radial-gradient(circle at center,#664682ef 0%,#33264bee 73%,#251e3def 100%);
+ color:#fff4e2;animation:mb-purify-finish-in .2s ease-out both;
+}
+.mb-yw2 .mb-lower-screen>.mb-purify-complete[hidden]{display:none!important}
+.mb-purify-complete-icon{font-size:clamp(35px,6vw,53px);line-height:1;color:#f5ddaa}
+.mb-purify-complete strong{font-size:clamp(20px,3.3vw,30px);letter-spacing:.06em;text-shadow:0 3px 12px #170e27}
+.mb-purify-complete small{font-size:clamp(11px,1.9vw,15px);color:#f7dfe7}
+@keyframes mb-purify-finish-in{
+ from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}
+}
+@media(prefers-reduced-motion:reduce){
+ .mb-yw2 .mb-lower-screen>.mb-purify-complete{animation:none}
+}
