@@ -44,7 +44,11 @@ export function projectSoultimateHitLedger(event){
    prev=h.hpAfter;damageTotal+=h.damage;
    if(prev===0){number++;break;}
   }
+  // Hits can stop before the planned count ONLY when that target is KO.
+  // A still-living target cannot silently lose unexecuted scheduled blows:
+  // this catches a forged plannedPerTarget=9 over a real three-hit log.
   if(number<1||number>source.plannedPerTarget||
+     (prev>0&&number!==source.plannedPerTarget)||
      damageTotal!==impact.amount||prev!==impact.hpAfter)
    return null;
   offset+=number;
