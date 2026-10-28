@@ -16,7 +16,7 @@ export function projectSoultimateHitLedger(event){
  const source=event.researchSoultimateHits;
  if(source.model!==supported||source.originalHitCount!==null||
     !Number.isInteger(source.plannedPerTarget)||
-    source.plannedPerTarget<2||source.plannedPerTarget>9||
+    source.plannedPerTarget<1||source.plannedPerTarget>9||
     !Array.isArray(source.hits)||source.hits.length<1||source.hits.length>27)
   return null;
  const hits=[];
