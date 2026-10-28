@@ -37,7 +37,8 @@ export function skillMomentumStage(boost){
  * be in reserve; no passive healing from KO owners. This computes one
  * recipient's share at a given action boundary (NOT their own turn only).
  */
-export function careOnOwnerTurn({actor,team}={}){
+export function careOnOwnerTurn({actor,team,skillOf=member=>member.skill}={}){
+ if(typeof skillOf!=='function')throw new TypeError('skillOf must be a function');
  if(!actor||!Array.isArray(team)||team.length!==6||
   !team.every(u=>typeof u?.id==='string'&&Number.isFinite(u.hp)&&
     Number.isFinite(u.maxHp)))throw new TypeError('six ally members required');
@@ -45,7 +46,7 @@ export function careOnOwnerTurn({actor,team}={}){
  if(position<0)throw new RangeError('actor outside its own roster');
  if(actor.hp<=0||actor.hp>=actor.maxHp)return [];
  const sources=[team[(position+5)%6],team[(position+1)%6]]
-   .filter(u=>u.hp>0&&u.skill==='care');
+   .filter(u=>u.hp>0&&skillOf(u)==='care');
  let remaining=actor.maxHp-actor.hp;
  const heals=[];
  for(const source of sources){
@@ -86,14 +87,14 @@ export function resolveLastStand({skill,enabled=true,spent=false,hp,amount}={}){
  * of either team. The 2% value is a cross-version TRIAL, not confirmed YW2.
  * A single dead skill provider is inactive, even from the rear wheel.
  */
-export function careAtActionBoundary({teams}={}){
+export function careAtActionBoundary({teams,skillOf=member=>member.skill}={}){
  if(!Array.isArray(teams)||teams.length!==2)
   throw new TypeError('two six-member teams required');
  const result=[];
  for(const team of teams){
   if(!Array.isArray(team)||team.length!==6)
    throw new TypeError('six-member team required');
-  for(const actor of team)result.push(...careOnOwnerTurn({actor,team}));
+  for(const actor of team)result.push(...careOnOwnerTurn({actor,team,skillOf}));
  }
  return result;
 }
