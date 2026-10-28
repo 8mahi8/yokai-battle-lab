@@ -26,7 +26,8 @@ export function latestBattleCue(events){
    return {key:Number.isSafeInteger(event.eventId)&&event.eventId>0?'event:'+event.eventId:'special:'+i+':'+JSON.stringify(event),type:'special',actor:event.actor,
     mode:event.mode,kind:'special',targets,target:targets[0]?.id??null,
     amount:targets[0]?.amount??0,
-    ...(event.specialImpactLedger?{specialImpactLedger:event.specialImpactLedger}:{})};
+    ...(event.specialImpactLedger?{specialImpactLedger:event.specialImpactLedger}:{}),
+    ...(event.specialHitLedger?{specialHitLedger:event.specialHitLedger}:{})};
   }
   if(!Number.isFinite(event.turn))continue;
   return {key:Number.isSafeInteger(event.eventId)&&event.eventId>0?'event:'+event.eventId:'action:'+event.turn,type:'action',actor:event.actor,
