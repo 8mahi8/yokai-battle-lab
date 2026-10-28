@@ -15,6 +15,15 @@ on:
       - 'network/emulator/firebase.historical-20261022.json'
       - 'tools/firebase-school-readonly-probe.mjs'
       - '.github/workflows/phase37-firebase-friends.yml'
+      - 'engine/combat.mjs'
+      - 'engine/match-protocol.mjs'
+      - 'engine/phase1.mjs'
+      - 'engine/special-effects.mjs'
+      - 'ui/match-stage.mjs'
+      - 'ui/battle-vfx.mjs'
+      - 'presentation/action-choreography.mjs'
+      - 'contracts/**'
+      - 'content/**'
   workflow_dispatch:
 permissions:
   contents: read
