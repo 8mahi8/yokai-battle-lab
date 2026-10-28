@@ -392,7 +392,7 @@ try{
  const targetTimer=setTimeout(()=>targetQa.kill('SIGKILL'),18000);
  const targetExit=await new Promise(resolve=>targetQa.on('close',resolve));
  clearTimeout(targetTimer);
- const renderedState=targetDom.match(/<span id="lab-state">([^<]*)<\\/span>/)?.[1];
+ const renderedState=targetDom.match(/<span id="lab-state">([^<]*)<[/]span>/)?.[1];
  if(targetExit!==0||renderedState!=='PHASE22-VISUAL-TARGET-ORDER-PASS')
   throw Error('Phase2.2 separate special target paint not proven: '+
    (renderedState||'no actual DOM evidence')+' '+targetErr.slice(-450));
