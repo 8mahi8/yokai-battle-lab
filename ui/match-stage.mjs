@@ -775,14 +775,14 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   element.querySelectorAll('[data-seat]').forEach(b=>b.classList.toggle('is-active',Number(b.dataset.seat)===activeSeat));
   $('mb-step').disabled=(fixedSeat!==null&&activeSeat!==0)||view.winner!==null;
   modal();
-  const notice=$('mb-purify-complete');
-  notice.hidden=!purificationFeedback||!!view.gesture||view.winner!==null;
-  if(!notice.hidden){
+  const purifyNotice=$('mb-purify-complete');
+  purifyNotice.hidden=!purificationFeedback||!!view.gesture||view.winner!==null;
+  if(!purifyNotice.hidden){
    const target=view.teams[activeSeat].members.find(m=>m.id===purificationFeedback.targetId);
    $('mb-purify-complete-target').textContent=
     (target?.name||'妖怪')+'の悪いとりつきが消えた！';
-   notice.dataset.eventId=String(purificationFeedback.eventId);
-  }else delete notice.dataset.eventId;
+   purifyNotice.dataset.eventId=String(purificationFeedback.eventId);
+  }else delete purifyNotice.dataset.eventId;
   if(view.winner!==null&&recentMessage!==projectMatchResult(view.winner,activeSeat).winnerLabel)
    alert(projectMatchResult(view.winner,activeSeat).winnerLabel);
   element.dataset.stageReady='true';
