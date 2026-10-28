@@ -88,8 +88,7 @@ test('phase1: canonical host → 2 seat views → V2 → choreography are read o
    assert.equal(view0.winner,view1.winner);
    assert.equal(view0.side,0);
    assert.equal(view1.side,1);
-   const last=view0.events.at(-1);
-   if(last?.type==='skill')visibleSkills++;
+   visibleSkills+=view0.events.filter(e=>e.type==='skill').length;
    for(const entry of view0.events.filter(e=>e.type==='action'&&e.kind==='attack')){
     assert.ok(entry.attackProjection,
      'all built-in rental physical hits should map to a catalog move');
@@ -128,7 +127,7 @@ test('phase1: canonical host → 2 seat views → V2 → choreography are read o
   assert.equal(replay.ok,true,'canonical host should replay deterministically');
  }
  assert.ok(verifiedAttacks>0,'must have checked actual physical host hit chains');
- assert.ok(visibleSkills>=0);
+ assert.ok(visibleSkills>0,'must observe real host-resolved passive events');
 });
 
 test('phase1: no accidental original-value claims in six trial move definitions',()=>{
