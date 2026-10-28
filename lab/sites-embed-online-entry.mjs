@@ -231,7 +231,18 @@ async function init(){
   say('接続設定が未登録です。オンライン通信を行わない確認用ビルドです。');
   return;
  }
- if(__YW_EMULATOR_MODE__&&!['localhost','127.0.0.1'].includes(location.hostname))
+ // about:srcdoc is the URL of a Google Sites-style inline HTML iframe.
+ // Its same-origin LOCAL test parent may be localhost even though the
+ // child location.hostname is blank. A cross-origin parent is inaccessible:
+ // never let a remote site enable this test-only emulator build.
+ const allowedLocalEmulatorHost=()=>{
+  if(['localhost','127.0.0.1'].includes(location.hostname))return true;
+  if(location.href!=='about:srcdoc'||window===window.parent)return false;
+  try {
+   return ['localhost','127.0.0.1'].includes(window.parent.location.hostname);
+  }catch{return false;}
+ };
+ if(__YW_EMULATOR_MODE__&&!allowedLocalEmulatorHost())
   throw Error('研究用エミュレーター版はlocalhost以外で起動禁止');
  const capability=checkSitesBrowserCapabilities(window);
  if(!capability.ok)
