@@ -69,6 +69,8 @@ function buildMember(source,side,index) {
     throw new TypeError('criticalImmune must be a boolean');
   if(source.guardBreak!==undefined&&typeof source.guardBreak!=='boolean')
     throw new TypeError('guardBreak must be a boolean');
+  if(source.guardBoost!==undefined&&typeof source.guardBoost!=='boolean')
+    throw new TypeError('guardBoost must be a boolean');
  if(!['sleep','strength-up','strength-down','defense-down','spirit-down',
   'hp-loss','hp-regen'].includes(source.inspirit))
     throw new TypeError('unsupported Inspirit');
@@ -82,6 +84,9 @@ function buildMember(source,side,index) {
     strength:source.strength,spirit:source.spirit,defense:source.defense,criticalDefense:source.criticalDefense??source.defense,
     attackPower:source.attackPower,techniquePower:source.techniquePower,techniqueElement,elementResistances,
     inspiritLevel:source.inspiritLevel??1,guardBreak:source.guardBreak??false,
+    // Preserve default roster snapshots. Boosted guard is a custom research
+    // input until a source-backed in-battle Guard Boost effect exists.
+    ...(source.guardBoost===true?{guardBoost:true}:{}),
     attackHits:source.attackHits??1,techniqueHits:source.techniqueHits??1,
     attackAccuracy:source.attackAccuracy??1,moveCritBonus:source.moveCritBonus??0,
     criticalImmune:source.criticalImmune??false,
@@ -928,7 +933,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
               kind,power:kind==='attack'?attackPower:techniquePower,
               strength:actor.strength,spirit:actor.spirit,defense:target.defense,
               criticalDefense:target.criticalDefense,critical:oneCritical,
-              guarded:target.guard,guardBreak:actor.guardBreak||(enableRentalSkills&&skillFor(actor)==='guardBreak'),
+              guarded:target.guard,guardBoost:target.guardBoost??false,
+              guardBreak:actor.guardBreak||(enableRentalSkills&&skillFor(actor)==='guardBreak'),
               elementMultiplier:elemental,statStage,defenseStage,hits:attemptedHits
             });
             damage=damageResearch.amount;
@@ -938,8 +944,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
             damage=baseDamage({...actor,attackPower,
               strength:Math.floor(actor.strength*(statuses.has(actor.id,'strength-up')?1.10:1)*extra),
               spirit:Math.floor(actor.spirit*extra)},target,kind,oneCritical);
-            if(target.guard&&!(actor.guardBreak||enableRentalSkills&&skillFor(actor)==='guardBreak')&&kind==='attack')damage=Math.max(1,Math.floor(damage*.5));
-            else if(target.guard&&kind==='technique')damage=Math.max(1,Math.floor(damage*.5));
+            if(target.guard&&!(actor.guardBreak||enableRentalSkills&&skillFor(actor)==='guardBreak')&&kind==='attack')
+              damage=Math.max(1,Math.floor(damage*(target.guardBoost?.25:.5)));
+            else if(target.guard&&kind==='technique')
+              damage=Math.max(1,Math.floor(damage*(target.guardBoost?.25:.5)));
           }
           // A separate seeded spread is drawn for each unguarded hit.
           if(!target.guard||damageResearch?.guardIgnored||(enableRentalSkills&&skillFor(actor)==='guardBreak'&&kind==='attack')){
