@@ -46,7 +46,9 @@ MatchProtocol (入力seq / ACK / host唯一の権威)
 - 実装+新テストコード`c0373b91c8`：**[Research Unit 664/664 PASS + 6体耐久試合 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40642251110)**。
 - **[本物のChromium Stage／Gesture／両側Result QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40642251099)**。
 - 修正した同ゲーム本体コード`a6ebc72781`時点で[Firebase Emulator browser QA成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40642200382)、[Google Sites offline build QA成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40642200340)、[Sites build QA成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40642200314)。今回その後に追加されたのは統合テストなので、ゲームの戦闘/描画/通信実装は同じ。
+- **最終のテスト厳格化・資料更新後の再検証**：[Research Unit 664/664 + 耐久/ブラウザスモーク全SUCCESS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40642761285)、[Chromium Stage/Gesture/Result全SUCCESS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40642761274)。実スキル発火も通し試合で必須確認した。ゲームのホスト本体は先の`a6ebc727`から変更なし。
 - **注意**：Firebase Emulator browser QAは匿名認証の研究シナリオを含み、学校の**AuthなしFriends実機2台接続の合格を意味しない**。iPad Safariの実機検証は未実施。またCIが生成した実画面PNG自体の目視レビューを今回行ったとは主張しない。
+- **独立した既知の失敗**：過去の[Supabaseを使う1.5秒ペースの60行動長試合QA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40642200385)は`PACED-MATCH-WAIT`となりFAIL。旧Supabase系の試験であり、学校のFirebase Friendsとは別の通信実装。今回のPhase1台帳修正で解消したと断言しない。Phase6のオンライン統合時にはFirebase Friendsを実2ブラウザ・学校Safari実機で独立に確認する。
 
 ## ユーザー提供原作対戦録画の一次資料再確認
 **元MP4を直接読み、実フレームを抽出して確認した。** 以前のレポートを転載しただけではない。
