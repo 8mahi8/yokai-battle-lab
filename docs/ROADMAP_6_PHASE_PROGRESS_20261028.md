@@ -36,6 +36,7 @@
 - **同じ最終コードSHA `4a63bef846`のテスト実績**：[Node 677/677 + 6体自然耐久 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40705027981)、[実Chromium上下画面/全ジェスチャー/両視点結果 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40705027869)、[Firebase Friends認証なしRTDB + 2 iframe実Chromium + 24行動正規状態同一性 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40705028114)。
 - [Phase2.1Cの差分・確証・留保・QA詳細](./PHASE2_1C_TECHNIQUE_ELEMENT_AND_DAMAGE_FORMULA_MATRIX_20261028.md)。**Phase2.1C-2のQAゲートは完了**だが、原作データの矛盾（Wiki式vs実測推定式、Play/Penetrate未確証併用順序）、元MP4の今ターン直接未観察、学校Safari最新版未検証は残る。
 - **次**：Phase2.2技固有の「対象が複数」≠「多段ヒット」を原作映像＋技資料に照合し、実戦結果のhit列と見た目の命中順へ段階適用。学校Google Sites稼働版・main・本番Firebase・Drive配布は触らない。
+- **実画面も確認**：[Phase2.2へ渡すChromium PNG4枚の実目視・原作動画との差分監査](./PHASE2_2_VISUAL_EVIDENCE_GATE_FROM_REAL_CHROMIUM_20261028.md)。通常行動でキャラ自身の動きが小さい一方、必殺カットインが大きく出ていることを確認。これはLOCAL研究画面の静止画像であり、学校Friends Safari版・連続動画の検証ではない。
 
 ## 2026-10-28 引き継ぎ後の履歴・動画の横断監査（コード無変更）
 - [引き継ぎ過去資料80件以上の横断監査／元動画5本のアクセス状態／原作再現の未完一覧](./HANDOFF_ARCHIVE_AUDIT_AND_VIDEO_ACCESS_20261028.md)。Phase10～51とPhase1/2、学校の2026-10-27実機試遊、オンライン方式の変遷、ユーザー動画の直接観察履歴を再読。古い資料の「2～4試合未視聴」は2026-10-28 Phase1.6の一部実フレームレビューで一部更新されたが、全編フレーム比較は未完。**今回元MP4はアクセス不可、直接再生したと主張しない。**
