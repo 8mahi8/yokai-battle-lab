@@ -199,6 +199,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  let sceneSpecialHitIndex=null; // custom host hit, never target count
  const stagedHealth=new Map();
  let commandMode=null,battleDrawCache=null,resultDismissed=false;
+ // Host-only completion event drives owner-local feedback; never a tap ACK.
+ let lastPurificationId=null,purificationFeedback=null,purificationTimer=null;
  const teamDrawCache=[null,null];let forecastDrawCache=null;
  element.innerHTML=`
  <div class="mb-stage mb-yw2">
@@ -273,6 +275,11 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     <div class="mb-meter"><i id="mb-gesture-bar"></i></div>
     <small id="mb-gesture-progress"></small>
    </div>
+  </div>
+  <div class="mb-purify-complete" id="mb-purify-complete" role="status" aria-live="polite" hidden>
+   <span class="mb-purify-complete-icon" aria-hidden="true">✧</span>
+   <strong>おはらい完了！</strong>
+   <small id="mb-purify-complete-target">悪いとりつきが消えた！</small>
   </div>
    </section>
   </div>
@@ -552,6 +559,31 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   const previousView=view;
   wireState=state;
   view=makeStageView(state,activeSeat);
+  // Only newly delivered authoritative purification events activate feedback.
+  // Initial attach may contain a past event: never replay it on join.
+  const past=view.events.filter(e=>e.type==='purification'&&
+    Number.isSafeInteger(e.eventId)&&e.eventId>0);
+  const newest=past.reduce((m,e)=>Math.max(m,e.eventId),0);
+  if(lastPurificationId===null){
+   lastPurificationId=newest;
+  }else if(newest>lastPurificationId){
+   const done=past.filter(e=>e.eventId>lastPurificationId&&e.side===activeSeat&&
+     Array.isArray(e.removed)&&e.removed.length>0).at(-1);
+   lastPurificationId=newest;
+   if(done&&!view.gesture){
+    clearTimeout(purificationTimer);
+    purificationFeedback={targetId:done.targetId,eventId:done.eventId};
+    purificationTimer=setTimeout(()=>{
+     purificationFeedback=null;purificationTimer=null;
+     const notice=$('mb-purify-complete');
+     if(notice)notice.hidden=true;
+    },1150); // research visual interval, not confirmed original duration
+   }
+  }
+  if(view.gesture||view.winner!==null){
+   clearTimeout(purificationTimer);purificationTimer=null;
+   purificationFeedback=null;
+  }
   if(view.winner===null)resultDismissed=false;
   if(view.winner!==null){
    const outcome=projectMatchResult(view.winner,activeSeat);
@@ -743,6 +775,14 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   element.querySelectorAll('[data-seat]').forEach(b=>b.classList.toggle('is-active',Number(b.dataset.seat)===activeSeat));
   $('mb-step').disabled=(fixedSeat!==null&&activeSeat!==0)||view.winner!==null;
   modal();
+  const notice=$('mb-purify-complete');
+  notice.hidden=!purificationFeedback||!!view.gesture||view.winner!==null;
+  if(!notice.hidden){
+   const target=view.teams[activeSeat].members.find(m=>m.id===purificationFeedback.targetId);
+   $('mb-purify-complete-target').textContent=
+    (target?.name||'妖怪')+'の悪いとりつきが消えた！';
+   notice.dataset.eventId=String(purificationFeedback.eventId);
+  }else delete notice.dataset.eventId;
   if(view.winner!==null&&recentMessage!==projectMatchResult(view.winner,activeSeat).winnerLabel)
    alert(projectMatchResult(view.winner,activeSeat).winnerLabel);
   element.dataset.stageReady='true';
@@ -967,6 +1007,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  element.addEventListener('lostpointercapture',onLostCapture);
  function setConnection(label){$('mb-connection').textContent=String(label);}
  function destroy(){pendingCues=[];cancelScene();clearTimeout(wheelClickTimer);
+  clearTimeout(purificationTimer);purificationTimer=null;
   document.removeEventListener('visibilitychange',onSceneVisibility);
   element.removeEventListener('click',handleClick);
   element.removeEventListener('touchstart',onWheelTouchStart);
@@ -984,7 +1025,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  return {render,setConnection,alert,destroy,selectSeat(nextSeat){
   if(fixedSeat!==null)throw new Error('network seat fixed');
   if(![0,1].includes(nextSeat))throw new RangeError('unknown seat');
-  activeSeat=nextSeat;selection=null;if(wireState)render(wireState);
+  activeSeat=nextSeat;selection=null;
+  clearTimeout(purificationTimer);purificationTimer=null;purificationFeedback=null;
+  if(wireState)render(wireState);
  },getStatus:()=>({activeSeat,selected:selection,revision:view?.revision??-1,
   sceneEventKey:flash?.key??null,pendingVisualCues:pendingCues.length})};
 }
