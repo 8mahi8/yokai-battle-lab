@@ -30,6 +30,7 @@ import {calculateHeal} from './heal-model.mjs';
 import {yw2HitProbability,yw2CriticalProbability,rollPercent} from './hit-model.mjs';
 import {PLAYTEST_SOUL_TUNING,choosePlaytestPokeOutcome} from './playtest-soul-tuning.mjs';
 import {validateRentalSkill,skillMomentumStage,critSkillBonus,careAtActionBoundary,resolveLastStand,SKILL_TRIAL} from './skill-effects.mjs';
+import {resolveRentalSkillSpec} from './catalog-skill-spec.mjs';
 
 function seededRandom(seed) {
   let x = (seed >>> 0) || 1;
@@ -110,7 +111,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   researchWheelCoalescing=false,researchOpeningPriority=null,
   researchPokeSoulTransfer=0,playtestSoulTuning=false,researchDamageModel=false,researchMultiHit=false,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false,enableRentalSkills=playtestSoulTuning,
   catalogAttackResolution=false,catalogTechniqueResolution=false,
-  catalogInspiritResolution=false,catalogSoultimateResolution=false}={}) {
+  catalogInspiritResolution=false,catalogSoultimateResolution=false,
+  catalogSkillResolution=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof enableRentalSkills!=='boolean')throw new TypeError('enableRentalSkills must be boolean');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
@@ -133,6 +135,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     throw new TypeError('catalogSoultimateResolution must be boolean');
   if(catalogSoultimateResolution&&teams!==undefined)
     throw new RangeError('catalog Soultimate mode only supports unchanged built-in rentals');
+  if(typeof catalogSkillResolution!=='boolean')
+    throw new TypeError('catalogSkillResolution must be boolean');
+  if(catalogSkillResolution&&teams!==undefined)
+    throw new RangeError('catalog skill mode only supports unchanged built-in rentals');
   if(researchMultiHit&&!researchDamageModel)
     throw new RangeError('researchMultiHit requires researchDamageModel');
   if(typeof researchStatInspirits!=='boolean')
@@ -191,6 +197,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
    squads.flatMap(team=>team.map((member,index)=>[
     member.id,resolveRentalSoultimateSpec(member,index,{school:playtestSoulTuning})
    ]))):null;
+  const catalogSkillByActor=catalogSkillResolution?new Map(
+   squads.flatMap(team=>team.map((member,index)=>[
+    member.id,resolveRentalSkillSpec(member,index,{school:playtestSoulTuning})
+   ]))):null;
+  const skillFor=member=>catalogSkillByActor?.get(member.id)?.legacyKey??member.skill;
   // Stat reductions and HP-over-time are distinct move categories.
   // Do not enable unverified negative HP-loss math to use real debuff types.
   const statDebuffs=['strength-down','defense-down','spirit-down'];
@@ -300,7 +311,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const front=(side)=>clock.snapshot().teams[side].frontIds.map(id=>byId.get(id));
   const livingFront=(side)=>front(side).filter(x=>x.hp>0);
   function triggerKOAbility(caster,target){
-    if(!enableRentalSkills||caster.skill!=='momentum'||target.side===caster.side)return;
+    if(!enableRentalSkills||skillFor(caster)!=='momentum'||target.side===caster.side)return;
     skillBoosts.set(caster.id,{remainingTurns:SKILL_TRIAL.momentumOwnerTurns});
     events.push({type:'skill',actor:caster.id,targetId:target.id,skill:'momentum',
       label:'まえのめり型',kind:'発動',remainingTurns:SKILL_TRIAL.momentumOwnerTurns});
@@ -309,7 +320,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   // they are physical, Soultimate, or PvP Poke. Never apply a KO or score
   // until the one-use survival effect has been accounted for.
   function applyDirectDamage(target,incoming){
-    const result=resolveLastStand({skill:target.skill,enabled:enableRentalSkills,
+    const result=resolveLastStand({skill:skillFor(target),enabled:enableRentalSkills,
       spent:spentLastStand.has(target.id),hp:target.hp,amount:incoming});
     target.hp=result.hpAfter;
     if(result.activated){
@@ -899,8 +910,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
           if(researchDamageModel){
             criticalResearch=yw2CriticalProbability({
               loafing:loafingActors.has(target.id),
-              moveCritBonus:Math.min(98,actor.moveCritBonus+(enableRentalSkills?critSkillBonus(actor.skill):0)),
-              criticalImmune:target.criticalImmune||(enableRentalSkills&&target.skill==='critImmune')});
+              moveCritBonus:Math.min(98,actor.moveCritBonus+(enableRentalSkills?critSkillBonus(skillFor(actor)):0)),
+              criticalImmune:target.criticalImmune||(enableRentalSkills&&skillFor(target)==='critImmune')});
             oneCritical=rng()*99<criticalResearch.units;
           }else oneCritical=rng()*99<1;
           critical=critical||oneCritical;
@@ -916,7 +927,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
               kind,power:kind==='attack'?attackPower:techniquePower,
               strength:actor.strength,spirit:actor.spirit,defense:target.defense,
               criticalDefense:target.criticalDefense,critical:oneCritical,
-              guarded:target.guard,guardBreak:actor.guardBreak||(enableRentalSkills&&actor.skill==='guardBreak'),
+              guarded:target.guard,guardBreak:actor.guardBreak||(enableRentalSkills&&skillFor(actor)==='guardBreak'),
               elementMultiplier:elemental,statStage,defenseStage,hits:attemptedHits
             });
             damage=damageResearch.amount;
@@ -926,11 +937,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
             damage=baseDamage({...actor,attackPower,
               strength:Math.floor(actor.strength*(statuses.has(actor.id,'strength-up')?1.10:1)*extra),
               spirit:Math.floor(actor.spirit*extra)},target,kind,oneCritical);
-            if(target.guard&&!(actor.guardBreak||enableRentalSkills&&actor.skill==='guardBreak')&&kind==='attack')damage=Math.max(1,Math.floor(damage*.5));
+            if(target.guard&&!(actor.guardBreak||enableRentalSkills&&skillFor(actor)==='guardBreak')&&kind==='attack')damage=Math.max(1,Math.floor(damage*.5));
             else if(target.guard&&kind==='technique')damage=Math.max(1,Math.floor(damage*.5));
           }
           // A separate seeded spread is drawn for each unguarded hit.
-          if(!target.guard||damageResearch?.guardIgnored||(enableRentalSkills&&actor.skill==='guardBreak'&&kind==='attack')){
+          if(!target.guard||damageResearch?.guardIgnored||(enableRentalSkills&&skillFor(actor)==='guardBreak'&&kind==='attack')){
             const range=Math.floor(damage/10+1);
             damage=Math.max(1,Math.min(999,damage+Math.floor(rng()*(2*range+1))-range));
           }
@@ -988,7 +999,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(enableRentalSkills){
       // Both sides' adjacent living units heal at every action boundary,
       // even when the active actor belongs to the OTHER team.
-      for(const heal of careAtActionBoundary({teams:squads})){
+      for(const heal of careAtActionBoundary({teams:squads,skillOf:skillFor})){
         const recipient=byId.get(heal.targetId);
         recipient.hp=Math.min(recipient.maxHp,recipient.hp+heal.amount);
         events.push({type:'skill',...heal,label:'おせわ型',kind:'回復'});
