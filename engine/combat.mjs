@@ -124,7 +124,7 @@ export function baseDamage(attacker,target,kind,critical=false) {
 export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,rotationCooldownMs=0,researchSoulGainPerAction=0,researchSpecialEffects=false,
   researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false,
   researchWheelCoalescing=false,researchOpeningPriority=null,
-  researchPokeSoulTransfer=0,playtestSoulTuning=false,researchDamageModel=false,researchMultiHit=false,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false,enableRentalSkills=playtestSoulTuning,
+  researchPokeSoulTransfer=0,playtestSoulTuning=false,researchDamageModel=false,researchMultiHit=false,researchSoultimateHitCount=null,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false,enableRentalSkills=playtestSoulTuning,
   catalogAttackResolution=false,catalogTechniqueResolution=false,
   catalogInspiritResolution=false,catalogSoultimateResolution=false,
   catalogSkillResolution=false}={}) {
@@ -156,6 +156,15 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     throw new RangeError('catalog skill mode only supports unchanged built-in rentals');
   if(researchMultiHit&&!researchDamageModel)
     throw new RangeError('researchMultiHit requires researchDamageModel');
+  // Only an explicit CUSTOM research roster can turn on this provisional
+  // mechanic; original-rental Soultimate hit counts remain unknown.
+  if(researchSoultimateHitCount!==null&&
+     (!Number.isInteger(researchSoultimateHitCount)||
+      researchSoultimateHitCount<2||researchSoultimateHitCount>9))
+    throw new RangeError('researchSoultimateHitCount must be null or integer 2..9');
+  if(researchSoultimateHitCount!==null&&
+     (teams===undefined||!researchSpecialEffects||!researchDamageModel))
+    throw new RangeError('Soultimate hit research requires custom rosters, special effects and damage model');
   if(typeof researchStatInspirits!=='boolean')
     throw new TypeError('researchStatInspirits must be boolean');
   if(researchStatInspirits&&!researchDamageModel)
@@ -559,6 +568,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       powerMultiplier:result.powerMultiplier,pinnedId
     });
     const interruptions=[];
+    const hitRecords=[];
     for(const impact of impacts){
       const target=byId.get(impact.targetId);
       if(impact.kind==='buff'||impact.kind==='debuff'){
@@ -572,7 +582,59 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         }else impact.applied=false;
         continue;
       }
-      if(impact.kind==='damage'||impact.kind==='damage-status'||impact.kind==='drain'){
+      if(researchSoultimateHitCount!==null&&impact.kind==='damage'){
+        // Each hit changes actual host HP. This is NOT original move data:
+        // per-hit count is a fixture selected explicitly for a custom team.
+        const originalHp=target.hp;
+        const moveKind=resolvedSpec.damageKind;
+        let total=0;
+        for(let k=0;k<researchSoultimateHitCount&&target.hp>0;k++){
+          const hpBefore=target.hp;
+          const chance=yw2HitProbability({kind:moveKind,
+            attackerSpeed:caster.speed,targetSpeed:target.speed,
+            moveAccuracy:caster.attackAccuracy}).probability;
+          const hit=rollPercent(chance,rng());
+          let critical=false,damage=0;
+          if(hit){
+            critical=rng()*99<yw2CriticalProbability({
+              loafing:loafingActors.has(target.id),
+              moveCritBonus:caster.moveCritBonus,
+              criticalImmune:target.criticalImmune}).units;
+            const statStage=deriveStatStage(statuses.list(caster.id),
+              moveKind==='attack'?'strength':'spirit');
+            const defenseStage=deriveStatStage(statuses.list(target.id),'defense');
+            const formula=calculateOneHit({
+              kind:moveKind,power:resolvedSpec.power*result.powerMultiplier,
+              strength:caster.strength,spirit:caster.spirit,
+              defense:target.defense,criticalDefense:target.criticalDefense,
+              hits:researchSoultimateHitCount,critical,guarded:target.guard,
+              guardBoost:target.guardBoost??false,guardBreak:caster.guardBreak,
+              statStage,defenseStage
+            });
+            let attempt=formula.amount;
+            if(!formula.guardApplied){
+              const spread=Math.floor(attempt/10+1);
+              attempt=Math.max(1,Math.min(999,
+                attempt+Math.floor(rng()*(2*spread+1))-spread));
+            }
+            const applied=applyDirectDamage(target,Math.min(target.hp,attempt));
+            damage=applied.amount;
+            if(applied.activated)impact.lastStand=true;
+            const interrupted=interruptOnHit(target,damage,critical);
+            if(interrupted)interruptions.push(interrupted);
+          }
+          total+=damage;
+          hitRecords.push({sequence:hitRecords.length+1,
+            targetId:target.id,targetSequence:k+1,hit,critical,
+            damage,hpBefore,hpAfter:target.hp});
+        }
+        impact.hpBefore=originalHp;
+        impact.hpAfter=target.hp;
+        impact.amount=total;
+        impact.deltaHp=-total;
+        impact.predictedKO=target.hp===0;
+        impact.model='custom-soultimate-multi-hit-fixture';
+      }else if(impact.kind==='damage'||impact.kind==='damage-status'||impact.kind==='drain'){
         const damage=applyDirectDamage(target,impact.amount);
         impact.amount=damage.amount;
         impact.deltaHp=-damage.amount;
@@ -580,7 +642,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         impact.predictedKO=target.hp===0;
         if(damage.activated)impact.lastStand=true;
       }else target.hp=impact.hpAfter;
-      if(impact.kind==='damage'||impact.kind==='damage-status'||impact.kind==='drain'){
+      if(!(researchSoultimateHitCount!==null&&impact.kind==='damage')&&
+         (impact.kind==='damage'||impact.kind==='damage-status'||impact.kind==='drain')){
         const changed=interruptOnHit(target,impact.amount,false);
         if(changed)interruptions.push(changed);
       }
@@ -608,7 +671,13 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(squads.some(team=>team.every(member=>member.hp===0)))
       winner=squads[0].every(m=>m.hp===0)?1:0;
     const entry={type:'special',mode:result.kind,actor:caster.id,
-      impacts:impacts.map(x=>({...x})),interruptions,winner,model:'research-fixture'};
+      impacts:impacts.map(x=>({...x})),interruptions,winner,model:'research-fixture',
+      ...(hitRecords.length?{researchSoultimateHits:{
+        model:'custom-roster-per-hit-fixture',
+        plannedPerTarget:researchSoultimateHitCount,
+        originalHitCount:null,
+        hits:hitRecords.map(x=>({...x}))
+      }}:{})};
     events.push(entry);
     return {effectStatus:'research-fixture',impacts:entry.impacts,interruptions,winner};
   }
