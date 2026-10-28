@@ -22,6 +22,7 @@
 <div id="battle-stage"></div>
 <script type="module">
 import {createMatchProtocol} from '../engine/match-protocol.mjs';
+import {createCombat} from '../engine/combat.mjs';
 import {createMatchStage} from '../ui/match-stage.mjs';
 import {passiveSkillNoticesForAction} from '../ui/passive-feedback.mjs';
 const el=id=>document.getElementById(id);
@@ -126,7 +127,40 @@ if(review==='winner-a'||review==='winner-b'){
     'PHASE22-VISUAL-TARGET-ORDER-PASS': 'PHASE22-VISUAL-TARGET-ORDER-FAIL '+targetsSeen.join(',');
   }
  },20);
-}else if(review==='soul-ready'||review==='g-soul-ready'){
+}else if(review==='real-special-ledger'){
+ // QA-only actual host resolution; unlike the ?review=special fixture,
+ // every HP value and target belongs to the real seeded battle engine.
+ const host=createCombat({seed:20261029,catalogSoultimateResolution:true,
+  researchSpecialEffects:true,researchDamageModel:true,researchStatInspirits:true});
+ host.giveSoul('A1',100);
+ const charge=host.prepareSoultimate(0,'A1');
+ if(!charge.ok)throw Error('real special charge rejected');
+ const result=host.resolveSoultimate(0,charge.token,true);
+ if(!result.ok)throw Error('real special resolution failed');
+ const actual=host.snapshot(),rows=actual.events.findLast(e=>e.type==='special').impacts;
+ stage.render({game:actual,revision:1,clientSequences:[0,0],forecast:[]});
+ const seen=[];
+ const observer=setInterval(()=>{
+  const field=el('battle-stage');
+  const backdrop=field.querySelector('.mb-battle-backdrop');
+  const index=backdrop?.dataset.specialTargetIndex;
+  if(!index||seen.includes(index))return;
+  const i=Number(index)-1,target=rows[i]?.targetId;
+  const shown=[...field.querySelectorAll('#mb-foe-line .mb-floating-number')]
+   .map(n=>n.closest('.mb-fighter')?.dataset.unit);
+  const fighter=field.querySelector('#mb-foe-line [data-unit="'+target+'"]');
+  const renderedHp=fighter?.querySelector('.mb-fighter-meta small')?.textContent;
+  const ok=backdrop.dataset.specialImpactSchema==='1'&&
+   shown.length===1&&shown[0]===target&&
+   renderedHp?.startsWith(String(rows[i].hpAfter)+'/');
+  seen.push(ok?index:'BAD-'+index);
+  if(seen.length===rows.length){
+   clearInterval(observer);
+   el('lab-state').textContent=seen.join(',')==='1,2,3'?
+    'PHASE22-REAL-HOST-HP-LEDGER-PASS':'PHASE22-REAL-HOST-HP-LEDGER-FAIL '+seen.join(',');
+  }
+ },20);
+ }else if(review==='soul-ready'||review==='g-soul-ready'){
  // Local screenshot-only projection of a possible full Soul state.
  // No engine state is mutated, no client is given arbitrary Soul commands.
  const state=protocol.snapshot();
