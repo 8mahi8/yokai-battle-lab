@@ -27,7 +27,8 @@ export function latestBattleCue(events){
     mode:event.mode,kind:'special',targets,target:targets[0]?.id??null,
     amount:targets[0]?.amount??0,
     ...(event.specialImpactLedger?{specialImpactLedger:event.specialImpactLedger}:{}),
-    ...(event.specialHitLedger?{specialHitLedger:event.specialHitLedger}:{})};
+    ...(event.specialHitLedger?{specialHitLedger:event.specialHitLedger}:{}),
+    ...(event.referenceSoultimate?{referenceSoultimate:event.referenceSoultimate}:{})};
   }
   if(!Number.isFinite(event.turn))continue;
   return {key:Number.isSafeInteger(event.eventId)&&event.eventId>0?'event:'+event.eventId:'action:'+event.turn,type:'action',actor:event.actor,
