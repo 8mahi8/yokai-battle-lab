@@ -24,7 +24,7 @@
 ## 最新作業（Phase2 / サブステップ2.1C-1：属性Play/Penetrateを研究ホストへ）
 - **[詳細な原作比較マトリクス・実装・未検証点](./PHASE2_1C_TECHNIQUE_ELEMENT_AND_DAMAGE_FORMULA_MATRIX_20261028.md)** を追加。Mt. WildwoodのYW2妖術ダメージ式と2026-09-16実機推定式の差を、1hit・通常/会心・Defense/criticalDefense・乱数・属性の条件で整理。通常時の理論差は `(Power+Spirit)/210 - Defense/350` で、係数の恣意的置換は行わない。
 - **原作に根拠ある部分だけ縦切り実装**：新`engine/element-model.mjs`で対象耐性、該当属性Play 0/1/2ソース、Penetrateを分離。`engine/combat.mjs`からcustom研究チームの実ホスト妖術へ接続。組込6体に原作未確認の能力を付けず、通常スナップを保つ。`engine/damage-model.mjs`の属性上限だけ3×1.4へ拡張。研究用の新5テストを`tests/phase2-1c-technique-element-original-rule.test.mjs`に追加。
-- **検証状況**：GitHubから取得した実ソースの純粋計算部分はV8で**9条件PASS**。ただし**新コミットのNode全テスト/Chromium/FirebaseエミュレーターCI成功は未確認**で、Phase2.1Cはまだ完了扱いしない。672/672とChromium PASSは**以前の2.1Bでの結果**。今回は原作元MP4の新規フレーム確認はできていない。学校Safari2端末も未検証。
+- **検証状況**：GitHubから取得した実ソースの純粋計算部分はV8で**最新8条件PASS**（当初9条件の研究後に、PenetrateとPlayの同時適用順が未証明と分かり、組合せを明示拒否するよう修正）。ただし**新コミットのNode全テスト/Chromium/FirebaseエミュレーターCI成功は未確認**で、Phase2.1Cはまだ完了扱いしない。672/672とChromium PASSは**以前の2.1Bでの結果**。今回は原作元MP4の新規フレーム確認はできていない。学校Safari2端末も未検証。
 - **次**：Phase2.1C-2 新コミットのCI・ブラウザ・Firebase回帰確認、原作動画が取得可能なら実フレーム照合。式の差は原作実測で決着するまで未解決のまま。
 - **保護範囲**：Google Sites稼働版、GitHub main、本番Firebase Rules/DB、Drive配布物は無変更。
 
