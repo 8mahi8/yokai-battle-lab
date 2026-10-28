@@ -11,6 +11,7 @@ import {latestBattleCue,visualReactionClass} from './battle-vfx.mjs';
 import {collectNewBattleCues,MAX_VISUAL_CATCHUP_CUES} from './battle-cue-sequence.mjs';
 import {passiveSkillNoticesForAction} from './passive-feedback.mjs';
 import {soultimateDisplayTitle} from '../content/presentation-labels.mjs';
+import {yw2ReferenceSoultimate} from '../content/yw2-soultimate-reference.mjs';
 import {planActionChoreography,choreographyFrame} from '../presentation/action-choreography.mjs';
 import {projectLegacyAttackOutcome} from '../presentation/legacy-attack-outcome.mjs';
 import {projectAttackOutcomeV2} from '../presentation/legacy-attack-to-v2.mjs';
@@ -657,8 +658,10 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    // Do not overlay a second announcement on top of the named special.
    callout.hidden=flash.type==='special';
   }else callout.hidden=true;
-  $('mb-special-title').textContent=flash?.type==='special'
-   ?soultimateDisplayTitle(flash.actor):'';
+  $('mb-special-title').textContent=flash?.type==='special'?
+   flash.referenceSoultimate?
+    '原作技の研究：'+yw2ReferenceSoultimate(flash.referenceSoultimate.id).name:
+    soultimateDisplayTitle(flash.actor):'';
 
   const own=view.teams[activeSeat];
   if(!own.members.some(x=>x.id===selection))selection=own.frontIds[0];
