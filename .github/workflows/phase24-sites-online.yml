@@ -1,19 +1,7 @@
 name: Phase24 online Sites code sandbox QA
+# Archived authentication-era Firebase QA; retained for manual research.
+# The current school game uses no-Auth Firebase Friends (Phase37 workflow).
 on:
-  push:
-    branches:
-      - feat/phase1-action-circle-lab-20261023
-    paths:
-      - 'engine/**'
-      - 'ui/**'
-      - 'network/firebase-*.mjs'
-      - 'lab/sites-embed-online-entry.mjs'
-      - 'lab/match-stage.css'
-      - 'lab/yw2-layout.css'
-      - 'tools/build-sites-online.mjs'
-      - 'tools/sites-online-smoke.mjs'
-      - 'tools/sites-online-build-gate.mjs'
-      - '.github/workflows/phase24-sites-online.yml'
   workflow_dispatch:
 permissions:
   contents: read
