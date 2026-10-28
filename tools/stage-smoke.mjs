@@ -379,23 +379,23 @@ try{
  // Phase2.2: real Chromium must OBSERVE three separate target-specific
  // damage numbers through actual DOM updates. The source JS string alone
  // cannot satisfy the check: inspect only the rendered lab-state span.
- const targetQa=spawn(browser,[
+ const phase22TargetQa=spawn(browser,[
   '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
   '--no-first-run','--disable-extensions','--hide-scrollbars',
   '--user-data-dir='+path.join(tmp,'phase22-target-dump'),
   '--window-size=1024,768','--virtual-time-budget=3100','--dump-dom',
   'http://127.0.0.1:'+server.address().port+'/lab/match-stage.html?review=special'
  ],{stdio:['ignore','pipe','pipe']});
- let targetDom='',targetErr='';
- targetQa.stdout.on('data',b=>targetDom+=String(b));
- targetQa.stderr.on('data',b=>targetErr+=String(b).slice(0,2500));
- const targetTimer=setTimeout(()=>targetQa.kill('SIGKILL'),18000);
- const targetExit=await new Promise(resolve=>targetQa.on('close',resolve));
- clearTimeout(targetTimer);
- const renderedState=targetDom.match(/<span id="lab-state">([^<]*)<[/]span>/)?.[1];
- if(targetExit!==0||renderedState!=='PHASE22-VISUAL-TARGET-ORDER-PASS')
+ let phase22TargetDom='',phase22TargetErr='';
+ phase22TargetQa.stdout.on('data',b=>phase22TargetDom+=String(b));
+ phase22TargetQa.stderr.on('data',b=>phase22TargetErr+=String(b).slice(0,2500));
+ const phase22TargetTimer=setTimeout(()=>phase22TargetQa.kill('SIGKILL'),18000);
+ const phase22TargetExit=await new Promise(resolve=>phase22TargetQa.on('close',resolve));
+ clearTimeout(phase22TargetTimer);
+ const phase22RenderedState=phase22TargetDom.match(/<span id="lab-state">([^<]*)<[/]span>/)?.[1];
+ if(phase22TargetExit!==0||phase22RenderedState!=='PHASE22-VISUAL-TARGET-ORDER-PASS')
   throw Error('Phase2.2 separate special target paint not proven: '+
-   (renderedState||'no actual DOM evidence')+' '+targetErr.slice(-450));
+   (phase22RenderedState||'no actual DOM evidence')+' '+phase22TargetErr.slice(-450));
  console.log('PHASE22-SPECIAL-TARGET-DOM-ORDER-PASS B1/B2/B3 exactly one visual impact at a time');
 
  const gReadyShot=path.join(root,'phase18-g-soultimate-ready.png');
