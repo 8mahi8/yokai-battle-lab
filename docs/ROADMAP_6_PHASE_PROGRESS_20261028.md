@@ -26,6 +26,7 @@
 - **根拠**：LEVEL-5公式、3DS攻略、対戦者のモーション中サークル表示遅延/行動ポイント資料、Epic Gameplay Ability System設計。出典確信度・未検証の倍率/秒数は分離。元MP4直接再視聴を偽らない。
 - **V3-0の着手**：`tests/engine-v3-migration-baseline.test.mjs`に既存6+6構成・前後衛・HP/Soul・ピン・勝敗・4 seedの決定性とhost journal replay等の不変条件を追加。これは**旧エンジンの互換基準**であって原作完全一致の証明ではない。
 - **次**：Coreの時間/phase/状態の単一契約を実装し、**既存プロトコルとFirebase Friendsの実戦結果を変えず**に移行する。E1-B・トホホの砲などの個別技/場面開発は保留。main/本番Google Sites/Firebase Rules/DB/Driveは触れない。
+- **V3-1本体に第一歩**：`engine/match-command-kernel.mjs`に、これまで`match-protocol.mjs`内部だったコマンド検証/Host→Combat dispatchを抽出。既存export/API、3秒輪制約、transport seq/hash、画面/通信は無変更。`aedb76a4b6`で[Node **696/696** PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40785361654)、[Stage Chromium PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40785361641)、[**現行Firebase Friends2席 RTDB＋画面PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40785361637)。戦闘の全Effect/時間/状態がV3へ移行済みとは言わない。
 
 ## 2026-10-29 E1完了｜第1試合00:15–00:20のおはらい「ホスト事実→下画面完了→復帰」を実操作で証明
 
