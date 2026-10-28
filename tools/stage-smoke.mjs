@@ -376,6 +376,27 @@ try{
   throw Error('Soultimate cutin incomplete: tag='+cutinTag+
     '; portrait='+hasPortrait+' actor='+hasActor);
  console.log('PHASE49-SOURCE-VIDEO-INSPIRED-FULL-STAGE-CUTIN-PASS');
+ // Phase2.2: real Chromium must OBSERVE three separate target-specific
+ // damage numbers through actual DOM updates. The source JS string alone
+ // cannot satisfy the check: inspect only the rendered lab-state span.
+ const targetQa=spawn(browser,[
+  '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+  '--no-first-run','--disable-extensions','--hide-scrollbars',
+  '--user-data-dir='+path.join(tmp,'phase22-target-dump'),
+  '--window-size=1024,768','--virtual-time-budget=3100','--dump-dom',
+  'http://127.0.0.1:'+server.address().port+'/lab/match-stage.html?review=special'
+ ],{stdio:['ignore','pipe','pipe']});
+ let targetDom='',targetErr='';
+ targetQa.stdout.on('data',b=>targetDom+=String(b));
+ targetQa.stderr.on('data',b=>targetErr+=String(b).slice(0,2500));
+ const targetTimer=setTimeout(()=>targetQa.kill('SIGKILL'),18000);
+ const targetExit=await new Promise(resolve=>targetQa.on('close',resolve));
+ clearTimeout(targetTimer);
+ const renderedState=targetDom.match(/<span id="lab-state">([^<]*)<\\/span>/)?.[1];
+ if(targetExit!==0||renderedState!=='PHASE22-VISUAL-TARGET-ORDER-PASS')
+  throw Error('Phase2.2 separate special target paint not proven: '+
+   (renderedState||'no actual DOM evidence')+' '+targetErr.slice(-450));
+ console.log('PHASE22-SPECIAL-TARGET-DOM-ORDER-PASS B1/B2/B3 exactly one visual impact at a time');
 
  const gReadyShot=path.join(root,'phase18-g-soultimate-ready.png');
  const gReadyChild=spawn(browser,[
