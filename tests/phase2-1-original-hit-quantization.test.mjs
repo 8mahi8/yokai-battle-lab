@@ -7,19 +7,24 @@ import {makeStageView} from '../ui/match-stage.mjs';
 /**
  * Phase 2.1 source: https://mtwildwood.net/hit-chance.php
  * (85 SPD vs 151 SPD -> 84.8, FLOORED to 84, then
- * attack move accuracy 0.4 -> 33.6, FLOORED to 33).
+ * stacked team-skill accuracy factor 0.4 -> 33.6, FLOORED to 33).
+ * That team-skill factor is not yet implemented in our move-accuracy API.
  * The game's random value is integer 0..99. Video samples cannot determine
  * hit probability from one MISS/HIT, so this is documented, not observed.
  */
 test('source example: YW2 applies integer truncation in the correct order',()=>{
  const same={kind:'attack',attackerSpeed:85,targetSpeed:151};
- const physical=yw2HitProbability({...same,moveAccuracy:.4});
- assert.deepEqual([physical.base,physical.probability],[84,33]);
- assert.equal(physical.moveAccuracy,.4);
- assert.equal(yw2HitProbability({...same,kind:'technique',moveAccuracy:.4}).probability,84);
+ const physical=yw2HitProbability({...same,moveAccuracy:.5});
+ assert.deepEqual([physical.base,physical.probability],[84,42]);
+ assert.equal(physical.moveAccuracy,.5);
+ assert.equal(yw2HitProbability({...same,kind:'technique',moveAccuracy:.5}).probability,84);
  assert.equal(yw2HitProbability({...same,attackerSpeed:35,moveAccuracy:.5}).probability,37);
  assert.equal(yw2HitProbability({...same,attackerSpeed:35,kind:'technique'}).probability,75);
  assert.equal(yw2HitProbability({...same,moveAccuracy:4}).probability,100);
+ // Published YW2 example has an additional 0.4 field-skill factor. The
+ // documented final cut is 33, but this engine's own six trial skills do
+ // not yet implement that independent multiplicative modifier.
+ assert.equal(Math.floor(84*.4),33);
 });
 test('original 0..99 integer roll boundary never gives a fractional extra chance',()=>{
  const p=yw2HitProbability({kind:'attack',attackerSpeed:200,targetSpeed:201,
