@@ -1,23 +1,8 @@
 name: Phase25 Supabase Google Sites build QA
+# Archived Supabase-only QA from the pre-Firebase school design.
+# Historical workflows remain for audit; NEVER run on current dev pushes.
+# Active friends online QA uses .github/workflows/phase37-firebase-friends.yml.
 on:
-  push:
-    branches:
-      - feat/phase1-action-circle-lab-20261023
-    paths:
-      - 'engine/combat.mjs'
-      - 'ui/battle-vfx.mjs'
-      - 'ui/match-stage.mjs'
-      - 'engine/special-effects.mjs'
-      - 'engine/match-protocol.mjs'
-      - 'engine/playtest-soul-tuning.mjs'
-      - 'tests/playtest-soul-tuning.test.mjs'
-      - 'network/supabase-room.mjs'
-      - 'lab/sites-embed-supabase-entry.mjs'
-      - 'tools/build-sites-supabase.mjs'
-      - 'supabase/yw_pvp_public_config.json'
-      - 'lab/match-stage.css'
-      - 'lab/yw2-layout.css'
-      - '.github/workflows/phase25-sites-supabase.yml'
   workflow_dispatch:
 permissions:
   contents: read
