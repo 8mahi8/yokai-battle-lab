@@ -61,7 +61,8 @@ export function calculateOneHit({
  for(const [name,value] of Object.entries({power,strength,spirit,defense,criticalDefense}))
   validNumber(value,name);
  if(!Number.isInteger(hits)||hits<1||hits>20)throw new RangeError('hits must be 1..20');
- validNumber(elementMultiplier,'elementMultiplier',{min:0.1,max:3});
+ // Target resistance can be at most x3; two matching Play sources are x1.4.
+ validNumber(elementMultiplier,'elementMultiplier',{min:0.1,max:4.2});
  if(typeof critical!=='boolean'||typeof guarded!=='boolean'||typeof guardBreak!=='boolean'||typeof guardBoost!=='boolean')
   throw new TypeError('critical / guarded / guardBreak / guardBoost must be booleans');
  const multiplier=statStageMultiplier(statStage);
