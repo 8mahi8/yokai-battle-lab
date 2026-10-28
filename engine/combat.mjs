@@ -25,6 +25,7 @@ import { createWheelCoalescing } from './wheel-coalescing.mjs';
 import { createPokeTrial } from './poke-input.mjs';
 import { createPurifyTrial, choosePurifyKind, PURIFY_KINDS } from './purify-input.mjs';
 import {ELEMENTS, validateElementResistances, calculateOneHit, deriveStatStage} from './damage-model.mjs';
+import {resolveTechniqueElementMultiplier} from './element-model.mjs';
 import {calculateTurnInspirit} from './turn-inspirit.mjs';
 import {calculateHeal} from './heal-model.mjs';
 import {yw2HitProbability,yw2CriticalProbability,rollPercent} from './hit-model.mjs';
@@ -48,6 +49,13 @@ function buildMember(source,side,index) {
   const techniqueElement=source.techniqueElement??'neutral';
   if(!ELEMENTS.includes(techniqueElement))throw new RangeError('invalid technique element');
   const elementResistances=validateElementResistances(source.elementResistances);
+  // Custom research inputs, not an invented passive for built-in rentals.
+  if(source.techniquePlaySources!==undefined&&
+    (!Number.isInteger(source.techniquePlaySources)||
+     source.techniquePlaySources<0||source.techniquePlaySources>2))
+    throw new RangeError('techniquePlaySources must be integer 0..2');
+  if(source.techniquePenetrate!==undefined&&typeof source.techniquePenetrate!=='boolean')
+    throw new TypeError('techniquePenetrate must be boolean');
   if(source.criticalDefense!==undefined)intStat(source.criticalDefense,'criticalDefense');
   for(const field of ['attackHits','techniqueHits']){
     if(source[field]!==undefined&&(!Number.isInteger(source[field])||
@@ -87,6 +95,8 @@ function buildMember(source,side,index) {
     // Preserve default roster snapshots. Boosted guard is a custom research
     // input until a source-backed in-battle Guard Boost effect exists.
     ...(source.guardBoost===true?{guardBoost:true}:{}),
+    ...(source.techniquePlaySources>0?{techniquePlaySources:source.techniquePlaySources}:{}),
+    ...(source.techniquePenetrate===true?{techniquePenetrate:true}:{}),
     attackHits:source.attackHits??1,techniqueHits:source.techniqueHits??1,
     attackAccuracy:source.attackAccuracy??1,moveCritBonus:source.moveCritBonus??0,
     criticalImmune:source.criticalImmune??false,
@@ -183,6 +193,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const source=teams??[rentals,rentals];
   if(!Array.isArray(source)||source.length!==2||!source.every(x=>Array.isArray(x)&&x.length===6))throw new TypeError('requires two rosters of six');
   const squads=source.map((team,side)=>team.map((member,i)=>buildMember(member,side,i)));
+  if(!researchDamageModel&&squads.flat().some(m=>
+    m.techniquePlaySources>0||m.techniquePenetrate===true))
+    throw new RangeError('Technique Play/Penetrate research requires researchDamageModel');
   // Resolve ONCE at battle start. The only changed input to the existing
   // physical-hit loop is the definition of power and hit count.
   // Unsupported/custom teams never silently inherit an original-rental ID.
@@ -927,8 +940,14 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
               deriveStatStage(statuses.list(actor.id),kind==='attack'?'strength':'spirit')+
               (enableRentalSkills?skillMomentumStage(skillBoosts.get(actor.id)):0)));
             const defenseStage=deriveStatStage(statuses.list(target.id),'defense');
-            const elemental=kind==='technique'&&techniqueKind==='damage'
-              ?target.elementResistances[techniqueElement]??1:1;
+            const elementResolution=kind==='technique'&&techniqueKind==='damage'
+              ?resolveTechniqueElementMultiplier({
+                 element:techniqueElement,
+                 resistances:target.elementResistances,
+                 playSources:actor.techniquePlaySources??0,
+                 penetrate:actor.techniquePenetrate??false
+               }):null;
+            const elemental=elementResolution?.multiplier??1;
             damageResearch=calculateOneHit({
               kind,power:kind==='attack'?attackPower:techniquePower,
               strength:actor.strength,spirit:actor.spirit,defense:target.defense,
@@ -937,6 +956,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
               guardBreak:actor.guardBreak||(enableRentalSkills&&skillFor(actor)==='guardBreak'),
               elementMultiplier:elemental,statStage,defenseStage,hits:attemptedHits
             });
+            // Keep default rental metadata unchanged; only explicit custom
+            // research scenarios reveal the separate elemental sources.
+            if(elementResolution&&(actor.techniquePlaySources||actor.techniquePenetrate))
+              damageResearch={...damageResearch,elementResolution};
             damage=damageResearch.amount;
           }else{
             const momentum=enableRentalSkills?skillMomentumStage(skillBoosts.get(actor.id)):0;
