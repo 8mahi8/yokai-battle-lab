@@ -255,7 +255,8 @@ try{
   child.stderr.on('data',b=>stderr+=String(b).slice(0,5000));
   const exit=await new Promise(resolve=>child.on('close',resolve));
   clearTimeout(timeout);
-  if(!timedOut&&exit===0&&stdout.includes('STAGE-PASS')){
+  if(!timedOut&&exit===0&&
+    stdout.match(/<strong id="result">([^<]*)<[/]strong>/)?.[1]==='STAGE-PASS'){
    console.log('STAGE-PASS: canonical combat, 2 wheel seats, pinned enemy, watch, actual turn and five forecasts');
    success=true;break;
   }
@@ -263,6 +264,32 @@ try{
   console.warn('Stage browser smoke attempt '+i+' failed: '+problem);
  }
  if(!success)throw Error('Phase14 real Chromium stage interaction did not pass');
+ // E1: true source-engine purification, actual DOM taps, upper screen
+ // remains visible, and complete feedback returns to wheel after timeout.
+ let e1Pass=false;
+ for(let trial=1;trial<=2;trial++){
+  const child=spawn(browser,[
+   '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+   '--no-first-run','--disable-extensions',
+   '--user-data-dir='+path.join(tmp,'purify-e1-'+trial),
+   '--window-size=1180,900','--virtual-time-budget=2500','--dump-dom',
+   'http://127.0.0.1:'+server.address().port+'/lab/match-stage.html?review=purify-e1'
+  ],{stdio:['ignore','pipe','pipe']});
+  let body='',errors='',timedOut=false;
+  child.stdout.on('data',x=>body+=String(x).slice(0,320000));
+  child.stderr.on('data',x=>errors+=String(x).slice(0,2000));
+  const timer=setTimeout(()=>{timedOut=true;child.kill('SIGKILL')},17000);
+  const code=await new Promise(resolve=>child.on('close',resolve));
+  clearTimeout(timer);
+  const visible=body.match(/<span id="lab-state">([^<]*)<[/]span>/)?.[1]??'';
+  if(!timedOut&&code===0&&visible==='PHASE-E1-REAL-HOST-PURIFY-ROUNDTRIP-PASS'){
+   e1Pass=true;console.log('PHASE-E1-REAL-HOST-PURIFY-ROUNDTRIP-PASS');break;
+  }
+  console.warn('E1 actual host Chromium trial '+trial+' failed: '+
+   (visible||'no rendered status')+' '+errors.slice(-180));
+ }
+ if(!e1Pass)throw Error('E1 actual host purification lower-only finish QA failed');
+
  // Create a visual review artifact from the actual ESM app (not a mock image).
  const shot=path.join(root,'phase14-stage-preview.png');
  const child=spawn(browser,[
