@@ -43,10 +43,23 @@
 - `engine/damage-model.mjs`：耐性最大×3とPlay2ソース×1.4の組合せを拒否しないため、`elementMultiplier` の上限を理論的組合せ4.2まで拡張。属性補正を物理通常攻撃へは適用しない。
 - 新 `tests/phase2-1c-technique-element-original-rule.test.mjs`：純粋関数／倍率／会心ではない妖術ダメージ／範囲外拒否／レンタル互換性／複数seedの実ホストと決定論的再演算。**CI合格確認前は合格件数を増えたと断定しない**。
 
+## 2026-10-28 Phase2.1C-2｜最新コードの独立回帰テスト合格
+
+**これは Phase2.1C-1 実装の動作保証を更新した証拠であり、原作の数値・映像の完全一致ではない**。
+
+- [開発最新テストコミット `4a63bef846`](https://github.com/8mahi8/yokai-battle-lab/commit/4a63bef846e3a97f6e170858aff88ffa2d3db4db)。
+- [Node全体＋自然戦闘耐久](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40705027981) **677/677 PASS、fail 0、自然レンタル6体の完走試験PASS**。
+- [実Chromium上下2画面・タッチ・両視点結果](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40705027869) **Stage PASS / Gesture PASS（必殺4・おはらい5・つつく・キャンセル・複数指） / Result PASS**。
+- [認証なしFirebase Friends・実エミュレーター・実Chromium 2 iframe](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40705028114) **PASS**。新しく`tests/firebase-friends-noauth-emulator.cjs`に、ゲストのサークルコマンドACK後、ホストで実ゲーム24行動を進め、**guestが一字違わない正規戦闘snapshotをFirebase経由で読み戻す**検証を追加。Firebase Rules・部屋生成・独立席・実Chromium Friends・学校Google Sites型埋込の試験も全PASS。
+- 追加テストの初回`a995dd89be` / [CI run 40704710766](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40704710766)は**テストコード側のプロパティ参照ミス**でFAIL。存在しない`advanced.game.turn`を読んでおり、正規スケジューラ側の`advanced.game.clock.turn`へ修正して再実行。**ゲームエンジンの停止ではない**ことをエラーログから確認。最終成功を上記の別runで検証し、初回失敗履歴を隠さない。
+- 2026-10-28時点、元の原作MP4をこの作業中に新規視聴できておらず、2台の本物の学校iPad Safari／実Google Sites稼働版／本番Firebase書込みの最新試験ではない。本番設定と公開版・mainは変更しない。
+
+**Phase2.1C-2 QAゲートは完了。ただしPhase2.1Cのダメージ式の資料衝突とPenetrate+Play併用順序は未解決。** 次はPhase2.2の必殺技ごとの本物のhit列/対象・表示を動画タイムラインおよび資料に照合し、正規結果へ段階的に統合する。未確証の威力・Hit数を勝手に確定しない。
+
 ## テストと留保
 - 直前の確認済みベースライン：Phase2.1Bの [672件PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40652761991)、[Chromium操作QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40652762022)。
-- **今回のPhase2.1Cコミットは、新しいGitHub Actions実行結果未確認**。開発ブランチには保存済みだが Node全テスト、Chromium、Firebaseエミュレーターの新コミットでの合格はまだ未証明。学校Safari実機も未検証。
+- **旧状態の記録**：初回2.1C-1コミット時は新CIを未確認だったが、上記Phase2.1C-2で **677/677+Chromium+Firebase Friendsの後続CI PASSを確認済み**。学校Safari実機の最新開発版は未検証。
 - 本番 Google Sites、main、本番 Firebase Rules/DB、Drive 配布は一切変更していない。
 
 ## 次工程
-Phase2.1C-2：GitHub Actions のテスト証拠と実画面・Firebaseエミュレーター回帰を取得、異常なら修正。元動画の実ファイルが取得できるならダメージ/会心画面を照合。2.1Cの式衝突は実測裏付けがないため pending のまま維持し、根拠ある次の原作効果を小さく実装。後続は Phase2.2（必殺Hit列）、2.3（とりつく・スキル）、Phase3～6。
+Phase2.1C-2のCI/実画面/Firebaseエミュレーター回帰は完了（上記証拠）。元動画の実ファイルが取得できるならダメージ/会心画面を照合。2.1Cの式衝突は実測裏付けがないため pending のまま維持し、根拠ある次の原作効果を小さく実装。後続は Phase2.2（必殺Hit列）、2.3（とりつく・スキル）、Phase3～6。
