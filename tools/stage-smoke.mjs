@@ -440,6 +440,35 @@ try{
    (phase22HitState||'no observed per-hit DOM state')+' '+phase22HitErr.slice(-400));
  console.log('PHASE22-REAL-HOST-PER-HIT-DOM-PASS nine host hit/HP states');
 
+ // Phase2.2C: original-YW2 *documented move shape* is exercised in a
+ // custom host. Confirm real browser reflects one hit per target and correct
+ // move name, not an unsourced fixture with a forged original label.
+ for(const [label,expected] of [
+  ['front','PHASE22C-YW2-SOURCE-SHAPE-PASS-FRONT'],
+  ['single','PHASE22C-YW2-SOURCE-SHAPE-PASS-SINGLE']
+ ]){
+  const review='yw2-reference-'+label;
+  const run=spawn(browser,[
+   '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+   '--no-first-run','--disable-extensions','--hide-scrollbars',
+   '--user-data-dir='+path.join(tmp,'phase22c-'+label),
+   '--window-size=1024,768','--virtual-time-budget=3300','--dump-dom',
+   'http://127.0.0.1:'+server.address().port+'/lab/match-stage.html?review='+review
+  ],{stdio:['ignore','pipe','pipe']});
+  let dom='',err='';
+  run.stdout.on('data',b=>dom+=String(b));
+  run.stderr.on('data',b=>err+=String(b).slice(0,2000));
+  const timeout=setTimeout(()=>run.kill('SIGKILL'),20000);
+  const code=await new Promise(resolve=>run.on('close',resolve));
+  clearTimeout(timeout);
+  const observed=dom.match(/<span id="lab-state">([^<]*)<[/]span>/)?.[1];
+  if(code!==0||observed!==expected)
+   throw Error('Phase2.2C YW2 source-backed '+label+' browser mismatch: '+
+    (observed||'no actual browser output')+' '+err.slice(-400));
+  console.log('PHASE22C-YW2-SOURCE-SHAPE-CHROMIUM-PASS '+label);
+ }
+
+
 
 
  const gReadyShot=path.join(root,'phase18-g-soultimate-ready.png');
