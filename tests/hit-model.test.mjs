@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {yw2HitProbability,yw2CriticalProbability,rollPercent} from '../engine/hit-model.mjs';
 
-test('the YW2 hit formula is fractional and speed-clamped BEFORE attack accuracy',()=>{
+test('YW2 hit chance floors the speed calculation before move accuracy',()=>{
  assert.equal(yw2HitProbability({kind:'attack',attackerSpeed:100,targetSpeed:100}).probability,98);
- assert.equal(yw2HitProbability({kind:'technique',attackerSpeed:200,targetSpeed:201}).probability,97.8);
+ assert.equal(yw2HitProbability({kind:'technique',attackerSpeed:200,targetSpeed:201}).probability,97);
  assert.equal(yw2HitProbability({kind:'technique',attackerSpeed:10,targetSpeed:950}).probability,75);
  assert.equal(yw2HitProbability({kind:'technique',attackerSpeed:950,targetSpeed:10}).probability,98);
 });
@@ -13,6 +13,20 @@ test('physical move accuracy modifies hit probability; technique ignores that va
  assert.equal(yw2HitProbability({...opts,moveAccuracy:.5}).probability,49);
  assert.equal(yw2HitProbability({...opts,moveAccuracy:4}).probability,100);
  assert.equal(yw2HitProbability({...opts,kind:'technique',moveAccuracy:.5}).probability,98);
+ // Source YW2 example: 85 vs 151 speed = 84.8 => 84, NOT 84.8;
+ // 84 * .4 = 33.6 => 33 before the integer 0..99 roll.
+ const given={kind:'attack',attackerSpeed:85,targetSpeed:151};
+ assert.deepEqual(
+  [yw2HitProbability(given).base,yw2HitProbability({...given,moveAccuracy:.4}).probability],
+  [84,33]);
+ assert.equal(yw2HitProbability({...given,kind:'technique',moveAccuracy:.4}).probability,84);
+ // Below the 75 floor, normal chance gets clamped first, then multiplied.
+ assert.equal(yw2HitProbability({...given,attackerSpeed:35,moveAccuracy:.5}).probability,37);
+ assert.equal(yw2HitProbability({...given,attackerSpeed:35,moveAccuracy:4}).probability,100);
+ // Speed 200 to 201 produces 97.8, floored to 97.
+ assert.equal(yw2HitProbability({kind:'attack',attackerSpeed:200,targetSpeed:201,moveAccuracy:.5}).probability,48);
+ assert.equal(rollPercent(33,.32999),true);
+ assert.equal(rollPercent(33,.33),false);
 });
 test('YW2 critical hits are 1-in-99 normally and 7-in-99 against loafing targets',()=>{
  assert.deepEqual(yw2CriticalProbability(),{
