@@ -1,10 +1,8 @@
 name: Phase25 one-shot real Supabase 1v1 QA
+# Archived Supabase-only QA from the pre-Firebase school design.
+# Historical workflows remain for audit; NEVER run on current dev pushes.
+# Active friends online QA uses .github/workflows/phase37-firebase-friends.yml.
 on:
-  push:
-    branches:
-      - feat/phase1-action-circle-lab-20261023
-    paths:
-      - '.github/workflows/phase25-supabase-live-once.yml'
   workflow_dispatch:
 permissions:
   contents: read
