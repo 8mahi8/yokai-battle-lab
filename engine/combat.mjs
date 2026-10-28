@@ -11,6 +11,7 @@ import {resolveRentalAttackSpec} from './catalog-attack-spec.mjs';
 import {resolveRentalTechniqueSpec} from './catalog-technique-spec.mjs';
 import {resolveRentalInspiritSpec} from './catalog-inspirit-spec.mjs';
 import {resolveRentalSoultimateSpec} from './catalog-soultimate-spec.mjs';
+import {yw2ReferenceSoultimate,yw2ReferenceSpecialDefinition} from '../content/yw2-soultimate-reference.mjs';
 export {RENTAL_SQUAD,SCHOOL_RENTAL_PERSONALITIES} from '../content/rental-roster.mjs';
 import { createBattle } from './phase1.mjs';
 import { createInspiritLedger } from './inspirit.mjs';
@@ -124,7 +125,7 @@ export function baseDamage(attacker,target,kind,critical=false) {
 export function createCombat({seed=20261023,teams,autoRotateReserves=true,enableLoafing=false,rotationCooldownMs=0,researchSoulGainPerAction=0,researchSpecialEffects=false,
   researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false,
   researchWheelCoalescing=false,researchOpeningPriority=null,
-  researchPokeSoulTransfer=0,playtestSoulTuning=false,researchDamageModel=false,researchMultiHit=false,researchSoultimateHitCount=null,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false,enableRentalSkills=playtestSoulTuning,
+  researchPokeSoulTransfer=0,playtestSoulTuning=false,researchDamageModel=false,researchMultiHit=false,researchSoultimateHitCount=null,researchYw2Soultimate=null,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false,enableRentalSkills=playtestSoulTuning,
   catalogAttackResolution=false,catalogTechniqueResolution=false,
   catalogInspiritResolution=false,catalogSoultimateResolution=false,
   catalogSkillResolution=false}={}) {
@@ -165,6 +166,16 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   if(researchSoultimateHitCount!==null&&
      (teams===undefined||!researchSpecialEffects||!researchDamageModel))
     throw new RangeError('Soultimate hit research requires custom rosters, special effects and damage model');
+  // One sourced, shape-only YW2 reference applied to A1 in a CUSTOM research
+  // battle. It cannot combine with unverified global fixture hit counts.
+  if(researchYw2Soultimate!==null&&
+     (typeof researchYw2Soultimate!=='string'||
+      researchSoultimateHitCount!==null||
+      teams===undefined||!researchDamageModel||
+      !researchSpecialEffects||catalogSoultimateResolution))
+    throw new RangeError('YW2 reference Soultimate requires custom teams, damage model and no other hit override');
+  const referenceMove=researchYw2Soultimate===null?null:
+    yw2ReferenceSoultimate(researchYw2Soultimate);
   if(typeof researchStatInspirits!=='boolean')
     throw new TypeError('researchStatInspirits must be boolean');
   if(researchStatInspirits&&!researchDamageModel)
@@ -561,7 +572,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   function applyResearchSpecial({side,casterId,result,targets=null,pinnedId=null}={}){
     const caster=byId.get(casterId);
     const enemies=targets?targets.map(id=>byId.get(id)).filter(m=>m&&m.hp>0):livingFront(1-side);
-    const resolvedSpec=catalogSoultimateByActor?.get(caster.id)?.definition??caster.special;
+    const sourceMove=referenceMove&&caster.id==='A1'?referenceMove:null;
+    const resolvedSpec=sourceMove?yw2ReferenceSpecialDefinition(sourceMove.id):
+      catalogSoultimateByActor?.get(caster.id)?.definition??caster.special;
+    const actualHitCount=sourceMove?.hitsPerTarget??researchSoultimateHitCount;
     const impacts=planResearchSpecial({
       spec:resolvedSpec,caster,
       allies:researchSpecialAllies(resolvedSpec,squads[side],livingFront(side)),enemies,
@@ -582,13 +596,13 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         }else impact.applied=false;
         continue;
       }
-      if(researchSoultimateHitCount!==null&&impact.kind==='damage'){
+      if(actualHitCount!==null&&impact.kind==='damage'){
         // Each hit changes actual host HP. This is NOT original move data:
         // per-hit count is a fixture selected explicitly for a custom team.
         const originalHp=target.hp;
         const moveKind=resolvedSpec.damageKind;
         let total=0;
-        for(let k=0;k<researchSoultimateHitCount&&target.hp>0;k++){
+        for(let k=0;k<actualHitCount&&target.hp>0;k++){
           const hpBefore=target.hp;
           const chance=yw2HitProbability({kind:moveKind,
             attackerSpeed:caster.speed,targetSpeed:target.speed,
@@ -607,7 +621,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
               kind:moveKind,power:resolvedSpec.power*result.powerMultiplier,
               strength:caster.strength,spirit:caster.spirit,
               defense:target.defense,criticalDefense:target.criticalDefense,
-              hits:researchSoultimateHitCount,critical,guarded:target.guard,
+              hits:actualHitCount,critical,guarded:target.guard,
               guardBoost:target.guardBoost??false,guardBreak:caster.guardBreak,
               statStage,defenseStage
             });
@@ -642,7 +656,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         impact.predictedKO=target.hp===0;
         if(damage.activated)impact.lastStand=true;
       }else target.hp=impact.hpAfter;
-      if(!(researchSoultimateHitCount!==null&&impact.kind==='damage')&&
+      if(!(actualHitCount!==null&&impact.kind==='damage')&&
          (impact.kind==='damage'||impact.kind==='damage-status'||impact.kind==='drain')){
         const changed=interruptOnHit(target,impact.amount,false);
         if(changed)interruptions.push(changed);
@@ -672,9 +686,13 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       winner=squads[0].every(m=>m.hp===0)?1:0;
     const entry={type:'special',mode:result.kind,actor:caster.id,
       impacts:impacts.map(x=>({...x})),interruptions,winner,model:'research-fixture',
+      ...(sourceMove?{referenceSoultimate:{id:sourceMove.id,
+        evidence:sourceMove.evidence,hitCount:sourceMove.hitsPerTarget,
+        scope:sourceMove.targetScope,sourceRefs:[...sourceMove.sourceRefs],
+        limitation:'original-shape-only; applied RNG/visual timing are research'}}:{}),
       ...(hitRecords.length?{researchSoultimateHits:{
         model:'custom-roster-per-hit-fixture',
-        plannedPerTarget:researchSoultimateHitCount,
+        plannedPerTarget:actualHitCount,
         originalHitCount:null,
         hits:hitRecords.map(x=>({...x}))
       }}:{})};
