@@ -261,7 +261,7 @@ try{
   const exit=await new Promise(resolve=>child.on('close',resolve));
   clearTimeout(timeout);
   if(!timedOut&&exit===0&&
-    stdout.match(/<strong id="result">([^<]*)<[/]strong>/)?.[1]==='STAGE-PASS'){
+    stdout.match(/<strong id="result">([^<]*)<[/]strong>/)?.[1]?.startsWith('STAGE-PASS ')){
    console.log('STAGE-PASS: canonical combat, 2 wheel seats, pinned enemy, watch, actual turn and five forecasts');
    success=true;break;
   }
