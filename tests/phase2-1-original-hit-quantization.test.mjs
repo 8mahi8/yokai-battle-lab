@@ -73,8 +73,11 @@ test('real standard host attacks and techniques carry original integer threshold
     actions++;
     const playerA=makeStageView(wire,0),playerB=makeStageView(wire,1);
     assert.deepEqual(playerA.events,playerB.events);
-    assert.equal(playerA.events.at(-1)?.hitResearch?.probability,
-      event.hitResearch.probability);
+    const matching=playerA.events.find(e=>e.type==='action'&&
+      e.turn===event.turn&&e.actor===event.actor);
+    assert.equal(matching?.hitResearch?.probability,
+      event.hitResearch.probability,
+      'passive skill events after the action must not hide its hit chance');
    }
    if(wire.game.winner!==null)break;
   }
