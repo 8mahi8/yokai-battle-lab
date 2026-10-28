@@ -12,7 +12,7 @@
 ## ロードマップ
 | Phase | 目的 | 2026-10-28時点 | 次の受け入れ条件 |
 |---|---|---|---|
-| **Phase 1** | **戦闘基盤の統一** | **進行中（1.8 完了）**：通常攻撃・妖術・とりつくに加え、6必殺の種別/対象/威力/追加状態を単一技データからホストへ供給。単発/多段は未確認のため`unknown`。旧/新シード比較で結果一致 | 次Phase1.9：既存6スキル台帳の発動条件をホスト処理へ段階接続→ActionOutcomeの正規結果へ。原作の技別ヒット列はPhase2で動画観察とともに実装 |
+| **Phase 1** | **戦闘基盤の統一** | **進行中（1.9完了）**：通常攻撃/妖術/とりつく/必殺＋6固有スキルのIDをホストの既存処理へ接続。2視点映像とオンラインは依然一部研究版。旧/新同seedで結果一致 | 次Phase1.10：各技・スキルのカタログ参照→ホスト結果→イベント→表示を監査し、原作検証段階との境界を明文化。Stage QAと学校用Firebase試遊を整理 |
 | Phase 2 | 戦闘ルールを原作へ近づける | 後続（現在は一部の研究ルール・試遊値が存在） | 単発/多段/範囲、妖術、回復、とりつく、必殺、スキル、性格等をルールごと検証。元データ確度を維持 |
 | Phase 3 | 行動順と戦闘の時間 | 後続（現行は待ちポイント研究＋ホスト2600ms固定） | 原作に準拠した論理行動順とモーション/操作タイミングの対応を確認 |
 | Phase 4 | 操作と対人戦特有の仕組み | 後続（下画面ミニゲームとサークル等の既存実装あり） | おはらい/必殺/つつく/零式と**双方の表示保留**を原作局面で検証 |
@@ -20,6 +20,19 @@
 | Phase 6 | オンライン総合/学校試遊 | 後続（Firebase Friends試遊基盤とChrome QAあり） | Firebaseホスト/ゲストの判定一致と学校Safari 2端末の操作・長試合が実証される |
 
 **「進行中/後続」は研究や既存試作品が存在しない意味ではない**。現在の仕事の優先レーンを示す。個々の機能はPhaseをまたいで縦切り実装し、テストする。
+
+## 今回した作業（Phase1 / サブステップ1.9：固有スキルIDからホスト実処理へ）
+- **既存6スキル** `momentum`（KO後強化）、`care`（隣接回復）、`sharpCrit`（会心率）、`critImmune`（会心無効）、`lastStand`（致死1回耐え）、`guardBreak`（物理ガード無視）の`skillId/trigger/effect`を`content/skill-catalog.mjs`から検証し、現行ホストの判定場所へ接続した。**原作の倍率や持続数値はfixtureで、変えていない**。
+- 新`engine/catalog-skill-spec.mjs`：名前・5能力・スキル・6種類の発火条件・効果が共通カタログに一致するか戦闘開始時に検証。不一致/誤カスタムIDは拒否。`engine/combat.mjs`は`catalogSkillResolution`時に正規IDから求める`skillFor`を既存のKO/ダメージ/急所/ガード/回復処理に渡す。`engine/skill-effects.mjs`の隣接回復だけ任意`skillOf`を受け取れるよう拡張。**新イベントバスやタイマーを追加しない**。
+- `engine/match-protocol.mjs`では組込みレンタルの開発版で既定true、明示カスタムteamはfalse。ゲストからの切替は不可。イベントや通信wireの形式は変更なし。
+- `tests/phase1-9-skill-catalog-host-parity.test.mjs`で6件追加。ID/trigger/effectの整合・誤データ拒否・6枚隣接・学校/研究複数seed・Pin入力・skillイベント・旧ダメージモデルまで一致を確認。**[研究単体660/660＋耐久PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40640840994)**、**[Chromium Stage/Gesture/Result PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40640840904)**。
+- 原作調査は[攻略大百科スキル一覧](https://gamepedia.jp/youkai-yw2/skills)と[ゲームの匠スキル一覧](https://youkai-gh.g-takumi.com/skill_list.php)、[Game Programming Patterns Event Queue](https://gameprogrammingpatterns.com/event-queue.html)。本人提供動画は以前の観察記録を参照し、**今回MP4の新規全フレーム検証を行えたとは言わない**。正確なスキル係数・発火順位は未実証。
+- 詳細：[Phase1.9 実装と外部根拠](./PHASE1_9_PASSIVE_SKILL_CATALOG_HOST_PARITY_20261028.md)。学校Google Sites稼働版・GitHub main・Firebase本番Rules/DB・Drive配布は無変更。
+
+## 次する作業（Phase1 / サブステップ1.10）
+**Phase1戦闘基盤の総合点検**：6体→4技とスキルID→ホストの効果→`ActionOutcome`→画面/通信の依存関係が正しいか確認。現在`ActionOutcome V2`は通常攻撃だけなので、スキルを勝手に攻撃Hit列へ捏造して統合しない。全レーンの原作証拠`observed/documented/fixture/unknown`を照合し、Phase2へ移るために残る仕様を優先付けする。学校iPad実機二台の検証は適切な時点で本人に依頼する。
+
+## 前回の作業（Phase1.8）
 
 ## 今回した作業（Phase1 / サブステップ1.8：必殺技の統一マスター・実ホスト接続）
 - **技定義の一元化**：新`content/rental-soultimate-moves.mjs`に6体の必殺技（通常ダメージ/ドレイン/バフ/ダメージ+状態変化/蘇生+回復/デバフ）の型・対象・Power・付与状態を記録。全て**試遊fixture**。範囲に複数対象がいても**多段ヒットではない**。元ゲームの打数が確認できていないダメージ系は`hitPattern:{type:'unknown',count:null}`、攻撃以外の技は`none,0`。
