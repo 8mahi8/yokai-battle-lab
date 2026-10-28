@@ -1,12 +1,7 @@
 name: Firebase room emulator research
+# Archived authentication-era Firebase QA; retained for manual research.
+# The current school game uses no-Auth Firebase Friends (Phase37 workflow).
 on:
-  push:
-    branches:
-      - feat/phase1-action-circle-lab-20261023
-    paths:
-      - 'network/**'
-      - 'tests/firebase-room-*'
-      - '.github/workflows/firebase-room-emulator.yml'
   workflow_dispatch:
 permissions:
   contents: read
