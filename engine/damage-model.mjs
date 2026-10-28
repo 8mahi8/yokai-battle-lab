@@ -55,15 +55,15 @@ export function deriveStrengthStage(effects){
 export function calculateOneHit({
  kind,power,strength=0,spirit=0,defense,criticalDefense=defense,
  hits=1,critical=false,elementMultiplier=1,statStage=0,defenseStage=0,
- guarded=false,guardBreak=false
+ guarded=false,guardBreak=false,guardBoost=false
 }={}){
  if(kind!=='attack'&&kind!=='technique')throw new RangeError('attack or technique required');
  for(const [name,value] of Object.entries({power,strength,spirit,defense,criticalDefense}))
   validNumber(value,name);
  if(!Number.isInteger(hits)||hits<1||hits>20)throw new RangeError('hits must be 1..20');
  validNumber(elementMultiplier,'elementMultiplier',{min:0.1,max:3});
- if(typeof critical!=='boolean'||typeof guarded!=='boolean'||typeof guardBreak!=='boolean')
-  throw new TypeError('critical / guarded / guardBreak must be booleans');
+ if(typeof critical!=='boolean'||typeof guarded!=='boolean'||typeof guardBreak!=='boolean'||typeof guardBoost!=='boolean')
+  throw new TypeError('critical / guarded / guardBreak / guardBoost must be booleans');
  const multiplier=statStageMultiplier(statStage);
  const effectiveStat=(kind==='attack'?strength:spirit)*multiplier;
  // Each hit gets the full per-hit move Power and only 1/Hits of the
@@ -75,12 +75,17 @@ export function calculateOneHit({
  let raw=kind==='attack'
   ?(critical?x/1.5-def/10:x/2-def/4)
   :(critical?x/5+x/2.5-def/14:x/10+x/3-def/7)*elementMultiplier;
- // Actual guard-piercing modifiers only belong to physical attacks.
+ // YW2: normal guard takes x0.5, boosted guard takes x0.25.
+ // Guard Break only pierces physical attacks. No arbitrary guard buff
+ // multipliers are invented here (Jar Guard is a DIFFERENT mechanic).
+ // https://mtwildwood.net/guarding.php?g=yw2
  const ignoreGuard=guardBreak&&kind==='attack';
- if(guarded&&!ignoreGuard)raw*=.5;
+ const guardFactor=guarded?(ignoreGuard?1:(guardBoost?.25:.5)):1;
+ raw*=guardFactor;
  const amount=Math.max(1,Math.min(999,Math.floor(raw)));
  return {amount,kind,hits,critical,guarded,
   guardApplied:guarded&&!ignoreGuard,guardIgnored:guarded&&ignoreGuard,
+  guardFactor,
   elementMultiplier:kind==='technique'?elementMultiplier:1,
   statStage,statMultiplier:multiplier,
   defenseStage,defenseMultiplier:statStageMultiplier(defenseStage),
