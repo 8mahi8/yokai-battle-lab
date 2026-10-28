@@ -32,7 +32,7 @@ test('Penetrate does not erase a weakness; neutral is not an elemental Play',()=
   element:'water',resistances:{water:1.5},penetrate:true,playSources:1
  });
  assert.equal(weakness.resistanceAfterPenetrate,1.5);
- assert.equal(weakness.multiplier,1.8);
+ assert.ok(Math.abs(weakness.multiplier-1.8)<1e-12);
  assert.equal(weakness.penetrateApplied,false);
  const neutral=resolveTechniqueElementMultiplier({
   element:'neutral',resistances:{fire:.5},penetrate:true,playSources:2
