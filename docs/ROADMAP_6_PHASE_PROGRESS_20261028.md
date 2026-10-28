@@ -13,13 +13,25 @@
 | Phase | 目的 | 2026-10-28時点 | 次の受け入れ条件 |
 |---|---|---|---|
 | **Phase 1** | **戦闘基盤の統一** | **完了（1.10 総合監査通過）**：6体×4技・6スキルの正規台帳→ホスト処理→攻撃V2・両視点UIの通し監査。蘇生必殺の古い対象参照を修正。原作数値はfixtureが多く残る | Phase2へ移行：原作の一次映像・文献で技ごとの本当の命中数/Power/効果を検証してから1技ずつ忠実化。学校Safari本番テストは後段 |
-| **Phase 2** | **戦闘ルールを原作へ近づける** | **進行中（2.1A完了）**：原作Wikiの実例から、通常攻撃/妖術の命中率を整数％へ切り捨て、物理技の命中補正も結果を切り捨てる処理に改修。両座席のホスト結果とSeed再現を確認 | 次2.1B：原作複数資料で競合するダメージ式・技威力・命中補正を検討し、根拠が明確なルールから縦切り忠実化。fixtureは出典なしに変更しない |
+| **Phase 2** | **戦闘ルールを原作へ近づける** | **進行中（2.1B完了）**：2.1A整数命中率＋2.1B原作確認済みの通常ガード50%・強化ガード25%をホストの物理/妖術に適用。GuardBreakは物理限定。組込6体は無変更、custom研究入力で確証 | 次2.1C：物理/妖術のダメージ式がWikiと実機推定で違う箇所の検証条件を設計、属性Play/貫通とターゲット耐性を別レーンで確認。根拠なき係数変更禁止 |
 | Phase 3 | 行動順と戦闘の時間 | 後続（現行は待ちポイント研究＋ホスト2600ms固定） | 原作に準拠した論理行動順とモーション/操作タイミングの対応を確認 |
 | Phase 4 | 操作と対人戦特有の仕組み | 後続（下画面ミニゲームとサークル等の既存実装あり） | おはらい/必殺/つつく/零式と**双方の表示保留**を原作局面で検証 |
 | Phase 5 | 上下画面/アニメーション | 後続（見た目の研究版あり） | 技別カットイン・命中順・状態・HP・結果を動画と比較 |
 | Phase 6 | オンライン総合/学校試遊 | 後続（Firebase Friends試遊基盤とChrome QAあり） | Firebaseホスト/ゲストの判定一致と学校Safari 2端末の操作・長試合が実証される |
 
 **「進行中/後続」は研究や既存試作品が存在しない意味ではない**。現在の仕事の優先レーンを示す。個々の機能はPhaseをまたいで縦切り実装し、テストする。
+
+## 今回した作業（Phase2 / サブステップ2.1B：強化ガード25%の実ホスト適用・式の根拠比較）
+- [詳細な原作根拠・最新コード・試験記録](./PHASE2_1B_YW2_GUARD_BOOST_AND_FORMULA_RESEARCH_20261028.md)。[Mt. Wildwood YW2 Guarding](https://mtwildwood.net/guarding.php?g=yw2)で**通常ガード×0.5、強化ガード×0.25、GuardBreak貫通**を確認。ダメージ式は[Mt Wildwood YW2 damage](https://mtwildwood.net/damage.php?g=yw2)と[2026-09-16実機2台の推定式](https://note.com/atoato429429429/n/nfefe8749d432)で妖術係数に僅差があるため、**式全体を推測で置換していない**。YW1の「ガード中はダメージ乱数なし」とYW2の記載も混同しない。
+- **コード実装**：`engine/damage-model.mjs`に省略可能`guardBoost`（Boolean）＋`guardFactor`を導入。実`engine/combat.mjs`で**custom編成だけに`guardBoost:true`を明示でき、guard中なら物理/妖術ともダメージ25%**。物理だけGuardBreakでガード軽減を無視。旧研究ダメージOFF経路も同じ。組込6体には無根拠に強化ガードを付けず、旧snapshotに新キーを勝手に入れない。
+- **新テスト5件**：`tests/phase2-1b-guard-boost-original-rule.test.mjs`。通常半減・強化1/4・物理貫通・妖術非貫通の値、3seedの研究用**本物のガード行動/攻撃/妖術**とseedリプレイ、非Boolean拒否と組込6体の互換性を検証。
+- **最終コード/testコミット`868f9e5f8`**：[Research Node **672/672 PASS＋耐久PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40652761991)、[本物のChromium Stage/Gesture/MatchResult PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40652762022)。ホスト実装SHA`2a719cee2`の[Firebase Emulator browser QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40652708751)、[Google Sites Online QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40652708498)、[offline 1HTML embed PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40652708527)も確認。学校Safari2台の実戦はまだ未検証。
+- **本人原作動画**：今回は元MP4の新規フレーム直接閲覧ができなかったため、[Phase2.1Aの直接元動画の観察記録](./PHASE2_1A_YW2_INTEGER_HIT_CHANCE_20261028.md)を継続一次資料として使用。係数0.25の根拠は動画ではなく上記解析資料。原作バスターズ・YW3のダメージ式は採用しない。Google Sitesの学校稼働版・main・本番Firebase Rules/DB・Drive配布は無変更。
+
+## 次する作業（Phase2 / サブステップ2.1C）
+物理/妖術ダメージの原作Wiki式と日本の3DS実機推定式の差を、**技ごとの威力・ヒット数・ステータス・会心・ガード・属性・乱数幅**で条件付け、検証可能な誤差マトリクスを作る。元素Play（×1.2／2ソースで×1.4）・Penetrate（耐性1未満を無視）も原作資料に沿って効果ID/場スキルと対象耐性を分離し、嘘の倍率を勝手に組込レンタルに足さない。本人の原作動画のガード/ダメージHITシーンを時系列で照合する。
+
+## 前回の作業（Phase2.1A）
 
 ## 今回した作業（Phase2 / サブステップ2.1A：原作の命中率を整数に量子化）
 - **原作資料に基づく実ゲームルール修正**：[Mt. Wildwood Hit Chance](https://mtwildwood.net/hit-chance.php)によると、Speed85対151の命中率は84.8→**84%へ切り捨て**、物理技の命中補正を掛けた結果も整数へ切り捨てて0～99の乱数と比較。従来の`engine/hit-model.mjs`は小数の確率で直接比較していた。**`base=Math.floor(clamp(...))`と`probability=Math.floor(clamp(base*moveAccuracy,...))`を実装し、ホスト実戦の通常物理/攻撃妖術に適用**。RNGを追加消費していない。元6体のPower/効果はfixtureのまま。
