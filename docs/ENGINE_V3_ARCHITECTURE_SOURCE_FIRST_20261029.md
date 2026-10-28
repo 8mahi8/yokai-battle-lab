@@ -162,6 +162,7 @@ exportAuditJournal(); // internal deterministic QA, not a friend replay feature
 - `tests/engine-v3-migration-baseline.test.mjs`に**4 seedで6+6、front/bench、HP/Soul、pin、host commandのACK/クールダウン、同一入力で同一hash/snapshot、journal再計算**の2テストを追加。現行の「変更してはいけないルール基準」が作られた。[コード`b528ecbe9a`：Node **696/696** PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40785090725)、[同版 Stage Chrome PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40785090679)。
 - さらに`engine/match-protocol.mjs`の**既存コマンド正規化とHost→Combat呼出**を、独立`engine/match-command-kernel.mjs`（約92行）へ移した。公開API`normalizeMatchCommand`は既存ファイルからそのままre-export、3秒ルール/ホスト時刻取得/seq/ACK/hash/戦闘判定は不変。`match-protocol.mjs`は約305行→**228行**。これはエンジンV3入口の第一歩であり、まだ`combat.mjs`本体を分割したわけではない。
 - 抽出は**仕様変更でなく既存と同じJS本体の移設**。既存のFirebase Friends adapterはこのmatch protocolを引き続き使うので、通信方式は変わらない。V3-1中の他の責務（時間・状態）はこれから実装する。
+- **コード抽出後の最終受け入れ `aedb76a4b6`**：[Node **696/696**・自然6体戦闘耐久PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40785361654)、[実Chromium Stage PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40785361641)、[**Firebase Friends no-Auth RTDB emulator＋Google Sites相当の実Chromium二画面 PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40785361637)、[単体HTML build PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40785361639)。本番学校Safari実機は未実施。
 
 ## 8. 今回の決定
 
