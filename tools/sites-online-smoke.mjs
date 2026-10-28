@@ -1,5 +1,6 @@
 /** Phase24B: actual inline Sites HTML online acceptance via Chromium srcdoc. */
 import {createServer} from 'node:http';
+import {renderedQaResult,renderedQaPassed} from './browser-qa-result.mjs';
 import {spawn} from 'node:child_process';
 import {readFile} from 'node:fs/promises';
 import {existsSync,mkdtempSync,rmSync} from 'node:fs';
@@ -72,8 +73,8 @@ try{
    emulator?'SITES-ONLINE-EMULATOR-PASS':'SITES-ONLINE-SETUP-PASS';
   // --dump-dom serializes <script> text (including literal PASS strings).
   // Inspect ONLY the *rendered* result node, never output.includes(PASS).
-  const rendered=output.match(/<strong id="result">([^<]*)<[/]strong>/)?.[1]||'';
-  if(!timedOut&&exit===0&&rendered.startsWith(sentinel+' ')){
+  const rendered=renderedQaResult(output)??'missing-result-node';
+  if(!timedOut&&exit===0&&renderedQaPassed(output,sentinel)){
    console.log(rendered);passed=true;break;
   }
   console.warn('Online Sites iframe trial '+trial+' failed: '+
