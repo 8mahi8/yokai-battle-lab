@@ -31,8 +31,10 @@ document.getElementById('frame').addEventListener('load',()=>{
   check(root.querySelectorAll('#mb-special-title').length===1,
    'special title must not have duplicate DOM IDs');
   check(root.querySelectorAll('.mb-creature').length===12,'not 12 original rental creatures');
-  check(root.querySelectorAll('.mb-character-art:not(.mb-mini-art)').length===12,
-   'all 12 original SVG characters must render in battle');
+  check(root.querySelectorAll('.mb-team .mb-character-art:not(.mb-mini-art)').length===12,
+   '12 wheel medals must each render a character portrait');
+  check(root.querySelectorAll('.mb-fighter .mb-character-art:not(.mb-mini-art)').length===6,
+   'six active upper battlefield fighters must also render portraits');
   check(root.querySelectorAll('.mb-mini-art').length===5,'forecast must reuse SVG portraits');
   const aDesigns=[...root.querySelectorAll('#mb-team0 .mb-character-art')].map(x=>x.dataset.design);
   const bDesigns=[...root.querySelectorAll('#mb-team1 .mb-character-art')].map(x=>x.dataset.design);
