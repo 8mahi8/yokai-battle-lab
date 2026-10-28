@@ -21,6 +21,10 @@
 
 **「進行中/後続」は研究や既存試作品が存在しない意味ではない**。現在の仕事の優先レーンを示す。個々の機能はPhaseをまたいで縦切り実装し、テストする。
 
+## 2026-10-28 引き継ぎ後の履歴・動画の横断監査（コード無変更）
+- [引き継ぎ過去資料80件以上の横断監査／元動画5本のアクセス状態／原作再現の未完一覧](./HANDOFF_ARCHIVE_AUDIT_AND_VIDEO_ACCESS_20261028.md)。Phase10～51とPhase1/2、学校の2026-10-27実機試遊、オンライン方式の変遷、ユーザー動画の直接観察履歴を再読。古い資料の「2～4試合未視聴」は2026-10-28 Phase1.6の一部実フレームレビューで一部更新されたが、全編フレーム比較は未完。**今回元MP4はアクセス不可、直接再生したと主張しない。**
+- **本工程は資料照合と保存のみ。ゲームコードとテスト数は不変。次工程は2.1C-2の新コミットNode/Chromium/Firebase回帰証明。** 旧学校V2の2台成功と新開発版の実機未試験を区別。Google Sites稼働版・main・本番Firebase・Drive配布は無変更。
+
 ## 最新作業（Phase2 / サブステップ2.1C-1：属性Play/Penetrateを研究ホストへ）
 - **[詳細な原作比較マトリクス・実装・未検証点](./PHASE2_1C_TECHNIQUE_ELEMENT_AND_DAMAGE_FORMULA_MATRIX_20261028.md)** を追加。Mt. WildwoodのYW2妖術ダメージ式と2026-09-16実機推定式の差を、1hit・通常/会心・Defense/criticalDefense・乱数・属性の条件で整理。通常時の理論差は `(Power+Spirit)/210 - Defense/350` で、係数の恣意的置換は行わない。
 - **原作に根拠ある部分だけ縦切り実装**：新`engine/element-model.mjs`で対象耐性、該当属性Play 0/1/2ソース、Penetrateを分離。`engine/combat.mjs`からcustom研究チームの実ホスト妖術へ接続。組込6体に原作未確認の能力を付けず、通常スナップを保つ。`engine/damage-model.mjs`の属性上限だけ3×1.4へ拡張。研究用の新5テストを`tests/phase2-1c-technique-element-original-rule.test.mjs`に追加。
