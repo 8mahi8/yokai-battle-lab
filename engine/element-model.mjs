@@ -17,6 +17,10 @@ export function resolveTechniqueElementMultiplier({
  if(typeof penetrate!=='boolean')throw new TypeError('Technique Penetrate must be boolean');
  const validated=validateElementResistances(resistances);
  const resistance=element==='neutral'?1:(validated[element]??1);
+ // Wiki documents both individual effects but not their evaluation order
+ // when resistance <1 and Play also applies. Do not bless a guessed order.
+ if(penetrate&&playSources>0&&resistance<1)
+  throw new RangeError('Penetrate + Play on resisted Technique needs verified ordering');
  // Penetrate removes a resistance (<1); it never removes a weakness (>1).
  const resistanceAfterPenetrate=penetrate?Math.max(1,resistance):resistance;
  // The attacking element must match the Play source; the research input
