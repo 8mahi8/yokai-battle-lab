@@ -38,7 +38,7 @@
 7. **式変更の基準**：比較した実測結果と式の予測区間に明確な根拠があり、丸め順・会心用防御・乱数を制御できる場合のみ小さな縦切り変更を行う。今は Wiki research モデルを保持。
 
 ## 今回のコード変更（研究用・組込6体無変更）
-- 新 `engine/element-model.mjs`：属性の `resistance`、`resistanceAfterPenetrate`、`playSources`（0～2）、`playMultiplier`（1/1.2/1.4）、`multiplier` を分離した純粋関数。`neutral` は属性Playを適用しない。
+- 新 `engine/element-model.mjs`：属性の `resistance`、`resistanceAfterPenetrate`、`playSources`（0～2）、`playMultiplier`（1/1.2/1.4）、`multiplier` を分離した純粋関数。`neutral` は属性Playを適用しない。**耐性<1にPenetrateとPlayを同時適用する順序は現資料に明記がないため、研究入力でも拒否して未確認扱い**。どちらか単独のホスト効果のみ検証する。
 - `engine/combat.mjs`：custom team だけ `techniquePlaySources`（0～2）／`techniquePenetrate`（bool）を研究入力で許可。`researchDamageModel:true` を必須とし、実ホストの攻撃妖術の `elementMultiplier` へ接続。イベント内の詳細説明は明示研究入力時のみ追加。組込6体のスキル、技、通信形式、スナップショットを変えない。
 - `engine/damage-model.mjs`：耐性最大×3とPlay2ソース×1.4の組合せを拒否しないため、`elementMultiplier` の上限を理論的組合せ4.2まで拡張。属性補正を物理通常攻撃へは適用しない。
 - 新 `tests/phase2-1c-technique-element-original-rule.test.mjs`：純粋関数／倍率／会心ではない妖術ダメージ／範囲外拒否／レンタル互換性／複数seedの実ホストと決定論的再演算。**CI合格確認前は合格件数を増えたと断定しない**。
