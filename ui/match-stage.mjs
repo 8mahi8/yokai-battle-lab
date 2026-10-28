@@ -14,6 +14,7 @@ import {soultimateDisplayTitle} from '../content/presentation-labels.mjs';
 import {planActionChoreography,choreographyFrame} from '../presentation/action-choreography.mjs';
 import {projectLegacyAttackOutcome} from '../presentation/legacy-attack-outcome.mjs';
 import {projectAttackOutcomeV2} from '../presentation/legacy-attack-to-v2.mjs';
+import {projectSoultimateImpactLedger} from '../contracts/soultimate-impact-ledger-v1.mjs';
 import {soultimateReadiness} from './soultimate-ready.mjs';
 import {matchAckMessage,matchRuleFailureMessage} from './match-feedback.mjs';
 const ESC={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
@@ -123,9 +124,11 @@ export function makeStageView(state,side=0){
  const live=(game.events?.slice(-20)||[]).map(event=>{
   const projection=projectLegacyAttackOutcome(event,game.squads);
   const actionOutcomeV2=projectAttackOutcomeV2(event,game.squads);
-  return projection||actionOutcomeV2?{...event,
+  const specialImpactLedger=projectSoultimateImpactLedger(event);
+  return projection||actionOutcomeV2||specialImpactLedger?{...event,
    ...(projection?{attackProjection:projection}:{}),
-   ...(actionOutcomeV2?{actionOutcomeV2}:{})
+   ...(actionOutcomeV2?{actionOutcomeV2}:{}),
+   ...(specialImpactLedger?{specialImpactLedger}:{})
   }:event;
  });
  const roster=teams[side];
@@ -304,10 +307,24 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     return scenePlan.hitResults[sceneHitIndex??0].hpAfter;
    }
   }
-  if(flash?.type==='special'&&scenePlan&&stagedHealth.has(unit.id)){
-   const firstTarget=scenePlan.impacts.findIndex(x=>x.targetId===unit.id);
-   if(firstTarget!==-1&&(!showImpact()||sceneSpecialTargetIndex===null||
-      firstTarget>sceneSpecialTargetIndex))return stagedHealth.get(unit.id);
+  if(flash?.type==='special'&&scenePlan){
+   const hostRows=scenePlan.specialImpactLedger?.impacts||[];
+   const matches=hostRows.filter(row=>row.targetId===unit.id);
+   if(matches.length){
+    // Pre/post HP is an actual host impact record. Avoid using a stale
+    // previous snapshot when a guest reconnects or many events arrive.
+    if(!showImpact()||sceneSpecialTargetIndex===null)
+     return matches[0].hpBefore;
+    const processed=hostRows.slice(0,sceneSpecialTargetIndex+1)
+     .filter(row=>row.targetId===unit.id);
+    return processed.length?processed.at(-1).hpAfter:matches[0].hpBefore;
+   }
+   // Older pre-contract events still render with the previous-view fallback.
+   if(stagedHealth.has(unit.id)){
+    const first=scenePlan.impacts.findIndex(x=>x.targetId===unit.id);
+    if(first!==-1&&(!showImpact()||sceneSpecialTargetIndex===null||
+       first>sceneSpecialTargetIndex))return stagedHealth.get(unit.id);
+   }
   }
   return !showImpact()&&stagedHealth.has(unit.id)?stagedHealth.get(unit.id):unit.hp;
  };
@@ -570,6 +587,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    String(sceneSpecialTargetIndex+1);
   backdrop.dataset.specialTargetCount=scenePlan?.kind==='special'?
    String(scenePlan.impacts.length):'';
+  backdrop.dataset.specialImpactSchema=String(scenePlan?.specialImpactLedger?.schema??'');
   // Passive Skill events are resolved by the host. During the impact/recovery
   // phase, explain any automatically applied ability without a fake attack.
   const notice=$('mb-passive-notice');
