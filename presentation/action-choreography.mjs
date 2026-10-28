@@ -129,9 +129,30 @@ export function choreographyFrame(plan,elapsedMs){
  const currentHit=hitIndex===null?null:hits[hitIndex];
  const nextHitAtMs=phase==='impact'&&hitIndex!==null&&hitIndex+1<hits.length?
   impactStart+(hitIndex+1)*(impactEnd-impactStart)/hits.length:null;
+ // Phase2.2: special IMPACT TARGETS are already host-resolved records,
+ // not hits. An all-enemy one-strike move can have three targets and zero
+ // verified per-hit records; do not turn those targets into three hits.
+ // Stagger their visual cues only, preserving the original host target order.
+ // These visual spacing intervals are a PLAYTEST prototype, not original
+ // 3DS timing, and never change the authoritative effect application.
+ const specialImpacts=plan.kind==='special'?plan.impacts:[];
+ const specialTargetIndex=impactVisible&&specialImpacts.length?
+  Math.min(specialImpacts.length-1,Math.floor(
+   (Math.min(timeMs,impactEnd)-impactStart)/(impactEnd-impactStart)*
+   specialImpacts.length)):null;
+ const currentSpecialImpact=specialTargetIndex===null?null:
+  specialImpacts[specialTargetIndex];
+ const nextSpecialImpactAtMs=phase==='impact'&&specialTargetIndex!==null&&
+  specialTargetIndex+1<specialImpacts.length?
+  impactStart+(specialTargetIndex+1)*(impactEnd-impactStart)/
+   specialImpacts.length:null;
+ const visibleImpacts=plan.kind==='special'?
+  (currentSpecialImpact?Object.freeze([currentSpecialImpact]):Object.freeze([])):
+  impactVisible?plan.impacts:Object.freeze([]);
  return Object.freeze({eventKey:plan.eventKey,timeMs,phase,finished,
   actorPose:finished?'idle':phase==='anticipation'?plan.pose:
     phase==='impact'?plan.pose:'recover',
-  impactVisible,impacts:impactVisible?plan.impacts:Object.freeze([]),
-  hitIndex,currentHit,nextHitAtMs});
+  impactVisible,impacts:visibleImpacts,
+  hitIndex,currentHit,nextHitAtMs,
+  specialTargetIndex,currentSpecialImpact,nextSpecialImpactAtMs});
 }
