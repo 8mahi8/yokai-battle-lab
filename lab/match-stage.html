@@ -61,7 +61,108 @@ el('auto').addEventListener('click',()=>{
 });
 begin();
 const review=new URL(location.href).searchParams.get('review');
-if(review==='winner-a'||review==='winner-b'){
+if(review==='purify-e1'){
+ // Research ONLY: use real combat rules, with a deterministic bench Inspirit
+ // injected by the lab. The player must still perform real touch gestures,
+ // and the host must clear the actual status before a finish can be shown.
+ const host=createCombat({seed:22});
+ host.applyInspirit({id:'A4',sign:'negative',effect:'sleep'});
+ let revision=0,processed=0;
+ protocol={
+  snapshot:()=>({game:host.snapshot(),revision,
+   clientSequences:[processed,0],forecast:[]}),
+  dispatch:(side,seq,cmd)=>{
+   if(side!==0||seq!==processed+1)throw Error('purify lab command sequence');
+   let result;
+   if(cmd.type==='purifyStart')
+    result=host.beginPurify(side,cmd.id,{kind:'mash'});
+   else if(cmd.type==='purifyInput')
+    result=host.purifyInput(side,cmd.gesture);
+   else if(cmd.type==='purifyCancel')result=host.cancelPurify(side);
+   else throw Error('unexpected purify E1 command '+cmd.type);
+   processed++;revision++;
+   return {accepted:true,ok:result.ok,side,clientSeq:seq,result};
+  },
+  advanceAuto:()=>{
+   const action=host.step();
+   revision++;
+   return {ok:action.type==='action',action};
+  }
+ };
+ stage.render(protocol.snapshot());
+ const pick=selector=>el('battle-stage').querySelector(selector);
+ const assert=(value,label)=>{if(!value)throw Error(label);};
+ try{
+  assert(pick('#mb-purify-complete').hidden,'finish shown before input');
+  assert(host.snapshot().inspirits.A4.some(x=>x.sign==='negative'),
+   'fixture failed to infect rear medal');
+  pick('#mb-purify').click();
+  pick('#mb-team0 [data-unit="A4"]').click();
+  assert(host.snapshot().purification[0]?.challenge.kind==='mash',
+   'actual host purification did not start');
+  const upper=pick('.mb-upper-screen'),lower=pick('.mb-lower-screen'),
+   modal=pick('#mb-modal');
+  assert(!modal.hidden,'purification input absent');
+  const u=upper.getBoundingClientRect(),
+   l=lower.getBoundingClientRect(),m=modal.getBoundingClientRect();
+  assert(u.height>180&&l.height>170,'battle or touch screen missing');
+  assert(m.top>=l.top-2&&m.bottom<=l.bottom+2&&m.top>=u.bottom-1,
+   'gesture overlays the original upper battle field');
+  assert(pick('#mb-foe-line .mb-fighter')!==null&&
+   pick('#mb-ally-line .mb-fighter')!==null,
+   'upper fighters gone while purification happens');
+  for(let n=0;n<13;n++){
+   const pad=pick('#mb-touch-pad'),rect=pad.getBoundingClientRect();
+   const x=rect.left+rect.width/2,y=rect.top+rect.height/2;
+   pad.dispatchEvent(new PointerEvent('pointerdown',{
+    bubbles:true,cancelable:true,pointerId:201+n,button:0,
+    pointerType:'touch',clientX:x,clientY:y}));
+   pad.dispatchEvent(new PointerEvent('pointerup',{
+    bubbles:true,cancelable:true,pointerId:201+n,button:0,
+    pointerType:'touch',clientX:x,clientY:y}));
+  }
+  assert(host.snapshot().purification[0]!==null,
+   'partial tap count falsely completed');
+  assert(pick('#mb-purify-complete').hidden,
+   'partial/queued touch falsely displayed completion');
+  // The battlefield may update while the player is touching the lower screen.
+  const action=protocol.advanceAuto();
+  if(action.ok)stage.render(protocol.snapshot());
+  assert(!pick('#mb-modal').hidden,'upper auto action ended active lower touch');
+  const pad=pick('#mb-touch-pad'),rect=pad.getBoundingClientRect();
+  const x=rect.left+rect.width/2,y=rect.top+rect.height/2;
+  pad.dispatchEvent(new PointerEvent('pointerdown',{
+   bubbles:true,cancelable:true,pointerId:250,button:0,
+   pointerType:'touch',clientX:x,clientY:y}));
+  pad.dispatchEvent(new PointerEvent('pointerup',{
+   bubbles:true,cancelable:true,pointerId:250,button:0,
+   pointerType:'touch',clientX:x,clientY:y}));
+  const state=host.snapshot(),done=state.events.findLast(e=>e.type==='purification');
+  assert(done&&done.side===0&&done.targetId==='A4'&&done.removed.length>0,
+   'host failed to emit actual purification completion');
+  assert(state.inspirits.A4.length===0,'actual negative status not cleared');
+  assert(pick('#mb-modal').hidden,'touch modal did not release lower screen');
+  const finish=pick('#mb-purify-complete');
+  assert(!finish.hidden&&finish.textContent.includes('おはらい完了！'),
+   'real host completion missing lower finish');
+  assert(finish.dataset.eventId===String(done.eventId??state.events.length),
+   'wrong host event identity attached to finish');
+  assert(finish.getBoundingClientRect().top>=lower.getBoundingClientRect().top-2,
+   'finish overlay obscures upper screen');
+  stage.render(protocol.snapshot());
+  assert(!pick('#mb-purify-complete').hidden,'duplicate frame lost finish');
+  setTimeout(()=>{
+   const pass=pick('#mb-purify-complete').hidden&&pick('#mb-modal').hidden&&
+    pick('#mb-team0 .mb-wheel')!==null&&
+    pick('.mb-upper-screen').getBoundingClientRect().height>180;
+   el('lab-state').textContent=pass?
+    'PHASE-E1-REAL-HOST-PURIFY-ROUNDTRIP-PASS':
+    'PHASE-E1-REAL-HOST-PURIFY-ROUNDTRIP-FAIL timeout/restore';
+  },1400);
+ }catch(error){
+  el('lab-state').textContent='PHASE-E1-REAL-HOST-PURIFY-ROUNDTRIP-FAIL '+error.message;
+ }
+}else if(review==='winner-a'||review==='winner-b'){
  // Result PRESENTATION fixture only: gameplay proof lives in
  // tests/full-match-playtest-gate.test.mjs. No battle rule is faked.
  const side=review==='winner-a'?0:1;
