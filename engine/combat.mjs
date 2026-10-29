@@ -33,6 +33,7 @@ import {yw2HitProbability,yw2CriticalProbability,rollPercent} from './hit-model.
 import {PLAYTEST_SOUL_TUNING,choosePlaytestPokeOutcome} from './playtest-soul-tuning.mjs';
 import {validateRentalSkill,skillMomentumStage,critSkillBonus,careAtActionBoundary,resolveLastStand,SKILL_TRIAL} from './skill-effects.mjs';
 import {resolveRentalSkillSpec} from './catalog-skill-spec.mjs';
+import {createEffectCommitter} from './effect-commit.mjs';
 
 function seededRandom(seed) {
   let x = (seed >>> 0) || 1;
@@ -354,20 +355,22 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     events.push({type:'skill',actor:caster.id,targetId:target.id,skill:'momentum',
       label:'まえのめり型',kind:'発動',remainingTurns:SKILL_TRIAL.momentumOwnerTurns});
   }
-  // Direct hits are resolved against the same host skill state, whether
-  // they are physical, Soultimate, or PvP Poke. Never apply a KO or score
-  // until the one-use survival effect has been accounted for.
-  function applyDirectDamage(target,incoming){
-    const result=resolveLastStand({skill:skillFor(target),enabled:enableRentalSkills,
-      spent:spentLastStand.has(target.id),hp:target.hp,amount:incoming});
-    target.hp=result.hpAfter;
-    if(result.activated){
+  // V3-2: one canonical effect commit point for direct hits (physical,
+  // Soultimate, Poke), healing and ledger mutation. Formulae, random rolls
+  // and hit->interruption->KO order remain exactly as in the legacy host.
+  const effects=createEffectCommitter({
+    resolveDirectDamage:(target,incoming)=>resolveLastStand({
+      skill:skillFor(target),enabled:enableRentalSkills,
+      spent:spentLastStand.has(target.id),hp:target.hp,amount:incoming
+    }),
+    onSurvival:target=>{
       spentLastStand.add(target.id);
       events.push({type:'skill',actor:target.id,skill:'lastStand',
         label:'どひょうぎわ型',kind:'発動',remainingHp:1});
-    }
-    return result;
-  }
+    },
+    applyStatus:spec=>statuses.apply(spec),
+    onStatus:id=>syncCanAct(id)
+  });
   function syncCanAct(id){
     const member=byId.get(id);
     const pending=soul.snapshot().pending[member.side];
@@ -415,8 +418,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(['hp-loss','hp-regen'].includes(effect)&&!researchTurnInspirits)
       throw new RangeError('HP-over-time Inspirit requires researchTurnInspirits');
     if(effect==='sleep'&&duration!==null)throw new RangeError('sleep owner-turn duration is unsupported');
-    const result=statuses.apply({id,sign,effect,source,duration,level});
-    syncCanAct(id);return result;
+    return effects.commitStatus({id,sign,effect,source,duration,level});
   }
   /** Debug shortcut retained only to preserve legacy engine tests.
    * Player UI must use beginPurify + purifyInput. This function deliberately
@@ -631,7 +633,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
               attempt=Math.max(1,Math.min(999,
                 attempt+Math.floor(rng()*(2*spread+1))-spread));
             }
-            const applied=applyDirectDamage(target,Math.min(target.hp,attempt));
+            const applied=effects.commitDamage(target,Math.min(target.hp,attempt));
             damage=applied.amount;
             if(applied.activated)impact.lastStand=true;
             const interrupted=interruptOnHit(target,damage,critical);
@@ -649,12 +651,15 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         impact.predictedKO=target.hp===0;
         impact.model='custom-soultimate-multi-hit-fixture';
       }else if(impact.kind==='damage'||impact.kind==='damage-status'||impact.kind==='drain'){
-        const damage=applyDirectDamage(target,impact.amount);
+        const damage=effects.commitDamage(target,impact.amount);
         impact.amount=damage.amount;
         impact.deltaHp=-damage.amount;
         impact.hpAfter=damage.hpAfter;
         impact.predictedKO=target.hp===0;
         if(damage.activated)impact.lastStand=true;
+      }else if(impact.kind==='heal'||impact.kind==='revive'){
+        // A shared bounded HP commit for normal techniques and specials.
+        effects.commitHeal(target,Math.max(0,impact.hpAfter-target.hp));
       }else target.hp=impact.hpAfter;
       if(!(actualHitCount!==null&&impact.kind==='damage')&&
          (impact.kind==='damage'||impact.kind==='damage-status'||impact.kind==='drain')){
@@ -820,7 +825,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       if(chosen==='damage'||chosen==='heavy-hit'){
         const nominal=chosen==='heavy-hit'
           ?PLAYTEST_SOUL_TUNING.pokeHeavyDamage:PLAYTEST_SOUL_TUNING.pokeNormalDamage;
-        const damage=applyDirectDamage(enemy,Math.min(enemy.hp,nominal));
+        const damage=effects.commitDamage(enemy,Math.min(enemy.hp,nominal));
         const amount=damage.amount;
         const interruption=interruptOnHit(enemy,amount,false);
         if(enemy.hp===0){syncCanAct(enemy.id);syncPinned();}
@@ -990,12 +995,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
           targetHp:target.hp,maxHp:target.maxHp,
           varianceRoll:researchHealingVariance?rng():null
         });
-        amount=healingResearch.amount;
-        target.hp=healingResearch.hpAfter;
+        amount=effects.commitHeal(target,healingResearch.amount).amount;
       }else{
         // Provisional legacy base healing magnitude.
         const heal=Math.max(1,Math.floor((techniquePower+actor.spirit)/3));
-        amount=Math.min(target.maxHp-target.hp,heal);target.hp+=amount;
+        amount=effects.commitHeal(target,Math.min(target.maxHp-target.hp,heal)).amount;
       }
     }else{
       const opponents=livingFront(1-actor.side);
@@ -1064,7 +1068,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
             const range=Math.floor(damage/10+1);
             damage=Math.max(1,Math.min(999,damage+Math.floor(rng()*(2*range+1))-range));
           }
-          const dealt=applyDirectDamage(target,Math.min(target.hp,damage));
+          const dealt=effects.commitDamage(target,Math.min(target.hp,damage));
           oneDamage=dealt.amount;
           amount+=oneDamage;
           oneInterruption=interruptOnHit(target,oneDamage,oneCritical);
@@ -1120,7 +1124,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       // even when the active actor belongs to the OTHER team.
       for(const heal of careAtActionBoundary({teams:squads,skillOf:skillFor})){
         const recipient=byId.get(heal.targetId);
-        recipient.hp=Math.min(recipient.maxHp,recipient.hp+heal.amount);
+        effects.commitHeal(recipient,heal.amount);
         events.push({type:'skill',...heal,label:'おせわ型',kind:'回復'});
       }
       const active=skillBoosts.get(actor.id);
