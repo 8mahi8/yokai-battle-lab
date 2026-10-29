@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-3-2｜12シードの試合因果統合QA
+
+- [技術・原作根拠・実行ログ](./ENGINE_V3_3_CAUSAL_INTEGRATION_QA_20261030.md)。新規`tests/v3-time-causality-integration.test.mjs`5件。Seed6種類×Damageモデルon/off=**12通り**で、モーション中と即時表示を同じ命令列で進めても正規`snapshot`全体（表示フィールド以外）、HP、Soul、KO、行動順、Inspirit、イベントが一致。正規イベント数と表示sequence/アニメーションmsを混同せず、V3-1既存観測APIとV3-3読み取り値の整合性も検査。
+- Counter必殺は確定された仮の命中時刻に到達してから一回だけEffect+Counter-hit確定、同時刻の回転入力より先に命中、0msで再処理しても二重発火しないことを検査。3回以上の回転+我慢2消費は原作未検証のため**未確定イベントとしてHP変更せず**。原作内部の厳密なタイミングを新しく発明した訳ではない。
+- **コードSHA `9f98e4f6a499cbab01b03f60ad3f8ca6bc293db4`に対する[研究CI 40905841527](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40905841527)正式成功**：Node **785/785 PASS**、自然6vs6耐久・実Chromium操作PASS。[Firebase no-Auth QA 40905841822](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40905841822)も**全工程SUCCESS**：Google Sites単体HTML build、RTDB Emulator 2席/ACK/24ホスト行動とcanonical状態一致、Chromium実2iframe、旧期限ルールを独立Emulatorで再現。本番Firebaseは予約済み非ルームキーへのGET1回のみ（200）、書込なし。
+- **現在地：V3-3-2（統合因果の回帰ゲート）まで完了、V3-3全体は未完**。次は2席オンラインのコマンド受理→ACK→正規状態更新→相手表示の順序を、遅延・再送・一時切断を含むプロトコルで検証。学校Safari実機2台/Google Sites実埋め込み/原作元動画の時間比較は未検証。main・本番Firebase DB/Rules/Auth・公開サイト・Drive無変更。
+
 ## 2026-10-30 V3-3-1｜3つの時間領域を読み取りAPIへ分離
 
 - [実装と根拠・QA](./ENGINE_V3_3_TIME_DOMAIN_OBSERVER_20261030.md)。V3-2の効果・KO・状態Commitを保持したまま`engine/time-domain-contract.mjs`の読取専用`readBattleTimeDomains`と、`battle.timeDomains()`を追加。表示無効の通常ゲームにも対応し、`logical(action-points)`/`canonical(host-event-ordinal)`/`display(research-animation-ms)`を明示的に分ける。生の状態参照や乱数消費は無し。原作秒数の換算・旧Snapshot変更は無し。
