@@ -62,12 +62,18 @@ export function createYw2SourceIndex({sources,characters}={}){
      !text(entry.id)||!entry.id.startsWith('yw2:')||
      !text(entry.name)||entry.game!=='yw2'||
      byId.has(entry.id)||!text(entry.rank)||!text(entry.tribe)||
+     !Array.isArray(entry.identitySourceIds)||
+     entry.identitySourceIds.length<1||
+     entry.identitySourceIds.some(id=>!hasOwn(sources,id))||
      !obj(entry.moves)||Object.keys(entry.moves).length!==4||
      !obj(entry.skill)||!obj(entry.stats))
    throw new TypeError('invalid or repeated YW2 research character');
   for(const slot of MOVE_SLOTS){
    const move=entry.moves[slot];
-   if(!obj(move)||!text(move.label)||!obj(move.power)||
+   if(!obj(move)||!text(move.label)||
+      !Array.isArray(move.labelSourceIds)||move.labelSourceIds.length<1||
+      move.labelSourceIds.some(id=>!hasOwn(sources,id))||
+      !obj(move.power)||
       !obj(move.hits)||!obj(move.element)||!obj(move.effect))
     throw new TypeError('missing YW2 move slot fact: '+slot);
    for(const k of ['power','hits','element','effect'])
