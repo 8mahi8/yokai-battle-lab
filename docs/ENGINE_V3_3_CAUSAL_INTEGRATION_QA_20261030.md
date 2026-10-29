@@ -20,7 +20,7 @@ V3-3-1で`timeDomains()`（論理action-points、ホストevent ordinal、研究
 ## 正式実行結果
 - 対象コードコミット：`9f98e4f6a499cbab01b03f60ad3f8ca6bc293db4`。
 - [Research battle unit tests — GitHub Actions run 40905841527](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40905841527)：**Node 785/785 PASS、fail 0**。今回の5件をGitHub runnerの正式`node --test tests/*.test.mjs`で実行したログを直接確認。自然6体対戦を勝敗確定まで実行する耐久テストと、実Chromium DOM/タップ研究UIも全step成功。
-- [Firebase Friends no Auth QA — GitHub Actions run 40905841822](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40905841822)：エミュ環境の単体Google Sites HTMLビルド・ルーム/ルール・2iframe Chromium PvPまでPASSを各stepで確認。全ジョブの最終結果はこの記録保存時に確認すること。**本番Firebase Rules/DB/Authを変更していない**。
+- [Firebase Friends no Auth QA — GitHub Actions run 40905841822](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40905841822)：**全ジョブSUCCESS**。Google Sites用HTML build（75 source modules、Friends本番向けの未配布HTMLは291,959 bytes）、ルーム/認証なしRules、24 host actionsとACK・canonical snapshot parity、Chromium実2iframe対戦、四種の埋め込み横幅、旧期限ルールを独立Emulatorで再現した2iframe確認までPASS。本番FirebaseへのGET1回はHTTP200（予約済み非ルームキー、本文非閲覧、書き込みゼロ）。**本番Firebase Rules/DB/Authを変更していない**。
 - 学校iPad Safari実機2台、Google Sitesへの実際の公開と本番Firebaseの読み書き、元動画の厳密な比較は実施していない。
 
 ## 次工程
