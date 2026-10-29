@@ -7,7 +7,7 @@ import {createCombat,RENTAL_SQUAD,SCHOOL_RENTAL_PERSONALITIES}
 const actor={id:'A1',side:0,knockouts:0};
 function fixture(){
  const calls=[],knockout={
-  commit:data=>{calls.push({type:'ko',...data});return data;}
+  commitForCause:data=>{calls.push({type:'ko',...data});return data;}
  };
  const interrupted={target:'B1',stopped:false};
  const run=createHitAftermath({
@@ -33,7 +33,7 @@ test('V3-2: ordinary impact orders interrupt BEFORE KO and refreshes the pin',()
  assert.equal(run.afterOrdinaryHit({caster:actor,target:target(0),damage:23}),interrupted);
  assert.deepEqual(calls,[
   {type:'interrupt',target:'B1',amount:23,critical:false},
-  {type:'ko',caster:actor,target:target(0),refreshPin:true}
+  {type:'ko',cause:'ordinary',caster:actor,target:target(0)}
  ]);
 });
 
@@ -46,8 +46,7 @@ test('V3-2: special one-impact policy runs interrupt before after-skill KO',()=>
  assert.deepEqual(logged,[interrupted]);
  assert.equal(calls.length,2);
  assert.deepEqual(calls[0],{type:'interrupt',target:'B1',amount:30,critical:false});
- assert.deepEqual(calls[1],{type:'ko',caster:actor,
-  target:target(0),eligibilityPhase:'after-skill'});
+ assert.deepEqual(calls[1],{type:'ko',cause:'special',caster:actor,target:target(0)});
 });
 
 test('V3-2: per-hit special calls its interrupt per hit but does not double-roll',()=>{
@@ -61,7 +60,7 @@ test('V3-2: per-hit special calls its interrupt per hit but does not double-roll
  assert.deepEqual(calls.map(x=>x.type),
   ['interrupt','interrupt','ko']);
  assert.equal(recorded.length,0,'aggregate must not repeat interruption after per-hit');
- assert.equal(calls[2].eligibilityPhase,'after-skill');
+ assert.equal(calls[2].cause,'special');
 });
 
 test('V3-2: revive eligible member, but leave heals and statuses untouched',()=>{
