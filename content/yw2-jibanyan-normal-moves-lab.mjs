@@ -72,7 +72,9 @@ function sourcedMove(index,entry,slot,template){
  * are source-backed. There is intentionally NO original Soultimate/Inspirits
  * claim, because the source pack is disputed/engine-incompatible there.
  */
-export function buildJibanyanNormalMoveLab({index=YW2_ORIGINAL_REFERENCE_INDEX}={}){
+export function buildJibanyanNormalMoveLab({index=YW2_ORIGINAL_REFERENCE_INDEX,
+ includeSpeedDown=false}={}){
+ if(typeof includeSpeedDown!=='boolean')throw new TypeError('includeSpeedDown must be boolean');
  const entry=index?.getCharacter?.('yw2:jibanyan');
  if(!entry||entry.id!=='yw2:jibanyan'||entry.game!=='yw2'||
     entry.name!=='ジバニャン')
@@ -82,17 +84,34 @@ export function buildJibanyanNormalMoveLab({index=YW2_ORIGINAL_REFERENCE_INDEX}=
   RENTAL_LAB_CATALOG.getMove(base.moveIds.attack));
  const technique=sourcedMove(index,entry,'technique',
   RENTAL_LAB_CATALOG.getMove(base.moveIds.technique));
+ let originalInspirit=null;
+ if(includeSpeedDown){
+  const status=entry.moves.inspirit;
+  const effect=sourcedValue(status.effect,'inspirit.effect',x=>x==='speed-down');
+  const level=sourcedValue(status.level,'inspirit.level',x=>Number.isSafeInteger(x)&&x===2);
+  const hits=sourcedValue(status.hits,'inspirit.hits',x=>x===0);
+  const refs=new Set(sourceUrls(index,status.labelSourceIds));
+  for(const fact of [status.effect,status.level,status.hits])
+   for(const url of sourceUrls(index,fact.claims[0].sourceIds))refs.add(url);
+  originalInspirit={...clone(RENTAL_LAB_CATALOG.getMove(base.moveIds.inspirit)),
+   id:slotId('inspirit'),displayName:status.label,
+   category:'status_negative',power:null,element:null,
+   targetScope:'single_enemy',hitPattern:{type:'none',count:hits},
+   statusEffect:effect,level,evidence:'documented',sourceRefs:[...refs]};
+ }
  const stats=Object.fromEntries(props.map(k=>[
   k,sourcedValue(entry.stats[k],'stats.'+k,positive)
  ]));
  const reference=clone(base);
  reference.id=JIBANYAN_NORMAL_TRIAL_ID;
- reference.name='ジバニャン（通常技のみ研究）';
+ reference.name=includeSpeedDown?'ジバニャン（速度とりつき研究）':
+  'ジバニャン（通常技のみ研究）';
  reference.rank=entry.rank;
  reference.tribe=entry.tribe;
  reference.stats=stats;
  reference.moveIds.attack=attack.id;
  reference.moveIds.technique=technique.id;
+ if(originalInspirit)reference.moveIds.inspirit=originalInspirit.id;
  reference.provenance.identity='documented';
  reference.provenance.stats='documented';
  reference.provenance.tribe='documented';
@@ -109,7 +128,7 @@ export function buildJibanyanNormalMoveLab({index=YW2_ORIGINAL_REFERENCE_INDEX}=
  reference.provenance.personality='fixture';
  const catalog=extendCombatCatalog({
   baseCatalog:RENTAL_LAB_CATALOG,
-  characters:[reference],moveMaster:[attack,technique]
+  characters:[reference],moveMaster:[attack,technique,...(originalInspirit?[originalInspirit]:[])]
  });
  const profile=Object.freeze({
   schema:BATTLE_EXECUTION_PROFILE_SCHEMA_V2,
@@ -118,16 +137,17 @@ export function buildJibanyanNormalMoveLab({index=YW2_ORIGINAL_REFERENCE_INDEX}=
   soultimateRank:1,soulCapacity:soulCapacityForRank(1)
  });
  const researchProvenance=Object.freeze({
-  originalMoves:Object.freeze(['attack','technique']),
+  originalMoves:Object.freeze(['attack','technique',...(includeSpeedDown?['inspirit']:[])]),
   originalLevel99Stats:true,
   fixtureFields:Object.freeze([
    'personality','actionWeights','loafChance','passiveMagnitudeAndDuration',
-   'inspirit','soultimate','soulRank','equipmentAndResistances',
-   'hitRngAndDamageFormula','chargeAndAnimationTiming'
+   ...(includeSpeedDown?[]:['inspirit']),'soultimate','soulRank','equipmentAndResistances',
+   'hitRngAndDamageFormula','chargeAndAnimationTiming',
+   ...(includeSpeedDown?['statusStacking','midWaitRescheduling','statusHitChance']:[])
   ]),
   originalSoultimateHitCount:null,
   battleReady:false,
-  mode:'normal-moves-only-lab'
+  mode:includeSpeedDown?'speed-down-lab':'normal-moves-only-lab'
  });
  return Object.freeze({catalog,profile,researchProvenance,
   characterId:JIBANYAN_NORMAL_TRIAL_ID});
