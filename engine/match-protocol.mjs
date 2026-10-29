@@ -187,7 +187,8 @@ export function createMatchProtocol({battleOptions={},hostNowMs=()=>performance.
   entries:journal,hash:stateFingerprint(core.snapshot())});}
  // Diagnostics only; never included in the Firebase snapshot or journal.
  return {dispatch,advanceAuto,snapshot,exportJournal,
-  inspectTimeDomains:()=>core.inspectTimeDomains()};
+  inspectTimeDomains:()=>core.inspectTimeDomains(),
+  inspectCausality:()=>core.inspectCausality()};
 }
 /**
  * Re-execute accepted host-order events. This verifies that a transcript is
