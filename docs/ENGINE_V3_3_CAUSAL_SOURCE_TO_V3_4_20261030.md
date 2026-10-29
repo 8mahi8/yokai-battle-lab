@@ -17,7 +17,7 @@ V3-3-1〜4で、論理行動point / HP・状態の正規commit / 演出表示ms 
 - 新規 `tests/v3-causal-source-trace.test.mjs` **5件**。両陣営6体の**計24種類の著作技枠**を確定データのIDに結び付け、正常・無行動・スキル・表示中/表示後・自作チーム非推論・偽造ID/重複event・invalid timestampを検証。
 - `tests/match-core-owner-v3.test.mjs`の、公開メソッド名を固定したAPIテストを新しい読み取り専用公開メソッドに追随させた。最初のCIでここだけ失敗（**793/794 PASS, 1 fail**）したが、ゲーム動作バグではなく新しい公開APIを意図的に含めたことによる契約更新。修正後の同テスト・新5件は正式CI合格。
 - コードSHA `1ad6c7fd95190d71c8430962bf14e2ccd62d821a`：[Research battle unit tests run 40912717332](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40912717332) **Node 794/794 PASS, fail 0**、自然6vs6決着耐久とChromium実操作QAまで全Job SUCCESS。独立`match.inspectCausality()`呼び出しの前後で`snapshot`・`hash`・`journal`がbyte-equivalentであることも検証。
-- 同SHA：[Firebase Friends no-Auth run 40912717660](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40912717660)。Google Sites単体HTML build、RTDB Emulator実2席/24ホスト行動/ACK、Chromium iframe QAと旧Rules別Emulatorまで確認する対象。テストゲートの最終状態はActionsを見ること。
+- 同SHA：[Firebase Friends no-Auth run 40912717660](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40912717660) **全工程SUCCESS**。Google Sites単体HTML build（76 source modules、Friends未配布版295,292bytes）、RTDB Emulator実2席/24ホスト行動とACK一致、切断再接続、ホスト公開遅延、実Chromium 2iframe・4埋め込み幅、旧期限Rules別Emulatorテストを全件合格。本番Firebaseは予約済み非ルームキーGET1回のHTTP 200（本文未閲覧、書込0）。
 
 ## 原作と資料の根拠
 - [Mt. Wildwood｜Yo-kai Watch 2 Turn Order](https://mtwildwood.net/turn-order.php?g=yw2)：前衛のwaitカウンタと次の行動の順序、通常action wait3、切替システムwait0。**対戦時のms↔point変換は定義していない**。
