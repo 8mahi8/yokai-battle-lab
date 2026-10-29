@@ -134,7 +134,6 @@ export function buildJibanyanNormalMoveLab({index=YW2_ORIGINAL_REFERENCE_INDEX,
    Array.isArray(x)&&x.length===1&&
    x[0]?.attitude==='grouchy'&&x[0]?.chance===100);
   const loafFact=entry.behavior?.loafWeight;
-  const loafWeight=sourceLoafWeight;
   // Only a 100%-fixed documented Attitude can skip a random draw.
   // This field is NOT loafChancePercent: actual loaf chance is level-
   // adjusted and may be modified by leader/status/skills.
