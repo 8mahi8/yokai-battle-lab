@@ -915,30 +915,20 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
           ...(interruption?{interruption}:{}) ,
           winner,model:'playtest-estimate'};
       }else{
-        const targetSoul=soul.snapshot().teams[1-side].find(x=>x.id===enemy.id);
         const recipient=livingFront(side)[0]??null;
-        const receiverSoul=recipient?soul.snapshot().teams[side].find(x=>x.id===recipient.id):null;
-        const amount=recipient?Math.min(PLAYTEST_SOUL_TUNING.pokeMaxTransfer,
-          targetSoul.soul,receiverSoul.capacity-receiverSoul.soul):0;
-        if(amount>0){
-          soul.setSoul(enemy.id,targetSoul.soul-amount);
-          soul.addSoul(recipient.id,amount);
-        }
+        const amount=recipient?soul.transferSoul({
+          sourceId:enemy.id,recipientId:recipient.id,
+          maxAmount:PLAYTEST_SOUL_TUNING.pokeMaxTransfer
+        }):0;
         reward={kind:'playtest-soul-transfer',effect:'soul-drain',amount,
           recipientId:recipient?.id??null,sourceId:enemy.id,
           model:'playtest-estimate'};
       }
     }else{
-      const targetSoul=soul.snapshot().teams[1-side].find(x=>x.id===enemy.id);
       const recipient=livingFront(side)[0]??null;
-      const receiverSoul=recipient?soul.snapshot().teams[side].find(x=>x.id===recipient.id):null;
       const amount=researchPokeSoulTransfer>0&&recipient
-        ?Math.min(researchPokeSoulTransfer,targetSoul.soul,
-          receiverSoul.capacity-receiverSoul.soul):0;
-      if(amount>0){
-        soul.setSoul(enemy.id,targetSoul.soul-amount);
-        soul.addSoul(recipient.id,amount);
-      }
+        ?soul.transferSoul({sourceId:enemy.id,recipientId:recipient.id,
+          maxAmount:researchPokeSoulTransfer}):0;
       reward={kind:researchPokeSoulTransfer>0?'research-soul-transfer':'unresolved',
         amount,recipientId:recipient?.id??null,sourceId:enemy.id,model:'research-only'};
     }
