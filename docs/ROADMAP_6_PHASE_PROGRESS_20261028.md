@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-29 V3-2継続｜Firebase Friends PR統合QA正式合格
+
+- [本番変更なしのFirebase Emulator・HTML build・2iframe結果](./ENGINE_V3_2_FIREBASE_PR_QA_RECOVERY_20261029.md)。既存の`phase37-firebase-friends.yml`にread-only PR triggerを追加し、**コードSHA `e9f75f6ba2afcd09c3c5a8155d43597c388bba83`の[GitHub Actions run 40897292624](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40897292624)全step SUCCESS**。
+- ログで`SITES-ONLINE-BUILD-PASS`（学校Firebase Friends用単体HTMLとエミュ版）、`FIREBASE-FRIENDS-COMBAT-REGRESSION-PASS`（24ホスト行動/ACK/state一致）、`FIREBASE-FRIENDS-NOAUTH-PASS`（ルーム/2席/権限Rules）、`SITES-FIREBASE-FRIENDS-EMULATOR-PASS`（Chromium実2iframe、ホストclock停止/復帰、四埋込幅）を確認。旧2026-11-08期限Rulesは**別Emulator上**で確認し現在時点のSmoke PASS。
+- 本番Firebaseへの**非ルームキーへのGET1回**はHTTP 200（`readOnly:true`、Body未検査・Write未検査）。**本番DB/Rules/Auth変更0、学校サイト・Drive公開変更0**。同SHAの研究Node/自然耐久/Chromium CI [40897292655](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40897292655) SUCCESS。
+- **学校Safari iPad2台での本当のGoogle Sites対戦と原作動画の時間/操作再現が未検証**。V3-2後半・未完成。次はV3-2残り効果責務の監査とV3-3（時間/表示/行動）への引渡し、V3-4 IDカタログ化、V3-5学校実機。
+
 ## 2026-10-29 V3-2継続｜正式PR CI復旧・771全件PASS
 
 - [正式Actions根拠・落ちた2件の原因・未検証範囲](./ENGINE_V3_2_FORMAL_PR_CI_RECOVERY_20261029.md)。既存`research-unit.yml`に読み取り専用PR起動を追加（push/手動は維持）。以前のGitHub連携がPR run限定のためpush CI一覧を取得できていなかった原因を解消。
