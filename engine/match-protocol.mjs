@@ -17,9 +17,9 @@
  * Full journal + deterministic seed permits reproducibility checks.
  * fnv1a32 is a quick QA fingerprint, NEVER a security MAC/hash.
  */
-import {createCombat} from './combat.mjs';
-import {normalizeMatchCommand,applyMatchCommand} from './match-command-kernel.mjs';
-import {sampleHostInputMs,inspectCoreTimeDomains} from './core-time-domains.mjs';
+import {createMatchCore} from './match-core.mjs';
+import {normalizeMatchCommand} from './match-command-kernel.mjs';
+import {sampleHostInputMs} from './core-time-domains.mjs';
 export {normalizeMatchCommand} from './match-command-kernel.mjs';
 
 const VERSION=1;
@@ -96,14 +96,14 @@ export function createMatchProtocol({battleOptions={},hostNowMs=()=>performance.
    catalogSkillResolution:battleOptions.teams===undefined,
    researchStatInspirits:battleOptions.researchDamageModel===false?false:true,
    researchSpecialEffects:true,...battleOptions});
- function newBattle(){return createCombat(options);}
- const game=newBattle();
+ // Protocol owns order/ACK/journal; MatchCore owns every combat mutation.
+ const core=createMatchCore(options);
  let revision=0;
  const sequence=[0,0],lastReceipt=[null,null],journal=[];
  function append(event){
   if(journal.length>=MAX_JOURNAL)throw new RangeError('test journal limit reached');
   revision++;
-  const log=clone({...event,revision,hash:stateFingerprint(game.snapshot())});
+  const log=clone({...event,revision,hash:stateFingerprint(core.snapshot())});
   journal.push(log);
   return log;
  }
@@ -139,7 +139,7 @@ export function createMatchProtocol({battleOptions={},hostNowMs=()=>performance.
    if(hostRotationAtMs===null)
     return {ok:false,reason:'invalid_host_clock'};
   }
-  try{result=applyMatchCommand(game,side,command,
+  try{result=core.applyNormalizedCommand(side,command,
    {rotationAtMs:hostRotationAtMs??0});}
   catch(error){result={ok:false,reason:'rule_exception',detail:error.message};}
   if(!plain(result))result={ok:true,result:result??null};
@@ -155,7 +155,7 @@ export function createMatchProtocol({battleOptions={},hostNowMs=()=>performance.
   if(journal.length>=MAX_JOURNAL)
    return {ok:false,reason:'research_journal_full'};
   let outcome;
-  try{outcome=game.step();}
+  try{outcome=core.advanceAuto();}
   catch(error){return {ok:false,reason:'auto_step_exception',detail:error.message};}
   const event=append({kind:'auto',result:clone(outcome)});
   return {ok:true,revision:event.revision,hash:event.hash,result:clone(outcome)};
@@ -181,13 +181,13 @@ export function createMatchProtocol({battleOptions={},hostNowMs=()=>performance.
       ...(Number.isFinite(last.receipt.result?.remainingMs)?
         {remainingMs:last.receipt.result.remainingMs}:{})
     }:null),
-    hash:stateFingerprint(game.snapshot()),forecast:game.preview(5),game:game.snapshot()});
+    hash:stateFingerprint(core.snapshot()),forecast:core.preview(5),game:core.snapshot()});
  }
  function exportJournal(){return clone({version:VERSION,initialOptions:options,
-  entries:journal,hash:stateFingerprint(game.snapshot())});}
+  entries:journal,hash:stateFingerprint(core.snapshot())});}
  // Diagnostics only; never included in the Firebase snapshot or journal.
  return {dispatch,advanceAuto,snapshot,exportJournal,
-  inspectTimeDomains:()=>inspectCoreTimeDomains(game.snapshot())};
+  inspectTimeDomains:()=>core.inspectTimeDomains()};
 }
 /**
  * Re-execute accepted host-order events. This verifies that a transcript is
