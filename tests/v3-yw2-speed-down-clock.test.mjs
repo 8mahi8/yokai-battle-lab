@@ -133,7 +133,7 @@ test('V3-4-8 speed effects stay distinct from physical HP/base speed and preserv
  assert.equal(custom.snapshot().squads[1][5].hp,b.squads[1][5].hp);
  assert.equal(clockUnit(custom,'B6').speed,Math.floor(b.squads[1][5].speed*.7));
  const baseline=createCombat({seed:42});
- assert.equal(baseline.snapshot().clock.teams[1].members[3].speed,
+ assert.equal(baseline.snapshot().clock.teams[1].members[5].speed,
   baseline.snapshot().squads[1][5].speed);
 });
 
