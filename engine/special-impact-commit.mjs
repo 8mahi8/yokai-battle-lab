@@ -133,6 +133,44 @@ export function commitPlannedSpecialStatus({
 }
 
 /**
+ * Validate all effects from the custom/reference research planner BEFORE
+ * the first HP/status write. Unlike the authored six-Soultimate plan, there
+ * is no source-defined stage catalog for these fixtures. Keep this as a
+ * structural/sidedness guard, never a source of original YW2 mechanics.
+ */
+export function assertResearchSpecialImpact(impact,{casterSide,target}={}){
+ if(!object(impact)||!object(target)||!word(target.id)||
+    impact.targetId!==target.id||
+    !Number.isSafeInteger(target.hp)||!Number.isSafeInteger(target.maxHp)||
+    target.maxHp<1||target.hp<0||target.hp>target.maxHp||
+    ![0,1].includes(target.side)||![0,1].includes(casterSide))
+  throw new TypeError('valid canonical research impact target required');
+ const kind=impact.kind;
+ const allied=kind==='heal'||kind==='revive'||kind==='buff';
+ const hostile=damaging.has(kind)||kind==='debuff';
+ if((!allied&&!hostile)||
+    (allied&&target.side!==casterSide)||
+    (hostile&&target.side===casterSide))
+  throw new RangeError('research impact kind or target side invalid');
+ if(damaging.has(kind)&&
+    (!Number.isSafeInteger(impact.amount)||impact.amount<0))
+  throw new TypeError('research impact damage must be a nonnegative integer');
+ if(recovering.has(kind)&&
+    (!Number.isSafeInteger(impact.hpAfter)||
+     impact.hpAfter<target.hp||impact.hpAfter>target.maxHp))
+  throw new TypeError('research recovery HP out of range');
+ if(['buff','debuff','damage-status'].includes(kind)){
+  const sign=kind==='buff'?'positive':'negative';
+  if(target.hp<=0||impact.statusSign!==sign||
+     !word(impact.statusEffect)||
+     !Number.isInteger(impact.statusLevel)||
+     impact.statusLevel<1||impact.statusLevel>4)
+   throw new TypeError('research status impact invalid');
+ }
+ return true;
+}
+
+/**
  * Research-only status impact adapter. Keeps the original host resistance RNG
  * and event order but prevents custom moves from bypassing target, sign and
  * status magnitude validation before the canonical Inspirit ledger commit.
