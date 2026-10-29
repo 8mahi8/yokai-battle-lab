@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-3-3｜Firebaseの再送エラー・正規ACKと実RTDB再接続
+
+- [根本原因・原作/公式資料・コード変更・正式QA](./ENGINE_V3_3_FIREBASE_RECONNECT_ACK_GUARD_20261030.md)。`network/firebase-match.mjs`のゲスト通信において、古いsendのPromiseが新しい明示再送の後から失敗しても古いエラーをUIに出さず、受信スナップショットのパケットrevisionと本体revision一致・guest seq妥当性が揃わなければACKしないよう修正した。既存のstop-and-waitと元の番号での再送、disconnect中のunsent queue破棄は維持。
+- `tests/firebase-match.test.mjs`に2件追加、`tests/firebase-friends-noauth-emulator.cjs`に**実RTDB EmulatorのゲストgoOffline→ホスト3行動→goOnline→正規snapshot catch-up・重複ACKなし→新seq入力成功**の自動検証を追加した。**同じseq+intentの再送でrevision増加しない**ことも実機構で確認。
+- **コードSHA `5f69ab28c84b02315e59b15c814b4d702908884b`の[研究CI #40907604375](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40907604375)全工程SUCCESS：Node 787/787 PASS、自然6vs6耐久・Chromium操作PASS**。[Firebase Friends QA #40907604381](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40907604381)も**全工程SUCCESS**。新`FIREBASE-FRIENDS-RECONNECT-ACK-PASS`、2席24行動/ACK/snapshot一致、実Chromium 2iframe、Sites単体HTMLビルド成功。本番FirebaseにGET1回のみ（200）、writeなし。
+- 現在は**V3-3-3完了、V3-3全体は未完**。**完全なブラウザ再起動後の対戦復元は未実装**、学校Safari実機2台・Google Sites実埋込・原作動画直接比較も未検証。次はsnapshot publish遅延/再送/ACKと画面状態の因果関係を2席実通信で検証し、V3-4に移るための統合契約を仕上げる。main・学校公開版・本番Firebase DB/Rules/Auth・Drive変更なし。
+
 ## 2026-10-30 V3-3-2｜12シードの試合因果統合QA
 
 - [技術・原作根拠・実行ログ](./ENGINE_V3_3_CAUSAL_INTEGRATION_QA_20261030.md)。新規`tests/v3-time-causality-integration.test.mjs`5件。Seed6種類×Damageモデルon/off=**12通り**で、モーション中と即時表示を同じ命令列で進めても正規`snapshot`全体（表示フィールド以外）、HP、Soul、KO、行動順、Inspirit、イベントが一致。正規イベント数と表示sequence/アニメーションmsを混同せず、V3-1既存観測APIとV3-3読み取り値の整合性も検査。
