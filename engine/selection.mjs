@@ -69,15 +69,44 @@ export function sourceYw2GrouchyWeights(actor,{
  return Object.freeze({rule,weights:Object.freeze(actor.weights.map((x,i)=>x*multiplier[i]))});
 }
 
+/**
+ * YW2 source-backed post-attitude action overrides. One shared pass after
+ * attitude weight multipliers and normal move eligibility, before the ONE
+ * existing weighted RNG. Forgot to Guard beats Pacifist: a pacifist cannot
+ * select Guard while it is forbidden. The no-valid-action fallback is a
+ * research fixture safety rule, NOT a measured original 3DS action choice.
+ */
+export function applyYw2ActionOverrides(weights,{
+ forgotToGuard=false,pacifist=false,chatty=false,
+ healingTechnique=false,allAlliesFull=false
+}={}){
+ if(!Array.isArray(weights)||weights.length!==4||
+    weights.some(x=>!Number.isFinite(x)||x<0)||
+    [forgotToGuard,pacifist,chatty,healingTechnique,allAlliesFull]
+      .some(x=>typeof x!=='boolean'))
+  throw new TypeError('valid YW2 action override weights/flags required');
+ const w=[...weights];
+ if(forgotToGuard)w[3]=0;
+ else if(pacifist)return Object.freeze([0,0,0,1]);
+ if(chatty||healingTechnique&&allAlliesFull)w[1]=0;
+ if(w.every(x=>x===0))w[0]=1;
+ return Object.freeze(w);
+}
+
 export function actionWeights(actor,{allies,enemies,enemyPin=null,negativeCounts={},positiveCounts={},
  sourceYw2Grouchy=false,enemyChargingIds=[],attackDamageDownIds=[],
- alliesInspiritedByFoe=[],enemiesInspiritedByAlly=[]}={}){
+ alliesInspiritedByFoe=[],enemiesInspiritedByAlly=[],
+ researchYw2ActionOverrides=false,forgotToGuard=false,chatty=false,
+ pacifist=false}={}){
  if(!Array.isArray(actor.weights)||actor.weights.length!==4||actor.weights.some(n=>!Number.isFinite(n)||n<0))
   throw new TypeError('expected four nonnegative action weights');
  if(!Array.isArray(allies)||!allies.length||!Array.isArray(enemies)||!enemies.length)
   throw new TypeError('living allies and enemies required');
  const w=[...actor.weights];
  const healer=actor.technique==='heal';
+ const finish=w=>researchYw2ActionOverrides?
+  [...applyYw2ActionOverrides(w,{forgotToGuard,chatty,pacifist,
+   healingTechnique:healer,allAlliesFull:allies.every(x=>x.hp===x.maxHp)})]:w;
  if(sourceYw2Grouchy&&actor.attitude==='grouchy'){
   const source=sourceYw2GrouchyWeights(actor,{
    allies,enemies,enemyPin,negativeCounts,positiveCounts,
@@ -94,7 +123,7 @@ export function actionWeights(actor,{allies,enemies,enemyPin=null,negativeCounts
     ? allies.some(m=>(positiveCounts[m.id]??0)===0):false;
   if(!canInspirit)w[2]=0;
   if(w.every(x=>x===0))w[0]=1;
-  return w;
+  return finish(w);
  }
  let attitudeRuleApplied=false;
  // Each attitude's FIRST applicable rule wins. Rules requiring Soul charge,
@@ -132,7 +161,7 @@ export function actionWeights(actor,{allies,enemies,enemyPin=null,negativeCounts
     ? allies.some(m=>(positiveCounts[m.id]??0)===0):false;
  if(!eligible)w[2]=0;
  if(w.every(x=>x===0))w[0]=1;
- return w;
+ return finish(w);
 }
 
 export function pickAction(weights,random){
