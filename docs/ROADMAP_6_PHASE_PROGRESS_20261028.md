@@ -19,6 +19,14 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-15｜原作所有者2体から共通スキル「まもりわすれ」を実行
+
+- [調査ソース・コード接続・テスト/CI・次の統合課題](./ENGINE_V3_4_15_SOURCE_ACTION_SKILL_BRIDGE_20261030.md)。[Mt. Wildwood Wazzat（YW2）](https://www.mtwildwood.net/yw2/yokai/wazzat)、[Houzzat（YW2）](https://www.mtwildwood.net/yw2/yokai/houzzat)、[国内攻略大百科](https://gamepedia.jp/youkai-yw2/monsters/185)で、**わすれん帽（Wazzat）・メゾン・ドワスレ（Houzzat）は共通の「まもりわすれ（Forgot to Guard）」を持つ**。効果は双方がガードを選ばなくなること、複数所有者でも非スタック。[旧YW2 Medallium](https://mtwildwood.net/yokaiMedallium/yokaiHouzzat.html)では**後衛の持ち主でも発動**。**スキル封印中でも効果が残るという説明はYW3節にあり、YW2仕様として流用しない**。
+- 新規`content/yw2-original-action-skill-master.mjs`に**一つの出典付き`yw2:skill:mamoriwasure`**、原作所有者の正確な2ID`yw2:wazzat`/`yw2:houzzat`と引用URLを登録。原作IDを渡すと所有者を検証して**同じimmutable Skillオブジェクト**を返し、原作Skillの二重効果実装や任意の未確認キャラへの付与を防止。`engine/combat.mjs`のcustom`teams`メンバー`sourceYw2CharacterId`から、既存V3-4-14の**唯一の`researchActionOverrideSkill`実行経路**へ自動投影し、`sourceYw2SkillId`を状態に保持。手書き研究タグとの同時指定は衝突として拒否。**`researchYw2ActionOverrides:true`を付けた研究試合のみ**有効。原作Wazzat/Houzzatの他4技・能力値/性格/特殊効果は未実装で、既存fixtureキャラへのスキルだけの試験。通常6体や学校ロビーに2体を追加していない。
+- 新規`tests/v3-yw2-original-skill-owner-bridge.test.mjs`**7件**：2体の同一共有Skill/引用、後衛A6・B6からのglobal Guard抑止、**持ち主がKOされて他に生存者がいなければGuard選択復帰**、出典ID以外のHP/技などはfixtureのまま、未確認ID・競合手動タグ・無効研究flagの拒否、Lab/School×3seed旧6体の正規MatchProtocol/journal replay不変。初回テストだけ必殺威力を999上限超えの1000にして拒否→テスト期待を修正し、エンジン契約維持。
+- **正式コードSHA `21a8654099997392eb1de4533b2be9407bd74461`**：[Research unit CI #40972019512](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40972019512) **Node895/895 PASS、自然6vs6耐久/実Chromium操作PASS**。[Firebase Friends CI #40972019539](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40972019539) **全job SUCCESS**：実Firebase RTDB Emulator2席24行動ACK/正規state同期、切断再接続/冪等再送、publish lag、Chromium2iframe/4幅、学校用**未配布**HTML build77 modules。本番Firebaseは予約済み非ルームキーGET1回HTTP200、本文未閲覧・書込0。
+- **現在地：V3-4-15 原作2体のスキルを原作ID・共通マスター経由で実戦実装・検証完了。V3-4と原作ゲーム全体は未完成。** 次V3-4-16は原作わすれん帽/メゾン・ドワスレの技マスターに裏付けされた攻撃/妖術/とりつき/必殺と本体Statsを揃え、既存`CombatCatalog`の正式所有者Skillとの結合へ進む（未確認の技はfail-closed）。Skill封印のYW2挙動・ジバニャン必殺20×5/20×7衝突・原作動画/学校Safari実機2台は未検証。main・学校Google Sites直接貼付HTML・本番Firebase DB/Rules/Auth・Google Driveへの変更なし。
+
 ## 2026-10-30 V3-4-14｜原作の性格適用後の行動禁止・強制を実戦へ接続
 
 - [原作資料/実装/自動テスト・CI/未対応と次の統合工程](./ENGINE_V3_4_14_ACTION_OVERRIDES_20261030.md)。[Mt. Wildwood YW2 Attitudes](https://mtwildwood.net/attitudes.php?g=yw2)より、**Loaf判定→基本4行動重み→性格第一該当条件の倍率→スキルによる行動禁止/強制→既存加重抽選**が原作。確認済みの例は**Forgot to Guard（全員Guard不可）・Pacifist（本人がGuard固定、ただしForgot to Guardに従う）・Chatty（両陣営Technique不可）・HP満タン時の回復Technique禁止**。[Wazzat YW2](https://mtwildwood.net/yw2/yokai/wazzat)と[原作2 Medallium](https://mtwildwood.net/yokaiMedallium/yokaiWazzat.html)はForgot to Guardが**生存中の後衛持ち主からも両側へ有効**とする。
