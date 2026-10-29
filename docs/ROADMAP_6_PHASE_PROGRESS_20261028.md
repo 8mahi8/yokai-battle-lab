@@ -19,6 +19,15 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-13｜ジバニャン性格100%固定の出典確定とYW1 Loaf値の誤用防止
+
+- [根拠、版別訂正、実装・テスト・次工程](./ENGINE_V3_4_13_FIXED_ATTITUDE_SOURCE_20261030.md)。[Mt. Wildwoodの**Attitudes YW2一覧**](https://mtwildwood.net/attitudes.php?g=yw2)では**Grouchyに「Jibanyan 100%」**と明記。一般妖怪の性格選択は40/30/20/10の4候補だが、**原作ジバニャンにその抽選は不要**。前工程の仮レンタル-derived Grouchyは偶然一致しており、今回は同じ値を**原作出典に結び付けた**。既存の研究AI結果を変える目的の修正ではない。
+- 一方、[Jibanyan YW2ページ](https://mtwildwood.net/yw2/yokai/jibanyan)には**YW1/YW2/YW3が続けて掲載**され、「Default Attitude Grouchy · loaf weight 5」は**YW1節**にある。**YW2節ではそのLoaf値は確認できない**ため、本工程の最初に出典値5を採用しそうになった誤読を訂正。最終コードは**YW2 `behavior.loafWeight=unknown`**、`getPreview.loafWeight=null`、研究版`originalLoafWeight=null`とし、**YKW1値の盗用/サボり5%への誤変換を禁止**。行動抽選より先にサボり判定があり、真面目さ/レベル・装備・スキル等も影響するので、このルールは未再現。
+- `content/yw2-original-reference-pack.mjs`に`behavior.attitudeOptions=[{attitude:'grouchy',chance:100}]`と別のloaf unknown fact、`content/yw2-source-intake.mjs`に候補1〜4/出典/100%合計の整合検証を追加。`content/yw2-jibanyan-normal-moves-lab.mjs`の`includeSourceAttitude:true`は**出典付き1候補100%がGrouchyの場合のみ**既存キャラ人格へ設定。多候補/不明/相互矛盾ならreject。元6体/通常school編成への変更はなく、追加のAttitude RNG消費なし。試験用Loaf chanceは引き続きfixtureであり、原作の実確率と称さない。`provenance.personality='fixture'`、`battleReady:false`を維持。
+- 新規`tests/v3-yw2-fixed-attitude-loaf-source.test.mjs`**6件**。100% Grouchy/unknown Loaf、両陣営6体のプロファイル入力、**4seed×100行動の厳密全snapshot/RNG一致**、出典不明/多候補/偽の99%・重複条件・未確定Loaf拒否、従来6体Lab/SchoolのMatchProtocol/journal replay維持を確認。初回のオンライン用カスタム編成に研究専用`speed-down`を含んで研究flag allowlistに拒否されたテストを修正し、**本番ネットワークの制限を緩めず**再テスト。
+- **正式検証コードSHA `d059a76d0e05f458d934d753b869c156fb7c1435`**：[研究CI #40939515534](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40939515534) **Node 880/880 PASS、自然6vs6耐久/実Chromium操作SUCCESS**。[Firebase Friends noAuth #40939515663](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40939515663) **全job SUCCESS**：Firebase RTDB Emulator2席・24host行動のACK/正規snapshot一致、切断/再接続、publish遅延、Chromium2iframe/4幅、学校Google Sites用**未配布**HTML build76 modules。本番Firebaseは非ルームキーGET1回HTTP200、本文未閲覧/書込0。
+- **現在地：V3-4-13 原作の性格固定とLoafの未解明を、データ・研究対戦経路で正しく区別・テスト済み。** 本工程で戦闘バランス/操作UIが新しく完成したわけではない。次V3-4-14は原作性格の**Override（Forgot to Guard、Pacifist、Chatty、回復使用禁止）**と既存`actionWeights`制限を照合し、**今のゲームで実際に起こりうる条件**を優先して実装する。ひゃくれつ肉球5/7の元資料不一致、スキル封印、元動画フレーム/学校Safari実機2台、学校版実埋込は未確認。main・学校Google Sites・本番Firebase DB/Rules/Auth・Google Driveは無変更。
+
 ## 2026-10-30 V3-4-12｜原作Grouchy性格の条件付き優先順位（研究限定）
 
 - [原作YW2 Attitudes資料・実装・回帰テスト・未確認事項の記録](./ENGINE_V3_4_12_GROUCHY_ATTITUDE_20261030.md)。[Mt. Wildwood YW2性格AI表](https://mtwildwood.net/attitudes.php?g=yw2)で、原作はまず基本行動重み→**上から最初に該当する性格条件の倍率だけ**を適用→行動の可否制限→重みによる乱数抽選を実施。前工程で原作ジバニャンの基本`55/30/10/5`を`CombatCatalog`へ入れたが、旧Grouchyの研究fixtureは**「味方瀕死時の回復」「自分の攻撃と相手守備比較」しか不完全に処理**していなかった。
