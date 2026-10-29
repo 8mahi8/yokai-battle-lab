@@ -16,8 +16,10 @@ import {PLAYTEST_SKILL_CATALOG}
 import {inspiritEffectById}
  from '../content/inspirit-effect-master.mjs';
 import {ELEMENTS} from './damage-model.mjs';
+import {compileSoultimateEffectPlan} from './soultimate-effect-plan.mjs';
 
-export const BATTLE_EXECUTION_PROFILE_SCHEMA=1;
+export const BATTLE_EXECUTION_PROFILE_SCHEMA=1; // legacy explicit-special profile
+export const BATTLE_EXECUTION_PROFILE_SCHEMA_V2=2; // move-owned execution only
 const own=(obj,key)=>Object.prototype.hasOwnProperty.call(obj,key);
 const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const string=x=>typeof x==='string'&&x.length>0;
@@ -35,7 +37,8 @@ const frozenMember=member=>Object.freeze({...member,
  special:Object.freeze({...member.special})});
 
 export function validateBattleExecutionProfile(profile){
- if(!object(profile)||profile.schema!==BATTLE_EXECUTION_PROFILE_SCHEMA||
+ if(!object(profile)||![BATTLE_EXECUTION_PROFILE_SCHEMA,
+    BATTLE_EXECUTION_PROFILE_SCHEMA_V2].includes(profile.schema)||
     !string(profile.characterId)||
     !['fixture','documented','observed'].includes(profile.evidence)||
     !Array.isArray(profile.sourceRefs)||
@@ -44,7 +47,8 @@ export function validateBattleExecutionProfile(profile){
   throw new TypeError('invalid execution profile identity/evidence');
  // Unexpected fields must never become implicit combat modifiers.
  const fields=['schema','characterId','evidence','sourceRefs',
-  'soultimateRank','soulCapacity','inspiritLevel','special'];
+  'soultimateRank','soulCapacity','inspiritLevel',
+  ...(profile.schema===BATTLE_EXECUTION_PROFILE_SCHEMA?['special']:[])];
  if(Object.keys(profile).some(key=>!fields.includes(key))||
     fields.some(key=>!own(profile,key)))
   throw new TypeError('execution profile must explicitly declare all supported fields');
@@ -54,7 +58,8 @@ export function validateBattleExecutionProfile(profile){
     !integer(profile.inspiritLevel)||profile.inspiritLevel<1||
     profile.inspiritLevel>4)
   throw new RangeError('invalid explicit Soul capacity or Inspirit level');
- validateSpecialSpec(profile.special);
+ if(profile.schema===BATTLE_EXECUTION_PROFILE_SCHEMA)
+  validateSpecialSpec(profile.special);
  return true;
 }
 
@@ -117,7 +122,20 @@ export function compileBattleProfileCharacter({catalog,characterId,profile}={}){
      'single_ally':'single_enemy')||
     inspirit.hitPattern?.type!=='none'||inspirit.hitPattern.count!==0)
   throw new TypeError('unsupported Inspirit execution shape');
- const special=validateSpecialSpec(profile.special);
+ // V2 avoids copying any execution parameters outside the move master.
+ // V1 remains importable, but cannot silently conflict with an authored
+ // move-owned rule once one is present.
+ if(profile.schema===BATTLE_EXECUTION_PROFILE_SCHEMA_V2&&
+    !soultimate.execution)
+  throw new TypeError('Soultimate move execution definition required for V2 profile');
+ const sourceSpecial=soultimate.execution?
+  validateSpecialSpec(soultimate.execution):null;
+ const special=profile.schema===BATTLE_EXECUTION_PROFILE_SCHEMA_V2?
+  sourceSpecial:validateSpecialSpec(profile.special);
+ if(sourceSpecial&&JSON.stringify(special)!==JSON.stringify(sourceSpecial))
+  throw new TypeError('Soultimate profile and move execution disagree');
+ // Existing typed plan supplies one additional independent semantic check.
+ if(sourceSpecial)compileSoultimateEffectPlan(soultimate,sourceSpecial);
  if(soultimate.category!==special.kind||
     soultimate.targetScope!==expectedScope(special)||
     soultimate.power!==powerOf(special)||
