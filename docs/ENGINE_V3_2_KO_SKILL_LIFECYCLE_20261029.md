@@ -60,7 +60,7 @@
 - [Node **719/719 PASS・コード`766db4656`**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40839922240)
 - [実Chromium Stage PASS・同コード](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40839922168)
 - [**Firebase Friends/RTDBエミュレーター/本物の2 iframe PASS・コード`d3eb03447`**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40839622444)
-- 最後にスキルのtriggerメタデータを既存カタログから自動派生へ変更（`841a6788b`）。**この最終コードの再回帰は後続のCIで確認する**。Docsだけの更新はFirebase通信コードには触れない。
+- 最後にスキルのtriggerメタデータを既存カタログから自動派生へ変更（コード`841a6788b`、専用テスト追加版`a34541cac`）。**最終コードのNode [719/719 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40840254872)、Chromium [PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40840255136)、Firebase Friends RTDB実2 iframe [PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40840226006)**。Firebase版は最終のテストファイル更新より前の同一実装コードで確認。Docsだけの更新はゲーム/通信処理には触れない。
 
 ## 5. 未完と次
 
