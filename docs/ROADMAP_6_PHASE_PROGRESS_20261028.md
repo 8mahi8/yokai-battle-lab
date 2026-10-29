@@ -19,6 +19,15 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-29 V3-2継続｜Hit/KO/割り込み・DoT・妖気の効果境界を統合
+
+- [実装/原作根拠/不確かな点/受入状況](./ENGINE_V3_2_HIT_TURN_SOUL_LIFECYCLE_20261029.md)
+- `hit-aftermath.mjs`：通常攻撃の割り込み後KO、必殺1対象の割り込み後KO、研究多段の各ヒット割り込みと対象終了時KOを、**同じ権威ホストの処理境界**へ移す。対象・RNG・スキル/KO判定の優先順は旧仕様維持。
+- `owner-turn-effect-lifecycle.mjs`+`effect-commit.mjs`：所有者行動時の継続HP効果と全体/所有者ターン期限を共有。直接攻撃と異なるDoTのサバイバル処理は原作未証明であるため勝手に変えない。
+- `action-soul-accrual.mjs`：プレイテスト妖気増加/研究全員増加/非攻撃時回復を共有し、不正同時指定は開始前に拒否。オリジナルの正確な妖気増加量は未証明。
+- [正式Node **753/753 PASS＋自然対戦耐久／ブラウザSmoke PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40876209404)、[Chromium Stage PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40876209175)、同一ゲームコードの[Google Sites HTML build PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40876180124)。新規テストで8条件の通常Hit時同一snapshot、9条件のSoul mode同一snapshot、研究DoTのphase同期、KO前後順をカバー。
+- **位置：V3-2進行中**。原作未確定の優先順位と多段・Poke/Soul移動を次工程で詰める。V3-3時間軸/行動/視認性→V3-4キャラ/技データのみで追加→V3-5オンライン学校2台。main/学校サイト/本番Firebase/Drive無変更。
+
 ## 2026-10-29 V3-2継続｜必殺のHP・状態異常を共通型Planから実確定
 
 - [変更・検証・原作情報の区別](./ENGINE_V3_2_SPECIAL_IMPACT_COMMIT_20261029.md)。
