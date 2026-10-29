@@ -34,7 +34,9 @@
 ## 今回確認したCIと未検証範囲
 
 - 先行版のNode 726/726は[Actions 40869870353](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40869870353)で**合格**。以前の725/726はテスト対象HP20の設定が漏れた**テスト期待値側の誤り**で、修正[3ed131509f](https://github.com/8mahi8/yokai-battle-lab/commit/3ed131509f243693b5a00474516c992800a46889)により解消した。
-- 新しい複合Planのコードとテストは開発ブランチにコミットし、GitHub Actionsのpush CIを起動。最新の正確な成功数/HTML/RTDBの最終結果は、対象SHAの結果を個別に照合してから判定する。
+- 新しい複合Planの**正式Nodeテスト731/731 PASS＋自然6体対戦耐久＋研究ブラウザPASS**：[GitHub Actions 40870366576](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870366576)（`15b6d35d4`）。後続の**文書のみ変更**した`d11351f2`でも[Node全件PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870516831)。
+- **実Chromium Stage/Pointer/Purify/Result PASS**：[Actions 40870366594](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870366594)（`15b6d35d4`）、文書のみ後続も[PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870516758)。
+- **Firebase Friends no-Auth RTDBエミュレーターの実2画面通信PASS**：[Actions 40870222395](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870222395)。**Google Sites単体HTML build PASS**：[Actions 40870222384](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870222384)。いずれも最終**ゲームエンジンコード**`66b5648b1`での確認で、それ以降は専用テストと文書の追加のみ。学校Safari実機最新版は未確認。
 - Chromiumエミュレーターでの「動いた」は学校のSafari実機2台の保証ではない。元動画と原作の数値・Hit順・演出秒数の照合は引き続き未完。
 
 ## 次の一手
