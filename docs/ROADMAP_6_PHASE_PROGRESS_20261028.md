@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-29 V3-2継続｜Poke妖気移動の共通Commit
+
+- [原作根拠・変更コード・未確認範囲](./ENGINE_V3_2_POKE_SOUL_TRANSFER_20261029.md)。
+- `createSoulSystem.transferSoul`で敵→味方の妖気移動を事前検証・上限/残量制約付きの**単一atomic commit**へ統合。playtest / researchの重複したset/add分岐を撤去。従来の仮の35移動、最初の生存前衛、抽選・イベント形を変更せず、原作の受取先・確率・実数値は未確認のまま。
+- 新規`tests/poke-soul-transfer-v3.test.mjs`で境界、失敗時無変更、両Poke経路の結果とイベント、HP・999側非変更を監視。実GitHub上のソースを用いた純粋Soul API 10条件の実行確認はPASS。**最新HEADのNode全件／Chromium／Firebase RTDB／Google Sites build／学校Safari2台の新規PASSはまだ未確認。**
+- **位置：V3-2後半進行中**。次は本変更のCI監査→非catalog研究用Special残HP直書きの安全な共通化→V3-3行動/表示時間、V3-4データ追加、V3-5試合/実機。公開main、学校Google Sites、本番Firebase、Driveに変更なし。
+
 ## 2026-10-29 V3-2継続｜Hit/KO/割り込み・DoT・妖気の効果境界を統合
 
 - [実装/原作根拠/不確かな点/受入状況](./ENGINE_V3_2_HIT_TURN_SOUL_LIFECYCLE_20261029.md)
