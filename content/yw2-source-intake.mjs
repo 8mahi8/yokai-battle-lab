@@ -86,6 +86,18 @@ export function createYw2SourceIndex({sources,characters}={}){
      throw new TypeError('invalid YW2 Inspirit level');
    }
   }
+  // Optional, source-cited *base* action weights are not an entire
+  // personality: Attitude modifiers, loaf changes and exceptions are separate.
+  if(entry.behavior!==undefined){
+   if(!obj(entry.behavior)||!obj(entry.behavior.baseActionWeights))
+    throw new TypeError('invalid YW2 behavior source');
+   const weights=entry.behavior.baseActionWeights;
+   validateFact(weights,sources,entry.id+'/behavior/baseActionWeights');
+   const value=readDocumented(weights);
+   if(value!==null&&(!Array.isArray(value)||value.length!==4||
+      value.some(x=>!integer(x))||value.reduce((x,y)=>x+y,0)!==100))
+    throw new TypeError('invalid YW2 base action weights');
+  }
   for(const k of ['label','effect'])validateFact(entry.skill[k],sources,
     entry.id+'/skill/'+k);
   for(const k of ['hp','strength','spirit','defense','speed']){
@@ -118,6 +130,8 @@ export function createYw2SourceIndex({sources,characters}={}){
     .map(k=>[k,readDocumented(c.stats[k])]));
    return deepFreeze({id:c.id,name:c.name,rank:c.rank,tribe:c.tribe,
     moveLabels:fields,skillLabel:readDocumented(c.skill.label),
+    baseActionWeights:c.behavior?
+     readDocumented(c.behavior.baseActionWeights):null,
     level99Stats:stats,conflicts,
     // No adapter from original facts to the provisional game formulas.
     battleReady:false,
