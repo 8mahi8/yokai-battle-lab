@@ -655,3 +655,106 @@ test('V3-3: inconsistent revision and foreign snapshots cannot forge guest ACK',
  assert.deepEqual(errors,[]);
  guest.stop();host.stop();
 });
+
+
+test('V3-3-4: blocked host publication keeps guest screen/ACK old while 24 auto actions coalesce, then catches up',async()=>{
+ const bus=fakeTransport(),acks=[],guestViews=[],errors=[],hostViews=[];
+ let freeze=false,release=null,publishing=false,writes=0;
+ const hostRoom={...bus.host,async publishSnapshot(state){
+  writes++;
+  if(freeze){
+   freeze=false;publishing=true;
+   await new Promise(resolve=>{release=resolve;});
+  }
+  return bus.host.publishSnapshot(state);
+ }};
+ const protocol=createMatchProtocol({battleOptions:{seed:212,playtestSoulTuning:true}});
+ const host=createFirebaseMatchHost({roomClient:hostRoom,protocol,
+  onSnapshot:s=>hostViews.push(s),onError:e=>errors.push('host:'+e.message)});
+ const guest=createFirebaseMatchGuest({roomClient:bus.guest,
+  onSnapshot:s=>guestViews.push(s),onAck:a=>acks.push(a),
+  onError:e=>errors.push('guest:'+e.message)});
+ guest.start();assert.equal((await host.start()).ok,true);await tick();
+ assert.equal(guest.status().revision,0);
+ assert.equal(guestViews.length,1);
+ freeze=true;
+ assert.equal(guest.enqueue({type:'watch',mode:'zero'}).clientSeq,1);
+ await tick();await tick();
+ assert.equal(publishing,true);
+ assert.equal(host.snapshot().revision,1);
+ assert.equal(guest.status().revision,0);
+ assert.equal(acks.length,0);
+ assert.equal(guest.enqueue({type:'watch',mode:'standard'}).queued,true);
+ for(let i=0;i<24;i++)assert.equal(host.advanceAuto().ok,true);
+ assert.equal(host.snapshot().revision,25);
+ assert.equal(host.status().lastPublished,0);
+ assert.equal(guest.status().revision,0,'local host progress is not guest rendered state');
+ assert.equal(guest.status().pendingSequence,1);
+ assert.equal(guest.status().queuedInputs,1);
+ assert.equal(bus.sent.length,1,'second tap must wait for canonical ACK');
+ assert.equal(acks.length,0);
+ const preview=guestViews.at(-1);
+ assert.equal(makeStageView(preview,1).teams[1].members.length,6);
+ assert.equal(preview.game.clock.turn,0,'guest UI cannot expose uncommitted auto turns');
+ const finalBefore=host.snapshot().hash;
+ release();
+ for(let i=0;i<30&&guest.status().acked!==2;i++)await tick();
+ assert.equal(guest.status().acked,2);
+ assert.deepEqual(acks.map(a=>a.clientSeq),[1,2]);
+ assert.ok(acks.every(x=>x.accepted&&x.applied===true));
+ assert.equal(host.snapshot().revision,26);
+ assert.notEqual(host.snapshot().hash,finalBefore);
+ assert.equal(guest.status().queuedInputs,0);
+ assert.equal(guest.status().pendingSequence,null);
+ assert.deepEqual(guest.status().lastState,host.snapshot());
+ assert.deepEqual(guestViews.at(-1),host.snapshot());
+ assert.deepEqual(bus.sent.map(x=>x.clientSeq),[1,2]);
+ assert.equal(host.status().dirty,false);
+ assert.equal(host.status().lastPublished,26);
+ assert.ok(writes<=4,'do not publish one intermediate snapshot per auto action');
+ assert.equal(replayMatchJournal(protocol.exportJournal()).ok,true);
+ assert.deepEqual(errors,[]);
+ host.stop();guest.stop();
+});
+
+test('V3-3-4: error and recovery of host publish never exposes a false guest success',async()=>{
+ const bus=fakeTransport(),acks=[],guestViews=[],errors=[];
+ let failNext=false,publishAttempts=0;
+ const hostRoom={...bus.host,async publishSnapshot(state){
+  publishAttempts++;
+  if(failNext){failNext=false;throw Error('injected_publish_failure');}
+  return bus.host.publishSnapshot(state);
+ }};
+ const protocol=createMatchProtocol({battleOptions:{seed:17}});
+ const host=createFirebaseMatchHost({roomClient:hostRoom,protocol,
+  onError:e=>errors.push(e.message)});
+ const guest=createFirebaseMatchGuest({roomClient:bus.guest,
+  onAck:a=>acks.push(a),onSnapshot:s=>guestViews.push(s)});
+ guest.start();await host.start();await tick();
+ failNext=true;
+ assert.equal(guest.enqueue({type:'watch',mode:'zero'}).clientSeq,1);
+ await tick();await tick();
+ assert.equal(host.snapshot().revision,1);
+ assert.equal(host.status().dirty,true);
+ assert.equal(guest.status().revision,0);
+ assert.equal(acks.length,0);
+ assert.equal(guestViews.at(-1).game.soul.modes[1],'standard');
+ for(let i=0;i<6;i++)assert.equal(host.advanceAuto().ok,true);
+ await tick();
+ assert.equal(host.snapshot().revision,7);
+ assert.equal(guest.status().pendingSequence,1);
+ assert.equal(guest.status().acked,0);
+ // A host auto action normally retries dirty state without forcing stale
+ // guest commands to be redelivered; guest only reacts to canonical state.
+ const next=host.snapshot();
+ assert.equal(guest.status().lastState?.revision<=next.revision,true);
+ if(guest.status().acked===0)assert.equal((await host.retryPublish()).ok,true);
+ for(let i=0;i<20&&guest.status().revision<next.revision;i++)await tick();
+ assert.deepEqual(guest.status().lastState,host.snapshot());
+ assert.deepEqual(acks.map(x=>x.clientSeq),[1]);
+ assert.equal(acks[0].applied,true);
+ assert.equal(replayMatchJournal(protocol.exportJournal()).ok,true);
+ assert.deepEqual(errors,['injected_publish_failure']);
+ assert.ok(publishAttempts>=2);
+ guest.stop();host.stop();
+});
