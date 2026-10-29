@@ -201,6 +201,14 @@ exportAuditJournal(); // internal deterministic QA, not a friend replay feature
 - **V8で最新の純粋Hookを158条件実行して旧式との一致PASS**。これは正式なNode全件/Chromium/Firebase 2端末の合格ではない。更新コードの最終CI結果は未確認。直前の719件PASSは以前のHEADのもの。
 - 次：現在のHEADでNode/自然6体戦闘/Chrome/Firebase Friendsの正規回帰確認 → 旧新版seed完全差分 → typed EffectPlan。原作の正確な発火優先/倍率は依然研究課題。まだV3-2完成ではない。
 
+## 7G. V3-2 型付き技EffectPlanの部分実統合（2026-10-29）
+
+- 詳細：[ENGINE_V3_2_TYPED_EFFECT_PLAN_20261029](./ENGINE_V3_2_TYPED_EFFECT_PLAN_20261029.md)。
+- 既存6体24技の正本`RENTAL_MOVE_MASTER`から、**通常攻撃6、攻撃妖術4、回復妖術2、とりつく6**の計18技をimmutableなPlanへ編成し、正規`EffectCommitter`で実処理。新しい技・キャラや未確認の原作数値は加えない。
+- 6必殺は対象数・多Hit/複合効果の特殊構造を持つので、**未知hitCountを単一Hitに偽装せず未移行**。カスタムrosterも従来経路。
+- 実ソースから全24技を組み立て、18 Plan/6特殊拒否/Commit/無効入力のV8**78チェックPASS**＋combat/test構文PASS。同じseedの既存挙動と比較するNodeテストを新設したが**最新HEADの正式CI/Chromium/Firebase実行結果は未確認**。旧719 PASSを流用しない。
+- V3-2残り：正式CIゲート、特殊技の複合Plan、DoT/Soul/Interrupt/Poke/Purify統合と元原作の順序根拠。キャラ追加容易なV3-4やオンライン学校Safari完成とは呼ばない。
+
 ## 8. 今回の決定
 
 **E1-B単独のオンラインおはらい演出拡張、トホホの砲、個別Soultimate追加などのfeature単位ロードマップを凍結**。これまで積んだコード/動画解析/テストは保存。優先順位は**V3-0→V3-1→V3-2→V3-3→V3-4→V3-5**に切り替える。原作動画の局面は今後の統合受入テストとして再利用し、実装順序を決める一単位にはしない。
