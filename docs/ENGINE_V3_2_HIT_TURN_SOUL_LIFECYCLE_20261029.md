@@ -47,9 +47,9 @@
 
 - 新規`tests/hit-aftermath-v3.test.mjs`：通常→中断→KO、必殺の多段/単発の抽選重複防止、蘇生同期、不正入力を遮断。さらに組込レンタルと明示的な旧編成の**8組のseed×flagの完全snapshot/event比較**。
 - 新規`tests/owner-turn-effect-lifecycle-v3.test.mjs`：実`EffectCommitter`での継続損失/回復、KO同期、30全体行動、持ち主ターン限定、持続negative、旧`calculateTurnInspirit`の数値一致、研究6対6の同seed比較。
-- 新規`tests/action-soul-accrual-v3.test.mjs`：3つの増加モード・控え含む12体・弱体命中とミス・KO除外・キャラの上限・12条件で試合全体snapshot/event一致。
+- 新規`tests/action-soul-accrual-v3.test.mjs`：3つの増加モード・控え含む12体・弱体命中とミス・KO除外・キャラの上限・9条件（3モード×seed3種）で試合全体snapshot/event一致。不正な同時指定は開始時に拒否。
 - **[被弾後移行Node全743件PASS＋対戦耐久とブラウザsmoke PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40875026671)**、[同版のChromium Stage QA PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40875026733)。同一実エンジン版[Firebase no-Auth RTDB 2 iframe PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40874955225)、[Google Sites単体HTML build PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40874955184)。
-- 新DoTとSoulの差分を含む**後続のCIについては対象のHEADの成功ログを検証後に合格数を確定**する。旧コミットの緑色だけで新HEADを「完全合格」としない。
+- **初回Soulテストの失敗は、もともと`createCombat`が明示的に禁止していた「試遊用+全員一律Soul追加」の不正な同時指定を、テスト側に置いてしまったことが原因**。テスト構成を修正し、`action-soul-accrual.mjs`単体でも排他的な設定を拒否するよう統一した。再実行した正規CIの結果を確認して最新合格数を確定する。旧コミットの緑色だけで新HEADを「完全合格」としない。
 - 現在のテストはNode、Chromium、RTDBエミュレーター。**学校Safari実機2台で最新版を試したわけではない**。
 
 ## 次の工程・課題
