@@ -3,6 +3,19 @@ on:
   push:
     branches:
       - feat/phase1-action-circle-lab-20261023
+  # Connector run lookup currently lists PR-triggered runs only.
+  # Read-only PR checks make V3 regression status independently auditable;
+  # the original push and manual triggers stay untouched.
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'engine/**'
+      - 'content/**'
+      - 'tests/**'
+      - 'tools/normal-match-endurance.mjs'
+      - 'tools/browser-smoke.mjs'
+      - '.github/workflows/research-unit.yml'
   workflow_dispatch:
 permissions:
   contents: read
