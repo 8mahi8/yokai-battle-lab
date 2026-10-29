@@ -105,8 +105,11 @@ test('V3-4-6 opt-in and default routes differ ONLY in skill events for multi-KO,
  assert.equal(a.events.filter(x=>x.type==='skill'&&x.skill==='momentum').length,
   a.squads[0][0].knockouts);
  assert.equal(b.events.filter(x=>x.type==='skill'&&x.skill==='momentum').length,1);
- assert.deepEqual(a.events.filter(x=>x.type==='special'),
-  b.events.filter(x=>x.type==='special'));
+ // Event IDs shift because the default mode emitted multiple skill events;
+ // payloads and every authoritative HP/skill/RNG outcome remain unchanged.
+ const withoutId=e=>{const {eventId,...payload}=e;return payload;};
+ assert.deepEqual(a.events.filter(x=>x.type==='special').map(withoutId),
+  b.events.filter(x=>x.type==='special').map(withoutId));
 });
 test('V3-4-6 sourced KO policy is explicitly gated from default rental and can replay',()=>{
  assert.throws(()=>createCombat({researchYw2Momentum:true}),/custom teams/);
