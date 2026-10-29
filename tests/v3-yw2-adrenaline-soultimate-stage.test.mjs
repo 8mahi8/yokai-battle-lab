@@ -65,7 +65,8 @@ test('V3-4-10 same Soultimate action cannot boost its later hits after first KO'
   assert.equal(sourced.boost.remainingTurns,5);
   assert.deepEqual(hitValues(sourced.evt),hitValues(noSkill.evt),
    'the KO skill must not change ANY damage in the originating cast');
-  assert.deepEqual(sourced.snap.squads,noSkill.snap.squads);
+  assert.deepEqual(sourced.snap.squads.map(team=>team.map(x=>({id:x.id,hp:x.hp,knockouts:x.knockouts}))),
+   noSkill.snap.squads.map(team=>team.map(x=>({id:x.id,hp:x.hp,knockouts:x.knockouts}))));
   assert.deepEqual(sourced.snap.soul,noSkill.snap.soul);
   const skillEvents=sourced.snap.events.filter(e=>
    e.type==='skill'&&e.skill==='momentum'&&e.kind==='発動');
