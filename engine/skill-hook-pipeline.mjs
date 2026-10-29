@@ -9,7 +9,7 @@
  * handler registry can grow without adding skill-specific branches to the
  * ordinary physical/special/poke move resolvers.
  */
-import {careAtActionBoundary,SKILL_TRIAL} from './skill-effects.mjs';
+import {careAtActionBoundary,SKILL_TRIAL,critSkillBonus,resolveLastStand} from './skill-effects.mjs';
 import {PLAYTEST_SKILL_CATALOG} from '../content/skill-catalog.mjs';
 
 // No second list of skill trigger definitions. The existing immutable
@@ -28,6 +28,34 @@ export function createSkillHookPipeline({enabled,skillOf,teams,boosts,byId,emit,
     typeof emit!=='function'||typeof commitHeal!=='function')
   throw new TypeError('skill hook pipeline requires canonical host dependencies');
 
+ // The catalog declares *when* each passive fires. Keep the existing
+ // mathematical primitives intact until YW2-specific numbers are verified.
+ // These methods are pure: none may draw RNG or mutate canonical state.
+ function hasTrigger(member,trigger){
+  return enabled&&SKILL_HOOK_CATALOG[skillOf(member)]?.trigger===trigger;
+ }
+ function beforeCriticalRoll(actor,baseBonus){
+  if(!Number.isSafeInteger(baseBonus)||baseBonus<0||baseBonus>98)
+   throw new RangeError('base critical bonus must be 0..98');
+  return Math.min(98,baseBonus+
+   (hasTrigger(actor,'on_critical_roll')?critSkillBonus(skillOf(actor)):0));
+ }
+ function beforeDefenderCriticalRoll(defender,baseImmune=false){
+  if(typeof baseImmune!=='boolean')
+   throw new TypeError('base critical immunity must be boolean');
+  return baseImmune||hasTrigger(defender,'on_defender_critical_roll');
+ }
+ function beforeGuardedPhysicalHit(attacker,baseGuardBreak=false){
+  if(typeof baseGuardBreak!=='boolean')
+   throw new TypeError('base guard break must be boolean');
+  return baseGuardBreak||hasTrigger(attacker,'on_guarded_physical_hit');
+ }
+ function beforeLethalDamage(target,amount,spent=false){
+  return resolveLastStand({
+   skill:hasTrigger(target,'before_lethal_damage')?'lastStand':null,
+   hp:target.hp,amount,spent
+  });
+ }
  const onEnemyKO=Object.freeze({
   momentum(caster,target){
    boosts.set(caster.id,{remainingTurns:SKILL_TRIAL.momentumOwnerTurns});
@@ -63,5 +91,6 @@ export function createSkillHookPipeline({enabled,skillOf,teams,boosts,byId,emit,
    }
   }
  }
- return Object.freeze({afterEnemyKO,afterAnyAction});
+ return Object.freeze({afterEnemyKO,afterAnyAction,beforeCriticalRoll,
+  beforeDefenderCriticalRoll,beforeGuardedPhysicalHit,beforeLethalDamage});
 }
