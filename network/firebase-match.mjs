@@ -176,7 +176,9 @@ export function createFirebaseMatchGuest({roomClient,onSnapshot=()=>{},onAck=()=
    }
    return result;
   }catch(error){
-   if(!stopped&&pending===current)onError(error);
+   // A prior timed-out/retried write may reject AFTER a newer attempt.
+   // Ignore its stale error: only the latest attempt may report failure.
+   if(!stopped&&pending===current&&delivery===attempt)onError(error);
    return {ok:false,reason:error.message||String(error)};
   }finally{clearTimeout(timeoutId);}
  }
@@ -207,9 +209,15 @@ export function createFirebaseMatchGuest({roomClient,onSnapshot=()=>{},onAck=()=
  // same monotonic revision, session and ACK checks. This avoids the guest
  // waiting forever if its first Realtime notification/poll is delayed.
  function receiveSnapshot(packet){
-   if(stopped||packet.session!==initialSession||packet.revision<=revision)return;
-   const state=packet.state,seq=state.clientSequences?.[1];
-   if(!isInteger(seq))return;
+   // Subscriptions and bootstrap reads must agree on the same authoritative
+   // revision. A delayed, malformed or mismatched packet is never an ACK.
+   if(stopped||!packet||packet.session!==initialSession||
+      !isInteger(packet.revision)||packet.revision<=revision)return;
+   const state=packet.state;
+   if(!state||typeof state!=='object'||Array.isArray(state)||
+      state.revision!==packet.revision)return;
+   const seq=state.clientSequences?.[1];
+   if(!isInteger(seq)||seq>state.revision)return;
    if(seq<acked)return;
    acked=seq;revision=state.revision;
    latestState=clone(state);
