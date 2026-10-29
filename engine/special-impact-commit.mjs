@@ -112,3 +112,22 @@ export function commitPlannedSpecialHp({plan,impact,target,casterSide,effects}={
  }
  throw new RangeError('status-only Soultimate cannot commit HP');
 }
+
+/**
+ * Apply a validated special status through the SAME existing canonical
+ * Inspirit function. The caller still decides whether the status resisted
+ * and whether a damaged target survived; moving those RNG rolls here would
+ * change battle behavior. This only removes duplicate host status routing.
+ */
+export function commitPlannedSpecialStatus({
+ plan,impact,target,casterSide,casterId,applyStatus
+}={}){
+ assertPlannedSpecialImpact(plan,impact,{casterSide,target});
+ if(!['buff','debuff','damage-status'].includes(impact.kind)||
+    !word(casterId)||typeof applyStatus!=='function')
+  throw new TypeError('Soultimate status commit requires a status stage');
+ if(target.hp<=0)
+  throw new RangeError('Soultimate status cannot apply to a KO member');
+ return applyStatus({id:target.id,sign:impact.statusSign,
+  effect:impact.statusEffect,level:impact.statusLevel,source:casterId});
+}
