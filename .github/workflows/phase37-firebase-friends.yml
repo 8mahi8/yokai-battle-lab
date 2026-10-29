@@ -1,5 +1,20 @@
 name: Phase37 Firebase friends no Auth QA
 on:
+  # Run a read-only Firebase two-seat emulator check for Draft PR updates
+  # so connector PR-run introspection can inspect actual QA outcomes.
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'engine/**'
+      - 'network/**'
+      - 'ui/**'
+      - 'content/**'
+      - 'contracts/**'
+      - 'tests/firebase-friends-noauth-emulator.cjs'
+      - 'tools/build-sites-online.mjs'
+      - 'tools/sites-online-smoke.mjs'
+      - '.github/workflows/phase37-firebase-friends.yml'
   push:
     branches:
       - feat/phase1-action-circle-lab-20261023
