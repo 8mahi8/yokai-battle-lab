@@ -11,6 +11,17 @@
  * survived lethal blow). This coordinator does NOT determine winner or
  * interrupt a charging target; the existing resolver controls those.
  */
+/**
+ * The three CURRENT host policies, not claims about exact original YW2
+ * intra-frame timing. A KO cause owns its skill-eligibility ordering, pin
+ * refresh and actor credit; callers must not invent local combinations.
+ */
+export const KO_CAUSE_POLICY=Object.freeze({
+ ordinary:Object.freeze({eligibilityPhase:'before-skill',refreshPin:true,creditCaster:true}),
+ special:Object.freeze({eligibilityPhase:'after-skill',refreshPin:false,creditCaster:true}),
+ poke:Object.freeze({eligibilityPhase:'before-skill',refreshPin:true,creditCaster:false})
+});
+
 export function createKnockoutLifecycle({
  syncEligibility,afterEnemyKO,refreshPins
 }={}){
@@ -33,5 +44,16 @@ export function createKnockoutLifecycle({
   if(eligibilityPhase==='after-skill')syncEligibility(target.id);
   if(refreshPin)refreshPins();
  }
- return Object.freeze({commit});
+ function commitForCause({cause,caster=null,target}={}){
+  if(!Object.hasOwn(KO_CAUSE_POLICY,cause))
+   throw new RangeError('unknown KO cause');
+  const policy=KO_CAUSE_POLICY[cause];
+  if(policy.creditCaster&&caster===null)
+   throw new TypeError('KO cause requires credited actor');
+  if(!policy.creditCaster&&caster!==null)
+   throw new TypeError('KO cause does not credit an actor');
+  return commit({target,caster,eligibilityPhase:policy.eligibilityPhase,
+   refreshPin:policy.refreshPin});
+ }
+ return Object.freeze({commit,commitForCause});
 }
