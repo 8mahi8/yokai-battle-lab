@@ -118,6 +118,7 @@ test('V3-2: critical, guard, survival skill triggers use the one authoring catal
  assert.equal(f.hooks.beforeGuardedPhysicalHit(f.a[0],true),true);
  f.a[2].skill='lastStand';
  f.a[2].hp=20;
+ f.a[1].hp=20; // non-LastStand target must also start at 20 HP
  assert.deepEqual(f.hooks.beforeLethalDamage(f.a[2],30,false),
   {hpAfter:1,amount:19,activated:true});
  assert.deepEqual(f.hooks.beforeLethalDamage(f.a[2],30,true),
