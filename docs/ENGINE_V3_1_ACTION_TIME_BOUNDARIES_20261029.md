@@ -1,7 +1,7 @@
 # 妖怪対戦 Engine V3-1｜行動ポイント/入力時間/表示時間の共通化（2026-10-29）
 
 ## 位置づけ
-**V3-0の既定の戦闘結果/6対6/API/Firebase Friendsを固定したうえで、V3-1の最初の実装を実施。V3全体、状態所有の一元化、共通Effect pipelineの完了ではない。**
+**V3-0の既定の戦闘結果/6対6/API/Firebase Friendsを固定したうえで、V3-1の共通行動時計・時刻診断・単一MatchCore入口を実装。V3全体、内部SubSystemの完全統合、共通Effect pipelineの完了ではない。**
 
 ユーザーが優先を求めたのは「一技ずつの再現」ではなく「拡張可能な原作ベースの戦闘エンジン」。原作の未確証な行動順・演出タイミングをこの工程で推測して直すのではなく、**数値の根拠と実行の責務を分離**して次の研究/置換ができる状態へ進める。個別の新技/キャラ/原作演出専用機能は追加しない。
 
@@ -20,6 +20,7 @@
   - `presentation-ms`＝モーション表示をブロック/解放する研究用時計。**行動ポイントとは変換しない**。
   - `inspectCoreTimeDomains`＝readonly診断projection。戦闘phaseは`battle-active`/`touch-active`/`finished`の非権威的な診断ラベルで、今の原作phase遷移を実装済みとは言わない。
 - `engine/match-protocol.mjs`のサークル入力時間取得を`sampleHostInputMs`へ移管。**ホストでだけ**時刻を取得し、重複ACK・不正seat・sequence gap/loopでは時刻を取り直さない。以前と同じホストtimeがjournalに入り、再実行できる。`inspectTimeDomains()`をデバッグ専用APIとして追加。ただし**`snapshot()`形式・version・hash・Firebaseの通信形式・公開HTMLを一切変更しない**。
+- **`engine/match-core.mjs`を新設**：`createMatchCore(battleOptions)`が既存の`createCombat`インスタンスを閉じ込め、`applyNormalizedCommand`/`advanceAuto`/`snapshot`/`preview`/`inspectTimeDomains`の**5つの入口だけ**を外へ返す。`engine/match-protocol.mjs`は`createCombat`に直接触れず、host-sequence/ACK/journalを管理しながら**全ての戦闘操作と自動行動をMatchCoreへ委譲**。Firebase Friends adapterのコードは変更なし。各subsystem自体は旧`combat.mjs`内部に残るため、まだ「すべての状態処理が移行完了」ではない。
 - `.github/workflows/phase37-firebase-friends.yml`で`engine/**`を自動監視。共通エンジンのどの新しいファイルも変更の都度、**認証なしFirebase Friendsの本物の2 iframe / RTDB emulator回帰**を起動する。旧Supabase/Auth workflowを再有効化していない。
 
 ## 本家再現に関する厳密な区別
@@ -36,13 +37,14 @@
 ## 検証証拠
 - `tests/action-timeline-core-v3.test.mjs`：同値tie、純粋論理ポイント、研究優先行動、12行動×4seedの実行/予測一致・非破壊。
 - `tests/core-time-domains-v3.test.mjs`：3種の時計の分離、プレゼン研究時間、touch状態、ホストしか入力時刻を取得しないこと、invalid host clock/重複ACK、ネットワークsnapshot/hash維持。
-- V3-0の既存互換テストはそのまま。**Node全705件PASS** [GitHub Actions 40836091285](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836091285)、[本物ChromiumのStage/タッチ/おはらいPASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836091245)、[Firebase Friends no-Auth 2画面の通信・同期PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836040888)。最後の通信CIは同じ実コードだが、追加テストファイルより前のコミット`94aec8db63`を検証した。CIの`engine/**`変更時自動実行範囲拡大も別途確認。
+- `tests/match-core-owner-v3.test.mjs`：MatchCoreが`combat`直接参照を公開しない・snapshotコピーが原本を書き換えない・**4seedでHost protocolとMatchCoreに同じ入力/32自動行動を与え、結果・予測・正規状態が完全一致**することを確認。
+- V3-0の既存互換テストはそのまま。**Node全707件PASS** [GitHub Actions 40836968526](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836968526)、[本物Chromium Stage/タッチ/おはらいPASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836968607)、[**Firebase Friends no-Auth 2 iframe実通信・同期PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836923783)、[単体HTMLのbuild PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836923789)。現行RTDB証拠はCore移行コード`690c0d773e`で検証済み。次の`0459b7008e`は比較用テストのみ追加した同一実装。CIの`engine/**`自動実行範囲も確認済み。
 - Chromium合格は学校実機Safari2台/学校ネットワーク合格と同義でない。
 
 ## 次のV3-1へ必要な作業
-1. **正規state owner API**：wheel/HP/status/Soul/pending action/winnerの変更を厳格な1-ownerからのみ行うよう既存`createCombat`と各subsystemのアクセス境界を整理。途中は旧ホスト/新ホストで同じseed＋コマンドのhashと全勝敗までのトレースが合うことをゲートにする。
+1. **正規state ownerの内部移行**：トップレベルの`MatchCore`入口は一本になった。次にwheel/HP/status/Soul/pending action/winnerの変更を、`combat.mjs`内の共有Effect/state APIへ段階的に移す。毎回旧ホスト/新ホストで同じseed＋入力/KOの状態hashを比較する。MatchCore入口があっても内部で多数の個別状態機構が残るため、V3-1は未完了。
 2. **ActionIntent・Effect pipeline**：攻撃・妖術・とりつき・必殺技・つつく・guard/KO/スキルhookを増やしても、キャラ固有のifを巨大な`combat.mjs`へ追加しない構造へ。これはまだ未完成。順序の未確定は原作研究が揃うまで`unknown`として記録。
 3. **対戦視点の遅延**：原作モーションに連動する`seatVisibleState`と正規stateの分離を、2人の実入力列で比較。ノーモーション専用ハックは作らない。
 4. このあとデータで妖怪/技を追加しやすくする。**先にエンジンを整えてから追加**。学校版・main・本番Firebase Rules/DB・Driveは本人の依頼があるまで未変更。
 
-**この工程で「V3エンジン完成」とは呼ばない。V3-1のタイムドメイン/行動順共通化が完了、正規state ownerとEffectは次工程。**
+**この工程で「V3エンジン完成」とは呼ばない。V3-1ではコマンド・行動ポイント・時間診断・MatchCore入口まで共通化。内部の状態変更ルール/Effectは次工程。**
