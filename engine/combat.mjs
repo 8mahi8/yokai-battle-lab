@@ -94,6 +94,11 @@ function buildMember(source,side,index) {
     throw new TypeError('guardBreak must be a boolean');
   if(source.guardBoost!==undefined&&typeof source.guardBoost!=='boolean')
     throw new TypeError('guardBoost must be a boolean');
+  // Only a custom research input. Not a certified YW2 character Skill
+  // and never silently substituted for the legacy passive ID.
+  if(source.researchActionOverrideSkill!==undefined&&
+    !['forgot-to-guard','pacifist','chatty'].includes(source.researchActionOverrideSkill))
+    throw new TypeError('unsupported research action override skill');
  if(!['sleep','strength-up','strength-down','defense-down','spirit-down',
   'hp-loss','hp-regen','speed-down'].includes(source.inspirit))
     throw new TypeError('unsupported Inspirit');
@@ -110,6 +115,8 @@ function buildMember(source,side,index) {
     // Preserve default roster snapshots. Boosted guard is a custom research
     // input until a source-backed in-battle Guard Boost effect exists.
     ...(source.guardBoost===true?{guardBoost:true}:{}),
+    ...(source.researchActionOverrideSkill?
+      {researchActionOverrideSkill:source.researchActionOverrideSkill}:{}),
     ...(source.techniquePlaySources>0?{techniquePlaySources:source.techniquePlaySources}:{}),
     ...(source.techniquePenetrate===true?{techniquePenetrate:true}:{}),
     attackHits:source.attackHits??1,techniqueHits:source.techniqueHits??1,
@@ -141,7 +148,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   researchWheelCoalescing=false,researchOpeningPriority=null,
   researchPokeSoulTransfer=0,playtestSoulTuning=false,researchDamageModel=false,researchMultiHit=false,researchSoultimateHitCount=null,researchYw2Soultimate=null,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false,enableRentalSkills=playtestSoulTuning,
   researchYw2Momentum=false,researchSpeedInspirit=false,
-  researchYw2Grouchy=false,
+  researchYw2Grouchy=false,researchYw2ActionOverrides=false,
   catalogAttackResolution=false,catalogTechniqueResolution=false,
   catalogInspiritResolution=false,catalogSoultimateResolution=false,
   catalogSkillResolution=false}={}) {
@@ -150,6 +157,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   if(typeof researchYw2Momentum!=='boolean')throw new TypeError('researchYw2Momentum must be boolean');
   if(typeof researchSpeedInspirit!=='boolean')throw new TypeError('researchSpeedInspirit must be boolean');
   if(typeof researchYw2Grouchy!=='boolean')throw new TypeError('researchYw2Grouchy must be boolean');
+  if(typeof researchYw2ActionOverrides!=='boolean')
+    throw new TypeError('researchYw2ActionOverrides must be boolean');
+  if(researchYw2ActionOverrides&&teams===undefined)
+    throw new RangeError('YW2 action overrides require explicit custom teams');
   if(researchYw2Grouchy&&teams===undefined)
     throw new RangeError('YW2 Grouchy trial requires explicit custom teams');
   if(researchSpeedInspirit&&(teams===undefined||!researchDamageModel))
@@ -310,6 +321,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   if(squads.flat().some(m=>['hp-loss','hp-regen'].includes(m.inspirit))&&
       !researchTurnInspirits)
     throw new RangeError('HP-over-time Inspirits require researchTurnInspirits');
+  if(squads.flat().some(m=>m.researchActionOverrideSkill)&&
+     !researchYw2ActionOverrides)
+    throw new RangeError('research action override skill requires researchYw2ActionOverrides');
   const byId=new Map(squads.flat().map(x=>[x.id,x]));
   const skillBoosts=new Map();
   const spentLastStand=new Set();
@@ -1041,7 +1055,16 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       allies,enemies,enemyPin:pins[actor.side],negativeCounts,positiveCounts,
       sourceYw2Grouchy,attackDamageDownIds,
       enemyChargingIds:charge?[charge.casterId]:[],
-      alliesInspiritedByFoe,enemiesInspiritedByAlly
+      alliesInspiritedByFoe,enemiesInspiritedByAlly,
+      researchYw2ActionOverrides,
+      // YW2 Forgot to Guard / Chatty affect BOTH sides including a bench
+      // holder, but are inactive after their owner's KO.
+      forgotToGuard:researchYw2ActionOverrides&&squads.flat().some(m=>
+        m.hp>0&&m.researchActionOverrideSkill==='forgot-to-guard'),
+      chatty:researchYw2ActionOverrides&&squads.flat().some(m=>
+        m.hp>0&&m.researchActionOverrideSkill==='chatty'),
+      pacifist:researchYw2ActionOverrides&&
+        actor.researchActionOverrideSkill==='pacifist'
     });
     return pickAction(weights,rng);
   }
