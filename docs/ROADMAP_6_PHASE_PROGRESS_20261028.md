@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-6｜原作まえのめり1行動1発動（KO統合ルール）
+
+- [実装・原作調査/訂正・テスト/CI・未完と次工程](./ENGINE_V3_4_YW2_ADRENALINE_MULTIKOs_20261030.md)。ジバニャンのSkill「まえのめり」は日本語攻略資料で「敵撃破で攻撃力上昇」。[Mt. Wildwoodの**YW2欄**](https://mtwildwood.net/yw2/yokai/jibanyan)では**1回の行動が複数体倒してもSkill発動は1回**、HP0の持ち主は発動しない、力/妖力+2段階で5行動と説明。現行`SkillHookPipeline`は研究用の全体必殺で2〜3KOした時に各KOにつきskill発動していたので、**明示されたopt-in custom rosterのみ**`sourceYw2Momentum:true`（`createCombat`側は`researchYw2Momentum:true`）で1回の処理解決ごとに1回の発動に制限。普通の`step`および`applyResearchSpecial`の開始時に`beginResolution`を呼び、別の行動では再発動して残り5を更新。死んだキャスターは発動不可。ダメージ/KO/妖気/RNGの処理は変更なし。
+- 原作照合の**重要な訂正**：Mt. Wildwoodページには**YW1・YW2・YW3の各節**がある。途中でYW1/YW3のLv99値をYW2と誤読したが、[YW2節](https://mtwildwood.net/yw2/yokai/jibanyan)は**HP322/力153/妖力90/守108/速165**でGame8のYW2頁と一致する。前工程の原作研究用Lv99データは訂正不要。**ひゃくれつ肉球20×5（国内2資料）と20×7（Mt. Wildwood YW2節）の不一致は今も未解決**。hitCountは推定確定させず研究indexでは`disputed`のまま。
+- 新規`tests/v3-yw2-momentum-ko-scope.test.mjs`**7件**。同じ必殺の2体以上KOを実Combatで再現→1発動、次行動でのrefresh、キャスターKO、従来既定6体との差分、Skillイベント通番以外の実戦HP/Soul/RNG同一、オンラインで研究フラグを拒否する元の初期契約を確認。**正式検証コードSHA `6e6d5bed7913d9f25ca52a77f71e861a6be9e84e`**：[Research CI #40926608857](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40926608857) **Node 836/836 PASS・自然6vs6耐久/実Chromium操作成功**。[Firebase Friends QA #40926608821](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40926608821) **全Job SUCCESS**（実RTDB Emulator 2席24行動ACK、切断再接続、publish遅延、Chromium 2iframe/4幅、Google Sites未配布HTML build 76 modules）。本番Firebase非ルームキーGET1回のみ（200、本文非閲覧、writeなし）。
+- **現在地：V3-4-6 KO Skillの原作研究条件を戦闘へ実装・検証済み、V3-4/原作再現ゲームは未完成。** 今後は(1)確証あるジバニャン通常攻撃10×2/火花の術20などを実戦入力へ段階的に取り込む、(2)ひゃくれつ肉球ヒット5/7を実機/追加資料で確定、(3)Skill封印、原作KO/演出優先順位、技成長/性格/回避、オンライン採用を別々に検証。新研究フラグは既存オンラインの`checkOptions`で拒否され、学校公開版・main・本番Firebase DB/Rules/Auth・Driveへは一切反映していない。学校Safari iPad2台・原作動画直接確認は未済。
+
 ## 2026-10-30 V3-4-5｜原作2体の出典付き研究用データ登録
 
 - [実際に確認した攻略・解析資料、ジバニャン/コマさん2体8技の原作研究データ、食い違い、QAとV3-4-6の計画](./ENGINE_V3_4_YW2_ORIGINAL_REFERENCE_PACK_20261030.md)。従来の6体`RENTAL_*`は**ゲーム開発用fixture**。原作の固有キャラ/技と混同しないため、独立`content/yw2-source-intake.mjs`と`content/yw2-original-reference-pack.mjs`を新設し、実資料にあるジバニャン(No.135)とコマさん(No.142)の日本語名・4技名・Skill・実在する威力/属性/状態・Lv99基準ステータスを**出典URL付きimmutableデータ**に格納。UIで使用できる`getPreview(id)`は2人の表示名/4技名/skill/根拠ある値を返すが、**battleReady:false**で自動的なロビー登録・戦闘実装を禁止。
