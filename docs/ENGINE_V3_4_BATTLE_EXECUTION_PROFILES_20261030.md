@@ -41,6 +41,12 @@
 - [Firebase Friends noAuth #40921171183](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40921171183)：新しい制作機能が既存の学校オンライン2席/RTDBエミュ/Google Sites未配布HTMLの動作を変えないことを確かめる正式統合ジョブ。最終結果はrunの状態を見ること。
 - 元の6体やseedによる戦闘コードは変更ゼロ。登録できる必殺効果は`engine/special-effects.mjs`がすでに対応している研究用8種。**ノーモーション・原作の正確な演出フレーム数・3回以上のサークル回転による対象変更には触らない。**
 
+## 原作資料との区別・技レベルの注意
+
+- [Mt. Wildwood, Soultimates (YKW2)](https://www.mtwildwood.net/soultimates.php?g=yw2)によれば、必殺技のランク1〜4の基本Soulポイントは**100/150/200/250**。今回の`soulCapacityForRank`もそのランク基本値を参照する。
+- **ただし同じ資料では、技のレベル成長と成長タイプによって、技威力や必要妖気への補正があることも説明される**。今回の`Battle Execution Profile`は学校レンタルで育成を省いた固定ランクの実行用入力であり、技レベル1〜10やその必要妖気補正、個別の正確な原作技威力は**実装も検証もしていない**。
+- [Mt. Wildwood, Soultimate Charge](https://mtwildwood.net/soultimate-charge.php)にはチャージ中断確率も整理されているが、追加キャラの中断補正を個別に推定する根拠にはしていない。既存戦闘エンジンのsource backed baselineとplaytest fixtureを混同しない。
+
 ## 次の工程（V3-4-4）
 
 1. 必殺の`damageKind`や`statusLevel`など、今はexecutionProfile側にある追加情報を**move masterが唯一所有するための段階的schema更新**を検討。新実装と旧resolverで同じsource値を保つ。複雑なSoultimateほど、効果の階層化/検証不足を可視化する。
