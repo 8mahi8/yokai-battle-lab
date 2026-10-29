@@ -133,9 +133,9 @@ test('V3-4-4 V2 online replay/ACK preserves old V1 state without any new network
  const catalog=pack(),v1=roster(catalog,1),v2=roster(catalog,2);
  for(const seed of [11,212,747]){
   const old=createMatchProtocol({battleOptions:{seed,teams:v1,
-   researchSpecialEffects:true}});
+   researchSpecialEffects:true},hostNowMs:()=>10000});
   const modern=createMatchProtocol({battleOptions:{seed,teams:v2,
-   researchSpecialEffects:true}});
+   researchSpecialEffects:true},hostNowMs:()=>10000});
   assert.deepEqual(modern.snapshot(),old.snapshot());
   for(const [side,seq,intent] of [
    [0,1,{type:'pin',targetId:'B1'}],
