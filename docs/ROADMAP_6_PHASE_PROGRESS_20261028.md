@@ -19,6 +19,12 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-29 V3-2継続｜旧新必殺Effectの96ケース差分検証
+
+- [差分オラクル・検証証拠・非対象](./ENGINE_V3_2_RESEARCH_SPECIAL_DIFFERENTIAL_20261029.md)。`tests/research-special-differential-v3.test.mjs`に研究用必殺8種類×3初期HP状態×4seed=96例の旧新HP/状態台帳/効果イベント/抵抗乱数消費/勝敗の差分テストを追加。
+- GitHub実ソースを使ったV8テスト本文実行で**96/96一致、攻撃KOの追加状態抑制 PASS**。新旧の戦闘Host全体、HitAftermath、Skill/KO優先、RTDB通信を比較できたわけではない。**現在HEADの正式Node test・Chromium・Firebase Friends・Google Sites HTMLビルド・学校Safari実機2台は未確認**。
+- `combat.mjs`の現行HP更新責務をキーワード監査し、直接の`target.hp=`型を確認できず、HPはEffectCommit経由に集まっている。残る状態purifyとKO/行動/表示時刻の順序は、原作証拠と正式統合QAの結果を見て着手。**V3-2後半・未完成**。main/公開サイト/本番Firebase/Driveは無変更。
+
 ## 2026-10-29 V3-2継続｜研究用必殺の全impact事前検証
 
 - [実装とQAの証拠・未確認範囲](./ENGINE_V3_2_RESEARCH_SPECIAL_PREFLIGHT_20261029.md)：`special-impact-commit.mjs`に`assertResearchSpecialImpact`を追加し、研究用・カスタム必殺の全効果をHP/Status確定前に検証。標準6体の`assertPlannedSpecialImpact`と同じ先行検証段階へ揃えた。原作未知の威力・命中/抵抗乱数・ターン/KO順は変更しない。
