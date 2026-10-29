@@ -13,8 +13,8 @@ export const RENTAL_SKILLS=Object.freeze(Object.fromEntries(
  PLAYTEST_SKILL_CATALOG.map(({legacyKey,displayName})=>[legacyKey,displayName])
 ));
 export const SKILL_TRIAL=Object.freeze({
- momentumStages:2,          // YW1 detailed reference, YW2 exact stage count UNVERIFIED
- momentumOwnerTurns:5,      // YW1 detailed reference, YW2 exact lifetime UNVERIFIED
+ momentumStages:2,          // YW2 Jibanyan Adrenaline: STR + SPR 2 stages (Mt. Wildwood YW2)
+ momentumOwnerTurns:5,      // YW2 Adrenaline: lasts 5 owner actions (Mt. Wildwood YW2)
  careMaxHpFraction:.02,    // YW1 detailed reference; exact YW2 percentage UNVERIFIED
  sharpCritBonusUnits:5     // PROVISIONAL: exact skill crit-roll bonus unverified
 });
