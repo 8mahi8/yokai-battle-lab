@@ -19,6 +19,14 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-29 V3-2継続｜型付きEffectPlanで通常技18件を実ホストへ接続
+
+- [実装・原作未確定事項・受入条件・検証範囲](./ENGINE_V3_2_TYPED_EFFECT_PLAN_20261029.md)。
+- **共通Plan**：既存単一技マスター24件から通常技18件（物理6・攻撃妖術4・回復妖術2・とりつく6）を、`damage/heal/status`の型付きEffectPlanへ変換。標準レンタル6体のホスト`combat.mjs`が効果の正規確定に利用する。
+- **研究との境界**：必殺6件は対象/Hit/複合効果を混同しないため未移行、カスタムrosterは旧コードを通す。原作未知値、新妖怪、学校配布版は変更しない。
+- **結果**：GitHubソースを用いたV8 78検査、実18 Plan/6特殊拒否/18Commitと不正入力検証、JS構文はPASS。**新headのNode全件/8seed旧新比較/Chromium/Firebase Friends 2画面CIは未確認**。テストコードは追加済みだが合格を断定しない。
+- **次工程**：正式CI確認→不具合修正→Soultimateの効果/対象/Hit別Planの設計・共通処理。V3-2未完、V3-3～5は今後。main/学校サイト/Firebase本番/Drive無変更。
+
 ## 2026-10-29 V3-2継続｜パッシブ会心・ガード・HP1生存を単一Hookへ
 
 - [引き継ぎ後の実コード・テスト・検証と未完事項](./ENGINE_V3_2_PASSIVE_ROLL_HOOKS_20261029.md)。
