@@ -25,18 +25,17 @@ function lab(enabled){
  });
 }
 
-test('V3-4-13 YW2 source says Jibanyan 100% Grouchy; loaf WEIGHT=5, not final chance',()=>{
+test('V3-4-13 YW2 source proves 100% Grouchy while loaf weight is unknown',()=>{
  const jib=original.getCharacter('yw2:jibanyan');
  assert.deepEqual(jib.behavior.attitudeOptions.claims[0].value,
   [{attitude:'grouchy',chance:100}]);
  assert.deepEqual(jib.behavior.attitudeOptions.claims[0].sourceIds,
   ['yw2_attitudes']);
- assert.equal(jib.behavior.loafWeight.claims[0].value,5);
- assert.deepEqual(jib.behavior.loafWeight.claims[0].sourceIds,
-  ['jibanyan_mtw']);
+ assert.equal(jib.behavior.loafWeight.status,'unknown');
+ assert.deepEqual(jib.behavior.loafWeight.claims,[]);
  assert.deepEqual(original.getPreview(jib.id).attitudeOptions,
   [{attitude:'grouchy',chance:100}]);
- assert.equal(original.getPreview(jib.id).loafWeight,5);
+ assert.equal(original.getPreview(jib.id).loafWeight,null);
  assert.equal(original.getPreview('yw2:komasan').attitudeOptions,null);
  assert.equal(original.getPreview('yw2:komasan').loafWeight,null);
  assert.ok(Object.isFrozen(jib.behavior.attitudeOptions.claims[0].value));
@@ -56,14 +55,12 @@ test('V3-4-13 source fixed attitude compiles to both team positions without clai
  assert.equal(a.provenance.personality,'fixture',
   'loaf chance, complete Attitude rules and personality are incomplete');
  assert.equal(sourceLab.researchProvenance.originalFixedAttitude,'grouchy');
- assert.equal(sourceLab.researchProvenance.originalLoafWeight,5);
+ assert.equal(sourceLab.researchProvenance.originalLoafWeight,null);
  assert.ok(sourceLab.researchProvenance.fixtureFields.includes('loafChance'));
  assert.ok(!sourceLab.researchProvenance.fixtureFields.includes('attitude'));
  assert.equal(sourceLab.researchProvenance.battleReady,false);
  assert.ok(a.fieldSourceRefs.personality.includes(
   original.sources.yw2_attitudes));
- assert.ok(a.fieldSourceRefs.personality.includes(
-  original.sources.jibanyan_mtw));
  const teams=compileJibanyanNormalMoveTrialTeams({lab:sourceLab});
  for(const member of [teams[0][0],teams[1][5]]){
   assert.equal(member.attitude,'grouchy');
@@ -130,7 +127,7 @@ test('V3-4-13 fail closed for disputed/unverified/partial and multi-Attitude can
  }).catalog.characters.length,7);
 });
 
-test('V3-4-13 reject forged source probabilities and unknown loaf value; never use base weight as percent',()=>{
+test('V3-4-13 reject forged probabilities and unsupported loaf claims; never reuse YW1 weight',()=>{
  for(const value of [
   [{attitude:'grouchy',chance:99}],
   [{attitude:'grouchy',chance:70},{attitude:'grouchy',chance:30}],
@@ -149,13 +146,22 @@ test('V3-4-13 reject forged source probabilities and unknown loaf value; never u
   j.behavior.loafWeight={status:'unknown',
    sourceIds:['jibanyan_mtw'],claims:[]};
  });
- assert.throws(()=>buildJibanyanNormalMoveLab({
+ const sourceLab=buildJibanyanNormalMoveLab({
   index:unknown,includeSourceAttitude:true
- }),/unresolved original fact: behavior.loafWeight/);
- const normal=buildJibanyanNormalMoveLab({
-  index:unknown,includeSourceAttitude:false
  });
- assert.equal(normal.researchProvenance.originalLoafWeight,null);
+ assert.equal(sourceLab.researchProvenance.originalFixedAttitude,'grouchy');
+ assert.equal(sourceLab.researchProvenance.originalLoafWeight,null);
+ // Even if someone imports a documented raw weight from another game,
+ // this build must never translate it into a YW2 per-turn probability.
+ const wrongGame=mutatedIndex(j=>{
+  j.behavior.loafWeight=doc(5,'jibanyan_mtw');
+ });
+ const maybe=buildJibanyanNormalMoveLab({
+  index:wrongGame,includeSourceAttitude:true
+ });
+ assert.equal(maybe.researchProvenance.originalLoafWeight,null);
+ assert.equal(maybe.catalog.getCharacter(maybe.characterId).
+  personality.loafChancePercent,0);
 });
 
 test('V3-4-13 existing online Lab/School and opt-in actor match replay unaffected',()=>{
