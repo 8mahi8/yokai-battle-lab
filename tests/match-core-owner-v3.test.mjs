@@ -8,7 +8,8 @@ test('V3 MatchCore is the exclusive host combat owner; snapshots cannot mutate i
  const core=createMatchCore(protocol.exportJournal().initialOptions);
  assert.ok(Object.isFrozen(core));
  assert.deepEqual(Object.keys(core).sort(),
-  ['advanceAuto','applyNormalizedCommand','inspectTimeDomains','preview','snapshot'].sort());
+  ['advanceAuto','applyNormalizedCommand','inspectCausality',
+   'inspectTimeDomains','preview','snapshot'].sort());
  assert.deepEqual(core.snapshot(),protocol.snapshot().game);
  const snap=core.snapshot();
  snap.squads[0][0].hp=0;
