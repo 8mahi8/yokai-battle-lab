@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-1｜コンパクトキャラ参照・追加パックの原子的検証
+
+- [実装・追加例・正式CI・V3-4-2引き継ぎ](./ENGINE_V3_4_CHARACTER_AUTHORING_PACK_20261030.md)。`content/combat-catalog.mjs`の既存**単一**`createCombatCatalog`に`skillId`参照を追加。各キャラのskill詳細を複製しなくても、既存の4技`moveIds`とスキルIDだけで`skills`/ `moveMaster`から詳細を復元できる。旧6体のinline `skill`は互換保持。`extendCombatCatalog`で既存の不変catalogに新キャラ・技・スキルを**原子的に追加した新catalog**を生成。元の6体登録を変えない、追加時のID競合・slot違い・未定義Skillを登録前に拒否する。
+- 新規`tests/v3-character-pack-authoring.test.mjs`7件。Lab/School6体のコンパクト化で元の24技・skill・statが完全一致、新キャラ1体＋技1個で7体25技・残り3技共用、2体と1個の共通スキル追加、衝突拒否、sourceRefs/未確認fixture、深いコピー、Seed3種×School/Lab2条件×最大75行動で正規戦闘/スナップショット/journal完全一致を確認。初回テストの間違った期待値2件は**テストだけを修正**し、正式CIで解消。
+- **正式テストコードSHA `0e3fdb2daedc779070ffab1cb40f1f9d74fe54d0`**：[Research CI #40918704679](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40918704679) **Node 801/801 PASS、自然6vs6耐久・Chromium実操作PASS**。[Firebase Friends CI #40918704743](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40918704743) **全ジョブSUCCESS**。Google Sites単体HTMLビルド、認証なしRTDB Emulator 2席・24ホスト行動ACK/正規state一致・切断復帰・publish lag・Chromium実2iframe/4幅まで成功。本番Firebaseの予約済み非ルームキーGET1回200のみ、writeなし。
+- **現在地：V3-4-1 authoring登録口完成。戦闘への新キャラ投入は未実装。** 次は**V3-4-2：検証済みキャラID×6人チームを旧combat入力へ変換する境界**を設計・実装し、現行6体の同seed/同commandの完全一致を保証してから、新しい創作キャラへの適用可能範囲を決める。複合必殺、skill発火条件、soulCapacity、性格AI設定、UIラベルなどの試作値/未知の原作知識は区別。学校Safari iPad2台・原作動画の直接比較・ホスト再起動後の対戦復元は未確認。main・公開HTML・本番Firebase DB/Rules/Auth・Drive変更なし。
+
 ## 2026-10-30 V3-3-5｜正規イベントから6体×4技・SkillデータIDへの安全な追跡
 
 - [実装・根拠・正式CI・V3-4へ引き継ぐ条件](./ENGINE_V3_3_CAUSAL_SOURCE_TO_V3_4_20261030.md)。`engine/causal-source-trace.mjs`新設で、正規eventIdを元に`characterId/moveId/moveSlot/passiveSkillId/evidence`を**既存の6体レンタルimmutable catalogと同じmove master**から読み取り、`battle.inspectCausality()`→`MatchCore`→`MatchProtocol`へ非破壊read-only診断として公開。表示中／表示後の各presentation sequenceは別ドメイン。**canonical eventIdと可視化sequenceの正確な同一対応を勝手に仮定していない**。
