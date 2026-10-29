@@ -19,6 +19,14 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-4｜必殺ととりつきの実行定義を技マスターへ一元化
+
+- [実装・V1/V2契約・検証結果・残る本家再現課題](./ENGINE_V3_4_MOVE_OWNED_EXECUTION_20261030.md)。6体の`RENTAL_SOULTIMATE_MOVES[i].definition`を`RENTAL_MOVE_MASTER`の`soultimate.execution`へ**既存のauthoring sourceから直接採用**。`RENTAL_INSPIRIT_MOVES[i].level`も各`inspirit.level`へ採用。既存`YOKAI_DEFINITION_SCHEMA=1`は保ち、任意fieldをカタログ生成時に型・power/target/status/HitPattern整合検証。全6体の元データとunknown hit countを維持し、正規戦闘ルールの新解釈なし。
+- `BATTLE_EXECUTION_PROFILE_SCHEMA_V2=2`を導入。**V2では`special`も`inspiritLevel`も一切再入力せず、`characterId/evidence/sourceRefs/soultimateRank/soulCapacity`だけ**。各技マスターから既存`validateSpecialSpec`/`compileSoultimateEffectPlan`で効果・ステータスlevelを取得して旧combat actorに変換。従来V1 profile（special/Inspirit-level明示）は互換保持し、元moveとの値が不一致ならfail-closed。6体レンタルの現行School/研究コード、通信スナップショット、演出時刻は一切変更しない。
+- 新規`tests/v3-soultimate-move-master-v2.test.mjs`**8件**：6体全必殺のauthoring source一致、複合6種、旧V1と新V2のキャラ/必殺と5seed×75行動のHP/妖気/状態/RNG/イベント一致、3seedのonline ACK/journal replay一致、改ざんしたdamageKind/power/scope/level/未知Hit数のauthoring拒否、V2とV1の矛盾拒否、創作とりつきレベル3の技定義による実戦と旧profileのレベル矛盾拒否。初回CIのhostNowMs非固定による`journal.hostRotationAtMs`ミリ秒差のみ修正して再実行。
+- **正式検証コードSHA `518e810d11d9b53361299be4540ccaa43a24e55a`**。[研究GitHub Actions #40923030136](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40923030136) **Node 822/822 PASS、自然6vs6耐久・実Chromium操作PASS**。[Firebase Friends CI #40923029963](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40923029963) **全Job SUCCESS**：RTDB Emulator 2席/24行動・ACK・切断再接続・公開遅延、実Chromium 2iframe/4幅、Google Sites用未配布HTML build（76 modules）。本番Firebaseは予約済み非ルームキーへGET1回（200、本文非閲覧・writeなし）。
+- **現在地：V3-4-4（技マスター所有の複合効果・状態level）まで完了、V3-4全体は未完**。次V3-4-5ではテストfixtureと原作に裏付けられた情報を混同せず、最初の出典付きキャラ・技・SkillデータパックとUIラベルへの入力経路を設計する。本家原作動画、学校Safari2台、Google Sites実埋込の試験、ホストブラウザ完全再起動から同一試合の復元は未完。main・学校公開HTML・本番Firebase/Rules/Auth・Driveの変更なし。
+
 ## 2026-10-30 V3-4-3｜7体目の明示BattleProfileから実戦まで
 
 - [設計・原作引用・テストとV3-4-4の引き継ぎ](./ENGINE_V3_4_BATTLE_EXECUTION_PROFILES_20261030.md)。`engine/catalog-battle-profile.mjs`で共通の`Battle Execution Profile`を新設。キャラID、ランク/妖気容量、Inspiritレベル、Soultimate複合効果、情報の確からしさ/sourceRefsを**明示して初めて**未認証の創作キャラを旧`createCombat`入力へコンパイルする。技4枠と元のHP/攻撃/性格/skillは既存`createCombatCatalog`を唯一の定義ソースとして取得。現在実装済みの6種類のSkill/7種類のInspirit/8種類のSoultimate研究fixture以外は、実戦で憶測実行しない。
