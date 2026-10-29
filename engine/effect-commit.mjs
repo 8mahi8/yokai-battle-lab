@@ -46,6 +46,21 @@ export function createEffectCommitter({
   target.hp=Math.min(target.maxHp,before+amount);
   return {amount:target.hp-before,hpAfter:target.hp};
  }
+ /**
+  * Opt-in owner's-turn HP-over-time research uses a DISTINCT effect channel.
+  * The legacy YW2 research fixture does not trigger direct-hit Last Stand,
+  * charge interruption or a KO passive from such ticks. The source game
+  * priority is NOT verified yet; preserve that separation explicitly.
+  */
+ function commitTimedHp(target,{kind,amount}={}){
+  hpTarget(target);amountValid(amount);
+  if(kind!=='loss'&&kind!=='regen')
+   throw new RangeError('timed HP must be loss or regen');
+  const before=target.hp;
+  if(kind==='loss')target.hp=Math.max(0,before-amount);
+  else target.hp=Math.min(target.maxHp,before+amount);
+  return {kind,amount:Math.abs(target.hp-before),hpAfter:target.hp};
+ }
  function commitStatus(spec){
   if(!spec||typeof spec.id!=='string'||!spec.id)
    throw new TypeError('status target ID required');
@@ -53,5 +68,5 @@ export function createEffectCommitter({
   onStatus(spec.id,result);
   return result;
  }
- return Object.freeze({commitDamage,commitHeal,commitStatus});
+ return Object.freeze({commitDamage,commitHeal,commitTimedHp,commitStatus});
 }
