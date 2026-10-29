@@ -19,6 +19,15 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-29 V3-2着手｜共通Effect確定で通常攻撃・必殺・つつく・回復・とりつきを束ねた
+
+- [**V3-2共通Effect実装・原作根拠・検証・未完のhook/キャラ拡張**](./ENGINE_V3_2_SHARED_EFFECT_COMMIT_20261029.md)
+- **戦闘本体の改修**：`engine/effect-commit.mjs`を新設し、既存`combat.mjs`の4系統のダメージ、4箇所の回復、通常/研究用とりつき登録を共通の`commitDamage/commitHeal/commitStatus`へ移行。**HP確定→どひょうぎわhook／状態台帳書込→canAct同期**の順序を共有。乱数・元の計算式・状態・Soul・KOの規則は変更しない。
+- **参照**：レベルファイブ公式YW2の必殺・G/零式・つつく、ゲームエイト/攻略の虎の通常攻撃・回復・後衛おはらい・とりつき、Mt.WildwoodのHit/Guard/チャージ中断研究。**対象や効果の類型を支持する資料であって、発動順序の厳密な保証ではない**。
+- **証拠**：[Node **712/712** PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40837995784)、[実Chromium操作・画面 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40837995888)、[V3-2新Effect本体のFirebase Friends認証なしRTDB2席 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40837911108)。後続テストのみ追加した版は戦闘本体無変更。学校iPad Safariは最新版未試験。
+- **残るV3-2**：共通のKO/スキルhook、個別の途中Hit/割り込み、状態tick、Soul転送、技データ→typed Effect Planの結合。今回の変更だけで「全行動を統一した完成エンジン」とは評価しない。**次は共通KO/Skill hook順序の整理と実装**。新技・新キャラは後回し。
+- **公開への変更なし**：main、学校Google Sites、Firebase本番Rules/DB、Drive配布物は変更していない。
+
 ## 2026-10-29 V3-1中間｜同一の行動ポイント計算器＋3つの時刻領域を実コードに導入
 
 - [**V3-1の変更ファイル／YW2資料／705テスト・Firebase Friends・実Chromium／不明点／次のステート統一工程**](./ENGINE_V3_1_ACTION_TIME_BOUNDARIES_20261029.md)
