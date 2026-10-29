@@ -77,6 +77,18 @@ test('V3-2: Soul accrued only at post-action phase; malformed inputs do nothing'
  assert.equal(f.value('B1'),0);
 });
 
+test('V3-2: incompatible Soul research modes fail closed before play starts',()=>{
+ assert.throws(()=>make({
+  playtestSoulTuning:true,researchSoulGainPerAction:7
+ }),/exclusive/);
+ assert.throws(()=>make({
+  researchSoulRecoveryMode:'owner-nonattack',researchSoulGainPerAction:7
+ }),/exclusive/);
+ assert.throws(()=>createCombat({
+  seed:3,playtestSoulTuning:true,researchSoulGainPerAction:7
+ }),/cannot mix/);
+});
+
 test('V3-2: all Soul modes preserve seeded built-in vs legacy 6x6 match state',()=>{
  const school=RENTAL_SQUAD.map((unit,i)=>({...unit,
   attitude:SCHOOL_RENTAL_PERSONALITIES[i].attitude,
