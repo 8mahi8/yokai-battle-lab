@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-3-4｜ホスト公開遅延とACK・相手画面の通信因果
+
+- [実装検証・Firebase公式資料・正式ログ・留保](./ENGINE_V3_3_PUBLISH_LAG_ACK_UI_QA_20261030.md)。新規`tests/firebase-match.test.mjs`2件：ホストのpublish保留中に24自動行動しても**guest revision/ACK/stageは古い正規snapshotのまま**、入力2はACKまでFIFO待ち。publish再開後ACK [1,2]、revision26、ホスト/ゲスト一致・ログ再生一致、24回のIntermediate publishを抑制。1回のpublish失敗後の正規状態再送も確認。
+- `tests/firebase-friends-noauth-emulator.cjs`に、新規部屋を使う**本物のRTDB Emulator2席**の遅延公開E2E追加。テスト用Promiseでホスト公開直前だけ一時保留し、8回のホスト行動中ゲストのrevision/旧画面/未ACKを確認。ゲート解放後に2ACK・revision10・一貫した最新画面へ追いつくことを確認。`FIREBASE-FRIENDS-PUBLISH-LAG-PASS`をログに残す。**ゲームロジック・通信ロジック・本番Firebase Rules変更なし。**
+- **検証済みコードSHA `71e0095ac8d5f78c82941ff418d28b086a43fb87`、[Research Node+Chromium CI #40910421158](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40910421158)全工程SUCCESS：Node 789/789 PASS・6vs6自然耐久・Chromium操作成功**。[Firebase Friends Emulator+Chrome CI #40910420953](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40910420953)全工程SUCCESS：新publish-lag E2E、reconnect、24行動、2iframe、Sites HTML build全てPASS。既存本番Firebase匿名GET1回HTTP200のみ、書込0。
+- **現在地：V3-3-4通信因果QA完了。V3-3全体・ゲーム完成ではない。** 次は原作を踏まえた時間・表示・正規効果の発火順序の引き渡し規約を詰め、V3-4のデータID化に入る。学校Safari実機2台・Google Sites実埋込・原作動画直接比較・ホストタブ再起動後の同一試合復元は未検証/未実装。main・学校公開HTML・本番Firebase Rules/DB/Auth・Drive無変更。
+
 ## 2026-10-30 V3-3-3｜Firebaseの再送エラー・正規ACKと実RTDB再接続
 
 - [根本原因・原作/公式資料・コード変更・正式QA](./ENGINE_V3_3_FIREBASE_RECONNECT_ACK_GUARD_20261030.md)。`network/firebase-match.mjs`のゲスト通信において、古いsendのPromiseが新しい明示再送の後から失敗しても古いエラーをUIに出さず、受信スナップショットのパケットrevisionと本体revision一致・guest seq妥当性が揃わなければACKしないよう修正した。既存のstop-and-waitと元の番号での再送、disconnect中のunsent queue破棄は維持。
