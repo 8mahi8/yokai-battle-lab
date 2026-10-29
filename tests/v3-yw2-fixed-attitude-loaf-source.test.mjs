@@ -165,7 +165,15 @@ test('V3-4-13 reject forged probabilities and unsupported loaf claims; never reu
 });
 
 test('V3-4-13 existing online Lab/School and opt-in actor match replay unaffected',()=>{
- const originalTeams=compileJibanyanNormalMoveTrialTeams({lab:lab(true)});
+ // The canonical online protocol correctly rejects researchSpeedInspirit.
+ // Test fixed-attitude source with the executable two-normal-move setup;
+ // the separate pure Combat test covers Slow Down Level 2.
+ const originalTeams=compileJibanyanNormalMoveTrialTeams({
+  lab:buildJibanyanNormalMoveLab({
+   includeSpeedDown:false,includeSourceWeights:true,
+   includeSourceAttitude:true
+  })
+ });
  for(const seed of [3,42,212]){
   const match=createMatchProtocol({battleOptions:{
    seed,teams:originalTeams,researchDamageModel:true
