@@ -30,7 +30,7 @@
 
 初回CIでは旧テストが元Inspirit 7種に個数固定していた点と、原作試験でreverseしたB6を旧同位置のB4と比較した点で**2つのテスト期待値が失敗**。新6件の中心機能テストは最初から通過し、既存のルールを変えずにテスト前提を訂正して正式CI再実行。
 
-**正式検証対象コードSHA `7bbdcf9f0f3b4b8e5b6256cf0a2b5e169a7b2c0e`**：[Research battle unit tests #40929350968](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40929350968) **Node 849/849 PASS、fail 0、skip 0**。自然6vs6耐久試合と実Chromium操作も全job SUCCESS。[Firebase Friends QA #40929351028](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40929351028)：実Firebase RTDB Emulator2席/再接続・ホスト公開遅延、Chromium2iframe/埋込幅、Google Sites未配布HTMLビルド、期限Rules別Emulator、学校本番への予約済み非ルームキーread-onlyプローブのチェック（最終状態はActions参照）。
+**正式検証対象コードSHA `7bbdcf9f0f3b4b8e5b6256cf0a2b5e169a7b2c0e`**：[Research battle unit tests #40929350968](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40929350968) **Node 849/849 PASS、fail 0、skip 0**。自然6vs6耐久試合と実Chromium操作も全job SUCCESS。[Firebase Friends QA #40929351028](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40929351028)は**全job SUCCESS**。実RTDB Emulator2席で24 host行動/ACK・正規snapshot完全一致、切断復帰、8 host行動分の公開遅延、Chromium 2iframe/4埋め込み幅、Google Sites用**未配布**HTML build（76 modules）と期限Rules別EmulatorもPASS。本番Firebaseは予約済み非ルームキーへのGET1回HTTP200のみ（本文未閲覧、書込なし）。
 
 ## 次にやること
 
