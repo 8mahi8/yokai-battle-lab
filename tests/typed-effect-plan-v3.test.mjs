@@ -21,6 +21,8 @@ test('V3-2: all 18 ordinary rental moves compile from the ONE current move maste
   assert.equal(plan.slot,authored.slot);
   assert.equal(plan.targetScope,authored.targetScope);
   assert.equal(plan.evidence,'fixture');
+  assert.deepEqual(plan.sourceRefs,authored.sourceRefs);
+  assert.equal(Object.isFrozen(plan.sourceRefs),true);
   assert.equal(Object.isFrozen(plan),true);
   assert.equal(Object.isFrozen(plan.effect),true);
   if(authored.slot==='attack'||authored.category==='technique_damage'){
@@ -46,16 +48,20 @@ test('V3-2: unsupported authoring shapes fail before any battle effect',()=>{
   {power:-1},{targetScope:'enemy_front'},
   {hitPattern:{type:'unknown',count:null}},
   {hitPattern:{type:'multi',count:1}},
-  {category:'damage-status'}
+  {category:'damage-status'},
+  {statusEffect:'sleep'}
  ]){
   assert.throws(()=>compileTypedEffectPlan({...clone(attack),...changes}));
  }
  const status=byId('rental-01:inspirit');
  assert.throws(()=>compileTypedEffectPlan({...clone(status),targetScope:'single_ally'}));
  assert.throws(()=>compileTypedEffectPlan({...clone(status),statusEffect:null}));
+ assert.throws(()=>compileTypedEffectPlan({...clone(status),power:5}));
  const heal=byId('rental-02:technique');
  assert.throws(()=>compileTypedEffectPlan({...clone(heal),hitPattern:{type:'single',count:1}}));
  assert.throws(()=>compileTypedEffectPlan({...clone(heal),targetScope:'single_enemy'}));
+ assert.throws(()=>compileTypedEffectPlan({...clone(heal),statusEffect:'sleep'}));
+ assert.throws(()=>compileTypedEffectPlan({...clone(heal),evidence:'documented',sourceRefs:[]}));
 });
 
 test('V3-2: typed damage/heal/status only calls the existing canonical committer',()=>{
