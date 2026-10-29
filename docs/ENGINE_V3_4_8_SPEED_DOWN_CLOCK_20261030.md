@@ -12,7 +12,7 @@
 ## 実装したこと（既存レガシー経路へ追記だけ）
 
 - **研究用原作データ** `content/yw2-original-reference-pack.mjs`：ジバニャンのinspiritに source-backed `level:{status:'documented',value:2,sourceIds:['jibanyan_mtw']}` を追加。`content/yw2-source-intake.mjs`が「status move以外のlevel禁止」「不正レベル拒否」「未解決は未解決」を検証する。
-- **研究キャラ** `content/yw2-jibanyan-normal-moves-lab.mjs`：既存の`buildJibanyanNormalMoveLab({includeSpeedDown:true})`のみ**3技原作由来**になる。通常攻撃10×2/火花の術20火属性は維持し、別の新しい`inspirit`技をmasterへ1件登録。status `speed-down`、negative、単体敵、Level2、0 damage hitsで、名前とレベルのURL sourceRefsを保持。**Soultimateは依然としてfixture**、性格/命中耐性/Skill量/未確認の演出は原作準拠を主張しない。オプションを付けない既存モードの原作技2種/24体fixtureの挙動は変わらない。
+- **研究キャラ** `content/yw2-jibanyan-normal-moves-lab.mjs`：既存の`buildJibanyanNormalMoveLab({includeSpeedDown:true})`のみ**3技原作由来**になる。通常攻撃10×2/火花の術20火属性は維持し、別の新しい`inspirit`技をmasterへ1件登録。status `speed-down`、negative、単体敵、Level2、0 damage hitsで、名前とレベルのURL sourceRefsを保持。**Soultimateは依然としてfixture**、性格/命中耐性/Skill量/未確認の演出は原作準拠を主張しない。オプションを付けない既存モードの原作技2種/24技fixtureの挙動は変わらない。
 - **共通ステータス** `content/inspirit-effect-master.mjs`の既存分類に`speed-down`を追加。 `engine/damage-model.mjs`の`deriveStatStage(statuses,'speed')`と既存の`statStageMultiplier(-2)=0.7`を共有。別の状態/数値定義辞書は作らない。
 - **共通行動時計** `engine/phase1.mjs`：`clock.setEffectiveSpeed(id,newSpeed)`を提供。既存の`waitCostFromSpeed`で**次の行動リチャージ用cost**を更新する。既に溜まった`wait`、`turn`、`pointsElapsed`、乱数消費を巻き戻さない。`clock.predict`は更新後のcostを読む。開始済み待ち時間の即時再配分は**暫定fixture仮説**として意図的に未実装。
 - **戦闘** `engine/combat.mjs`：`researchSpeedInspirit:true`は**明示custom teams + researchDamageModel**でだけ有効。既存のStatusLedgerに負の`speed-down`を投入すると、共通`effects.commitStatus`→`syncCanAct`からそのactorの**時計速度だけ`Math.floor(baseSpeed * statStageMultiplier(-2))`に変更**。素のキャラ基本SPD/HPは書き換えない。負ステータスは既存Ledgerのpersistent挙動を利用し、`purify(side,id)`成功時に時計速度・costを元へ戻す。通常の敵AIが選ぶInspirit経路にも対応。研究フラグなしのゲームでは、speed-downを使用しようとすると拒否する。
@@ -28,7 +28,9 @@
 5. 原作Level未確定/不正入力はfail closed、無条件に試験値を作らない。
 6. 既存Lab/Schoolレンタル両方×3 seedで、試験データ読込前後の`MatchProtocol`/ハッシュ/ジャーナルを同じ結果に維持。オンライン研究flagは元の厳格な`checkOptions`契約で拒否し、Firebaseへ有効化しない。
 
-初回CIでは旧テストが元Inspirit 7種に個数固定していた点と、原作試験でreverseしたB6を旧同位置のB4と比較した点で**2つのテスト期待値が失敗**。新6件の中心機能テストは既に通過し、旧テストを正しく更新して再走中。正式CI合格確認後にこの記録へ実行run/commit証拠を追記する。
+初回CIでは旧テストが元Inspirit 7種に個数固定していた点と、原作試験でreverseしたB6を旧同位置のB4と比較した点で**2つのテスト期待値が失敗**。新6件の中心機能テストは最初から通過し、既存のルールを変えずにテスト前提を訂正して正式CI再実行。
+
+**正式検証対象コードSHA `7bbdcf9f0f3b4b8e5b6256cf0a2b5e169a7b2c0e`**：[Research battle unit tests #40929350968](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40929350968) **Node 849/849 PASS、fail 0、skip 0**。自然6vs6耐久試合と実Chromium操作も全job SUCCESS。[Firebase Friends QA #40929351028](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40929351028)：実Firebase RTDB Emulator2席/再接続・ホスト公開遅延、Chromium2iframe/埋込幅、Google Sites未配布HTMLビルド、期限Rules別Emulator、学校本番への予約済み非ルームキーread-onlyプローブのチェック（最終状態はActions参照）。
 
 ## 次にやること
 
