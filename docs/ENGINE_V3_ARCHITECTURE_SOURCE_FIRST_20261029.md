@@ -224,6 +224,15 @@ exportAuditJournal(); // internal deterministic QA, not a friend replay feature
 - **[Node 737/737・自然6体対戦耐久・browser smoke PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872738857)**、[Chromium Stage PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872738876)、同一ゲームコード[Firebase Friends noAuth 2画面 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872702123)、[Google Sites HTML build PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872702284)。全6必殺の旧新snapshot/event一致も既存テストで継続。
 - 残件：原作に照らしたKO/Status/Soul/DoT/interruptの時刻と優先順の調査・統合、V3-3/4/5、学校Safari最新版実機試遊。main/学校本番/Firebase本番/Drive無変更。
 
+## 7J. V3-2 共有Hit Aftermath・OwnerTurn・Soulの段階的移管（2026-10-29）
+
+- 全体詳細：[ENGINE_V3_2_HIT_TURN_SOUL_LIFECYCLE_20261029](./ENGINE_V3_2_HIT_TURN_SOUL_LIFECYCLE_20261029.md)。
+- `engine/hit-aftermath.mjs`で通常攻撃・特殊1対象・研究多段の**割込→KO→復活行動同期**の順序ポリシーを共通化。現行仕様の違いはmodeとして保持し、根拠なしに順序を揃えない。
+- `engine/effect-commit.mjs`の独立`commitTimedHp`と`engine/owner-turn-effect-lifecycle.mjs`で継続HP減少/回復と30全体行動・所有者行動・永続negativeの期限を正規Commitへ。**DoTによるLastStand/KO Hookの原作優先関係は未検証**なので旧研究仕様のまま。
+- `engine/action-soul-accrual.mjs`でplaytest/全員増加/owner-nonattack各モードを集約。研究用値は原作値と主張しない。相反するモードを開始前拒否。
+- **[Node 753/753 PASS・自然試合耐久・browser smoke](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40876209404)**＋[Chromium Stage PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40876209175)。Soultimate6技の完全snapshot/event比較、Soul各モード、DoT継続の一致テストも実施。同一ゲームコードで[Google Sites単体HTML build PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40876180124)。Firebase実機2台は別受入。
+- V3-2のエンジン分離は前進。ただし**原作に忠実な効果優先順/技固有追加効果/Soul法則の確定は未完**。V3-3時間と行動・V3-4データ登録・V3-5学校Safari実機を続ける。
+
 ## 8. 今回の決定
 
 **E1-B単独のオンラインおはらい演出拡張、トホホの砲、個別Soultimate追加などのfeature単位ロードマップを凍結**。これまで積んだコード/動画解析/テストは保存。優先順位は**V3-0→V3-1→V3-2→V3-3→V3-4→V3-5**に切り替える。原作動画の局面は今後の統合受入テストとして再利用し、実装順序を決める一単位にはしない。
