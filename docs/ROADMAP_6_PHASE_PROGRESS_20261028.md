@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-5｜原作2体の出典付き研究用データ登録
+
+- [実際に確認した攻略・解析資料、ジバニャン/コマさん2体8技の原作研究データ、食い違い、QAとV3-4-6の計画](./ENGINE_V3_4_YW2_ORIGINAL_REFERENCE_PACK_20261030.md)。従来の6体`RENTAL_*`は**ゲーム開発用fixture**。原作の固有キャラ/技と混同しないため、独立`content/yw2-source-intake.mjs`と`content/yw2-original-reference-pack.mjs`を新設し、実資料にあるジバニャン(No.135)とコマさん(No.142)の日本語名・4技名・Skill・実在する威力/属性/状態・Lv99基準ステータスを**出典URL付きimmutableデータ**に格納。UIで使用できる`getPreview(id)`は2人の表示名/4技名/skill/根拠ある値を返すが、**battleReady:false**で自動的なロビー登録・戦闘実装を禁止。
+- 原作資料を**疑って照合**：攻略大百科・game-capではジバニャンひゃくれつ肉球**20×5**、Mt. WildwoodのYW2ページでは**20×7**。この値は`disputed`の2候補として保持し、ヒット数を勝手に選ばない。Skill「まえのめり」の詳細記述やコマさんLv99ステータス（Game8とgame-capで不一致）も同様。各factは`documented/disputed/unknown`で、出典がない自称`documented`・合意の偽造・推測はfail-closed。未確認の原作3DS実プレイ動画のフレームや公式効果として昇格させない。
+- 新規`tests/v3-original-yw2-research-source-pack.test.mjs`**7件**：2体8技・Skill/原作ラベル、衝突の保存、全項目の出典、入力の防御コピー、source偽造・誤集約を拒否、Lab/School×3seedの正規`MatchProtocol`出力・RNG・リプレイが変更されないことを証明。**正式コードSHA `95bdc419c79155d0e59a59923322203c7a064fb8`**の[研究CI #40924463234](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40924463234)：**Node 829/829 PASS、自然6vs6耐久/Chromium実操作PASS**。[Firebase Friends CI #40924462820](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40924462820)：**全Job SUCCESS**。実RTDB Emulator 2席の24行動/ACK/正規snapshot、切断復帰、publish lag、Chromium 2iframe/4幅、学校未配布HTML buildを検証。本番Firebase予約済み非ルームキーGET1回（200、本文非閲覧・writeなし）だけ。
+- **現在地：V3-4-5 原作の出典付き研究用データの最初の2体とUI用ラベル入力まで完了。** これは原作2体が対人戦で使えるという意味ではない。次の**V3-4-6**では資料が食い違うジバニャンの必殺ヒット数、スキルの発火条件・持続と、現行`skill-hook`/多段攻撃エンジンが本家に合うかを再調査し、出典が十分な項目から実際のキャラ/技の実装へつなぐ。闇雲に参照データだけを増やさない。原作動画原本・学校Safari2台・Google Sites実埋込、ホストタブ完全再起動後の同じ試合の復旧は未完。main/学校公開HTML/本番Firebase DB/Rules/Auth/Driveは変更なし。
+
 ## 2026-10-30 V3-4-4｜必殺ととりつきの実行定義を技マスターへ一元化
 
 - [実装・V1/V2契約・検証結果・残る本家再現課題](./ENGINE_V3_4_MOVE_OWNED_EXECUTION_20261030.md)。6体の`RENTAL_SOULTIMATE_MOVES[i].definition`を`RENTAL_MOVE_MASTER`の`soultimate.execution`へ**既存のauthoring sourceから直接採用**。`RENTAL_INSPIRIT_MOVES[i].level`も各`inspirit.level`へ採用。既存`YOKAI_DEFINITION_SCHEMA=1`は保ち、任意fieldをカタログ生成時に型・power/target/status/HitPattern整合検証。全6体の元データとunknown hit countを維持し、正規戦闘ルールの新解釈なし。
