@@ -42,7 +42,7 @@ import {RENTAL_MOVE_MASTER} from '../content/rental-move-master.mjs';
 import {compileTypedEffectPlan,commitTypedEffect} from './typed-effect-plan.mjs';
 import {RENTAL_SOULTIMATE_MOVES} from '../content/rental-soultimate-moves.mjs';
 import {compileSoultimateEffectPlan,assertSoultimatePlanMatches} from './soultimate-effect-plan.mjs';
-import {assertPlannedSpecialImpact,commitPlannedSpecialHp,commitPlannedSpecialStatus} from './special-impact-commit.mjs';
+import {assertPlannedSpecialImpact,commitPlannedSpecialHp,commitPlannedSpecialStatus,commitResearchSpecialHp} from './special-impact-commit.mjs';
 
 function seededRandom(seed) {
   let x = (seed >>> 0) || 1;
@@ -730,7 +730,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       }else if(impact.kind==='damage'||impact.kind==='damage-status'||impact.kind==='drain'){
         const damage=sourcePlan
           ?commitPlannedSpecialHp({plan:sourcePlan,impact,target,casterSide:side,effects})
-          :effects.commitDamage(target,impact.amount);
+          :commitResearchSpecialHp({impact,target,effects});
         impact.amount=damage.amount;
         impact.deltaHp=-damage.amount;
         impact.hpAfter=damage.hpAfter;
@@ -741,8 +741,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         if(sourcePlan)commitPlannedSpecialHp({
           plan:sourcePlan,impact,target,casterSide:side,effects
         });
-        else effects.commitHeal(target,Math.max(0,impact.hpAfter-target.hp));
-      }else target.hp=impact.hpAfter;
+        else commitResearchSpecialHp({impact,target,effects});
+      }else throw new RangeError('unhandled special impact type');
       hitAftermath.afterSpecialImpact({
         caster,target,impact,
         perHit:actualHitCount!==null&&impact.kind==='damage',
