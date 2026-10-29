@@ -38,6 +38,7 @@ import {createEffectCommitter} from './effect-commit.mjs';
 import {createSkillHookPipeline} from './skill-hook-pipeline.mjs';
 import {createKnockoutLifecycle} from './knockout-lifecycle.mjs';
 import {createHitAftermath} from './hit-aftermath.mjs';
+import {readBattleTimeDomains} from './time-domain-contract.mjs';
 import {RENTAL_MOVE_MASTER} from '../content/rental-move-master.mjs';
 import {compileTypedEffectPlan,commitTypedEffect} from './typed-effect-plan.mjs';
 import {RENTAL_SOULTIMATE_MOVES} from '../content/rental-soultimate-moves.mjs';
@@ -983,6 +984,16 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const weights=actionWeights(actor,{allies,enemies,enemyPin:pins[actor.side],negativeCounts,positiveCounts});
     return pickAction(weights,rng);
   }
+  /**
+   * V3-3 read-only observability. No new game clock, command, RNG or UI event.
+   * Event ordinals, action points and presentation milliseconds stay separate.
+   */
+  function timeDomains(){
+    return readBattleTimeDomains({
+      clockSnapshot:clock.snapshot(),hostEvents:events,
+      presentationSnapshot:presentation?.snapshot()??null
+    });
+  }
   function snapshot(){
     return {seed,winner,pins:[...pins],clock:clock.snapshot(),
       skillBoosts:Object.fromEntries([...skillBoosts].map(([id,boost])=>[id,{...boost}])),
@@ -1212,7 +1223,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     }
     return result;
   }
-  return {snapshot,step,simulate,rotate,pin,applyInspirit,purify,
+  return {snapshot,timeDomains,step,simulate,rotate,pin,applyInspirit,purify,
     beginPurify,purifyInput,cancelPurify,preview:clock.predict,
     setWatchMode,giveSoul,prepareSoultimate,resolveSoultimate,pokeEligibility,
     beginPoke,pokeInput,cancelPoke,beginGuidedCharge,chargeInput,cancelGuidedCharge,
