@@ -155,6 +155,23 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
       ...(automaticKo ? {automaticKo:true} : {}) };
   }
 
+  /**
+   * Opt-in dynamic Speed for future scheduling, after an Inspirit is committed.
+   * Existing accrued wait is intentionally retained: sources establish the
+   * effective Speed multiplier, but do not establish a mid-wait rescale rule.
+   * No wall time, animation time, RNG or current wait is changed here.
+   */
+  function setEffectiveSpeed(id,speed){
+    if(!Number.isSafeInteger(speed)||speed<1)
+      throw new RangeError('effective speed must be a positive integer');
+    const team=data.find(t=>t.members.some(m=>m.id===id));
+    if(!team)throw new RangeError('unknown member id');
+    const member=team.members.find(m=>m.id===id);
+    if(member.speed===speed)return false;
+    member.speed=speed;
+    member.cost=waitCostFromSpeed(speed);
+    return true;
+  }
   function setCanAct(id, allowed) {
     if (typeof allowed !== 'boolean') throw new TypeError('allowed must be boolean');
     const side = data.find(t => t.members.some(m => m.id === id));
@@ -229,5 +246,5 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
     return Array.from({ length: count }, () => step());
   }
 
-  return { snapshot, step, simulate, rotate, setCanAct, predict };
+  return { snapshot, step, simulate, rotate, setCanAct, setEffectiveSpeed, predict };
 }
