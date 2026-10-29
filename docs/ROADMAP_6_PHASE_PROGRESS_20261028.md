@@ -19,6 +19,14 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-11｜原作ジバニャンの基本AI重み55/30/10/5を実戦へ
+
+- [出典・実装範囲・原作とfixtureの境界・実行テストと次の作業](./ENGINE_V3_4_11_JIBANYAN_BASE_ACTION_WEIGHTS_20261030.md)。[Mt. Wildwoodの**Jibanyan YW2欄**](https://mtwildwood.net/yw2/yokai/jibanyan)の行動基本重みは**Attack55 / Technique30 / Inspirit10 / Guard5**。前工程で原作3技を処理する研究ジバニャンは、仮レンタルあかねこの**60/25/10/5**をそのまま使っていたためAIの根本的な行動頻度が違っていた。**YW1欄に出る50/35/10/5とは別**。この資料差を版別確認し、hit数の5/7対立やスキル封印の未確認仕様は無理に実装しない。
+- 既存`content/yw2-original-reference-pack.mjs`に`behavior.baseActionWeights`の`documented([55,30,10,5],jibanyan_mtw)`を追加。`content/yw2-source-intake.mjs`は出典付きの4整数・合計100のみを受け入れ、unknown/disputedは勝手に採用しない。`getPreview`で原作の基本重みを読めるようにした。`content/yw2-jibanyan-normal-moves-lab.mjs`で**`buildJibanyanNormalMoveLab({includeSourceWeights:true})`時だけ**研究キャラの`personality.actionWeights`へ元資料値をコンパイルし、既存`CombatCatalog`/`BattleExecutionProfile V2`/`actionWeights`/実`createCombat`で左右の試合に投入。既存6体は元の重みを維持。**性格Attitudeの条件付き倍率・Loaf真面目さ/レベル成長は未再現**なので、`provenance.personality='fixture'`、`researchProvenance.originalBaseActionWeights=true`、`battleReady=false`のまま。
+- 新規`tests/v3-yw2-jibanyan-original-base-weights.test.mjs`**6件**：YW2固有の55/30/10/5 source/snapshot、旧fixtureとの完全分離、実戦編成の両側6体へ原作値反映、基本状態での行動選択/guardと別性格ルールの区別、未出典・配列値異常・資料disputedを戦闘投入前に拒否、通常6体のLab/School×3seed全状態/host journal replay不変、ひゃくれつ肉球5/7が未確定のままを検査。
+- **正式検証コードSHA `fb4b3b81b990aea779f91aa4ea2a83278283af8a`**：[研究CI #40933150581](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40933150581) **Node 867/867 PASS、自然6vs6耐久/実Chromium操作SUCCESS**。[Firebase Friends noAuth #40933150215](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40933150215) **全job SUCCESS**：実Firebase RTDB Emulator2席24host行動・正規ACK、断線復帰/再送、8行動のpublish遅延、Chromium 2iframe/4幅、学校Google Sites用未配布HTML 76 modulesのbuild。現行本番Firebaseは非ルームキーGET1回HTTP200、本文非閲覧・書込なし。
+- **現在地：V3-4-11 原作ジバニャンの3技＋基本AI重みまで研究用戦闘へ接続。** 次V3-4-12は[Mt. Wildwood YW2 Attitudes](https://mtwildwood.net/attitudes.php?g=yw2)と`engine/selection.mjs`の既存部分的Grouchy分岐を**同じルール優先順と戦況条件に照合**し、未実装の倍率部分だけ追加する。全性格AI・原作必殺ヒット数5/7・Skill封印・本人5行動のフレーム境界・原作エフェクト/キャラ画像・実iPad Safari2台は未完。main・学校Google Sites HTML・本番Firebase DB/Rules/Auth・Driveは無変更。
+
 ## 2026-10-30 V3-4-10｜原作「まえのめり」の強化を後続必殺に反映
 
 - [原作資料、スキル適用タイミング、実戦テスト/CI、次の再現課題](./ENGINE_V3_4_10_YW2_ADRENALINE_SPECIAL_DAMAGE_20261030.md)。[Mt. Wildwood ジバニャンYW2のSkill欄](https://mtwildwood.net/yw2/yokai/jibanyan)で「まえのめり」は敵KOによる**STR・SPR+2段階×本人5行動**、同一行動の複数KOは発動1回と資料確認。旧`SKILL_TRIAL`の数値も同じなので、その説明だけYW2出典ありに修正（旧fixtureを勝手に変更しない）。
