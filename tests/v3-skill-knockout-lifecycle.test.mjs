@@ -33,9 +33,13 @@ test('V3-2: all six rental passive skills have explicit trigger declarations',()
  assert.deepEqual(Object.keys(SKILL_HOOK_CATALOG).sort(),
   ['momentum','care','lastStand','critImmune','sharpCrit','guardBreak'].sort());
  assert.deepEqual(SKILL_HOOK_CATALOG.momentum,
-  ['afterEnemyKO','afterOwnerAction']);
- assert.deepEqual(SKILL_HOOK_CATALOG.lastStand,['beforeLethalDamage']);
+  {trigger:'after_ko',effect:'temporary_strength_stage'});
+ assert.deepEqual(SKILL_HOOK_CATALOG.care,
+  {trigger:'after_any_action',effect:'adjacent_ally_heal'});
+ assert.deepEqual(SKILL_HOOK_CATALOG.lastStand,
+  {trigger:'before_lethal_damage',effect:'survive_at_one_hp_once'});
  assert.equal(Object.isFrozen(SKILL_HOOK_CATALOG),true);
+ assert.equal(Object.isFrozen(SKILL_HOOK_CATALOG.momentum),true);
 });
 
 test('V3-2: regular KO sync -> counter -> skill -> pin refresh; the five future owner turns start untouched',()=>{
