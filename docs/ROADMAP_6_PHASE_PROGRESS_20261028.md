@@ -19,6 +19,15 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-29 V3-1中間｜同一の行動ポイント計算器＋3つの時刻領域を実コードに導入
+
+- [**V3-1の変更ファイル／YW2資料／705テスト・Firebase Friends・実Chromium／不明点／次のステート統一工程**](./ENGINE_V3_1_ACTION_TIME_BOUNDARIES_20261029.md)
+- **実装済**：`engine/action-timeline-core.mjs`の`advanceLogicalAction`を、正規の実行`phase1.step()`と将来5手`phase1.predict()`の**両方から呼び出す**。これまであった二重の行動ポイント計算を廃止。共通のwait減算・同値優先・研究Flash優先・次のwaitへの復帰を1経路にし、4seedでforecast≡実次行動／forecastがRNG/状態を変えないことを確認。
+- **時間の分離**：`engine/core-time-domains.mjs`は`logical-action-points`（速さ/手番）、`trusted-host-monotonic-ms`（回転制限）、`presentation-ms`（相手にまだ見せない時間）を**変換不可能な別ドメイン**として定義。現行ホストの`sampleHostInputMs`を共通化し、`match-protocol.inspectTimeDomains()`を診断専用に追加。**正規snapshot/ハッシュ/通信形式は不変**。診断phase名は原作phaseが完成した意味ではない。
+- **外部資料を再照合**：Mt.WildwoodのYW2 94行Speed表・交換後のwaitと、対戦研究のノーモーション必殺（モーション中の相手視点遅延）。計算式全例・同値tie・本家のframe/msは未確証。今回勝敗や技数値は変更していない。
+- **証拠**：[Node **705/705**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836091285)、[実Chromiumステージ/全ジェスチャーPASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836091245)、[Firebase Friends認証なし2 iframe + 実RTDB emulator PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836331560)。現行Firebase CIのpathsに`engine/**`を追加済み。学校実iPad Safari2端末は最新版未試験。
+- **次はV3-1残り**：唯一の正規状態オーナー（HP/wheel/Soul/status/スキル/行動待ち/演出イベント境界）を抽出し、旧エンジンvs新共通エンジンの同一seed＋入力列＋hash比較。**技1個単位の追加、E1-B、学校Google Sites公開は保留**。main、公開Google Sites版、本番Firebase Rules/DB、Drive配布は変更しない。
+
 ## 2026-10-29 最新方針｜ゲームエンジンV3優先へ全面移行（E1-Bなど単独機能は保留）
 
 - [**原作根拠と実GitHubの構造監査・エンジンV3設計ADR・6段階の移行ゲート**](./ENGINE_V3_ARCHITECTURE_SOURCE_FIRST_20261029.md)。本人の「1個ずつ再現するのでなく、しっかりゲームエンジンを作るところから」という指示に従い、**技1件追加／個別映像1場面追加中心を中断**。実装する順は **V3-0既存戦闘を固定→V3-1唯一の正規状態/時間/phase→V3-2効果とスキルhook共通化→V3-3行動ポイント・妖気・相手表示遅延→V3-4キャラ/技データだけで追加できる形へ→V3-5 6v6+2席通し実戦**。
