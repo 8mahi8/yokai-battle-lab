@@ -19,6 +19,14 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-7｜ジバニャン通常2技を共通戦闘で実行
+
+- [実装・原作根拠・試験用/未対応の区別と正式CI](./ENGINE_V3_4_7_JIBANYAN_NORMAL_MOVES_20261030.md)。[攻略大百科](https://gamepedia.jp/youkai-yw2/monsters/272)・[game-cap](https://game-cap.com/youkaiwatch2/data/youkai_jibanyan.html)・[Mt. Wildwood YW2](https://mtwildwood.net/ja/yw2/yokai/jibanyan)の同版資料を照合し、ジバニャン**「するどいつめ」威力10×2**、**「火花の術」威力20・火属性**を確認。後者はLv1値、前者もLv10は別値（45×2）。正確な技レベル成長を今回再現したと主張しない。
+- 新規`content/yw2-jibanyan-normal-moves-lab.mjs`：`YW2_ORIGINAL_REFERENCE_INDEX`のdocumented出典・power・hits・element・Lv99基準5Statを検証→`extendCombatCatalog`へ**1体+2技**を登録→既存`BattleExecutionProfile V2`＋`compileCatalogTeamsForCombat`経由で実`createCombat({teams})`の2席×6体へ投入。追加キャラ名は**「ジバニャン（通常技のみ研究）」**、original技2枠/原作基準5stat/tribe・rankを記録。とりつき（速度ダウン未対応）・ひゃくれつ肉球（20×5/20×7不一致で未解決）は**rental-01の研究fixture技を借用**。人格AI・スキル発動量・回避/乱数・装備・技Lv等もfixture扱いで**原作ジバニャンの完全再現ではない**。学校/通常ロビーはモジュールをimportしない。
+- 新規`tests/v3-yw2-jibanyan-normal-moves-lab.test.mjs`**7件**：原作2技sourceRefs/10×2/Fire20/Lv99能力の一致、完全な新authoring→BattleProfile→戦闘入力、実seed3種の6vs6で2ヒット別判定と火術ダメージ、未解決/不正なattack hits・属性・statsのfail-closed、既存6体×Lab/School×seed3の同一戦闘/リプレイ、custom`MatchProtocol`で2席操作/ACK/journal replay。初回テストは両ヒット外れでも`damageResearch`が存在すると思い込んで1件失敗、**通常のmissとして確認方法を修正**。
+- **検証コードSHA `7d7fc1eb19bb22de799485d41cc5a80c47c9bfa7`**：[Research CI #40927920501](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40927920501) **Node 843/843 PASS、自然6vs6耐久/実Chromium操作SUCCESS**。[Firebase Friends CI #40927920539](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40927920539) **全job SUCCESS**：RTDB Emulator2席・24ホスト行動ACK、切断復帰/公開遅延、Chromium2iframe/4幅、未配布学校Google Sites HTML build（76 modules）。本番Firebaseへ予約済み非ルームキーGET1回（HTTP200、本文未閲覧、書込0）。
+- **現在地：V3-4-7 原作由来の通常攻撃・火術の「研究用キャラでの戦闘実行」が完了。V3-4全体/原作完全再現は未完成。** 次V3-4-8は本家の「しびれるお札」速度ダウンの行動順/待ちゲージへの作用を外部資料/動画で検証し、既存status/clockに正式接続可能か見極める。ひゃくれつ肉球の5/7ヒットは出典衝突のままで原作決め打ち禁止。学校Safari実機2台と実Google Sites埋込、原作動画のフレーム比較は未検証。main・学校公開版・本番Firebase DB/Rules/Auth・Drive変更なし。
+
 ## 2026-10-30 V3-4-6｜原作まえのめり1行動1発動（KO統合ルール）
 
 - [実装・原作調査/訂正・テスト/CI・未完と次工程](./ENGINE_V3_4_YW2_ADRENALINE_MULTIKOs_20261030.md)。ジバニャンのSkill「まえのめり」は日本語攻略資料で「敵撃破で攻撃力上昇」。[Mt. Wildwoodの**YW2欄**](https://mtwildwood.net/yw2/yokai/jibanyan)では**1回の行動が複数体倒してもSkill発動は1回**、HP0の持ち主は発動しない、力/妖力+2段階で5行動と説明。現行`SkillHookPipeline`は研究用の全体必殺で2〜3KOした時に各KOにつきskill発動していたので、**明示されたopt-in custom rosterのみ**`sourceYw2Momentum:true`（`createCombat`側は`researchYw2Momentum:true`）で1回の処理解決ごとに1回の発動に制限。普通の`step`および`applyResearchSpecial`の開始時に`beginResolution`を呼び、別の行動では再発動して残り5を更新。死んだキャスターは発動不可。ダメージ/KO/妖気/RNGの処理は変更なし。
