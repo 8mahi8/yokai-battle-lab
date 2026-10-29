@@ -433,13 +433,18 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     afterEnemyKO:(caster,target)=>skillHooks.afterEnemyKO(caster,target),
     refreshPins:()=>syncPinned()
   });
+  // V3-4-9: the single authoritative effective SPD for scheduling AND
+  // YW2 hit probability. A status changes neither base SPD nor accrued wait.
+  // Pure research-only calculation: default six-rental matches keep old input.
+  function effectiveSpeed(member){
+    if(!researchSpeedInspirit)return member.speed;
+    const stage=deriveStatStage(statuses.list(member.id),'speed');
+    return Math.max(1,Math.floor(member.speed*statStageMultiplier(stage)));
+  }
   function syncCanAct(id){
     const member=byId.get(id);
-    if(researchSpeedInspirit){
-      const stage=deriveStatStage(statuses.list(id),'speed');
-      const effective=Math.max(1,Math.floor(member.speed*statStageMultiplier(stage)));
-      clock.setEffectiveSpeed(id,effective);
-    }
+    if(researchSpeedInspirit)
+      clock.setEffectiveSpeed(id,effectiveSpeed(member));
     const pending=soul.snapshot().pending[member.side];
     const charging=pending?.casterId===id;
     clock.setCanAct(id,member.hp>0&&!statuses.has(id,'sleep')&&!charging);
@@ -709,7 +714,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         for(let k=0;k<actualHitCount&&target.hp>0;k++){
           const hpBefore=target.hp;
           const chance=yw2HitProbability({kind:moveKind,
-            attackerSpeed:caster.speed,targetSpeed:target.speed,
+            attackerSpeed:effectiveSpeed(caster),targetSpeed:effectiveSpeed(target),
             moveAccuracy:caster.attackAccuracy}).probability;
           const hit=rollPercent(chance,rng());
           let critical=false,damage=0;
@@ -1139,7 +1144,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       for(let index=0;index<attemptedHits;index++){
         let landed=false,oneCritical=false,oneDamage=0,oneInterruption=null;
         if(researchDamageModel){
-          hitResearch=yw2HitProbability({kind,attackerSpeed:actor.speed,targetSpeed:target.speed,
+          hitResearch=yw2HitProbability({kind,attackerSpeed:effectiveSpeed(actor),targetSpeed:effectiveSpeed(target),
             moveAccuracy:actor.attackAccuracy});
           landed=rollPercent(hitResearch.probability,rng());
         }else landed=rng()*100<hitChance(actor,target);
