@@ -31,7 +31,7 @@
 
 ### CI証拠と注意
 
-- 正式コードのcommit SHA、Node全件数、Firebase Emulator/Chromium結果は該当GitHub Actions runを確認する。main/学校サイト/本番DB/Rules/Auth/Driveを変更していない。
+- **正式検証コードSHA `7d7fc1eb19bb22de799485d41cc5a80c47c9bfa7`**：[Research battle unit CI #40927920501](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40927920501) **Node 843/843 PASS、0 fail、0 skip**、自然6vs6耐久・実Chromium操作もSUCCESS。[Firebase Friends no-Auth QA #40927920539](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40927920539) **全ジョブSUCCESS**。Firebase RTDB Emulatorで2席/24ホスト行動のACKと正規snapshot一致、切断復帰、遅延公開中の8ホスト行動/正しいACK、実Chromium2iframeと4埋め込み幅、Google Sites用**未配布**HTML build（76 modules）すべてPASS。学校の本番Firebaseは予約済み非ルームキーへのGET1回（HTTP200、本文未閲覧、書込なし）。main・学校サイト・本番DB/Rules/Auth・Driveを変更していない。
 - 初回の失敗1件は**2回とも外れた多段攻撃**で`event.damageResearch`が無いことをテストが考慮していなかったため。命中した試行のsource powerは厳密に検証する。
 
 ## 次工程 V3-4-8
