@@ -42,7 +42,7 @@ import {RENTAL_MOVE_MASTER} from '../content/rental-move-master.mjs';
 import {compileTypedEffectPlan,commitTypedEffect} from './typed-effect-plan.mjs';
 import {RENTAL_SOULTIMATE_MOVES} from '../content/rental-soultimate-moves.mjs';
 import {compileSoultimateEffectPlan,assertSoultimatePlanMatches} from './soultimate-effect-plan.mjs';
-import {assertPlannedSpecialImpact,commitPlannedSpecialHp,commitPlannedSpecialStatus,commitResearchSpecialHp,commitResearchSpecialStatus} from './special-impact-commit.mjs';
+import {assertPlannedSpecialImpact,commitPlannedSpecialHp,commitPlannedSpecialStatus,commitResearchSpecialHp,commitResearchSpecialStatus,assertResearchSpecialImpact} from './special-impact-commit.mjs';
 
 function seededRandom(seed) {
   let x = (seed >>> 0) || 1;
@@ -652,9 +652,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     });
     // Validate ALL impacts before the first HP/status write or RNG draw.
     // Legacy custom and reference moves deliberately remain unchanged.
-    if(sourcePlan)for(const impact of impacts){
+    for(const impact of impacts){
       const target=byId.get(impact.targetId);
-      assertPlannedSpecialImpact(sourcePlan,impact,{casterSide:side,target});
+      if(sourcePlan)assertPlannedSpecialImpact(sourcePlan,impact,{casterSide:side,target});
+      else assertResearchSpecialImpact(impact,{casterSide:side,target});
     }
     const interruptions=[];
     const hitRecords=[];
