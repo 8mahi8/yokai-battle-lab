@@ -6,7 +6,7 @@ import {SKILL_TRIAL} from '../engine/skill-effects.mjs';
 import {createCombat,RENTAL_SQUAD} from '../engine/combat.mjs';
 import {createMatchProtocol,replayMatchJournal} from '../engine/match-protocol.mjs';
 
-function fixture(){
+function fixture(enabled=true){
  const a=Array.from({length:6},(_,i)=>({
   id:'A'+(i+1),side:0,hp:200,maxHp:200,knockouts:0,
   skill:i===0?'momentum':i===4?'care':null
@@ -16,7 +16,7 @@ function fixture(){
  }));
  const log=[],boosts=new Map(),byId=new Map([...a,...b].map(m=>[m.id,m]));
  const hooks=createSkillHookPipeline({
-  enabled:true,skillOf:u=>u.skill,teams:[a,b],boosts,byId,
+  enabled,skillOf:u=>u.skill,teams:[a,b],boosts,byId,
   emit:e=>log.push({kind:'event',value:e}),
   commitHeal:(u,n)=>{log.push({kind:'heal',id:u.id,amount:n});
    u.hp=Math.min(u.maxHp,u.hp+n);}
@@ -99,6 +99,51 @@ test('V3-2: KO hook rejects unconfirmed and surviving lethal hits',()=>{
  assert.deepEqual(f.log,[]);
  assert.throws(()=>createSkillHookPipeline({enabled:true}),/host dependencies/);
  assert.throws(()=>createKnockoutLifecycle({}),/callback/);
+});
+
+test('V3-2: critical, guard, survival skill triggers use the one authoring catalog',()=>{
+ const f=fixture();
+ f.a[0].skill='sharpCrit';
+ assert.equal(f.hooks.beforeCriticalRoll(f.a[0],3),
+  Math.min(98,3+SKILL_TRIAL.sharpCritBonusUnits));
+ assert.equal(f.hooks.beforeCriticalRoll(f.a[0],98),98);
+ assert.equal(f.hooks.beforeCriticalRoll(f.a[1],3),3);
+ f.b[0].skill='critImmune';
+ assert.equal(f.hooks.beforeDefenderCriticalRoll(f.b[0],false),true);
+ assert.equal(f.hooks.beforeDefenderCriticalRoll(f.b[1],false),false);
+ assert.equal(f.hooks.beforeDefenderCriticalRoll(f.b[1],true),true);
+ f.a[1].skill='guardBreak';
+ assert.equal(f.hooks.beforeGuardedPhysicalHit(f.a[1],false),true);
+ assert.equal(f.hooks.beforeGuardedPhysicalHit(f.a[0],false),false);
+ assert.equal(f.hooks.beforeGuardedPhysicalHit(f.a[0],true),true);
+ f.a[2].skill='lastStand';
+ f.a[2].hp=20;
+ assert.deepEqual(f.hooks.beforeLethalDamage(f.a[2],30,false),
+  {hpAfter:1,amount:19,activated:true});
+ assert.deepEqual(f.hooks.beforeLethalDamage(f.a[2],30,true),
+  {hpAfter:0,amount:20,activated:false});
+ assert.deepEqual(f.hooks.beforeLethalDamage(f.a[1],30,false),
+  {hpAfter:0,amount:20,activated:false});
+ assert.equal(f.a[2].hp,20,'before-damage hook must not mutate canonical HP');
+ assert.equal(f.log.length,0,'passive resolvers are pure; caller commits and emits');
+});
+
+test('V3-2: no passive bonus when skills are disabled, and invalid inputs fail closed',()=>{
+ const f=fixture(false);
+ f.a[0].skill='sharpCrit';
+ f.a[1].skill='guardBreak';
+ f.a[2].skill='lastStand';
+ f.b[0].skill='critImmune';
+ f.a[2].hp=20;
+ assert.equal(f.hooks.beforeCriticalRoll(f.a[0],3),3);
+ assert.equal(f.hooks.beforeDefenderCriticalRoll(f.b[0],false),false);
+ assert.equal(f.hooks.beforeGuardedPhysicalHit(f.a[1],false),false);
+ assert.deepEqual(f.hooks.beforeLethalDamage(f.a[2],30,false),
+  {hpAfter:0,amount:20,activated:false});
+ assert.throws(()=>f.hooks.beforeCriticalRoll(f.a[0],99),/critical bonus/);
+ assert.throws(()=>f.hooks.beforeDefenderCriticalRoll(f.b[0],'no'),/boolean/);
+ assert.throws(()=>f.hooks.beforeGuardedPhysicalHit(f.a[1],1),/boolean/);
+ assert.throws(()=>f.hooks.beforeLethalDamage(f.a[2],-1),/nonnegative/);
 });
 
 test('V3-2: after refactor a full canonical six-rental battle remains replayable',()=>{
