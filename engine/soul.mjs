@@ -84,6 +84,27 @@ export function createSoulSystem({teams} = {}) {
     found.soul=amount;
     return amount;
   }
+  /**
+   * Atomic host-only Poke Soul transfer. Both members and the amount are
+   * validated before modifying either meter. The target and beneficiary
+   * must be on opposite sides; eligibility/aliveness and reward RNG remain
+   * the combat host's responsibility.
+   *
+   * No YW2 transfer quantity or recipient policy is asserted here.
+   */
+  function transferSoul({sourceId,recipientId,maxAmount}={}) {
+    if(!Number.isSafeInteger(maxAmount)||maxAmount<0)
+      throw new RangeError('transfer maxAmount must be a nonnegative safe integer');
+    const source=unit(sourceId),recipient=unit(recipientId);
+    if(source.side===recipient.side)
+      throw new RangeError('Soul transfer must cross opposing teams');
+    const amount=Math.min(maxAmount,source.soul,
+      recipient.capacity-recipient.soul);
+    // All checks completed; no partial meter write on invalid requests.
+    source.soul-=amount;
+    recipient.soul+=amount;
+    return amount;
+  }
   function neighbors(side,id) {
     checkSide(side);
     const caster=unit(id);
@@ -139,5 +160,5 @@ export function createSoulSystem({teams} = {}) {
     return {modes:[...modes],teams:rings.map(r=>r.map(id=>({...unit(id)}))),
       pending:pending.map(p=>p?{...p,consumers:[...p.consumers]}:null)};
   }
-  return {snapshot,setMode,addSoul,setSoul,neighbors,eligibility,prepare,resolve,pokeEligibility};
+  return {snapshot,setMode,addSoul,setSoul,transferSoul,neighbors,eligibility,prepare,resolve,pokeEligibility};
 }
