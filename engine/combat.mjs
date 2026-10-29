@@ -39,6 +39,9 @@ import {createSkillHookPipeline} from './skill-hook-pipeline.mjs';
 import {createKnockoutLifecycle} from './knockout-lifecycle.mjs';
 import {createHitAftermath} from './hit-aftermath.mjs';
 import {readBattleTimeDomains} from './time-domain-contract.mjs';
+import {inspectCausalSourceTrace} from './causal-source-trace.mjs';
+import {RENTAL_CHARACTER_MOVE_REFS} from '../content/rental-character-move-refs.mjs';
+import {RENTAL_LAB_CATALOG,RENTAL_SCHOOL_CATALOG} from '../content/combat-catalog.mjs';
 import {RENTAL_MOVE_MASTER} from '../content/rental-move-master.mjs';
 import {compileTypedEffectPlan,commitTypedEffect} from './typed-effect-plan.mjs';
 import {RENTAL_SOULTIMATE_MOVES} from '../content/rental-soultimate-moves.mjs';
@@ -994,6 +997,22 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       presentationSnapshot:presentation?.snapshot()??null
     });
   }
+  /**
+   * Read-only bridge from canonical event IDs to authored character/move IDs.
+   * Never infer original 3DS animation frames from research presentation ms.
+   * Explicit custom teams have no guaranteed rental catalog provenance.
+   */
+  function inspectCausality(){
+    const ids=teams===undefined?[
+      RENTAL_CHARACTER_MOVE_REFS.map(x=>x.id),
+      RENTAL_CHARACTER_MOVE_REFS.map(x=>x.id)
+    ]:null;
+    return inspectCausalSourceTrace({
+      battleSnapshot:snapshot(),
+      catalog:ids?(playtestSoulTuning?RENTAL_SCHOOL_CATALOG:RENTAL_LAB_CATALOG):null,
+      teamCharacterIds:ids
+    });
+  }
   function snapshot(){
     return {seed,winner,pins:[...pins],clock:clock.snapshot(),
       skillBoosts:Object.fromEntries([...skillBoosts].map(([id,boost])=>[id,{...boost}])),
@@ -1223,7 +1242,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     }
     return result;
   }
-  return {snapshot,timeDomains,step,simulate,rotate,pin,applyInspirit,purify,
+  return {snapshot,timeDomains,inspectCausality,step,simulate,rotate,pin,applyInspirit,purify,
     beginPurify,purifyInput,cancelPurify,preview:clock.predict,
     setWatchMode,giveSoul,prepareSoultimate,resolveSoultimate,pokeEligibility,
     beginPoke,pokeInput,cancelPoke,beginGuidedCharge,chargeInput,cancelGuidedCharge,
