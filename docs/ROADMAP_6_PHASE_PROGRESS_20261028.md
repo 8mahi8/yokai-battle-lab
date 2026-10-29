@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-2｜戦闘用ロスター変換・シード付き完全差分QA
+
+- [実装・未対応範囲・本物のCI](./ENGINE_V3_4_CATALOG_TO_COMBAT_ROSTER_20261030.md)。`engine/catalog-battle-roster.mjs`の`compileCatalogTeamsForCombat({catalog,teamCharacterIds,school})`を新設。2陣営×6明示キャラIDから既存のimmutable catalog（4技/スキル/HP等5Stats/人格）を解決、5つの既存`resolveRental*Spec`検証器で**現行の旧ゲーム実行値と照合**し、`createCombat({teams})`と`createMatchProtocol({battleOptions:{teams}})`に与えられる守備的な入力を生成。IDの並び替え可、同じチーム内の重複ID禁止。未移行のSoul容量、複合必殺等が不明な**登録済み7体目は戦闘へ推測投入せず拒否**。
+- 新規`tests/v3-catalog-combat-roster.test.mjs`6件。Lab/Schoolの両方で旧レンタル引数を完全再現。**5 seed×2人格で最大100の自動行動ずつ**、`snapshot`全体・戻り値・イベント・HP/妖気/KO/状態/行動時計・乱数結果を行動ごとに深く照合。**3 seed×2人格の実`MatchProtocol`**でPin/サークル回転/ウォッチ操作、最大110 auto行動・ACK/Revision/hash/forecastとそれぞれのjournal replay成功。School/Lab差、偽造Skill/Move/Stats、7体目未認証を拒否する境界も検証。
+- **検証対象コードSHA `903d5c1e610be45cda5c383ea2fd84e46691d100`**。[GitHub Actions 研究CI #40919914710](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40919914710) **Node 807/807 PASS、自然6vs6完走、実Chromium操作すべて成功**。[Firebase Friends CI #40919914672](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40919914672)**全job SUCCESS**：RTDB Emulator2席24行動ACK、切断復帰、公開遅延、Chromium 2iframeと4種の埋込幅、Google Sites単体HTML build（76 modules）。本番Firebaseには従来の非ルームキー読込GET1回のみ（200、書込なし）。
+- **現在はV3-4-2（6体の戦闘ロスター変換）まで完了。V3-4全体未完。** 次V3-4-3で、Soul容量/ランク、複合必殺定義、Inspiritレベル、特性値/AI・UIの不足フィールドを個別キャラ専用コードでなく**共通BattleProfile入力契約**に集約し、既存6体と完全一致の上で7体目（創作fixture）を試合で扱えるか検証。V3-5原作動画の直接比較、学校Safari iPad2台、ブラウザ完全再起動復帰は未完。main/学校公開HTML/本番Firebase DB/Rules/Auth/Google Drive変更なし。
+
 ## 2026-10-30 V3-4-1｜コンパクトキャラ参照・追加パックの原子的検証
 
 - [実装・追加例・正式CI・V3-4-2引き継ぎ](./ENGINE_V3_4_CHARACTER_AUTHORING_PACK_20261030.md)。`content/combat-catalog.mjs`の既存**単一**`createCombatCatalog`に`skillId`参照を追加。各キャラのskill詳細を複製しなくても、既存の4技`moveIds`とスキルIDだけで`skills`/ `moveMaster`から詳細を復元できる。旧6体のinline `skill`は互換保持。`extendCombatCatalog`で既存の不変catalogに新キャラ・技・スキルを**原子的に追加した新catalog**を生成。元の6体登録を変えない、追加時のID競合・slot違い・未定義Skillを登録前に拒否する。
