@@ -26,7 +26,8 @@
 - **時間の分離**：`engine/core-time-domains.mjs`は`logical-action-points`（速さ/手番）、`trusted-host-monotonic-ms`（回転制限）、`presentation-ms`（相手にまだ見せない時間）を**変換不可能な別ドメイン**として定義。現行ホストの`sampleHostInputMs`を共通化し、`match-protocol.inspectTimeDomains()`を診断専用に追加。**正規snapshot/ハッシュ/通信形式は不変**。診断phase名は原作phaseが完成した意味ではない。
 - **外部資料を再照合**：Mt.WildwoodのYW2 94行Speed表・交換後のwaitと、対戦研究のノーモーション必殺（モーション中の相手視点遅延）。計算式全例・同値tie・本家のframe/msは未確証。今回勝敗や技数値は変更していない。
 - **証拠**：[Node **705/705**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836091285)、[実Chromiumステージ/全ジェスチャーPASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836091245)、[Firebase Friends認証なし2 iframe + 実RTDB emulator PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836331560)。現行Firebase CIのpathsに`engine/**`を追加済み。学校実iPad Safari2端末は最新版未試験。
-- **次はV3-1残り**：唯一の正規状態オーナー（HP/wheel/Soul/status/スキル/行動待ち/演出イベント境界）を抽出し、旧エンジンvs新共通エンジンの同一seed＋入力列＋hash比較。**技1個単位の追加、E1-B、学校Google Sites公開は保留**。main、公開Google Sites版、本番Firebase Rules/DB、Drive配布は変更しない。
+- **V3-1の正規状態入口を追加**：`engine/match-core.mjs`で唯一の`createCombat`インスタンスを閉じ込め、対戦プロトコルは正規コマンド・自動行動・snapshot・予測を`MatchCore`へすべて委譲。**4seed・全入力列/32自動行動で旧HostとMatchCoreの戦闘状態/結果/予測が完全一致**。[最新Node **707/707 PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836968526)、[Stage Chromium PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836968607)、[新Core実装のFirebase Friends RTDB2席PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836923783)。内部SubSystemはまだ`combat.mjs`内に残るため、状態/Effect完全統合ではない。
+- **次はV3-1残り**：HP/wheel/Soul/status/スキル/行動待ち/演出イベントの**内部変更を共通のEffect/State pipelineへ抽出**し、旧エンジンvs新Coreの同seed＋入力列＋hash比較を毎回継続。**技1個単位の追加、E1-B、学校Google Sites公開は保留**。main、公開Google Sites版、本番Firebase Rules/DB、Drive配布は変更しない。
 
 ## 2026-10-29 最新方針｜ゲームエンジンV3優先へ全面移行（E1-Bなど単独機能は保留）
 
