@@ -1,6 +1,6 @@
 # YW2対戦｜ゲームエンジンV3 再設計ADR（2026-10-29）
 
-**状態：V3設計決定・V3-0完了。V3-1はコマンド分離＋実行/予測の行動ポイント共通化＋3時間領域の診断契約まで実装・回帰合格。唯一の状態オーナー/Effect/原作の時刻同調は未完成。**
+**状態：V3設計決定・V3-0完了。V3-1はコマンド分離＋実行/予測の行動ポイント共通化＋3時間領域の診断契約＋単一MatchCore入口まで実装・回帰合格。内部の状態/Effect/原作の時刻同調は未完成。**
 
 ## 0. いま方針転換する理由／本人の完成条件
 
@@ -172,6 +172,12 @@ exportAuditJournal(); // internal deterministic QA, not a friend replay feature
 - `engine/core-time-domains.mjs`の`sampleHostInputMs`と`inspectCoreTimeDomains`で、**論理行動ポイント／ホスト入力ミリ秒／モーション可視ミリ秒**の概念を固定。後者は診断用であり、対戦プロトコルのsnapshot/hashは今までどおり。phaseラベルは表示診断のための抽象化であり、原作の厳密なフェーズを確定したわけではない。
 - [Node **705/705** PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836091285)、[実Chromium Stage PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836091245)、[Firebase Friends no-Auth 2画面/RTDB PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836331560)。学校実iPad最新版未試験。
 - **V3-1の残件**：現行`combat.mjs`がまだHP/Soul/Status/技能/KOを束ねる大きな状態オーナーであり、統一Effect/状態遷移規則へ抽出していない。新キャラ大量追加を始める段階ではない。
+
+## 7C. MatchCore正規状態入口への移行
+
+- [V3-1の詳細/根拠/テスト](./ENGINE_V3_1_ACTION_TIME_BOUNDARIES_20261029.md)。`engine/match-core.mjs`が既存`createCombat`を唯一作成・所有する。`match-protocol.mjs`は`applyNormalizedCommand`/自動行動/正規スナップショット/将来予測をその入口へ委譲し、通信上のsequence/ACK/journalだけを担当。**snapshot/hash/元ルールは完全互換、Firebase Friendsは引き続き認証なしRTDB。**
+- [Node **707/707**・旧プロトコルと新Coreの4seed結果一致](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836968526)、[実Chromium Stage PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836968607)、[Firebase Friends2画面/実Emulator PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836923783)。
+- **残るもの**：Core境界の内部には旧`combat.mjs`の個別状態管理がある。次はHP/status/Soul/KO/skill hooksを共通Effectへ段階抽出する。現状だけで「原作忠実な完成エンジン」とは言わない。
 
 ## 8. 今回の決定
 
