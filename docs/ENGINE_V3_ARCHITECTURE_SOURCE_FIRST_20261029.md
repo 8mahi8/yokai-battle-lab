@@ -1,6 +1,6 @@
 # YW2対戦｜ゲームエンジンV3 再設計ADR（2026-10-29）
 
-**状態：V3設計決定、V3-0基準テスト導入済。V3-1の最初のコマンド境界抽出に着手済み。行動/効果/時間の中核は未移行。**
+**状態：V3設計決定・V3-0完了。V3-1はコマンド分離＋実行/予測の行動ポイント共通化＋3時間領域の診断契約まで実装・回帰合格。唯一の状態オーナー/Effect/原作の時刻同調は未完成。**
 
 ## 0. いま方針転換する理由／本人の完成条件
 
@@ -163,6 +163,15 @@ exportAuditJournal(); // internal deterministic QA, not a friend replay feature
 - さらに`engine/match-protocol.mjs`の**既存コマンド正規化とHost→Combat呼出**を、独立`engine/match-command-kernel.mjs`（約92行）へ移した。公開API`normalizeMatchCommand`は既存ファイルからそのままre-export、3秒ルール/ホスト時刻取得/seq/ACK/hash/戦闘判定は不変。`match-protocol.mjs`は約305行→**228行**。これはエンジンV3入口の第一歩であり、まだ`combat.mjs`本体を分割したわけではない。
 - 抽出は**仕様変更でなく既存と同じJS本体の移設**。既存のFirebase Friends adapterはこのmatch protocolを引き続き使うので、通信方式は変わらない。V3-1中の他の責務（時間・状態）はこれから実装する。
 - **コード抽出後の最終受け入れ `aedb76a4b6`**：[Node **696/696**・自然6体戦闘耐久PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40785361654)、[実Chromium Stage PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40785361641)、[**Firebase Friends no-Auth RTDB emulator＋Google Sites相当の実Chromium二画面 PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40785361637)、[単体HTML build PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40785361639)。本番学校Safari実機は未実施。
+
+## 7B. V3-1行動ポイント・時間領域の共通処理
+
+詳細は[**Engine V3-1 Action/Time Boundaries**](./ENGINE_V3_1_ACTION_TIME_BOUNDARIES_20261029.md)。
+
+- `engine/action-timeline-core.mjs`の`advanceLogicalAction`が、真の前衛行動`phase1.step`と非破壊の将来予測`phase1.predict`の両方で呼ばれる。これまで二重に書かれていたwait→対象選択→次waitは一本化。**既存値を変えるリファクタではない**。
+- `engine/core-time-domains.mjs`の`sampleHostInputMs`と`inspectCoreTimeDomains`で、**論理行動ポイント／ホスト入力ミリ秒／モーション可視ミリ秒**の概念を固定。後者は診断用であり、対戦プロトコルのsnapshot/hashは今までどおり。phaseラベルは表示診断のための抽象化であり、原作の厳密なフェーズを確定したわけではない。
+- [Node **705/705** PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836091285)、[実Chromium Stage PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836091245)、[Firebase Friends no-Auth 2画面/RTDB PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836331560)。学校実iPad最新版未試験。
+- **V3-1の残件**：現行`combat.mjs`がまだHP/Soul/Status/技能/KOを束ねる大きな状態オーナーであり、統一Effect/状態遷移規則へ抽出していない。新キャラ大量追加を始める段階ではない。
 
 ## 8. 今回の決定
 
