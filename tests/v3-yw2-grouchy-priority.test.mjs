@@ -107,7 +107,7 @@ test('V3-4-12 actual existing action picker applies source YW2 priority only whe
  assert.equal(pickAction(after,()=>0),'attack');
  assert.equal(pickAction(after,()=>.99),'guard');
  assert.equal(pickAction(before,()=>.99),'guard');
- assert.equal(pickAction(after,()=>.875),'technique');
+ assert.equal(pickAction(after,()=>.7),'technique');
 });
 test('V3-4-12 real trial and school six rentals stay isolated, seed and online replay unchanged',()=>{
  const lab=buildJibanyanNormalMoveLab({
