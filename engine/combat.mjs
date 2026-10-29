@@ -28,6 +28,7 @@ import { createPurifyTrial, choosePurifyKind, PURIFY_KINDS } from './purify-inpu
 import {ELEMENTS, validateElementResistances, calculateOneHit, deriveStatStage} from './damage-model.mjs';
 import {resolveTechniqueElementMultiplier} from './element-model.mjs';
 import {createOwnerTurnEffectLifecycle} from './owner-turn-effect-lifecycle.mjs';
+import {createActionSoulAccrual} from './action-soul-accrual.mjs';
 import {calculateHeal} from './heal-model.mjs';
 import {yw2HitProbability,yw2CriticalProbability,rollPercent} from './hit-model.mjs';
 import {PLAYTEST_SOUL_TUNING,choosePlaytestPokeOutcome} from './playtest-soul-tuning.mjs';
@@ -456,6 +457,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   // research survival/interrupt policy and tick expiry after Care/Soul.
   const ownerTurnEffects=createOwnerTurnEffectLifecycle({
     statuses,effects,syncEligibility:syncCanAct,refreshPins:syncPinned
+  });
+  const actionSoulAccrual=createActionSoulAccrual({
+    soul,teams:squads,statuses,loafingActors,
+    researchSoulGainPerAction,playtestSoulTuning,researchSoulRecoveryMode
   });
   /** Experimental injection: not an auto AI Inspirit move; hit/resistance unimplemented. */
   function applyInspirit({id,sign,effect,source=null,duration=null,level=1,effectPlan=null}={}){
@@ -1199,32 +1204,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(turnInspirit)events.push({type:'turn-inspirit',turn:clockEvent.action,
       actor:actor.id,...turnInspirit});
     recordView({side:actor.side,kind:'action',memberId:actor.id,detail:action.kind});
-    if(researchSoulGainPerAction>0){for(const member of squads.flat())if(member.hp>0)soul.addSoul(member.id,researchSoulGainPerAction);}
-    if(playtestSoulTuning){
-      // Friendly-match temporary pacing. NOT measured original-game numbers.
-      const didDamageAction=kind==='attack'||
-        (kind==='technique'&&techniqueKind==='damage');
-      const vulnerableHit=didDamageAction&&hit&&target!==null&&
-        (loafingActors.has(target.id)||
-         statuses.list(target.id).some(x=>x.sign==='negative'));
-      const plannedGain=didDamageAction
-        ?(kind==='attack'?PLAYTEST_SOUL_TUNING.attackGain:
-          PLAYTEST_SOUL_TUNING.techniqueGain)+
-          (vulnerableHit?PLAYTEST_SOUL_TUNING.vulnerableHitBonus:0)
-        :PLAYTEST_SOUL_TUNING.nonAttackGain;
-      if(actor.hp>0){
-        const before=soul.snapshot().teams[actor.side].find(x=>x.id===actor.id).soul;
-        const after=soul.addSoul(actor.id,plannedGain);
-        action.soulPlaytest={model:'playtest-estimate',
-          gained:after-before,vulnerableHit,plannedGain};
-      }
-    }else if(researchSoulRecoveryMode==='owner-nonattack'){
-      // Empirical YW2 player report: +5 Soul after a nonattack owner's turn.
-      // Research/default-off mode deliberately still avoids unknown attacks.
-      const didNotAttack=kind==='guard'||kind==='loaf'||kind==='inspirit'||
-        (kind==='technique'&&techniqueKind==='heal');
-      if(didNotAttack && actor.hp>0)soul.addSoul(actor.id,5);
-    }
+    actionSoulAccrual.afterAction({actor,kind,techniqueKind,hit,target,action});
     ownerTurnEffects.expireAfterAction(actor.id);
     return {...action};
   }
