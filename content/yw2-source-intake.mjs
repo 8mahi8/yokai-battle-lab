@@ -78,6 +78,13 @@ export function createYw2SourceIndex({sources,characters}={}){
     throw new TypeError('missing YW2 move slot fact: '+slot);
    for(const k of ['power','hits','element','effect'])
     validateFact(move[k],sources,entry.id+'/'+slot+'/'+k);
+   if(move.level!==undefined){
+    if(slot!=='inspirit')throw new TypeError('only Inspirit moves may carry status level');
+    validateFact(move.level,sources,entry.id+'/'+slot+'/level');
+    const level=readDocumented(move.level);
+    if(level!==null&&(!Number.isSafeInteger(level)||level<1||level>4))
+     throw new TypeError('invalid YW2 Inspirit level');
+   }
   }
   for(const k of ['label','effect'])validateFact(entry.skill[k],sources,
     entry.id+'/skill/'+k);
