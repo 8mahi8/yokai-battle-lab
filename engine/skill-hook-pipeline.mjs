@@ -10,15 +10,16 @@
  * ordinary physical/special/poke move resolvers.
  */
 import {careAtActionBoundary,SKILL_TRIAL} from './skill-effects.mjs';
+import {PLAYTEST_SKILL_CATALOG} from '../content/skill-catalog.mjs';
 
-export const SKILL_HOOK_CATALOG=Object.freeze({
- momentum:Object.freeze(['afterEnemyKO','afterOwnerAction']),
- care:Object.freeze(['afterAnyAction']),
- lastStand:Object.freeze(['beforeLethalDamage']),
- critImmune:Object.freeze(['beforeCriticalRoll']),
- sharpCrit:Object.freeze(['beforeCriticalRoll']),
- guardBreak:Object.freeze(['beforeGuard'])
-});
+// No second list of skill trigger definitions. The existing immutable
+// content catalog is the authoring source of truth for each skill's phase
+// and effect kind; only the executable handlers live in the engine.
+export const SKILL_HOOK_CATALOG=Object.freeze(Object.fromEntries(
+ PLAYTEST_SKILL_CATALOG.map(({legacyKey,trigger,effect})=>[
+  legacyKey,Object.freeze({trigger,effect})
+ ])
+));
 
 export function createSkillHookPipeline({enabled,skillOf,teams,boosts,byId,emit,commitHeal}={}){
  if(typeof enabled!=='boolean'||typeof skillOf!=='function'||
@@ -36,7 +37,9 @@ export function createSkillHookPipeline({enabled,skillOf,teams,boosts,byId,emit,
  });
  function afterEnemyKO(caster,target){
   if(!enabled||caster.side===target.side)return;
-  const handler=onEnemyKO[skillOf(caster)];
+  const skill=skillOf(caster);
+  if(SKILL_HOOK_CATALOG[skill]?.trigger!=='after_ko')return;
+  const handler=onEnemyKO[skill];
   if(handler)handler(caster,target);
  }
  function afterAnyAction(actor,existingBoost){
