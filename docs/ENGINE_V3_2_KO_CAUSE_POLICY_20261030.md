@@ -21,8 +21,9 @@ KO/スキル/状態の発火順序を原作未確認のまま統一してしま�
 
 ## 検証
 - GitHub実ソースを使用するCode Mode V8内で新規4テストの本文を実行し、**4/4 PASS**（正式Nodeではない）。
-- 正式Node/6vs6耐久/ChromiumとFirebase no-Auth RTDB Emulator 2iframeは、コミット`6dd708ca2698452b01e342ac470b7533a7ac61f4`を対象としてGitHub Actionsに起動された：`Research battle unit tests` run [40899693694](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40899693694)、`Phase37 Firebase Friends no Auth QA` run [40899693718](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40899693718)。
-- **実行結果が確認できるまではCI合格と主張しない。** 原作のKOスキル/とりつき/演出フレーム順序は引き続き研究課題で、今回追加したCauseは原作ルールの保証ではない。
+- **正式QA合格**。コードコミット `6dd708ca2698452b01e342ac470b7533a7ac61f4` に対する[Research battle unit tests run 40899693694](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40899693694)は**775件／775件PASS、fail 0**。同runで実6対6自然対戦耐久とChromium research UI操作もSUCCESS。
+- **オンラインQA合格**：[Phase37 Firebase Friends no Auth QA run 40899693718](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40899693718) 全Job SUCCESS。実Firebase Emulatorのルーム/ルール/24ホスト行動とACK・canonical snapshot照合、Chromium real 2iframe/no-Auth・host clock停止/再開、4横幅、Google Sites向け単体HTML build（74 source modules）PASS。本番Firebaseは読み取り専用の予約キーGET HTTP200（書込・body閲覧なし）。学校Safari実機2台は未試験。
+- **原作のKOスキル/とりつき/演出フレーム順序は引き続き研究課題**。本cause政策と正式CIは既存研究動作の保全を証明するもので、原作優先順の保証ではない。
 - PRはDraft。main・学校Google Sites版・本番Firebase Rules/DB/Auth・Drive変更なし。
 
 ## 次の作業
