@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-9｜原作命中率へ速度低下を実反映
+
+- [実装内容・原作の命中式/例示・正式CI証拠](./ENGINE_V3_4_9_SPEED_HIT_CHANCE_20261030.md)。V3-4-8まで研究用の`speed-down` level2によるSPD×0.7は行動時計だけに反映していたが、**通常攻撃/妖術/研究用の多段必殺に`actor.speed`という元SPDを渡していた不整合**を確認。[Mt. Wildwood Hit Chance YW2](https://mtwildwood.net/hit-chance.php?g=yw2)により原作基礎率は**floor(clamp(98+(攻撃SPD−対象SPD)/5,75,98))**、物理攻撃だけmove accuracy補正、Techniqueは補正なし。修正したのは`engine/combat.mjs`のみで、既存`deriveStatStage`/`statStageMultiplier`に基づく`effectiveSpeed(member)`を共通利用し、**clock.setEffectiveSpeedと2つのヒット計算経路の双方へ同じ速度値**を渡す。既存hit RNG/formula/技数値/HP・状態コミットを作り直さず、元の待ちゲージは変更しない。
+- 例：攻撃140 vs 防御210なら命中84%、攻撃側だけSPD Lv2 downで75%、防御側だけ下げると96%、物理精度0.5の場合48%、Techniqueは96%。この数値と実戦内の`hitResearch`を検証。
+- 新規`tests/v3-yw2-speed-hit-integration.test.mjs`**7件**。行動時計と通常攻撃の命中率一致、攻撃/防御双方がSPD↓の妖術・物理精度別処理、ベンチおはらい復帰、研究用多段必殺で**11seedの補正済みSPDを同じ基本SPDにした対照群とのhit/crit/HP変化完全一致**、原作研究ジバニャン3技への直接適用、通常6体seeded出力と`MatchProtocol` replay不変。**正式コードSHA `d77d7e3659ec56f59544a1f80d7bf68ce6542ef4`**の[研究CI #40930516650](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40930516650)は**Node 856/856 PASS**、6vs6自然耐久/実Chromium操作合格。[Firebase Friends QA #40930516684](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40930516684) **全job SUCCESS**（実RTDB Emulator 2席・24 host行動ACK、切断/再接続、8 host action公開遅延、Chromium 2iframe/4幅、学校用未配布HTMLビルド76 modules）。本番Firebaseは非ルームキーGET1回200、本文非閲覧・writeなし。
+- **現在地：V3-4-9 speed-downによる命中・未来行動時計の整合実装とCIが完了。V3-4/原作完全再現は未完成。** 次V3-4-10で研究版ジバニャンの残りの原作必殺技**ひゃくれつ肉球20×5/20×7の文献衝突**、Skill封印、性格AI/実UIのうち再現度向上の優先順位を再評価。資料不明の即時wait補正やSoultimateヒット回数を確証なしに確定しない。main・学校公開HTML・本番Firebase DB/Rules/Auth・Drive変更なし。学校Safari実機2台/元動画のフレーム比較は未検証。
+
 ## 2026-10-30 V3-4-8｜原作速度とりつき Level2 を共通行動時計へ接続
 
 - [原作資料と実装・検証の詳細](./ENGINE_V3_4_8_SPEED_DOWN_CLOCK_20261030.md)。[Mt. Wildwoodのジバニャン YW2欄](https://mtwildwood.net/yw2/yokai/jibanyan)・[Inspirits YW2](https://mtwildwood.net/inspirits.php?g=yw2)に基づき「しびれるお札」は**SPD down level2＝すばやさ×0.7**、負statusは浄化まで基本**持続**。研究用`YW2_ORIGINAL_REFERENCE_INDEX`に出典付き`inspirit.level=2`を追加し、`buildJibanyanNormalMoveLab({includeSpeedDown:true})`で初めて原作2つの通常技+原作速度とりつき**3技**を共通`CombatCatalog`に登録。キャラの残り必殺技（20×5対20×7の資料衝突）やAI/Skill詳細はfixtureであり、**3技の採用は完全再現ではない**。
