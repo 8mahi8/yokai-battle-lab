@@ -40,6 +40,7 @@ import {RENTAL_MOVE_MASTER} from '../content/rental-move-master.mjs';
 import {compileTypedEffectPlan,commitTypedEffect} from './typed-effect-plan.mjs';
 import {RENTAL_SOULTIMATE_MOVES} from '../content/rental-soultimate-moves.mjs';
 import {compileSoultimateEffectPlan,assertSoultimatePlanMatches} from './soultimate-effect-plan.mjs';
+import {assertPlannedSpecialImpact,commitPlannedSpecialHp} from './special-impact-commit.mjs';
 
 function seededRandom(seed) {
   let x = (seed >>> 0) || 1;
@@ -625,16 +626,20 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const sourceMove=referenceMove&&caster.id==='A1'?referenceMove:null;
     const resolvedSpec=sourceMove?yw2ReferenceSpecialDefinition(sourceMove.id):
       catalogSoultimateByActor?.get(caster.id)?.definition??caster.special;
-    if(!sourceMove){
-      const sourcePlan=specialPlansByActor?.get(caster.id);
-      if(sourcePlan)assertSoultimatePlanMatches(sourcePlan,resolvedSpec);
-    }
+    const sourcePlan=sourceMove?null:specialPlansByActor?.get(caster.id)??null;
+    if(sourcePlan)assertSoultimatePlanMatches(sourcePlan,resolvedSpec);
     const actualHitCount=sourceMove?.hitsPerTarget??researchSoultimateHitCount;
     const impacts=planResearchSpecial({
       spec:resolvedSpec,caster,
       allies:researchSpecialAllies(resolvedSpec,squads[side],livingFront(side)),enemies,
       powerMultiplier:result.powerMultiplier,pinnedId
     });
+    // Validate ALL impacts before the first HP/status write or RNG draw.
+    // Legacy custom and reference moves deliberately remain unchanged.
+    if(sourcePlan)for(const impact of impacts){
+      const target=byId.get(impact.targetId);
+      assertPlannedSpecialImpact(sourcePlan,impact,{casterSide:side,target});
+    }
     const interruptions=[];
     const hitRecords=[];
     for(const impact of impacts){
@@ -703,7 +708,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         impact.predictedKO=target.hp===0;
         impact.model='custom-soultimate-multi-hit-fixture';
       }else if(impact.kind==='damage'||impact.kind==='damage-status'||impact.kind==='drain'){
-        const damage=effects.commitDamage(target,impact.amount);
+        const damage=sourcePlan
+          ?commitPlannedSpecialHp({plan:sourcePlan,impact,target,casterSide:side,effects})
+          :effects.commitDamage(target,impact.amount);
         impact.amount=damage.amount;
         impact.deltaHp=-damage.amount;
         impact.hpAfter=damage.hpAfter;
@@ -711,7 +718,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         if(damage.activated)impact.lastStand=true;
       }else if(impact.kind==='heal'||impact.kind==='revive'){
         // A shared bounded HP commit for normal techniques and specials.
-        effects.commitHeal(target,Math.max(0,impact.hpAfter-target.hp));
+        if(sourcePlan)commitPlannedSpecialHp({
+          plan:sourcePlan,impact,target,casterSide:side,effects
+        });
+        else effects.commitHeal(target,Math.max(0,impact.hpAfter-target.hp));
       }else target.hp=impact.hpAfter;
       if(!(actualHitCount!==null&&impact.kind==='damage')&&
          (impact.kind==='damage'||impact.kind==='damage-status'||impact.kind==='drain')){
