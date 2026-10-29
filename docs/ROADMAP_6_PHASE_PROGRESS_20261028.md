@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-29 V3-2継続｜パッシブ会心・ガード・HP1生存を単一Hookへ
+
+- [引き継ぎ後の実コード・テスト・検証と未完事項](./ENGINE_V3_2_PASSIVE_ROLL_HOOKS_20261029.md)。
+- `beforeCriticalRoll`、`beforeDefenderCriticalRoll`、`beforeGuardedPhysicalHit`、`beforeLethalDamage`を`engine/skill-hook-pipeline.mjs`に追加し、`combat.mjs`と結線。6種のスキルtriggerを既存catalogのみから導出（重複定義を作らない）。**新キャラ/新技や原作未確定数値は追加なし。**
+- GitHub現物の純粋スキルHookはV8で**158条件の旧動作一致**。2つの専用Nodeテストケースを追加。ただし**最新コミットのNode全件/自然戦闘/Chrome/Firebase Friends CIは結果未確認**で、古い719件成功をこの更新の証拠として流用しない。
+- 現在地は**V3-2進行中**。次：最新HEADの正式CI → seed差分比較 → typed EffectPlan共通解決。学校Safari最新版未検証。公開/main/本番DB/Rules/Drive不変更。
+
 ## 2026-10-29 V3-2更新｜共通KO後処理・スキルhook・既存スキルカタログの統合
 
 - [**実KO/スキルhookのコード変更・原作確認・検証証拠・未完部分**](./ENGINE_V3_2_KO_SKILL_LIFECYCLE_20261029.md)
