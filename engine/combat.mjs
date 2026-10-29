@@ -31,9 +31,11 @@ import {calculateTurnInspirit} from './turn-inspirit.mjs';
 import {calculateHeal} from './heal-model.mjs';
 import {yw2HitProbability,yw2CriticalProbability,rollPercent} from './hit-model.mjs';
 import {PLAYTEST_SOUL_TUNING,choosePlaytestPokeOutcome} from './playtest-soul-tuning.mjs';
-import {validateRentalSkill,skillMomentumStage,critSkillBonus,careAtActionBoundary,resolveLastStand,SKILL_TRIAL} from './skill-effects.mjs';
+import {validateRentalSkill,skillMomentumStage,critSkillBonus,resolveLastStand} from './skill-effects.mjs';
 import {resolveRentalSkillSpec} from './catalog-skill-spec.mjs';
 import {createEffectCommitter} from './effect-commit.mjs';
+import {createSkillHookPipeline} from './skill-hook-pipeline.mjs';
+import {createKnockoutLifecycle} from './knockout-lifecycle.mjs';
 
 function seededRandom(seed) {
   let x = (seed >>> 0) || 1;
@@ -349,12 +351,6 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   let winner=null;
   const front=(side)=>clock.snapshot().teams[side].frontIds.map(id=>byId.get(id));
   const livingFront=(side)=>front(side).filter(x=>x.hp>0);
-  function triggerKOAbility(caster,target){
-    if(!enableRentalSkills||skillFor(caster)!=='momentum'||target.side===caster.side)return;
-    skillBoosts.set(caster.id,{remainingTurns:SKILL_TRIAL.momentumOwnerTurns});
-    events.push({type:'skill',actor:caster.id,targetId:target.id,skill:'momentum',
-      label:'まえのめり型',kind:'発動',remainingTurns:SKILL_TRIAL.momentumOwnerTurns});
-  }
   // V3-2: one canonical effect commit point for direct hits (physical,
   // Soultimate, Poke), healing and ledger mutation. Formulae, random rolls
   // and hit->interruption->KO order remain exactly as in the legacy host.
@@ -370,6 +366,16 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     },
     applyStatus:spec=>statuses.apply(spec),
     onStatus:id=>syncCanAct(id)
+  });
+  const skillHooks=createSkillHookPipeline({
+    enabled:enableRentalSkills,skillOf:skillFor,teams:squads,
+    boosts:skillBoosts,byId,emit:e=>events.push(e),
+    commitHeal:(recipient,amount)=>effects.commitHeal(recipient,amount)
+  });
+  const koLifecycle=createKnockoutLifecycle({
+    syncEligibility:id=>syncCanAct(id),
+    afterEnemyKO:(caster,target)=>skillHooks.afterEnemyKO(caster,target),
+    refreshPins:()=>syncPinned()
   });
   function syncCanAct(id){
     const member=byId.get(id);
@@ -667,9 +673,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         if(changed)interruptions.push(changed);
       }
       if(impact.predictedKO){
-        caster.knockouts++;
-        triggerKOAbility(caster,target);
-        syncCanAct(target.id);
+        koLifecycle.commit({caster,target,eligibilityPhase:'after-skill'});
       }else if(impact.kind==='revive'&&impact.revived){
         // A KO ally, including a reserve, can act again on being rotated in.
         syncCanAct(target.id);
@@ -828,7 +832,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         const damage=effects.commitDamage(enemy,Math.min(enemy.hp,nominal));
         const amount=damage.amount;
         const interruption=interruptOnHit(enemy,amount,false);
-        if(enemy.hp===0){syncCanAct(enemy.id);syncPinned();}
+        if(enemy.hp===0)koLifecycle.commit({target:enemy,refreshPin:true});
         if(squads.some(team=>team.every(unit=>unit.hp===0)))
           winner=squads[0].every(unit=>unit.hp===0)?1:0;
         reward={kind:chosen==='heavy-hit'?'playtest-heavy-hit':'playtest-damage',
@@ -1073,8 +1077,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
           amount+=oneDamage;
           oneInterruption=interruptOnHit(target,oneDamage,oneCritical);
           if(oneInterruption?.stopped||!interruption)interruption=oneInterruption??interruption;
-          if(target.hp===0){syncCanAct(target.id);actor.knockouts++;
-            triggerKOAbility(actor,target);syncPinned();}
+          if(target.hp===0)koLifecycle.commit({
+            caster:actor,target,refreshPin:true
+          });
         }
         if(multiHitDetails)multiHitDetails.push({
           index:index+1,hit:landed,critical:oneCritical,
@@ -1119,25 +1124,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         skippedId:clockEvent.skippedId,flashConsumed:clockEvent.flashConsumed,
         priorityConfidence:'research-fixture'}:{})};
     events.push(action);
-    if(enableRentalSkills){
-      // Both sides' adjacent living units heal at every action boundary,
-      // even when the active actor belongs to the OTHER team.
-      for(const heal of careAtActionBoundary({teams:squads,skillOf:skillFor})){
-        const recipient=byId.get(heal.targetId);
-        effects.commitHeal(recipient,heal.amount);
-        events.push({type:'skill',...heal,label:'おせわ型',kind:'回復'});
-      }
-      const active=skillBoosts.get(actor.id);
-      // A KO triggers FIVE FUTURE turns; not the KO action itself.
-      if(existingBoost&&active===existingBoost){
-        existingBoost.remainingTurns--;
-        if(existingBoost.remainingTurns===0){
-          skillBoosts.delete(actor.id);
-          events.push({type:'skill',actor:actor.id,skill:'momentum',
-            label:'まえのめり型',kind:'終了',remainingTurns:0});
-        }
-      }
-    }
+    // Legacy action boundary order is preserved: action -> Care ->
+    // existing-owner boost countdown -> turn-status tick.
+    skillHooks.afterAnyAction(actor,existingBoost);
     if(turnInspirit)events.push({type:'turn-inspirit',turn:clockEvent.action,
       actor:actor.id,...turnInspirit});
     recordView({side:actor.side,kind:'action',memberId:actor.id,detail:action.kind});
