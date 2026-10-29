@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-29 V3-2継続｜正式PR CI復旧・771全件PASS
+
+- [正式Actions根拠・落ちた2件の原因・未検証範囲](./ENGINE_V3_2_FORMAL_PR_CI_RECOVERY_20261029.md)。既存`research-unit.yml`に読み取り専用PR起動を追加（push/手動は維持）。以前のGitHub連携がPR run限定のためpush CI一覧を取得できていなかった原因を解消。
+- 初回正式run [40896591460](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40896591460) 771中769 PASS、2件はPokeイベント`eventId:1`のテスト期待値漏れ。`tests/poke-soul-transfer-v3.test.mjs`だけ修正。ゲームエンジン・Poke報酬・原作仮値の変更なし。
+- **コードSHA `6cc44050ba92ea39c19a807d6aba929559d88193`の[正式Actions run 40896818659](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40896818659)全工程SUCCESS**：Node **771/771 PASS**、6vs6自然決着4 seed PASS、Chromium実DOM・零式Poke・妖気・おはらい・ホスト/ゲストコマンド・ダメージ・UI PASS。Node単体だけでなく正式ブラウザ検証まで記録できた。
+- ただし**最新コードに対するFirebase Friends no-Auth RTDB二席Emulator/E2EとGoogle Sites HTML build、学校Safari実機2台はこのrunでは未検証**。V3-2後半・未完成、V3-3/4/5へ完了と誤認しない。次はFirebase/HTML検証と発火順序棚卸し。main・本番Firebase・学校公開HTML・Driveは無変更。
+
 ## 2026-10-29 V3-2継続｜旧新必殺Effectの96ケース差分検証
 
 - [差分オラクル・検証証拠・非対象](./ENGINE_V3_2_RESEARCH_SPECIAL_DIFFERENTIAL_20261029.md)。`tests/research-special-differential-v3.test.mjs`に研究用必殺8種類×3初期HP状態×4seed=96例の旧新HP/状態台帳/効果イベント/抵抗乱数消費/勝敗の差分テストを追加。
