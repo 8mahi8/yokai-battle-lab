@@ -49,8 +49,9 @@ const source=[
    // unlike most species with four weighted Attitudes.
    attitudeOptions:documented([{attitude:'grouchy',chance:100}],
     'yw2_attitudes'),
-   // Loaf weight is NOT itself a per-action loaf percentage at Lv99.
-   loafWeight:documented(5,M)
+   // The page's loaf weight 5 belongs to its YW1 section, NOT YW2.
+   // YW2 raw loaf weight cannot be inferred from that value.
+   loafWeight:unknown('yw2_attitudes')
   },
   stats:{
    hp:two(322,M,E),strength:two(153,M,E),spirit:two(90,M,E),
