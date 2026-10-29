@@ -19,6 +19,7 @@
  */
 import {createCombat} from './combat.mjs';
 import {normalizeMatchCommand,applyMatchCommand} from './match-command-kernel.mjs';
+import {sampleHostInputMs,inspectCoreTimeDomains} from './core-time-domains.mjs';
 export {normalizeMatchCommand} from './match-command-kernel.mjs';
 
 const VERSION=1;
@@ -134,8 +135,8 @@ export function createMatchProtocol({battleOptions={},hostNowMs=()=>performance.
   // trusted timestamp used, enabling byte-for-byte deterministic replay.
   let hostRotationAtMs=null;
   if(command.type==='rotate'&&options.rotationCooldownMs>0){
-   hostRotationAtMs=hostNowMs();
-   if(!Number.isFinite(hostRotationAtMs)||hostRotationAtMs<0)
+   hostRotationAtMs=sampleHostInputMs(hostNowMs);
+   if(hostRotationAtMs===null)
     return {ok:false,reason:'invalid_host_clock'};
   }
   try{result=applyMatchCommand(game,side,command,
@@ -184,7 +185,9 @@ export function createMatchProtocol({battleOptions={},hostNowMs=()=>performance.
  }
  function exportJournal(){return clone({version:VERSION,initialOptions:options,
   entries:journal,hash:stateFingerprint(game.snapshot())});}
- return {dispatch,advanceAuto,snapshot,exportJournal};
+ // Diagnostics only; never included in the Firebase snapshot or journal.
+ return {dispatch,advanceAuto,snapshot,exportJournal,
+  inspectTimeDomains:()=>inspectCoreTimeDomains(game.snapshot())};
 }
 /**
  * Re-execute accepted host-order events. This verifies that a transcript is
