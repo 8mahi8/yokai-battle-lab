@@ -32,6 +32,14 @@
 
 初回テストの失敗は、命中乱数により3体でなく2体KOしたのに必ず3体KOとしたテスト前提と、オンラインへ研究オプションを通そうとしたテスト条件によるもの。次のCIでは修正した。イベント数の差による**eventId通番のずれは正常**であり、HPと必殺の効果ペイロードのみ厳密比較した。
 
+## GitHub Actions 正式ゲート
+
+- 合格対象コード SHA：`6e6d5bed7913d9f25ca52a77f71e861a6be9e84e`。文書のみの後続コミットとは区別する。
+- [Research battle unit tests #40926608857](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40926608857) **全job SUCCESS：Node 836/836 PASS、fail 0、skip 0**。新7件（1KOイベント/同一行動3KO、再KO更新、死んだ持ち主、旧レンタル不変、実戦複数KO、HP/RNG比較、onlineオプション拒否）、自然6v6 endurance、ChromiumのZero Poke/Soul/カウンター操作も合格。
+- [Phase37 Firebase friends noAuth QA #40926608821](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40926608821) **全job SUCCESS**。Google Sites用未配布HTML build（76 modules/297,831 bytes）、実Firebase RTDB Emulatorで2席/24 host行動/ACK/正規state一致、切断復帰、publish遅延8行動、Chromium2iframe 4埋め込み幅すべて成功。本番Firebaseは予約済み**非ルームキーGET1回（HTTP200、本文は閲覧せず書込0）**のみ。
+- 3回のCIが必要だった理由：(a)テストが「乱数があっても必ず3体KO」を仮定していた、(b)オンラインで未承認の研究オプションを要求していた、(c)Skill発火数が変わるためeventId通番が変化するのに、通番まで旧モードと同一を要求していた。**どれも旧オンライン契約を壊さず、戦闘ペイロードの比較とテスト期待だけを適正化**して全件合格。
+- 完成保証ではない：物理学校iPad Safari 2台/実Google Sites埋込、原作ゲーム動画の本体、実原作3DSでの複合KO/効果解除のフレーム比較はまだ実施していない。
+
 ## 継続する作業
 
 1. **ジバニャン通常攻撃10×2（確認済み）**を、原作キャラ用のデータ駆動戦闘inputへ安全に通す。原作数値HP等はLv99基準条件の違いに留意し、未検証のAI性格/回避/とりつきエンジンへ推測値を入れて「原作再現済み」としない。
