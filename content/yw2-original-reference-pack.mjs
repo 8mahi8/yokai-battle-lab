@@ -15,6 +15,7 @@ export const YW2_REFERENCE_SOURCES=Object.freeze({
  jibanyan_game8:'https://game8.jp/youkai-watch2/497000',
  jibanyan_gamecap:'https://game-cap.com/youkaiwatch2/data/youkai_jibanyan.html',
  jibanyan_mtw:'https://mtwildwood.net/ja/yw2/yokai/jibanyan',
+ yw2_attitudes:'https://mtwildwood.net/attitudes.php?g=yw2',
  komasan_guide:'https://gamepedia.jp/youkai-yw2/monsters/279',
  komasan_game8:'https://game8.jp/youkai-watch2/497002',
  komasan_gamecap:'https://game-cap.com/youkaiwatch2/data/youkai_komasan.html',
@@ -42,7 +43,15 @@ const source=[
   identitySourceIds:[G,E,M],
   // YW2-only Jibanyan battle table: Attack55/Technique30/Inspirit10/Guard5.
   // Actual decision also applies Attitude rules, which are NOT encoded here.
-  behavior:{baseActionWeights:documented([55,30,10,5],M)},
+  behavior:{
+   baseActionWeights:documented([55,30,10,5],M),
+   // YW2 Grouchy list explicitly singles out Jibanyan at 100%,
+   // unlike most species with four weighted Attitudes.
+   attitudeOptions:documented([{attitude:'grouchy',chance:100}],
+    'yw2_attitudes'),
+   // Loaf weight is NOT itself a per-action loaf percentage at Lv99.
+   loafWeight:documented(5,M)
+  },
   stats:{
    hp:two(322,M,E),strength:two(153,M,E),spirit:two(90,M,E),
    defense:two(108,M,E),speed:two(165,M,E)
