@@ -83,18 +83,18 @@ test('V3-4-8 original YW2 -2 Speed stage uses x0.7, clock cost changes without r
 
 test('V3-4-8 successful source Level2 Inspirit updates future turns, survives 35 actions and purifies',()=>{
  const game=createCombat(speedOptions());
- const before=clockUnit(game,'B4');
+ const before=clockUnit(game,'B6');
  assert.equal(before.speed,165);
  const committed=game.applyInspirit({
-  id:'B4',sign:'negative',effect:'speed-down',
+  id:'B6',sign:'negative',effect:'speed-down',
   source:'A1',level:2
  });
  assert.ok(committed);
- const after=clockUnit(game,'B4');
+ const after=clockUnit(game,'B6');
  assert.equal(after.speed,Math.floor(before.speed*.7));
  assert.equal(after.cost,waitCostFromSpeed(after.speed));
  assert.equal(after.wait,before.wait,'already-earned wait is deliberately not rescaled');
- const status=game.snapshot().inspirits.B4.find(x=>x.effect==='speed-down');
+ const status=game.snapshot().inspirits.B6.find(x=>x.effect==='speed-down');
  assert.equal(status.level,2);
  assert.equal(status.mode,'persistent');
  assert.equal(status.remaining,null);
@@ -102,15 +102,14 @@ test('V3-4-8 successful source Level2 Inspirit updates future turns, survives 35
   const result=game.step();
   if(result.type!=='action')break;
  }
- assert.equal(game.snapshot().inspirits.B4.some(x=>x.effect==='speed-down'),true);
- assert.equal(clockUnit(game,'B4').speed,after.speed);
- // Move B4 onto the bench by rotating B side once.
- game.rotate(1,1,0);
- const removal=game.purify(1,'B4');
+ assert.equal(game.snapshot().inspirits.B6.some(x=>x.effect==='speed-down'),true);
+ assert.equal(clockUnit(game,'B6').speed,after.speed);
+ // B6 is initially on the bench, as required for purification.
+ const removal=game.purify(1,'B6');
  assert.equal(removal.ok,true);
- assert.equal(clockUnit(game,'B4').speed,before.speed);
- assert.equal(clockUnit(game,'B4').cost,before.cost);
- assert.equal(game.snapshot().inspirits.B4.length,0);
+ assert.equal(clockUnit(game,'B6').speed,before.speed);
+ assert.equal(clockUnit(game,'B6').cost,before.cost);
+ assert.equal(game.snapshot().inspirits.B6.length,0);
 });
 
 test('V3-4-8 speed effects stay distinct from physical HP/base speed and preserve original rental defaults',()=>{
@@ -123,19 +122,19 @@ test('V3-4-8 speed effects stay distinct from physical HP/base speed and preserv
   researchDamageModel:true}),/custom teams/);
  assert.throws(()=>createCombat({...speedOptions(),researchDamageModel:false}),
   /researchDamageModel/);
- assert.throws(()=>custom.applyInspirit({id:'B4',sign:'positive',
+ assert.throws(()=>custom.applyInspirit({id:'B6',sign:'positive',
   effect:'speed-down',level:2}),/negative sign/);
- assert.throws(()=>custom.applyInspirit({id:'B4',sign:'negative',
+ assert.throws(()=>custom.applyInspirit({id:'B6',sign:'negative',
   effect:'speed-down',level:5}),/level 1..4/);
  const unchanged=custom.snapshot();
  assert.deepEqual(unchanged,b);
- custom.applyInspirit({id:'B4',sign:'negative',effect:'speed-down',level:2});
- assert.equal(custom.snapshot().squads[1][3].speed,b.squads[1][3].speed);
- assert.equal(custom.snapshot().squads[1][3].hp,b.squads[1][3].hp);
- assert.equal(clockUnit(custom,'B4').speed,Math.floor(b.squads[1][3].speed*.7));
+ custom.applyInspirit({id:'B6',sign:'negative',effect:'speed-down',level:2});
+ assert.equal(custom.snapshot().squads[1][5].speed,b.squads[1][5].speed);
+ assert.equal(custom.snapshot().squads[1][5].hp,b.squads[1][5].hp);
+ assert.equal(clockUnit(custom,'B6').speed,Math.floor(b.squads[1][5].speed*.7));
  const baseline=createCombat({seed:42});
  assert.equal(baseline.snapshot().clock.teams[1].members[3].speed,
-  baseline.snapshot().squads[1][3].speed);
+  baseline.snapshot().squads[1][5].speed);
 });
 
 test('V3-4-8 unresolved Speed level is never invented at original-data intake',()=>{
