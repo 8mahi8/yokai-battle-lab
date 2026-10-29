@@ -26,6 +26,7 @@ import {resolveRentalInspiritSpec} from './catalog-inspirit-spec.mjs';
 import {resolveRentalSoultimateSpec} from './catalog-soultimate-spec.mjs';
 import {resolveRentalSkillSpec} from './catalog-skill-spec.mjs';
 import {validateSpecialSpec} from './special-effects.mjs';
+import {compileBattleProfileCharacter} from './catalog-battle-profile.mjs';
 
 const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const same=(a,b)=>{
@@ -50,8 +51,12 @@ const freezeMember=m=>Object.freeze({...m,
  * custom input. No change to online defaults.
  */
 export function compileCatalogTeamsForCombat({
- catalog=RENTAL_LAB_CATALOG,teamCharacterIds,school=false
+ catalog=RENTAL_LAB_CATALOG,teamCharacterIds,school=false,
+ executionProfiles=null
 }={}){
+ if(executionProfiles!==null&&(!object(executionProfiles)||
+    ![Object.prototype,null].includes(Object.getPrototypeOf(executionProfiles))))
+  throw new TypeError('executionProfiles must be a plain record keyed by character ID');
  if(typeof school!=='boolean'||!catalog||
     typeof catalog.getCharacter!=='function'||
     typeof catalog.getMove!=='function'||
@@ -65,8 +70,18 @@ export function compileCatalogTeamsForCombat({
  const knownIndex=new Map(RENTAL_CHARACTER_MOVE_REFS.map((r,i)=>[r.id,i]));
  const output=teamCharacterIds.map(team=>Object.freeze(team.map(id=>{
   const index=knownIndex.get(id);
-  if(index===undefined)
-   throw new RangeError('uncertified battle character ID: '+id);
+  if(index===undefined){
+   // Only EXPLICIT extra characters and their explicit execution profiles
+   // use the research-only path. Merely matching a rental's stats is not
+   // proof of a supported battle effect or an original game ability.
+   if(!executionProfiles||!Object.prototype.hasOwnProperty.call(executionProfiles,id))
+    throw new RangeError('uncertified battle character ID: '+id);
+   return compileBattleProfileCharacter({
+    catalog,characterId:id,profile:executionProfiles[id]
+   });
+  }
+  if(executionProfiles&&Object.prototype.hasOwnProperty.call(executionProfiles,id))
+   throw new TypeError('certified rental cannot override its executable fixture profile: '+id);
   const author=catalog.getCharacter(id);
   const reference=standard.getCharacter(id);
   if(!author||!reference||!same(author,reference))
