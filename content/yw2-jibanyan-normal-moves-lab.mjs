@@ -73,8 +73,9 @@ function sourcedMove(index,entry,slot,template){
  * claim, because the source pack is disputed/engine-incompatible there.
  */
 export function buildJibanyanNormalMoveLab({index=YW2_ORIGINAL_REFERENCE_INDEX,
- includeSpeedDown=false}={}){
+ includeSpeedDown=false,includeSourceWeights=false}={}){
  if(typeof includeSpeedDown!=='boolean')throw new TypeError('includeSpeedDown must be boolean');
+ if(typeof includeSourceWeights!=='boolean')throw new TypeError('includeSourceWeights must be boolean');
  const entry=index?.getCharacter?.('yw2:jibanyan');
  if(!entry||entry.id!=='yw2:jibanyan'||entry.game!=='yw2'||
     entry.name!=='ジバニャン')
@@ -111,6 +112,17 @@ export function buildJibanyanNormalMoveLab({index=YW2_ORIGINAL_REFERENCE_INDEX,
  reference.stats=stats;
  reference.moveIds.attack=attack.id;
  reference.moveIds.technique=technique.id;
+ if(includeSourceWeights){
+  const fact=entry.behavior?.baseActionWeights;
+  const weights=sourcedValue(fact,'behavior.baseActionWeights',
+   value=>Array.isArray(value)&&value.length===4&&
+    value.every(x=>Number.isSafeInteger(x)&&x>=0)&&
+    value.reduce((a,b)=>a+b,0)===100);
+  reference.personality.actionWeights=[...weights];
+  // Only base action weights are source-backed, NOT the complete personality
+  // (Attitude multipliers, seriousness/Loaf and overrides remain fixture).
+  reference.fieldSourceRefs.personality=sourceUrls(index,fact.claims[0].sourceIds);
+ }
  if(originalInspirit)reference.moveIds.inspirit=originalInspirit.id;
  reference.provenance.identity='documented';
  reference.provenance.stats='documented';
@@ -139,15 +151,18 @@ export function buildJibanyanNormalMoveLab({index=YW2_ORIGINAL_REFERENCE_INDEX,
  const researchProvenance=Object.freeze({
   originalMoves:Object.freeze(['attack','technique',...(includeSpeedDown?['inspirit']:[])]),
   originalLevel99Stats:true,
+  originalBaseActionWeights:includeSourceWeights,
   fixtureFields:Object.freeze([
-   'personality','actionWeights','loafChance','passiveMagnitudeAndDuration',
+   'personality',...(includeSourceWeights?[]:['actionWeights']),
+   'loafChance','passiveMagnitudeAndDuration',
    ...(includeSpeedDown?[]:['inspirit']),'soultimate','soulRank','equipmentAndResistances',
    'hitRngAndDamageFormula','chargeAndAnimationTiming',
    ...(includeSpeedDown?['statusStacking','midWaitRescheduling','statusHitChance']:[])
   ]),
   originalSoultimateHitCount:null,
   battleReady:false,
-  mode:includeSpeedDown?'speed-down-lab':'normal-moves-only-lab'
+  mode:includeSourceWeights?'source-base-actions-lab':
+   includeSpeedDown?'speed-down-lab':'normal-moves-only-lab'
  });
  return Object.freeze({catalog,profile,researchProvenance,
   characterId:JIBANYAN_NORMAL_TRIAL_ID});
