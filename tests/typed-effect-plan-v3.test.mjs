@@ -5,6 +5,8 @@ import {compileTypedEffectPlan,commitTypedEffect,TYPED_EFFECT_PLAN_VERSION}
  from '../engine/typed-effect-plan.mjs';
 import {createMatchProtocol,replayMatchJournal}
  from '../engine/match-protocol.mjs';
+import {createCombat,RENTAL_SQUAD,SCHOOL_RENTAL_PERSONALITIES}
+ from '../engine/combat.mjs';
 
 const byId=id=>RENTAL_MOVE_MASTER.find(m=>m.id===id);
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -92,5 +94,32 @@ test('V3-2: canonical match still replays in full with typed normal commits',()=
   for(const team of match.snapshot().game.squads)
    for(const member of team)
     assert.ok(member.hp>=0&&member.hp<=member.maxHp);
+ }
+});
+
+test('V3-2: typed default and identical explicit legacy rosters produce identical seeded events and snapshots',()=>{
+ // Explicit custom teams bypass the rental typed compiler, while their
+ // members/attitudes match the built-in school team byte-for-byte.
+ const school=RENTAL_SQUAD.map((unit,i)=>({...unit,
+  attitude:SCHOOL_RENTAL_PERSONALITIES[i].attitude,
+  loafChance:SCHOOL_RENTAL_PERSONALITIES[i].loafChance,
+  weights:[...SCHOOL_RENTAL_PERSONALITIES[i].weights]
+ }));
+ for(const researchDamageModel of [false,true]){
+  for(const seed of [3,42,8192,20261029]){
+   const options={seed,playtestSoulTuning:true,enableRentalSkills:true,
+    enableLoafing:true,researchDamageModel};
+   const typed=createCombat(options);
+   const old=createCombat({...options,teams:[school,school]});
+   assert.deepEqual(typed.snapshot(),old.snapshot(),
+    'compiled source must not alter the initial state');
+   for(let i=0;i<110;i++){
+    assert.deepEqual(typed.step(),old.step(),
+     'new Effect commit must have no result/RNG/event difference');
+    assert.deepEqual(typed.snapshot(),old.snapshot(),
+     'full canonical snapshots must be identical on every action');
+    if(typed.snapshot().winner!==null)break;
+   }
+  }
  }
 });
