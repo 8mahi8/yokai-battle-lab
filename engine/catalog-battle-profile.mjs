@@ -47,16 +47,18 @@ export function validateBattleExecutionProfile(profile){
   throw new TypeError('invalid execution profile identity/evidence');
  // Unexpected fields must never become implicit combat modifiers.
  const fields=['schema','characterId','evidence','sourceRefs',
-  'soultimateRank','soulCapacity','inspiritLevel',
-  ...(profile.schema===BATTLE_EXECUTION_PROFILE_SCHEMA?['special']:[])];
+  'soultimateRank','soulCapacity',
+  ...(profile.schema===BATTLE_EXECUTION_PROFILE_SCHEMA?
+    ['inspiritLevel','special']:[])];
  if(Object.keys(profile).some(key=>!fields.includes(key))||
     fields.some(key=>!own(profile,key)))
   throw new TypeError('execution profile must explicitly declare all supported fields');
  if(!integer(profile.soultimateRank)||profile.soultimateRank<1||
     profile.soultimateRank>4||
     profile.soulCapacity!==soulCapacityForRank(profile.soultimateRank)||
-    !integer(profile.inspiritLevel)||profile.inspiritLevel<1||
-    profile.inspiritLevel>4)
+    (profile.schema===BATTLE_EXECUTION_PROFILE_SCHEMA&&
+     (!integer(profile.inspiritLevel)||profile.inspiritLevel<1||
+      profile.inspiritLevel>4)))
   throw new RangeError('invalid explicit Soul capacity or Inspirit level');
  if(profile.schema===BATTLE_EXECUTION_PROFILE_SCHEMA)
   validateSpecialSpec(profile.special);
@@ -132,6 +134,12 @@ export function compileBattleProfileCharacter({catalog,characterId,profile}={}){
   validateSpecialSpec(soultimate.execution):null;
  const special=profile.schema===BATTLE_EXECUTION_PROFILE_SCHEMA_V2?
   sourceSpecial:validateSpecialSpec(profile.special);
+ const inspiritLevel=profile.schema===BATTLE_EXECUTION_PROFILE_SCHEMA_V2?
+  inspirit.level:profile.inspiritLevel;
+ if(!integer(inspiritLevel)||inspiritLevel<1||inspiritLevel>4)
+  throw new TypeError('Inspirit move level required in V2 profile');
+ if(inspirit.level!==undefined&&inspirit.level!==inspiritLevel)
+  throw new TypeError('Inspirit move level and legacy profile disagree');
  if(sourceSpecial&&JSON.stringify(special)!==JSON.stringify(sourceSpecial))
   throw new TypeError('Soultimate profile and move execution disagree');
  // Existing typed plan supplies one additional independent semantic check.
@@ -174,7 +182,7 @@ export function compileBattleProfileCharacter({catalog,characterId,profile}={}){
   ...(technique.element==='neutral'?{}:
     {techniqueElement:technique.element}),
   inspirit:inspirit.statusEffect,
-  ...(profile.inspiritLevel===1?{}:{inspiritLevel:profile.inspiritLevel}),
+  ...(inspiritLevel===1?{}:{inspiritLevel}),
   special
  };
  return frozenMember(member);
