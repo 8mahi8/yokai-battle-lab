@@ -20,10 +20,13 @@ export function createActionSoulAccrual({
     !teams.every(t=>Array.isArray(t)&&t.length===6)||
     !statuses||typeof statuses.list!=='function'||
     !(loafingActors instanceof Set)||
-    !Number.isSafeInteger(researchSoulGainPerAction)||researchSoulGainPerAction<0||
+    !Number.isSafeInteger(researchSoulGainPerAction)||researchSoulGainPerAction<0||researchSoulGainPerAction>10000||
     typeof playtestSoulTuning!=='boolean'||
     !['none','owner-nonattack'].includes(researchSoulRecoveryMode))
   throw new TypeError('canonical Soul accrual dependencies and mode required');
+ if(researchSoulGainPerAction>0&&
+   (playtestSoulTuning||researchSoulRecoveryMode!=='none'))
+  throw new RangeError('exclusive research Soul mode required');
 
  function afterAction({actor,kind,techniqueKind,hit,target,action}={}){
   if(!actor||typeof actor.id!=='string'||!actor.id||
