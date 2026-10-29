@@ -23,7 +23,7 @@
 
 - [実装と根拠・QA](./ENGINE_V3_3_TIME_DOMAIN_OBSERVER_20261030.md)。V3-2の効果・KO・状態Commitを保持したまま`engine/time-domain-contract.mjs`の読取専用`readBattleTimeDomains`と、`battle.timeDomains()`を追加。表示無効の通常ゲームにも対応し、`logical(action-points)`/`canonical(host-event-ordinal)`/`display(research-animation-ms)`を明示的に分ける。生の状態参照や乱数消費は無し。原作秒数の換算・旧Snapshot変更は無し。
 - 新規`tests/v3-time-domain-contract.test.mjs`5件。論理アクション・hostイベント・モーション表示の単位を区別し、モーションで遅れるのは表示だけで戦闘状態・HP・Soul・KO・行動・イベント順が変わらないこと、ノーモーションチャージの見かけは二重Commitにならないことを検査。
-- **コードSHA `94852603112dcffdf7411367362a44b60a1998e9`の[GitHub Actions research CI 40903151441](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40903151441)成功：Node 780/780 PASS・自然6vs6決着4件・Chromium操作PASS**。同SHAの[Firebase Friends run 40903151393](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40903151393)を正式結果確認してゲートを閉じること。データ実機Safari2台/原作対戦動画の直接比較はまだ未達。
+- **コードSHA `94852603112dcffdf7411367362a44b60a1998e9`の[GitHub Actions research CI 40903151441](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40903151441)成功：Node 780/780 PASS・自然6vs6決着4件・Chromium操作PASS**。同SHAの[Firebase Friends run 40903151393](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40903151393)も**全工程SUCCESS**：2クライアントRTDB Emulator・24ホスト行動/ACK/snapshot、実Chromium2iframe、Google Sites単体HTML build（75モジュール）、4埋込幅、旧期限Rules別Emulator確認までPASS。本番FirebaseはGET一回のみ200（書込なし）。学校Safari実機2台/原作対戦動画の直接比較はまだ未達。
 - 現在は**V3-3-1の開始**。次は論理行動・正規Commit・相手可視化の順序契約を統合受入テストに拡張。V3-3全体は未完成、V3-4キャラ/技定義・V3-5学校実機完了ではない。main・学校公開HTML・本番Firebase Rules/DB・Google Drive無変更。
 
 ## 2026-10-30 V3-2継続｜KO原因別ポリシーを共通化／正式CI合格
