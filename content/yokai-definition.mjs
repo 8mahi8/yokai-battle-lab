@@ -52,6 +52,11 @@ function checkMove(move,slot){
  if(h.type==='none'&&h.count!==0)fail(slot+' non-hit count must be 0');
  if(h.type==='single'&&h.count!==1)fail(slot+' single hit count must be 1');
  if(h.type==='multi'&&(!int(h.count)||h.count<2))fail(slot+' multi count must be >= 2');
+ // Inspirit's level, when authored, belongs to that move as well.
+ if(move.level!==undefined&&
+    (slot!=='inspirit'||!int(move.level)||
+     move.level<1||move.level>4))
+  fail('Inspirit level must be 1..4 on an Inspirit move');
  // V3-4-4: backward-compatible optional composite rule lives on THE MOVE,
  // never in a character record. Unknown hit count must stay unknown.
  if(move.execution!==undefined){
