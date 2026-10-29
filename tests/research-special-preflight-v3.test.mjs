@@ -45,10 +45,19 @@ test('V3-2: malformed research impact set fails before committing earlier effect
  const lookup=new Map([[target.id,target],[friend.id,friend]]);
  const before=JSON.stringify([...lookup.values()]);
  let committed=0;
- const preflight=()=>all.forEach(impact=>assertResearchSpecialImpact(impact,{
-  casterSide:0,target:lookup.get(impact.targetId)
- }));
- assert.throws(preflight,/research impact kind or target side invalid/);
+ // The real host performs this entire validation pass before any writes.
+ // A malformed trailing impact must prevent ALL earlier valid effects.
+ const execute=()=>{
+  all.forEach(impact=>assertResearchSpecialImpact(impact,{
+   casterSide:0,target:lookup.get(impact.targetId)
+  }));
+  for(const impact of all){
+   if(impact.kind==='damage')lookup.get(impact.targetId).hp-=impact.amount;
+   if(impact.kind==='heal')lookup.get(impact.targetId).hp=impact.hpAfter;
+   committed++;
+  }
+ };
+ assert.throws(execute,/research impact kind or target side invalid/);
  assert.equal(committed,0);
  assert.equal(JSON.stringify([...lookup.values()]),before);
  // If validation had succeeded, only then would the host start applying.
