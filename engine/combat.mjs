@@ -911,7 +911,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         const damage=effects.commitDamage(enemy,Math.min(enemy.hp,nominal));
         const amount=damage.amount;
         const interruption=interruptOnHit(enemy,amount,false);
-        if(enemy.hp===0)koLifecycle.commit({target:enemy,refreshPin:true});
+        if(enemy.hp===0)koLifecycle.commitForCause({cause:'poke',target:enemy});
         if(squads.some(team=>team.every(unit=>unit.hp===0)))
           winner=squads[0].every(unit=>unit.hp===0)?1:0;
         reward={kind:chosen==='heavy-hit'?'playtest-heavy-hit':'playtest-damage',
