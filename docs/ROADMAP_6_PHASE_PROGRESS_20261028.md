@@ -19,6 +19,14 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-29 V3-2継続｜必殺のHP・状態異常を共通型Planから実確定
+
+- [変更・検証・原作情報の区別](./ENGINE_V3_2_SPECIAL_IMPACT_COMMIT_20261029.md)。
+- `engine/special-impact-commit.mjs` を追加し、**6種類の既存必殺に対して全impactの型・対象ID・敵味方・HP量・状態名・連動効果を試合状態変更前に検証**。
+- 旧`EffectCommitter`でHPを実確定し、旧`applyInspirit`でStatusを実確定する共通アダプタを`combat.mjs`に接続。処理対象の判定、KO/Interrupt/Soulと耐性RNGの順序は変更しない。未知Hitを勝手に1Hitに固定しない。
+- 新規`tests/special-impact-commit-v3.test.mjs`は全6必殺の正しいCommit、誤った対象/不正Status/二重回復/KO時付与拒否を監視。既存の新旧6必殺完全snapshot/event比較も維持。**[Node 737/737 PASS・耐久/ブラウザ Smoke](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872738857)**、[Chromium Stage PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872738876)、同一ゲームコードの[Firebase Friends RTDB noAuth/2 iframe PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872702123)、[Google Sites単体HTML PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872702284)。
+- **現在地：V3-2 続行**。数値/発火順を原作と照合した完全エンジンではない。次はDoT/継続回復/Soul/Interrupt/KOの統合根拠整理、その後V3-3行動/妖気/相手表示、V3-4データだけのキャラ追加、V3-5オンライン実機。公開main・学校サイト・本番RTDB・Driveは未変更。
+
 ## 2026-10-29 V3-2継続｜必殺6技の複合Effect Planと全6キャラ新旧完全比較
 
 - [実装・原作資料・テスト・残件の詳細](./ENGINE_V3_2_COMPOSITE_SOULTIMATE_PLAN_20261029.md)。
