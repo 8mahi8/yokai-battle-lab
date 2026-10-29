@@ -14,11 +14,14 @@ import {YOKAI_ACTION_SLOTS} from './yokai-definition.mjs';
 const idFor=index=>'rental-'+String(index+1).padStart(2,'0');
 const hitPattern=count=>count>1?{type:'multi',count}:{type:'single',count:1};
 const freeze=x=>Object.freeze({...x,hitPattern:Object.freeze({...x.hitPattern}),
- sourceRefs:Object.freeze([...x.sourceRefs])});
+ sourceRefs:Object.freeze([...x.sourceRefs]),
+ ...(x.execution?{execution:Object.freeze({...x.execution})}:{})});
 function makeMove(id,slot,{category,power=null,element=null,targetScope='unknown',
- hitPattern:pattern={type:'unknown',count:null},statusEffect=null}){
+ hitPattern:pattern={type:'unknown',count:null},statusEffect=null,
+ execution=undefined}){
  return freeze({id:id+':'+slot,slot,displayName:null,category,power,
   element,targetScope,hitPattern:pattern,statusEffect,
+  ...(execution?{execution}:{}),
   evidence:'fixture',sourceRefs:[]});
 }
 function buildMoves(i){
@@ -42,6 +45,9 @@ function buildMoves(i){
   soultimate:makeMove(id,'soultimate',{category:soultimate.kind,
    power:soultimate.power,targetScope:soultimate.targetScope,
    statusEffect:soultimate.statusEffect,
+   // The only source of composite Soultimate parameters is the already
+   // authored rental definition; do not re-author damageKind/status levels.
+   execution:soultimate.definition,
    // This may target a whole front WITHOUT implying multi-hit.
    hitPattern:soultimate.hitPattern})
  });
