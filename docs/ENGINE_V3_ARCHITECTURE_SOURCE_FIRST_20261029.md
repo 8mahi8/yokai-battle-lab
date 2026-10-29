@@ -216,6 +216,14 @@ exportAuditJournal(); // internal deterministic QA, not a friend replay feature
 - [Node **732/732・耐久/ブラウザ研究UI PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870875950)：全6必殺の実発動結果と旧経路の完全snapshot/event比較を追加。直前の[Chromium Stage PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870366594)、同じゲームエンジン本体版の[Firebase Friends noAuth/2 iframe PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870222395)、[単体HTML PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870222384)。実学校Safari最新版は未検証。
 - 次は複合stageの**実行**（HP/Status/割り込み/KO/Soul/DoTの優先関係）を旧新差分ゲート付きで段階移管。**V3-2はまだ完成ではない**。
 
+## 7I. V3-2 必殺EffectsのHost実Commit共通化（2026-10-29）
+
+- 詳細：[ENGINE_V3_2_SPECIAL_IMPACT_COMMIT_20261029](./ENGINE_V3_2_SPECIAL_IMPACT_COMMIT_20261029.md)。
+- `special-impact-commit.mjs`を新設。6必殺の`SoultimateEffectPlan`を、**全impactを先に検証 → 既存正規HP CommitとInspirit Status Commitを呼ぶ**実戦経路に接続。enemy/ally方向、対象ID、status名/符号、必殺の追加効果関連付け、HP量をfail-closed検証する。
+- 旧`planResearchSpecial`が威力/対象/順序/耐性RNG/KO/割込/Soulを決め、改変していない。原作数値未確定と既存研究専用/カスタム特殊技を保持。**設計だけではなく状態確定まで進んだが、完全な効果順序の原作再現は未完。**
+- **[Node 737/737・自然6体対戦耐久・browser smoke PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872738857)**、[Chromium Stage PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872738876)、同一ゲームコード[Firebase Friends noAuth 2画面 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872702123)、[Google Sites HTML build PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872702284)。全6必殺の旧新snapshot/event一致も既存テストで継続。
+- 残件：原作に照らしたKO/Status/Soul/DoT/interruptの時刻と優先順の調査・統合、V3-3/4/5、学校Safari最新版実機試遊。main/学校本番/Firebase本番/Drive無変更。
+
 ## 8. 今回の決定
 
 **E1-B単独のオンラインおはらい演出拡張、トホホの砲、個別Soultimate追加などのfeature単位ロードマップを凍結**。これまで積んだコード/動画解析/テストは保存。優先順位は**V3-0→V3-1→V3-2→V3-3→V3-4→V3-5**に切り替える。原作動画の局面は今後の統合受入テストとして再利用し、実装順序を決める一単位にはしない。
