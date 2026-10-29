@@ -209,6 +209,13 @@ exportAuditJournal(); // internal deterministic QA, not a friend replay feature
 - 実ソースから全24技を組み立て、18 Plan/6特殊拒否/Commit/無効入力のV8**78チェックPASS**＋combat/test構文PASS。同じseedの既存挙動と比較するNodeテストを新設したが**最新HEADの正式CI/Chromium/Firebase実行結果は未確認**。旧719 PASSを流用しない。
 - V3-2残り：正式CIゲート、特殊技の複合Plan、DoT/Soul/Interrupt/Poke/Purify統合と元原作の順序根拠。キャラ追加容易なV3-4やオンライン学校Safari完成とは呼ばない。
 
+## 7H. V3-2 複合Soultimateの型付き意味Plan（2026-10-29）
+
+- 詳細：[ENGINE_V3_2_COMPOSITE_SOULTIMATE_PLAN_20261029](./ENGINE_V3_2_COMPOSITE_SOULTIMATE_PLAN_20261029.md)。既存6必殺のカテゴリ・対象・Hit不明・追加状態・吸収・蘇生＋回復を、単一技マスターからimmutableなstage列へ型付け。新キャラ・新技や不確かな原作実値は加えない。
+- **通常18技はEffect Commitまで統合済み**。今回の必殺6技は実戦の`resolvedSpec`をPlanに照合する段階であり、**特殊効果の実行順自体は旧`planResearchSpecial`/Hostを維持**。多段数不明を1打扱いしないし、`revive-heal`のHPを2度確定しない。
+- [Node **732/732・耐久/ブラウザ研究UI PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870875950)：全6必殺の実発動結果と旧経路の完全snapshot/event比較を追加。直前の[Chromium Stage PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870366594)、同じゲームエンジン本体版の[Firebase Friends noAuth/2 iframe PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870222395)、[単体HTML PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870222384)。実学校Safari最新版は未検証。
+- 次は複合stageの**実行**（HP/Status/割り込み/KO/Soul/DoTの優先関係）を旧新差分ゲート付きで段階移管。**V3-2はまだ完成ではない**。
+
 ## 8. 今回の決定
 
 **E1-B単独のオンラインおはらい演出拡張、トホホの砲、個別Soultimate追加などのfeature単位ロードマップを凍結**。これまで積んだコード/動画解析/テストは保存。優先順位は**V3-0→V3-1→V3-2→V3-3→V3-4→V3-5**に切り替える。原作動画の局面は今後の統合受入テストとして再利用し、実装順序を決める一単位にはしない。
