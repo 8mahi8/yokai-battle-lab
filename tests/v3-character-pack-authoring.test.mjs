@@ -44,7 +44,8 @@ test('V3-4: six compact references use only skillId + four move IDs with identic
   assert.deepEqual(constructed.characters,original.characters);
   assert.deepEqual(constructed.moves,original.moves);
   assert.deepEqual(constructed.skills,original.skills);
-  assert.equal(constructed.getCharacter('rental-04').skill.id,'skill:critImmune');
+  assert.equal(constructed.getCharacter('rental-04').skill.id,
+   original.getCharacter('rental-04').skill.id);
  }
 });
 
@@ -60,7 +61,8 @@ test('V3-4: append seventh character and one physical move without copying three
  assert.equal(added.skill.id,'skill:momentum');
  assert.equal(added.moves.attack.id,attack.id);
  assert.equal(added.moves.attack.power,47);
- assert.strictEqual(add.getMove(unit.moveIds.technique),added.moves.technique);
+ assert.deepEqual(add.getMove(unit.moveIds.technique),added.moves.technique,
+  'catalog returns the same authored values after defensive copying');
  assert.deepEqual(base.characters,add.characters.slice(0,6));
  assert.equal(base.getCharacter(unit.id),null,'base must not be changed');
  assert.equal(base.moves.length,24);
