@@ -140,11 +140,15 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false,
   researchWheelCoalescing=false,researchOpeningPriority=null,
   researchPokeSoulTransfer=0,playtestSoulTuning=false,researchDamageModel=false,researchMultiHit=false,researchSoultimateHitCount=null,researchYw2Soultimate=null,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false,enableRentalSkills=playtestSoulTuning,
+  researchYw2Momentum=false,
   catalogAttackResolution=false,catalogTechniqueResolution=false,
   catalogInspiritResolution=false,catalogSoultimateResolution=false,
   catalogSkillResolution=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof enableRentalSkills!=='boolean')throw new TypeError('enableRentalSkills must be boolean');
+  if(typeof researchYw2Momentum!=='boolean')throw new TypeError('researchYw2Momentum must be boolean');
+  if(researchYw2Momentum&&(teams===undefined||!enableRentalSkills||!researchSpecialEffects))
+    throw new RangeError('YW2 Adrenaline trial requires explicit custom teams, active skills and special effects');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
   if(typeof researchPresentation!=='boolean')throw new TypeError('researchPresentation must be boolean');
   if(typeof researchCounterTiming!=='boolean')throw new TypeError('researchCounterTiming must be boolean');
@@ -416,6 +420,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   skillHooks=createSkillHookPipeline({
     enabled:enableRentalSkills,skillOf:skillFor,teams:squads,
     boosts:skillBoosts,byId,emit:e=>events.push(e),
+    sourceYw2Momentum:researchYw2Momentum,
     commitHeal:(recipient,amount)=>effects.commitHeal(recipient,amount)
   });
   const koLifecycle=createKnockoutLifecycle({
@@ -641,6 +646,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
    * Normal specials continue to target the current live front.
    */
   function applyResearchSpecial({side,casterId,result,targets=null,pinnedId=null}={}){
+    if(researchYw2Momentum)skillHooks.beginResolution();
     const caster=byId.get(casterId);
     const enemies=targets?targets.map(id=>byId.get(id)).filter(m=>m&&m.hp>0):livingFront(1-side);
     const sourceMove=referenceMove&&caster.id==='A1'?referenceMove:null;
@@ -1045,6 +1051,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(!pending.teams.some(team=>team.frontIds.some(id=>team.members.find(m=>m.id===id)?.canAct)))
       return {type:'awaiting_rotation',reason:'all_front_units_unable_to_act',fronts:pending.teams.map(t=>t.frontIds)};
     const clockEvent=clock.step();
+    if(researchYw2Momentum)skillHooks.beginResolution();
     if(wheel)wheel.actionBoundary();
     const actor=byId.get(clockEvent.id);
     const existingBoost=skillBoosts.get(actor.id)||null;
