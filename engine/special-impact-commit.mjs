@@ -70,6 +70,16 @@ export function assertPlannedSpecialImpact(plan,impact,{casterSide,target}={}){
     (allied&&target.side!==casterSide)||
     (hostile&&target.side===casterSide))
   throw new RangeError('Soultimate impact violates authored target side');
+ // Validate HP payloads for the entire planned impact set BEFORE any
+ // previous impact can commit. Never wait until mid-combo to reject bad data.
+ if(damaging.has(impact.kind)&&
+    (!Number.isSafeInteger(impact.amount)||impact.amount<0))
+  throw new TypeError('Soultimate damage amount invalid');
+ if(recovering.has(impact.kind)&&
+    (!Number.isSafeInteger(impact.hpAfter)||
+     !Number.isSafeInteger(target.hp)||!Number.isSafeInteger(target.maxHp)||
+     impact.hpAfter<target.hp||impact.hpAfter>target.maxHp))
+  throw new TypeError('Soultimate recovery amount invalid');
  if(['buff','debuff','damage-status'].includes(plan.category)){
   const statusStage=plan.stages.find(s=>
    s.type==='status'||s.type==='status-on-surviving-target');
