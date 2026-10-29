@@ -38,6 +38,8 @@ import {createSkillHookPipeline} from './skill-hook-pipeline.mjs';
 import {createKnockoutLifecycle} from './knockout-lifecycle.mjs';
 import {RENTAL_MOVE_MASTER} from '../content/rental-move-master.mjs';
 import {compileTypedEffectPlan,commitTypedEffect} from './typed-effect-plan.mjs';
+import {RENTAL_SOULTIMATE_MOVES} from '../content/rental-soultimate-moves.mjs';
+import {compileSoultimateEffectPlan,assertSoultimatePlanMatches} from './soultimate-effect-plan.mjs';
 
 function seededRandom(seed) {
   let x = (seed >>> 0) || 1;
@@ -265,6 +267,18 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
          (plans.technique.effect.type==='heal')!==(member.technique==='heal'))
         throw new TypeError('rental ordinary move and effect plan disagree');
       return [member.id,plans];
+    }))
+  ):null;
+  // V3-2: validate all six composite Soultimate move shapes at match start.
+  // Keep original RNG, target selection, impact order and commit path intact.
+  const specialPlansByActor=teams===undefined?new Map(
+    squads.flatMap(team=>team.map((member,index)=>{
+      const authored=RENTAL_SOULTIMATE_MOVES[index];
+      const master=RENTAL_MOVE_MASTER.find(move=>move.id===authored.id);
+      const plan=compileSoultimateEffectPlan(master,authored.definition);
+      if(plan.moveId!=='rental-'+String(index+1).padStart(2,'0')+':soultimate')
+        throw new TypeError('Soultimate actor and effect plan disagree');
+      return [member.id,plan];
     }))
   ):null;
   // Stat reductions and HP-over-time are distinct move categories.
@@ -611,6 +625,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const sourceMove=referenceMove&&caster.id==='A1'?referenceMove:null;
     const resolvedSpec=sourceMove?yw2ReferenceSpecialDefinition(sourceMove.id):
       catalogSoultimateByActor?.get(caster.id)?.definition??caster.special;
+    if(!sourceMove){
+      const sourcePlan=specialPlansByActor?.get(caster.id);
+      if(sourcePlan)assertSoultimatePlanMatches(sourcePlan,resolvedSpec);
+    }
     const actualHitCount=sourceMove?.hitsPerTarget??researchSoultimateHitCount;
     const impacts=planResearchSpecial({
       spec:resolvedSpec,caster,
