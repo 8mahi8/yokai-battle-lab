@@ -24,7 +24,7 @@ export function statStageMultiplier(stage){
 }
 export function deriveStatStage(effects,stat){
  if(!Array.isArray(effects))throw new TypeError('status effects must be array');
- if(!['strength','spirit','defense'].includes(stat))
+ if(!['strength','spirit','defense','speed'].includes(stat))
   throw new RangeError('unknown stat stage');
  const up=stat+'-up',down=stat+'-down';
  let total=0;
