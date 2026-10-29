@@ -7,6 +7,7 @@
  * coalescing) remain opt-in. NO multiplayer protocol or Google Sites release.
  */
 import {RENTAL_SQUAD,SCHOOL_RENTAL_PERSONALITIES} from '../content/rental-roster.mjs';
+import {getYw2OriginalActionSkill} from '../content/yw2-original-action-skill-master.mjs';
 import {resolveRentalAttackSpec} from './catalog-attack-spec.mjs';
 import {resolveRentalTechniqueSpec} from './catalog-technique-spec.mjs';
 import {resolveRentalInspiritSpec} from './catalog-inspirit-spec.mjs';
@@ -99,6 +100,11 @@ function buildMember(source,side,index) {
   if(source.researchActionOverrideSkill!==undefined&&
     !['forgot-to-guard','pacifist','chatty'].includes(source.researchActionOverrideSkill))
     throw new TypeError('unsupported research action override skill');
+  if(source.sourceYw2CharacterId!==undefined&&
+    source.researchActionOverrideSkill!==undefined)
+    throw new TypeError('source-backed YW2 Skill cannot have parallel manual override');
+  const sourcedActionSkill=source.sourceYw2CharacterId===undefined?null:
+    getYw2OriginalActionSkill(source.sourceYw2CharacterId);
  if(!['sleep','strength-up','strength-down','defense-down','spirit-down',
   'hp-loss','hp-regen','speed-down'].includes(source.inspirit))
     throw new TypeError('unsupported Inspirit');
@@ -117,6 +123,12 @@ function buildMember(source,side,index) {
     ...(source.guardBoost===true?{guardBoost:true}:{}),
     ...(source.researchActionOverrideSkill?
       {researchActionOverrideSkill:source.researchActionOverrideSkill}:{}),
+    ...(sourcedActionSkill?{
+      sourceYw2CharacterId:sourcedActionSkill.characterId,
+      sourceYw2SkillId:sourcedActionSkill.skill.id,
+      // One immutable skill master; V3-4-14 remains the only executor.
+      researchActionOverrideSkill:sourcedActionSkill.skill.effect
+    }:{}),
     ...(source.techniquePlaySources>0?{techniquePlaySources:source.techniquePlaySources}:{}),
     ...(source.techniquePenetrate===true?{techniquePenetrate:true}:{}),
     attackHits:source.attackHits??1,techniqueHits:source.techniqueHits??1,
