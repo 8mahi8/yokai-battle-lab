@@ -739,17 +739,16 @@ test('V3-3-4: error and recovery of host publish never exposes a false guest suc
  assert.equal(guest.status().revision,0);
  assert.equal(acks.length,0);
  assert.equal(guestViews.at(-1).game.soul.modes[1],'standard');
+ // More host actions trigger a fresh publication of the dirty snapshot.
+ // The first successful publication can carry all accumulated turns;
+ // no guest retransmission is required to recover the original ACK.
  for(let i=0;i<6;i++)assert.equal(host.advanceAuto().ok,true);
- await tick();
+ for(let i=0;i<30&&guest.status().revision<7;i++)await tick();
  assert.equal(host.snapshot().revision,7);
- assert.equal(guest.status().pendingSequence,1);
- assert.equal(guest.status().acked,0);
- // A host auto action normally retries dirty state without forcing stale
- // guest commands to be redelivered; guest only reacts to canonical state.
+ assert.equal(guest.status().pendingSequence,null);
+ assert.equal(guest.status().acked,1);
  const next=host.snapshot();
- assert.equal(guest.status().lastState?.revision<=next.revision,true);
- if(guest.status().acked===0)assert.equal((await host.retryPublish()).ok,true);
- for(let i=0;i<20&&guest.status().revision<next.revision;i++)await tick();
+ assert.equal(guest.status().lastState?.revision,next.revision);
  assert.deepEqual(guest.status().lastState,host.snapshot());
  assert.deepEqual(acks.map(x=>x.clientSeq),[1]);
  assert.equal(acks[0].applied,true);
