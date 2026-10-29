@@ -96,7 +96,7 @@ test('V3-2 research Poke keeps its legacy amount and event fields, even with zer
   assert.equal(meter(g,'A1'),recipient+expected);
   assert.equal(after.squads[1][0].hp,before.squads[1][0].hp);
   assert.deepEqual(after.events.at(-1),{
-   type:'poke',side:0,targetId:'B1',reward:result.reward,actionCount:12
+   type:'poke',side:0,targetId:'B1',reward:result.reward,actionCount:12,eventId:1
   });
  }
 });
@@ -115,7 +115,7 @@ test('V3-2 playtest Poke Soul reward retains amount, event and host determinism'
  assert.equal(meter(first.g,'B1'),80-expected);
  assert.equal(meter(first.g,'A1'),89+expected);
  assert.deepEqual(first.after.events.at(-1),{
-  type:'poke',side:0,targetId:'B1',reward:first.result.reward,actionCount:12
+  type:'poke',side:0,targetId:'B1',reward:first.result.reward,actionCount:12,eventId:1
  });
  assert.equal(first.g.beginPoke(0,'B1').reason,'already_poked');
 });
