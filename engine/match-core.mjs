@@ -28,6 +28,8 @@ export function createMatchCore(battleOptions){
   /** Read-only tentative future, never advances the real battle. */
   preview(count=5){return combat.preview(count);},
   /** Read-only diagnostics; never serialize this into Firebase snapshots. */
-  inspectTimeDomains(){return inspectCoreTimeDomains(combat.snapshot());}
+  inspectTimeDomains(){return inspectCoreTimeDomains(combat.snapshot());},
+  /** Diagnostic-only authoring source IDs; never part of network snapshots. */
+  inspectCausality(){return combat.inspectCausality();}
  });
 }
