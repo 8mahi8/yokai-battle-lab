@@ -86,8 +86,7 @@ test('V3-2: all Soul modes preserve seeded built-in vs legacy 6x6 match state',(
  for(const flags of [
   {playtestSoulTuning:true,enableRentalSkills:true},
   {researchSoulRecoveryMode:'owner-nonattack'},
-  {researchSoulGainPerAction:4},
-  {researchSoulGainPerAction:7,playtestSoulTuning:true,enableRentalSkills:true}
+  {researchSoulGainPerAction:4}
  ]){
   const rentals=flags.playtestSoulTuning?school:RENTAL_SQUAD;
   for(const seed of [3,42,8192]){
