@@ -589,3 +589,69 @@ test('failed guest one-shot bootstrap reports error but does not break normal su
  assert.equal(views.length,1,'live subscription remains usable after bootstrap error');
  host.stop();guest.stop();
 });
+
+
+test('V3-3: stale failed Firebase write after a newer retry cannot show a phantom error',async()=>{
+ const bus=fakeTransport(),errors=[],acks=[];
+ let oldReject=null,calls=0;
+ const adapter={...bus.guest,sendIntent(clientSeq,intent){
+  calls++;
+  if(calls===1)return new Promise((_,reject)=>{oldReject=reject;});
+  return bus.guest.sendIntent(clientSeq,intent);
+ }};
+ const host=createFirebaseMatchHost({roomClient:bus.host});
+ const guest=createFirebaseMatchGuest({roomClient:adapter,
+  onError:e=>errors.push(e.message),onAck:a=>acks.push(a)});
+ guest.start();await host.start();
+ bus.setDrop(true);
+ assert.equal(guest.submit({type:'rotate',direction:1}).clientSeq,1);
+ await tick();
+ assert.equal(typeof oldReject,'function');
+ assert.equal(guest.status().pendingSequence,1);
+ assert.equal((await guest.retry()).ok,true);
+ await tick();
+ assert.equal(host.snapshot().clientSequences[1],1);
+ assert.equal(host.snapshot().revision,1);
+ oldReject(new Error('delayed_old_attempt_failed'));
+ await tick();await tick();
+ assert.deepEqual(errors,[],'a superseded old retry must not surface a false connection error');
+ assert.equal(guest.status().pendingSequence,1);
+ bus.setDrop(false);bus.replay();await tick();
+ assert.deepEqual(acks.map(x=>x.clientSeq),[1]);
+ assert.equal(acks[0].applied,true);
+ assert.equal(guest.status().pendingSequence,null);
+ assert.equal(host.snapshot().revision,1,'stale retry never applies a second rotate');
+ guest.stop();host.stop();
+});
+
+test('V3-3: inconsistent revision and foreign snapshots cannot forge guest ACK',async()=>{
+ const bus=fakeTransport(),acks=[],errors=[],views=[];
+ const host=createFirebaseMatchHost({roomClient:bus.host});
+ const guest=createFirebaseMatchGuest({roomClient:bus.guest,
+  onAck:a=>acks.push(a),onError:e=>errors.push(e.message),
+  onSnapshot:s=>views.push(s)});
+ guest.start();await host.start();await tick();
+ assert.equal(guest.status().revision,0);
+ bus.setDrop(true);
+ assert.equal(guest.submit({type:'rotate',direction:1}).clientSeq,1);
+ await tick();
+ const actual=bus.latest();
+ assert.equal(actual.revision,1);
+ bus.state({session:bus.session,revision:2,
+  state:{...actual.state,revision:1}});
+ bus.state({session:bus.session,revision:2,
+  state:{...actual.state,revision:2,clientSequences:[0,3]}});
+ bus.state({session:bus.session,revision:1,state:null});
+ bus.state({session:'f'.repeat(32),revision:2,
+  state:{...actual.state,revision:2}});
+ assert.equal(guest.status().revision,0);
+ assert.equal(guest.status().pendingSequence,1);
+ assert.deepEqual(acks,[]);
+ assert.equal(views.length,1);
+ bus.setDrop(false);bus.replay();await tick();
+ assert.equal(guest.status().revision,1);
+ assert.deepEqual(acks.map(x=>x.clientSeq),[1]);
+ assert.equal(acks[0].applied,true);
+ assert.deepEqual(errors,[]);
+ guest.stop();host.stop();
+});
