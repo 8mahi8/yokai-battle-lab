@@ -28,7 +28,7 @@
 
 **検証コードSHA：`fb4b3b81b990aea779f91aa4ea2a83278283af8a`**
 - [Research battle unit tests #40933150581](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40933150581) は**Node 867/867件PASS、fail 0、skip 0**、実6vs6耐久と実Chromiumの研究画面操作もSUCCESS。
-- [Phase37 Firebase Friends no Auth QA #40933150215](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40933150215) は同じコードSHAの統合回帰ゲート。最終結論はActionsで確認して明記する。既存のFirebase Security Rules/Auth、学校公開版に変更を行っていない。
+- [Phase37 Firebase Friends no Auth QA #40933150215](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40933150215) は同じコードSHAで**正式全job SUCCESS**。実Firebase RTDB Emulatorの認証なし2席/24 host行動/ACK/正規snapshot完全一致、ゲスト切断→復帰/再送の冪等性、8 host行動のpublish遅延と順序ACK、実Chromium 2 iframe/4埋込幅、Google Sites用の**未配布**HTML build 76 modulesすべてPASS。既存本番Firebaseには予約済み非ルームキーGET1回のみ（HTTP200、応答本文非閲覧、write0）。既存のFirebase Security Rules/Auth、学校公開版に変更なし。
 
 ## 次工程 V3-4-12
 
