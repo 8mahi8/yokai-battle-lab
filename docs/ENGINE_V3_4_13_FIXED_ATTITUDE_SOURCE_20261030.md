@@ -27,7 +27,9 @@
 - 不正な候補・重複・合計99/101・未知Loafの入力検証と、**YW1由来5を入力してもYW2実行Loaf確率に昇格させない**こと。
 - カスタム`MatchProtocol`実戦リプレイと、Lab/School旧6体の正規host試合/replay不変。
 
-CIはこの工程の**コードSHA `f1ad3a43c3e363cdb62e7935798d899f8b9a3efa`**を対象に実行。Node/Chromium/実Firebase RTDB Emulator 2席の最終PASS件数と結果はGitHub Actions確認後に追記する。**GitHub CIは学校Safari実機2台での検証ではない**。
+- 初回の6新規テストでは880件中879件PASS、1件失敗。原因：原作「speed-down」研究フラグ必須のカスタムキャラを、**そのフラグを禁止する現行オンライン`MatchProtocol`**に渡そうとしたテストの誤り。**本番オンライン契約は緩めず**、オンラインは速度研究flag不要の2技編成で試験して修正。
+- **正式コードSHA `d059a76d0e05f458d934d753b869c156fb7c1435`**：[Research battle CI #40939515534](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40939515534) **Node 880/880件PASS、fail0、skip0**。実6vs6自然対戦の耐久試験、実Chromium操作（零式つつく・妖気移動・カウンター輪）もSUCCESS。
+- [Firebase Friends noAuth CI #40939515663](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40939515663) **正式全Job SUCCESS**：本物のFirebase RTDB Emulatorで2席24行動/ACK/正規snapshot一致、切断再接続と冪等再送、8 host行動分の公開遅延、実Chromium2iframe/4種類のGoogle Sites埋込幅、未配布HTML build**76 modules**全てPASS。本番Firebaseは予約済み非ルームキーへの**GET1回（200/本文未閲覧/書込0）**のみ。**学校Safari実機2台での検証ではない**。
 
 ## 現在地と次工程
 
