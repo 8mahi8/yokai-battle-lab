@@ -19,6 +19,15 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-10｜原作「まえのめり」の強化を後続必殺に反映
+
+- [原作資料、スキル適用タイミング、実戦テスト/CI、次の再現課題](./ENGINE_V3_4_10_YW2_ADRENALINE_SPECIAL_DAMAGE_20261030.md)。[Mt. Wildwood ジバニャンYW2のSkill欄](https://mtwildwood.net/yw2/yokai/jibanyan)で「まえのめり」は敵KOによる**STR・SPR+2段階×本人5行動**、同一行動の複数KOは発動1回と資料確認。旧`SKILL_TRIAL`の数値も同じなので、その説明だけYW2出典ありに修正（旧fixtureを勝手に変更しない）。
+- **具体的な実装漏れの修正**：`engine/combat.mjs`で`researchYw2Momentum:true`の明示研究custom対戦に限り、`applyResearchSpecial`の**各多段必殺ダメージ**に既存`skillMomentumStage(skillBoosts.get(caster.id))`の+2段階を反映。さらに`applyResearchSpecial`開始時にboost状態を固定し、必殺途中に先頭の敵をKOしても**同じ必殺の残りヒット/別対象に即座に威力上乗せしない**。原作の具体的な何フレーム目で強化するかは未実機確認のため、原作完全同期と断言せずこの保守的な研究用境界を使用。通常技のSkill影響・HP/状態処理・命中判定RNG・通常6体/既存Firebaseの通信形式は無変更。
+- 新規`tests/v3-yw2-adrenaline-soultimate-stage.test.mjs`**5件**。原作+2段階/5本人行動の共通数値、実Soultimateで1体KO後も**同一castの後続対象への全Hit/crit/ダメージはskillなし対照群と同じ**、次castで既存boost中のみ正しいSTR stageで各Hitダメージが増加（Hit/crit乱数一致）、旧研究off既定対戦は無変更、学校online`MatchProtocol`で研究flagを厳格拒否・通常6体が全seedのreplay一致を確認。**正式コードテストSHA `6a6746cf946fbe71648dcfbb8ff50448d6df4b99`**：[研究CI #40931768460](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40931768460) **Node 861/861 PASS・自然6vs6耐久/実Chromium操作合格**。[Firebase Friends QA #40931768252](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40931768252) **全job SUCCESS**：実RTDB Emulator2席24行動ACK・断線復帰・公開遅延・Chromium 2iframe/4幅・未配布学校HTML build76 modules。本番Firebase予約済み非ルームキーGET1回HTTP200、body未閲覧、writeなし。
+- `engine/skill-effects.mjs`の**コメント訂正のみ**SHA `412998198403becf3a68cb61377b349b51eba79a`も[研究CI #40932080595](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40932080595)、[Firebase QA #40932080638](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40932080638)の**双方SUCCESS**を再確認。文書だけの後続HEADと正式検証済みコードSHAは区別。
+- **原作調査の未解決点：** ジバニャン「ひゃくれつ肉球」**20×5**（攻略大百科/game-cap）と**20×7**（Mt. Wildwood YW2節）の衝突は解消しておらず、勝手にhitCountを確定しない。Mt. WildwoodのジバニャンページはYW1/YW2/YW3が連続しているため、**YW1のSPD Lv2×0.8とYW2のSPD Lv2×0.7を混同しない**。YW2ステータス表でも-2段階×0.7。
+- **現在地：V3-4-10 原作Skillの通常技＋研究用多段必殺への後続行動boostの整合を実装・検証、V3-4全体と原作完全再現は未完。** 次V3-4-11は5/7-hitの実機/出典照合、Skill封印・効果タイミング、原作全4技を真のルール/演出/UIで扱う優先順位を再検討。学校Safari iPad実機2台/ユーザー提供動画そのものは未検証。main/学校Google Sites HTML/本番Firebase DB/Rules/Auth/Google Driveは無変更。
+
 ## 2026-10-30 V3-4-9｜原作命中率へ速度低下を実反映
 
 - [実装内容・原作の命中式/例示・正式CI証拠](./ENGINE_V3_4_9_SPEED_HIT_CHANCE_20261030.md)。V3-4-8まで研究用の`speed-down` level2によるSPD×0.7は行動時計だけに反映していたが、**通常攻撃/妖術/研究用の多段必殺に`actor.speed`という元SPDを渡していた不整合**を確認。[Mt. Wildwood Hit Chance YW2](https://mtwildwood.net/hit-chance.php?g=yw2)により原作基礎率は**floor(clamp(98+(攻撃SPD−対象SPD)/5,75,98))**、物理攻撃だけmove accuracy補正、Techniqueは補正なし。修正したのは`engine/combat.mjs`のみで、既存`deriveStatStage`/`statStageMultiplier`に基づく`effectiveSpeed(member)`を共通利用し、**clock.setEffectiveSpeedと2つのヒット計算経路の双方へ同じ速度値**を渡す。既存hit RNG/formula/技数値/HP・状態コミットを作り直さず、元の待ちゲージは変更しない。
