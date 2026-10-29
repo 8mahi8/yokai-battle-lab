@@ -1,5 +1,5 @@
 # 妖怪ウォッチ2対人再現｜6段階ロードマップ進捗の単一入口
-最終更新：2026-10-29。**各開発作業の終わりに更新**。新しい担当AIはこの文書・最新引継ぎ・V2全体設計の順に確認する。
+最終更新：2026-10-30。**各開発作業の終わりに更新**。新しい担当AIはこの文書・最新引継ぎ・V2全体設計の順に確認する。
 **本プロジェクトはオリジナルキャラ6体で、原作の対人戦術と体験を可能な限り忠実に再現する**。**2026-10-28 本人が最終目標を再確認：「送った原作対戦動画のように『妖怪ウォッチ2』を実際に遊べること」**。操作・ルール・戦闘中の見え方・進行テンポ・画面遷移を一体のゲーム体験として優先する。キャラの大量追加や独自改善は後回し。元動画に含まれる実況編集字幕や通知はゲーム原作のUIと取り違えない。
 
 ## 最上位の完成定義（本人の原作対戦動画をゲームとして再現する）
@@ -19,11 +19,12 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
-## 2026-10-30 V3-2継続｜KO原因別ポリシーを共通化
+## 2026-10-30 V3-2継続｜KO原因別ポリシーを共通化／正式CI合格
 
-- [KO/スキル発火順の監査・原作根拠と未確定事項](./ENGINE_V3_2_KO_CAUSE_POLICY_20261030.md)。`KO_CAUSE_POLICY`を不変の共通定義に追加、`commitForCause`で原因`ordinary`・`special`・`poke`を明示する。通常攻撃は同期→KOスキル→ピン更新、必殺技はKOスキル→同期、Pokeは同期→ピン更新で撃破者を加算しない。**これらは旧ホスト既存の優先順であり、原作フレームの確定ではない**。
-- `hit-aftermath.mjs`と`combat.mjs`を原因別APIへ切替、実装の効果数値・乱数・Soul・時計・表示を変更せず。新規Nodeテスト4件と既存HitAftermathテストを調整。GitHub実コードのV8局所4/4 PASS。正式CI：コードSHA `6dd708ca2698452b01e342ac470b7533a7ac61f4`の[Node/Chromium QA run 40899693694](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40899693694)と[Firebase Friends no-Auth QA run 40899693718](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40899693718)へ継続検証を引き継ぐ。
-- 現在地 **V3-2後半・未完**。次は正式CIの結果確認、KO/スキル/Status/owner-turn/表示停止の順序契約を棚卸ししてV3-3に引き渡す。学校Safari実機2台と原作動画再観察は未達。main・本番Firebase・学校公開版・Drive無変更。
+- [KO/スキル発火順の監査・原作根拠・最新QA結果](./ENGINE_V3_2_KO_CAUSE_POLICY_20261030.md)。`KO_CAUSE_POLICY`を不変の共通定義に追加、`commitForCause`で原因`ordinary`・`special`・`poke`を明示する。通常攻撃は同期→KOスキル→ピン更新、必殺技はKOスキル→同期、Pokeは同期→ピン更新で撃破者を加算しない。**既存研究ホストの優先順を維持したもので、原作フレーム順を新たに断定したものではない**。
+- `hit-aftermath.mjs`と`combat.mjs`を原因別APIへ切替。効果数値・乱数・Soul・時計・表示・KOカウントを維持。新規Nodeテスト4件と既存HitAftermathテストを調整、旧commitとのcall順の差分も検証。
+- **コードSHA `6dd708ca2698452b01e342ac470b7533a7ac61f4`の正式CI合格**：[Research QA run 40899693694](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40899693694) **Node 775/775件合格、自然6vs6耐久・Chromium操作PASS**。[Firebase Friends QA run 40899693718](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40899693718) **認証なしRTDB Emulator・Chrome実2iframe・Google Sites HTML build・24ホスト行動/ACK PASS**。学校Safari実機2台と原作のKO発火/表示の厳密なタイミングは未検証。
+- [次工程のV3-3時間・因果境界設計入口](./ENGINE_V3_3_TIME_CAUSAL_BOUNDARY_PLAN_20261030.md)：論理行動wait、正規効果Commit、入力時刻、相手画面公開時刻を分離したまま検証。**V3-2後半・未完成**。main・本番Firebase DB/Rules/Auth・学校公開版・Drive無変更。
 
 ## 2026-10-29 V3-2継続｜Firebase Friends PR統合QA正式合格
 
