@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {RENTAL_MOVE_MASTER} from '../content/rental-move-master.mjs';
 import {RENTAL_SOULTIMATE_MOVES} from '../content/rental-soultimate-moves.mjs';
 import {compileSoultimateEffectPlan} from '../engine/soultimate-effect-plan.mjs';
-import {assertPlannedSpecialImpact,commitPlannedSpecialHp}
+import {assertPlannedSpecialImpact,commitPlannedSpecialHp,commitPlannedSpecialStatus}
  from '../engine/special-impact-commit.mjs';
 import {createEffectCommitter} from '../engine/effect-commit.mjs';
 
@@ -126,4 +126,42 @@ test('V3-2: status-only stages can never write HP and G-levels may increase',()=
  },{target:t,casterSide:0}),/status violates authored/);
  assert.equal(a.hp,100);
  assert.deepEqual(f.calls,[]);
+});
+
+test('V3-2: validated status stages route through canonical apply only after caller resistance',()=>{
+ const applied=[],applyStatus=spec=>{applied.push(spec);return spec};
+ const actions=[
+  {index:2,target:ally(),impact:{kind:'buff',targetId:'A2',statusEffect:'strength-up',
+   statusSign:'positive',statusLevel:2}},
+  {index:5,target:enemy(),impact:{kind:'debuff',targetId:'B1',statusEffect:'defense-down',
+   statusSign:'negative',statusLevel:2}},
+  {index:3,target:enemy(),impact:{kind:'damage-status',targetId:'B1',amount:12,
+   statusEffect:'spirit-down',statusSign:'negative',statusLevel:3}}
+ ];
+ for(const {index,target,impact} of actions){
+  const result=commitPlannedSpecialStatus({
+   plan:fixture(index),impact,target,casterSide:0,casterId:'A1',applyStatus
+  });
+  assert.equal(result.id,target.id);
+  assert.equal(result.effect,impact.statusEffect);
+ }
+ assert.deepEqual(applied,actions.map(({target,impact})=>({
+  id:target.id,sign:impact.statusSign,effect:impact.statusEffect,
+  level:impact.statusLevel,source:'A1'
+ })));
+ const before=applied.length;
+ assert.throws(()=>commitPlannedSpecialStatus({
+  plan:fixture(3),
+  impact:actions[2].impact,target:enemy(0),
+  casterSide:0,casterId:'A1',applyStatus
+ }),/cannot apply to a KO/);
+ assert.throws(()=>commitPlannedSpecialStatus({
+  plan:fixture(5),impact:actions[1].impact,target:enemy(),
+  casterSide:0,casterId:'',applyStatus
+ }),/requires a status stage/);
+ assert.throws(()=>commitPlannedSpecialStatus({
+  plan:fixture(0),impact:{kind:'damage',targetId:'B1',amount:10},
+  target:enemy(),casterSide:0,casterId:'A1',applyStatus
+ }),/requires a status stage/);
+ assert.equal(applied.length,before,'bad status commits must do nothing');
 });
