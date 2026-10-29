@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-29 V3-2継続｜研究用必殺HP確定を共通Commitへ
+
+- [研究用必殺の変更・原作根拠・未検証範囲](./ENGINE_V3_2_RESEARCH_SPECIAL_HP_COMMIT_20261029.md)。
+- `commitResearchSpecialHp`新設：catalogなしの研究/参照必殺にもEffectCommitterへ送る一本化境界を用意。旧`combat.mjs`の`else target.hp=impact.hpAfter`は、既存Planで到達しない危険な直接代入なので削除し、未知kindはfail-closed。既存の判定順・seed消費・技数値・通信は変更しない。
+- 実GitHubソースを使ったV8局所テスト36条件と、既存`planResearchSpecial`のHP impact14ケースの旧新比較がPASS。新規Nodeテスト4件を追加。ただし**今回HEADのNode全件・Chromium・Firebase Friends・HTML buildの正式CI結果は未取得**、学校Safari2台も未試験。
+- **現在：V3-2後半、完了宣言しない。** 次は正式CIと全snapshot/event/KO/Soul比較、その後残る効果責務棚卸し。V3-3〜V3-5に進んだ証明ではない。main/公開サイト/本番Firebase/Drive無変更。
+
 ## 2026-10-29 V3-2継続｜Poke妖気移動の共通Commit
 
 - [原作根拠・変更コード・未確認範囲](./ENGINE_V3_2_POKE_SOUL_TRANSFER_20261029.md)。
