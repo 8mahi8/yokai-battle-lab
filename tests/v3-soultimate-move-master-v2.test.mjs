@@ -26,9 +26,9 @@ const newId='v2-seventh';
 const ids=()=>RENTAL_CHARACTER_MOVE_REFS.map(x=>x.id);
 function profile(schema=BATTLE_EXECUTION_PROFILE_SCHEMA_V2,id=newId){
  return {schema,characterId:id,evidence:'fixture',sourceRefs:[],
-  soultimateRank:1,soulCapacity:100,inspiritLevel:1,
+  soultimateRank:1,soulCapacity:100,
   ...(schema===BATTLE_EXECUTION_PROFILE_SCHEMA?
-   {special:clone(RENTAL_SOULTIMATE_MOVES[0].definition)}:{})};
+   {inspiritLevel:1,special:clone(RENTAL_SOULTIMATE_MOVES[0].definition)}:{})};
 }
 function pack(){
  const character=clone(RENTAL_YOKAI_REFERENCES_LAB[0]);
@@ -72,6 +72,9 @@ test('V3-4-4 schema2 profile has no special field and V1 must still validate',()
  assert.equal(validateBattleExecutionProfile(
   profile(BATTLE_EXECUTION_PROFILE_SCHEMA)),true);
  assert.equal(Object.hasOwn(profile(),'special'),false);
+ assert.equal(Object.hasOwn(profile(),'inspiritLevel'),false);
+ assert.equal(RENTAL_LAB_CATALOG.getMove('rental-01:inspirit').level,1);
+ assert.throws(()=>validateBattleExecutionProfile({...profile(),inspiritLevel:1}),/explicit/);
  assert.throws(()=>validateBattleExecutionProfile({
   ...profile(),special:clone(RENTAL_SOULTIMATE_MOVES[0].definition)
  }),/explicit/);
@@ -207,4 +210,37 @@ test('V3-4-4 legacy conflicting profile cannot overrule move-owned source',()=>{
   catalog:oldCatalog,characterId:raw.id,
   profile:profile(1,raw.id)
  }).special.damageKind,'attack');
+});
+
+
+test('V3-4-4 V2 status level comes only from authored Inspirit move',()=>{
+ const ref=clone(RENTAL_YOKAI_REFERENCES_LAB[0]);
+ ref.id='test-inspirit-level3';
+ ref.moveIds.attack=ref.id+':attack';
+ ref.moveIds.inspirit=ref.id+':inspirit';
+ const attack=clone(RENTAL_LAB_CATALOG.getMove('rental-01:attack'));
+ attack.id=ref.moveIds.attack;
+ const inspirit=clone(RENTAL_LAB_CATALOG.getMove('rental-01:inspirit'));
+ inspirit.id=ref.moveIds.inspirit;
+ inspirit.level=3;
+ const catalog=extendCombatCatalog({baseCatalog:RENTAL_LAB_CATALOG,
+  characters:[ref],moveMaster:[attack,inspirit]});
+ const member=compileBattleProfileCharacter({catalog,characterId:ref.id,
+  profile:profile(2,ref.id)});
+ assert.equal(member.inspiritLevel,3);
+ assert.deepEqual(member.special,validateSpecialSpec(
+  RENTAL_SOULTIMATE_MOVES[0].definition));
+ assert.throws(()=>compileBattleProfileCharacter({
+  catalog,characterId:ref.id,profile:profile(1,ref.id)
+ }),/level.*disagree/);
+ const teams=compileCatalogTeamsForCombat({catalog,
+  teamCharacterIds:[ids().slice(1).concat([ref.id]),
+   [ref.id,...ids().slice(1)]],
+  executionProfiles:{[ref.id]:profile(2,ref.id)}});
+ assert.equal(createCombat({seed:12,teams}).snapshot().squads[0][5].inspiritLevel,3);
+ const forged=clone(inspirit);forged.level=5;
+ assert.throws(()=>extendCombatCatalog({
+  baseCatalog:RENTAL_LAB_CATALOG,characters:[ref],
+  moveMaster:[attack,forged]
+ }),/Inspirit level/);
 });
