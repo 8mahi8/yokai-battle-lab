@@ -179,6 +179,13 @@ exportAuditJournal(); // internal deterministic QA, not a friend replay feature
 - [Node **707/707**・旧プロトコルと新Coreの4seed結果一致](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836968526)、[実Chromium Stage PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836968607)、[Firebase Friends2画面/実Emulator PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40836923783)。
 - **残るもの**：Core境界の内部には旧`combat.mjs`の個別状態管理がある。次はHP/status/Soul/KO/skill hooksを共通Effectへ段階抽出する。現状だけで「原作忠実な完成エンジン」とは言わない。
 
+## 7D. V3-2共通Effectのcommit移行
+
+- [**V3-2 source-first Effect Commit**](./ENGINE_V3_2_SHARED_EFFECT_COMMIT_20261029.md)：`engine/effect-commit.mjs`の`createEffectCommitter`を、`engine/combat.mjs`へ実接続。通常Hit/必殺/つつくのダメージ、通常妖術/技能/必殺の回復、状態異常登録が**同じ正規状態確定レイヤー**を通る。
+- 技別のHit/命中・属性・乱数・ターゲット選択・KO・中断のロジックは従来の計算を維持。スキル「どひょうぎわ」は全直接ダメージの共通の生存hookに組み込んだ。登録後の`syncCanAct`も共有している。既存の`commitDamage/commitHeal/commitStatus`は技データの効果リゾルバではなく**commitの一段**である。
+- [Node **712/712** PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40837995784)、[実Chromium PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40837995888)、[Firebase Friends no-Auth 2 iframe PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40837911108)。
+- 次は**Hit/割り込み/KO/skill各段階を共有hookへ移行**し、最終的に追加キャラの4技ID/skillIDを既存データカタログから流す。原作の不明な優先順位は未確証として留保する。
+
 ## 8. 今回の決定
 
 **E1-B単独のオンラインおはらい演出拡張、トホホの砲、個別Soultimate追加などのfeature単位ロードマップを凍結**。これまで積んだコード/動画解析/テストは保存。優先順位は**V3-0→V3-1→V3-2→V3-3→V3-4→V3-5**に切り替える。原作動画の局面は今後の統合受入テストとして再利用し、実装順序を決める一単位にはしない。
