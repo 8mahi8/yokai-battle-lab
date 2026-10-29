@@ -47,10 +47,11 @@ test('V3-2 status adapter fails before any write for bad target, side or level',
   [base,target(),{applyStatus:null}]
  ];
  for(const [impact,subject,options] of variants){
+  const beforeHp=subject.hp;
   const {call,calls}=attempt(impact,subject,options);
   assert.throws(call);
   assert.deepEqual(calls,[],'invalid status must never reach the ledger');
-  assert.equal(subject.hp,subject.hp,'invalid status leaves HP intact');
+  assert.equal(subject.hp,beforeHp,'invalid status leaves HP intact');
  }
 });
 
