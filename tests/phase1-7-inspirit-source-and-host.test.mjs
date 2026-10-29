@@ -15,7 +15,8 @@ import {createCombat} from '../engine/combat.mjs';
 import {actionWeights} from '../engine/selection.mjs';
 
 test('6 rental Inspirits have immutable canonical effects, signs, target and level',()=>{
- assert.equal(INSPIRIT_EFFECT_MASTER.length,7);
+ assert.equal(INSPIRIT_EFFECT_MASTER.length,8);
+ assert.equal(inspiritEffectById('speed-down').sign,'negative');
  assert.deepEqual(RENTAL_INSPIRIT_MOVES.map(x=>x.effect),
   ['sleep','strength-up','strength-up','sleep','strength-up','sleep']);
  for(let i=0;i<6;i++){
