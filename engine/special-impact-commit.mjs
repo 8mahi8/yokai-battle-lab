@@ -133,6 +133,35 @@ export function commitPlannedSpecialStatus({
 }
 
 /**
+ * Research-only status impact adapter. Keeps the original host resistance RNG
+ * and event order but prevents custom moves from bypassing target, sign and
+ * status magnitude validation before the canonical Inspirit ledger commit.
+ * These checks are NOT claims about original YW2 status priority.
+ */
+export function commitResearchSpecialStatus({
+ impact,target,casterSide,casterId,applyStatus
+}={}){
+ if(!object(impact)||!object(target)||!word(target.id)||
+    target.id!==impact.targetId||
+    !Number.isInteger(target.side)||![0,1].includes(target.side)||
+    !Number.isInteger(casterSide)||![0,1].includes(casterSide)||
+    !word(casterId)||typeof applyStatus!=='function'||
+    !Number.isInteger(target.hp)||target.hp<=0)
+  throw new TypeError('valid living research special status context required');
+ const {kind,statusEffect,statusSign,statusLevel}=impact;
+ const expected=kind==='buff'?'positive':
+   ['debuff','damage-status'].includes(kind)?'negative':null;
+ if(!expected||statusSign!==expected||
+    (kind==='buff'&&target.side!==casterSide)||
+    (kind!=='buff'&&target.side===casterSide)||
+    !word(statusEffect)||!Number.isInteger(statusLevel)||
+    statusLevel<1||statusLevel>4)
+  throw new RangeError('invalid research special status impact');
+ return applyStatus({id:target.id,sign:statusSign,effect:statusEffect,
+  level:statusLevel,source:casterId});
+}
+
+/**
  * V3-2 legacy/reference Soultimate HP commit. Unlike authored rental plans,
  * custom and reference research fixtures have no validated catalog plan.
  * Validate their already-resolved HP impact and use the SAME authoritative
