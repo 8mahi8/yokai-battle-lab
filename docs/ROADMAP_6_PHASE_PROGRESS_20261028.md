@@ -19,6 +19,12 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-29 V3-2継続｜研究用必殺の全impact事前検証
+
+- [実装とQAの証拠・未確認範囲](./ENGINE_V3_2_RESEARCH_SPECIAL_PREFLIGHT_20261029.md)：`special-impact-commit.mjs`に`assertResearchSpecialImpact`を追加し、研究用・カスタム必殺の全効果をHP/Status確定前に検証。標準6体の`assertPlannedSpecialImpact`と同じ先行検証段階へ揃えた。原作未知の威力・命中/抵抗乱数・ターン/KO順は変更しない。
+- 旧研究用`defense-down`必殺の回帰テストに必要だった`researchStatInspirits:true`と前提の`researchDamageModel:true`を追加。Nodeテスト4件を新設。GitHub実コードを用いたV8局所検証は合法7/不正8の15条件と、実研究Planの全8カテゴリ18impactがPASS。**最新HEADの正式Node全件、Chromium、Firebase Friends 2iframe、HTML build、学校Safari実機は未確認**。同seed旧新全snapshot/event比較も未実施。
+- 現在地：**V3-2後半・未完**。次は正式CIを確認してから旧新完全比較・残る戦闘処理の棚卸し。V3-3時間/妖気/視認性→V3-4データ駆動→V3-5学校Safari2台。main、学校公開HTML、本番Firebase、Driveは無変更。
+
 ## 2026-10-29 V3-2継続｜研究用必殺状態異常を共通Commitへ
 
 - [根拠・実コード・検証限界](./ENGINE_V3_2_RESEARCH_SPECIAL_STATUS_COMMIT_20261029.md)。`commitResearchSpecialStatus`で、既存`combat.mjs`のカスタム/原作形状研究用必殺のbuff/debuffおよびdamage-status直付与を同一Effect/Status確定境界に移す。組込6体の`commitPlannedSpecialStatus`、原作未確定のresist・KO・割り込み・時間優先は変更しない。
