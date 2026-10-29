@@ -141,6 +141,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   researchWheelCoalescing=false,researchOpeningPriority=null,
   researchPokeSoulTransfer=0,playtestSoulTuning=false,researchDamageModel=false,researchMultiHit=false,researchSoultimateHitCount=null,researchYw2Soultimate=null,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false,enableRentalSkills=playtestSoulTuning,
   researchYw2Momentum=false,researchSpeedInspirit=false,
+  researchYw2Grouchy=false,
   catalogAttackResolution=false,catalogTechniqueResolution=false,
   catalogInspiritResolution=false,catalogSoultimateResolution=false,
   catalogSkillResolution=false}={}) {
@@ -148,6 +149,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   if(typeof enableRentalSkills!=='boolean')throw new TypeError('enableRentalSkills must be boolean');
   if(typeof researchYw2Momentum!=='boolean')throw new TypeError('researchYw2Momentum must be boolean');
   if(typeof researchSpeedInspirit!=='boolean')throw new TypeError('researchSpeedInspirit must be boolean');
+  if(typeof researchYw2Grouchy!=='boolean')throw new TypeError('researchYw2Grouchy must be boolean');
+  if(researchYw2Grouchy&&teams===undefined)
+    throw new RangeError('YW2 Grouchy trial requires explicit custom teams');
   if(researchSpeedInspirit&&(teams===undefined||!researchDamageModel))
     throw new RangeError('speed Inspirit trial requires custom teams and researchDamageModel');
   if(researchYw2Momentum&&(teams===undefined||!enableRentalSkills||!researchSpecialEffects))
@@ -1013,7 +1017,32 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const allies=livingFront(actor.side),enemies=livingFront(1-actor.side);
     const negativeCounts=Object.fromEntries(enemies.map(m=>[m.id,statuses.list(m.id).filter(x=>x.sign==='negative').length]));
     const positiveCounts=Object.fromEntries(allies.map(m=>[m.id,statuses.list(m.id).filter(x=>x.sign==='positive').length]));
-    const weights=actionWeights(actor,{allies,enemies,enemyPin:pins[actor.side],negativeCounts,positiveCounts});
+    const sourceYw2Grouchy=researchYw2Grouchy&&actor.attitude==='grouchy';
+    const enemyStatuses=sourceYw2Grouchy
+      ?Object.fromEntries(enemies.map(m=>[m.id,statuses.list(m.id)])):null;
+    const allyStatuses=sourceYw2Grouchy
+      ?Object.fromEntries(allies.map(m=>[m.id,statuses.list(m.id)])):null;
+    const charge=sourceYw2Grouchy
+      ?soul.snapshot().pending[1-actor.side]:null;
+    // Only explicit original Attack-damage-down may trigger rule 2;
+    // never reinterpret a generic Strength-down status as that effect.
+    const attackDamageDownIds=sourceYw2Grouchy
+      ?enemies.filter(m=>enemyStatuses[m.id].some(s=>
+        s.sign==='negative'&&s.effect==='attack-damage-down')).map(m=>m.id):[];
+    const alliedPrefix=actor.side===0?'A':'B';
+    const enemyPrefix=actor.side===0?'B':'A';
+    const alliesInspiritedByFoe=sourceYw2Grouchy
+      ?allies.filter(m=>allyStatuses[m.id].some(s=>
+        s.sign==='negative'&&s.source?.startsWith(enemyPrefix))).map(m=>m.id):[];
+    const enemiesInspiritedByAlly=sourceYw2Grouchy
+      ?enemies.filter(m=>enemyStatuses[m.id].some(s=>
+        s.sign==='negative'&&s.source?.startsWith(alliedPrefix))).map(m=>m.id):[];
+    const weights=actionWeights(actor,{
+      allies,enemies,enemyPin:pins[actor.side],negativeCounts,positiveCounts,
+      sourceYw2Grouchy,attackDamageDownIds,
+      enemyChargingIds:charge?[charge.casterId]:[],
+      alliesInspiritedByFoe,enemiesInspiritedByAlly
+    });
     return pickAction(weights,rng);
   }
   /**
