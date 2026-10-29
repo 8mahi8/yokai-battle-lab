@@ -48,13 +48,30 @@ export function createCombatCatalog({characters,skills=PLAYTEST_SKILL_CATALOG,
   }
  }
  for(const raw of characters){
+  // V3-4: a compact authoring record may reference a skill ID instead of
+  // duplicating its trigger/effect/label/evidence on every character.
+  // The existing inline-skill shape remains compatible with old rentals.
+  let expanded=raw;
+  if(raw?.skillId!==undefined){
+   if(raw.skill!==undefined||typeof raw.skillId!=='string'||
+      raw.skillId.length===0)
+    throw new TypeError('reference-only character must use skillId OR inline skill');
+   const passive=skillById.get(raw.skillId);
+   if(!passive)throw new TypeError('missing skill reference: '+raw.skillId);
+   const {skillId,...rest}=expanded;
+   expanded={...rest,skill:{
+    id:passive.id,displayName:passive.displayName,
+    trigger:passive.trigger,effect:passive.effect,
+    evidence:passive.evidence,sourceRefs:[...passive.sourceRefs]
+   }};
+  }
   // Reference-only authoring definitions get expanded for V1 compatibility,
   // but never own copies of move power, hit count or other effects.
-  let expanded=raw;
   if(raw?.moveIds!==undefined){
    if(raw.moves!==undefined||!moveMaster)
     throw new TypeError('reference-only characters require a move master');
-   if(!raw.moveIds||Object.keys(raw.moveIds).length!==4)
+   if(!raw.moveIds||typeof raw.moveIds!=='object'||
+      Array.isArray(raw.moveIds)||Object.keys(raw.moveIds).length!==4)
     throw new TypeError('four move ID references required');
    const resolved={};
    for(const slot of YOKAI_ACTION_SLOTS){
@@ -63,7 +80,7 @@ export function createCombatCatalog({characters,skills=PLAYTEST_SKILL_CATALOG,
      throw new TypeError('missing or wrong-slot move reference: '+slot);
     resolved[slot]=move;
    }
-   const {moveIds,...rest}=raw;
+   const {moveIds,...rest}=expanded;
    expanded={...rest,moves:resolved};
   }
   // Validate the full character and all its references before using it.
@@ -96,6 +113,28 @@ export function createCombatCatalog({characters,skills=PLAYTEST_SKILL_CATALOG,
   getSkill:id=>skillById.get(id)??null
  });
 }
+/**
+ * V3-4 authoring pack addition. A new character can refer to ANY existing
+ * move/skill ID without copying its power, target, effects, or provenance.
+ * The base catalog remains immutable; collisions fail the *whole* operation.
+ *
+ * Data-only until a separately verified combat roster adapter supports it:
+ * registering an authoring character does not add it to a PvP lobby.
+ */
+export function extendCombatCatalog({baseCatalog,characters,moveMaster=[],skills=[]}={}){
+ if(!baseCatalog||baseCatalog.schema!==COMBAT_CATALOG_SCHEMA||
+    !Array.isArray(baseCatalog.characters)||
+    !Array.isArray(baseCatalog.moves)||!Array.isArray(baseCatalog.skills)||
+    !Array.isArray(characters)||characters.length===0||
+    !Array.isArray(moveMaster)||!Array.isArray(skills))
+  throw new TypeError('valid base catalog and authoring pack arrays required');
+ return createCombatCatalog({
+  characters:[...baseCatalog.characters,...characters],
+  skills:[...baseCatalog.skills,...skills],
+  moveMaster:[...baseCatalog.moves,...moveMaster]
+ });
+}
+
 /** Explicit authoring catalog for the frozen six rentals in both modes. */
 export const RENTAL_LAB_CATALOG=createCombatCatalog({
  characters:RENTAL_YOKAI_REFERENCES_LAB,moveMaster:RENTAL_MOVE_MASTER
