@@ -22,7 +22,8 @@ V3-2の次工程として、すでに作成済みの複合必殺`SoultimateEffec
 - 原作未確定の時間・乱数・行動選択・ターゲット計算・Gパワー倍率は旧ホストが実行。
 - 必殺impact列生成後、**実際に1件でも確定する前に全impactを検証**する。誤ったtarget/status/linked種別/HP量が混ざれば不正試合を進めない。
 - 標準レンタル6体の必殺の`damage/heal/revive`の実HP確定を`commitPlannedSpecialHp`へ通す。該当impactのAmount/HP/Last Stand再計算、Interrupt、KO、追加状態、Soul、イベント書式は**従来の関数・順序を保持**する。
-- **カスタム編成**、原作資料に基づく研究限定special、仮多Hit研究の既存分岐は旧処理を維持。status-onlyの結果も既存の`applyInspirit`が実際に確定する。今回新しいstatus apply順は決めない。
+- **カスタム編成**、原作資料に基づく研究限定special、仮多Hit研究の既存分岐は旧処理を維持。
+- **追加改善**：`commitPlannedSpecialStatus`を実装し、`buff/debuff/damage-status`が、Planの状態名・符号・本人/相手を確認した上で**実際の既存`applyInspirit`を呼ぶ**よう変更。状態異常の**耐性RNG・付与順・KO対象には付与しないルール**はこれまで通り。状態だけの技はHP Commitを許可しない。原作の正確なフレーム順を新しく決めたわけではない。
 
 ### 新規：`tests/special-impact-commit-v3.test.mjs`
 
@@ -35,7 +36,8 @@ V3-2の次工程として、すでに作成済みの複合必殺`SoultimateEffec
 
 - 変更前の基準HEAD `ffaa93a8` でNode+Chromium Stage PASS。
 - 実コミット`c2e53863`（Hostへ新Commit接続）の[Node全件PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872213185)、[Chromium Stage PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872213076)、[Firebase Friends no-Auth RTDB二画面PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872213138)、[Google Sites単体HTML build PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872213206)。
-- `8e6b7e0`で実行前の全impact HP妥当性検証を追加。`18d17e0`で不正effectsの回帰テストを追加。**最新SHAの正式Node実行は対象CIを見てから確定報告する**。
+- `8e6b7e0`で実行前の全impact HP妥当性検証を追加。`18d17e0`で不正effectsの回帰テストを追加。[実Node 736/736 PASS・自然対戦耐久/ブラウザPASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872382980)、[Chromium PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872382968)、[Firebase noAuth/2iframe PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872313573)、[Google Sites HTML PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40872313571)。
+- さらに`9c83d576`／`fbbbf386`／`6d621fd1`でstatusの共通実行と、status-only・KOへの誤適用拒否を追加。この追加分の**正規CI件数は最新run確認後に確定**。
 - まだ未移行：必殺の状態確定をStage dispatcherまで引き上げること、各hitと中断/生存/KO順序統合、DoTとターン終端効果、Soul/poke/purifyの全共通Effect化。現在の順序は原作の忠実な再現とは言い切れない。
 - 最終受入：Node全件/耐久/Chromium/Firebase二画面/単体HTML/学校Safari実機。**学校実機最新版は未試験**。
 
