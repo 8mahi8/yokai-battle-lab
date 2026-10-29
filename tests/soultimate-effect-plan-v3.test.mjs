@@ -4,7 +4,7 @@ import {RENTAL_MOVE_MASTER} from '../content/rental-move-master.mjs';
 import {RENTAL_SOULTIMATE_MOVES} from '../content/rental-soultimate-moves.mjs';
 import {compileSoultimateEffectPlan,assertSoultimatePlanMatches}
  from '../engine/soultimate-effect-plan.mjs';
-import {createCombat} from '../engine/combat.mjs';
+import {createCombat,RENTAL_SQUAD,SCHOOL_RENTAL_PERSONALITIES} from '../engine/combat.mjs';
 import {createMatchProtocol,replayMatchJournal} from '../engine/match-protocol.mjs';
 
 const clone=x=>JSON.parse(JSON.stringify(x));
@@ -118,4 +118,40 @@ test('V3-2: additional move definitions reuse effect families without new charac
   make('test:bad-multi','damage','enemy_front',120,{type:'multi',count:100}),
   {kind:'damage',scope:'front',power:120,damageKind:'attack'}),
   /hit pattern/);
+});
+
+test('V3-2: all six built-in Soultimate effects preserve complete legacy battle state',()=>{
+ const school=RENTAL_SQUAD.map((unit,i)=>({...unit,
+  attitude:SCHOOL_RENTAL_PERSONALITIES[i].attitude,
+  loafChance:SCHOOL_RENTAL_PERSONALITIES[i].loafChance,
+  weights:[...SCHOOL_RENTAL_PERSONALITIES[i].weights]
+ }));
+ for(let index=0;index<6;index++){
+  const actor='A'+(index+1);
+  const options={seed:20261029+index,playtestSoulTuning:true,
+   researchSpecialEffects:true,researchStatInspirits:true,
+   enableRentalSkills:true};
+  const typed=createCombat(options);
+  const legacy=createCombat({...options,teams:[school,school]});
+  for(const game of [typed,legacy]){
+   for(let tries=0;tries<6&&!game.snapshot().clock.teams[0].frontIds.includes(actor);tries++){
+    const rotated=game.rotate(0,1);
+    assert.equal(rotated.ok,true,'caster must be brought into the front');
+   }
+   assert.equal(game.snapshot().clock.teams[0].frontIds.includes(actor),true);
+   game.giveSoul(actor,250);
+  }
+  assert.deepEqual(typed.snapshot(),legacy.snapshot(),
+   'typed composite move and old resolver must start from identical state');
+  const first=typed.prepareSoultimate(0,actor);
+  const second=legacy.prepareSoultimate(0,actor);
+  assert.deepEqual(first,second);
+  assert.equal(first.ok,true);
+  const outcomeTyped=typed.resolveSoultimate(0,first.token,true);
+  const outcomeLegacy=legacy.resolveSoultimate(0,second.token,true);
+  assert.deepEqual(outcomeTyped,outcomeLegacy,
+   'special impact order, HP, statuses, KO, Soul and result must remain unchanged');
+  assert.deepEqual(typed.snapshot(),legacy.snapshot(),
+   'complete snapshots and event sequence must match for all six types');
+ }
 });
