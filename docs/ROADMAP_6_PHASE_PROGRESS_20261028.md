@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-3-5｜正規イベントから6体×4技・SkillデータIDへの安全な追跡
+
+- [実装・根拠・正式CI・V3-4へ引き継ぐ条件](./ENGINE_V3_3_CAUSAL_SOURCE_TO_V3_4_20261030.md)。`engine/causal-source-trace.mjs`新設で、正規eventIdを元に`characterId/moveId/moveSlot/passiveSkillId/evidence`を**既存の6体レンタルimmutable catalogと同じmove master**から読み取り、`battle.inspectCausality()`→`MatchCore`→`MatchProtocol`へ非破壊read-only診断として公開。表示中／表示後の各presentation sequenceは別ドメイン。**canonical eventIdと可視化sequenceの正確な同一対応を勝手に仮定していない**。
+- 6体×4技（2陣営）を扱う新規Nodeテスト5件。実対戦・演出中/解放後・custom roster未認証ID/重複event・status回復/スキルとauthoring引用を検証。既存`match-core-owner-v3.test.mjs`の正確な公開メソッド名を新診断APIに追随。最初のCIは**793/794 PASSで公開APIテスト1件失敗**、テスト契約更新後に再走して解消した。
+- **正式合格対象コードSHA `1ad6c7fd95190d71c8430962bf14e2ccd62d821a`**。[研究CI 40912717332](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40912717332)で **Node 794/794 PASS、自然6vs6耐久・実Chromium操作PASS**。[Firebase Friends CI 40912717660](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40912717660)も **全工程SUCCESS**：Google Sites単体HTML build（76 modules）、RTDB emulator実2席の24行動/ACK・切断復帰・publish遅延、Chromium実2iframe、旧期限Rules別Emulator検証。本番Firebaseへ予約済み非ルームキーのGET1回200のみ、writeなし。
+- **現在地：V3-3のID/因果の引き渡し規約まで実装・試験済み。次はV3-4データ駆動キャラ/技登録へ進む。** ただし実戦UIの原作フレーム再現と原作動画の比較、学校Safari iPad2台は未完了。技威力・命中などのsourceはまだfixture/unknownであり、完全再現の完成とは呼ばない。main・学校公開HTML・本番Firebase DB/Rules/Auth・Drive変更なし。
+
 ## 2026-10-30 V3-3-4｜ホスト公開遅延とACK・相手画面の通信因果
 
 - [実装検証・Firebase公式資料・正式ログ・留保](./ENGINE_V3_3_PUBLISH_LAG_ACK_UI_QA_20261030.md)。新規`tests/firebase-match.test.mjs`2件：ホストのpublish保留中に24自動行動しても**guest revision/ACK/stageは古い正規snapshotのまま**、入力2はACKまでFIFO待ち。publish再開後ACK [1,2]、revision26、ホスト/ゲスト一致・ログ再生一致、24回のIntermediate publishを抑制。1回のpublish失敗後の正規状態再送も確認。
