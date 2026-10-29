@@ -177,6 +177,86 @@ async function main(){
    guestDb.goOnline();
    hostBridge.stop();guestBridge.stop();h2.leaveLocal();g2.leaveLocal();
   }
+  // V3-3-4: real RTDB seat-to-seat channel, with only the host's publication
+  // artificially held. The guest still receives genuine Firebase callbacks.
+  // A local host snapshot must not act as remote ACK or visible game state.
+  const h3=createFirebaseRoomClient({database:hostDb,uid:h});
+  const g3=createFirebaseRoomClient({database:guestDb,uid:g});
+  assert.equal((await h3.createRoom({code:'827397'})).ok,true);
+  assert.equal((await g3.joinRoom('827397')).ok,true);
+  assert.equal((await h3.startRoom()).ok,true);
+  let holdNext=false,releaseHeld=null,publishBlocked=false,writeCount=0;
+  const delayedHost={...h3,async publishSnapshot(state){
+   writeCount++;
+   if(holdNext){
+    holdNext=false;publishBlocked=true;
+    await new Promise(resolve=>{releaseHeld=resolve;});
+   }
+   return h3.publishSnapshot(state);
+  }};
+  const delayedErr=[],delayedAck=[],delayedViews=[];
+  const hDelayed=createFirebaseMatchHost({
+   roomClient:delayedHost,
+   protocol:createMatchProtocol({battleOptions:{seed:212,playtestSoulTuning:true}}),
+   onError:e=>delayedErr.push('host:'+e.message)
+  });
+  const gDelayed=createFirebaseMatchGuest({
+   roomClient:g3,onAck:ack=>delayedAck.push(ack),
+   onSnapshot:state=>delayedViews.push(state),
+   onError:e=>delayedErr.push('guest:'+e.message)
+  });
+  const untilDelayed=async(pred,label)=>{
+   for(let i=0;i<150;i++){
+    if(pred())return;
+    await new Promise(resolve=>setTimeout(resolve,40));
+   }
+   throw Error('RTDB delayed publication failed '+label+' '+
+    JSON.stringify({host:hDelayed.status(),guest:gDelayed.status(),
+     error:delayedErr}));
+  };
+  try{
+   gDelayed.start();
+   assert.equal((await hDelayed.start()).ok,true);
+   await untilDelayed(()=>gDelayed.status().revision===0,'baseline');
+   holdNext=true;
+   assert.equal(gDelayed.enqueue({type:'watch',mode:'zero'}).clientSeq,1);
+   await untilDelayed(()=>publishBlocked&&hDelayed.snapshot().revision===1,
+    'host accepts unpublished input');
+   assert.equal(hDelayed.status().lastPublished,0);
+   assert.equal(gDelayed.status().revision,0,'no guest frame from host local progress');
+   assert.equal(gDelayed.status().acked,0,'no ACK until authoritative RTDB publish');
+   assert.equal(gDelayed.enqueue({type:'watch',mode:'standard'}).queued,true);
+   for(let i=0;i<8;i++)assert.equal(hDelayed.advanceAuto().ok,true);
+   assert.equal(hDelayed.snapshot().revision,9);
+   assert.equal(hDelayed.status().lastPublished,0);
+   assert.equal(gDelayed.status().revision,0);
+   assert.equal(gDelayed.status().pendingSequence,1);
+   assert.equal(gDelayed.status().queuedInputs,1);
+   assert.equal(delayedViews.at(-1).game.clock.turn,0);
+   assert.deepEqual(delayedAck,[]);
+   releaseHeld();
+   await untilDelayed(()=>gDelayed.status().acked===2&&
+    gDelayed.status().revision===hDelayed.snapshot().revision&&
+    hDelayed.status().lastPublished===hDelayed.snapshot().revision,
+    'two ACKs and host/guest canonical catchup');
+   assert.equal(hDelayed.snapshot().revision,10);
+   assert.deepEqual(delayedAck.map(x=>x.clientSeq),[1,2]);
+   assert.ok(delayedAck.every(x=>x.accepted&&x.applied===true));
+   assert.equal(gDelayed.status().pendingSequence,null);
+   assert.equal(gDelayed.status().queuedInputs,0);
+   assert.deepEqual(gDelayed.status().lastState,hDelayed.snapshot());
+   assert.equal(gDelayed.status().lastState.game.soul.modes[1],'standard');
+   assert.equal(gDelayed.status().lastState.game.clock.turn,8);
+   assert.ok(writeCount<=4,'avoid one publication per paused auto step');
+   for(let i=1;i<delayedViews.length;i++)
+    assert.ok(delayedViews[i].revision>delayedViews[i-1].revision,
+     'guest rendered revision must be monotonic');
+   assert.deepEqual(delayedErr,[]);
+   console.log('FIREBASE-FRIENDS-PUBLISH-LAG-PASS real RTDB 8 host auto, delayed publication, ordered ACK and canonical guest view');
+  }finally{
+   releaseHeld?.();
+   hDelayed.stop();gDelayed.stop();h3.leaveLocal();g3.leaveLocal();
+  }
   console.log('FIREBASE-FRIENDS-NOAUTH-PASS room, seat, command, snapshot, rules');
  } finally {await env.cleanup();}
 }
