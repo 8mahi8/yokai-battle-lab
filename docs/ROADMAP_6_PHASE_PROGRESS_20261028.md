@@ -19,6 +19,14 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-14｜原作の性格適用後の行動禁止・強制を実戦へ接続
+
+- [原作資料/実装/自動テスト・CI/未対応と次の統合工程](./ENGINE_V3_4_14_ACTION_OVERRIDES_20261030.md)。[Mt. Wildwood YW2 Attitudes](https://mtwildwood.net/attitudes.php?g=yw2)より、**Loaf判定→基本4行動重み→性格第一該当条件の倍率→スキルによる行動禁止/強制→既存加重抽選**が原作。確認済みの例は**Forgot to Guard（全員Guard不可）・Pacifist（本人がGuard固定、ただしForgot to Guardに従う）・Chatty（両陣営Technique不可）・HP満タン時の回復Technique禁止**。[Wazzat YW2](https://mtwildwood.net/yw2/yokai/wazzat)と[原作2 Medallium](https://mtwildwood.net/yokaiMedallium/yokaiWazzat.html)はForgot to Guardが**生存中の後衛持ち主からも両側へ有効**とする。
+- `engine/selection.mjs`に**純粋`applyYw2ActionOverrides(weights,flags)`**を追加。既存`actionWeights`のGrouchy YW2優先/既存fixture性格判定と技選択資格の**後**に、上記のGlobal/本人スキルoverrideを適用し、元の`pickAction`を一切作り直さない。後衛Skill状態は`engine/combat.mjs`の現存`squads.flat()`から毎行動読んで、両陣営へ伝播させる。全候補0時は研究fixtureの決定的Attack fallbackを採用するが、**原作の同じ処理を実機確認したわけではない**。
+- **重要な設計境界：** `createCombat({teams,researchYw2ActionOverrides:true})`のみ。customメンバーの`researchActionOverrideSkill='forgot-to-guard'|'pacifist'|'chatty'`は**原作の効果を試す研究タグ**であり、原作キャラの正式な共有Skill catalog IDや封印/装備/KOの全規則の完成を示さない。研究フラグなしでタグを含む編成はreject。標準Lab/School6体と通常online`MatchProtocol`は研究flagの採用を拒否し、旧試合の選択/HP/RNG/journalは不変。
+- 新規`tests/v3-yw2-action-override-skills.test.mjs`**8件**：純粋優先順・Grouchyとの結合、Pacifist vs Forgot・Chatty・全味方満タン回復禁止/全候補0 fallback、**実6vs6で後衛のForgot to Guardによる両側Guard禁止、後衛Chattyによる両側妖術禁止、Pacifist本人のGuard固定を100+行動で検証**、不正Skillタグ/flagとオンライン契約拒否、旧Lab/School6体の全stateとhost journal replay不変。**検証コードSHA `6d686950ca12456c447cf967d93acea79c5de700`**：[Research CI #40940737598](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40940737598) **Node 888/888 PASS、自然6vs6耐久/実Chromium操作PASS**。[Firebase Friends QA #40940737588](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40940737588) **全job SUCCESS**：実RTDB Emulator2席24ホスト行動ACK/正規状態一致、切断復帰/公開遅延、Chromium2 iframe/4幅、学校用未配布HTML build76 modules。本番Firebaseは予約非ルームキーGET1回HTTP200、本文未閲覧/書込0。
+- **現在地：V3-4-14原作行動overrideの研究用戦闘実装・検証完了。** 次V3-4-15は原作キャラの正式なSkill定義（Forgot to Guard/Chatty/Pacifistなど）を既存カタログから行動選択器へ渡す条件、原作Skill封印/後衛/KOの優先関係を外部資料・実戦で確認する。二重Skillシステムや推測数値を増やさない。ひゃくれつ肉球hitCount5/7衝突は保留。原作動画フレーム/学校Safari iPad実機2台は未検証。main・学校Google Sites版・本番Firebase DB/Rules/Auth・Drive無変更。
+
 ## 2026-10-30 V3-4-13｜ジバニャン性格100%固定の出典確定とYW1 Loaf値の誤用防止
 
 - [根拠、版別訂正、実装・テスト・次工程](./ENGINE_V3_4_13_FIXED_ATTITUDE_SOURCE_20261030.md)。[Mt. Wildwoodの**Attitudes YW2一覧**](https://mtwildwood.net/attitudes.php?g=yw2)では**Grouchyに「Jibanyan 100%」**と明記。一般妖怪の性格選択は40/30/20/10の4候補だが、**原作ジバニャンにその抽選は不要**。前工程の仮レンタル-derived Grouchyは偶然一致しており、今回は同じ値を**原作出典に結び付けた**。既存の研究AI結果を変える目的の修正ではない。
