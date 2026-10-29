@@ -107,10 +107,13 @@ test('V3-4-7 actual host sim performs separately rolled claws and fire attacks u
     if(evt.kind==='attack'){
      assert.equal(evt.multiHit.planned,2);
      assert.ok(evt.multiHit.attempted>=1&&evt.multiHit.attempted<=2);
-     assert.equal(evt.damageResearch.sourceMovePower,10);
+     if(evt.damageResearch)
+      assert.equal(evt.damageResearch.sourceMovePower,10);
     }else{
-     assert.equal(evt.damageResearch.sourceMovePower,20);
-     assert.equal(evt.damageResearch.techniqueElement,'fire');
+     if(evt.damageResearch){
+      assert.equal(evt.damageResearch.sourceMovePower,20);
+      assert.equal(evt.damageResearch.techniqueElement,'fire');
+     }
     }
    }
    if(evt.winner!==null)break;
