@@ -665,6 +665,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   function applyResearchSpecial({side,casterId,result,targets=null,pinnedId=null}={}){
     if(researchYw2Momentum)skillHooks.beginResolution();
     const caster=byId.get(casterId);
+    // The source-backed Adrenaline boost belongs to actions AFTER the KO.
+    // Snapshot at Soultimate start: if target 1 falls, later hits/targets
+    // within this SAME action do not gain a mid-cast Strength/Spirit buff.
+    const soultimateMomentumStage=researchYw2Momentum&&enableRentalSkills
+      ?skillMomentumStage(skillBoosts.get(caster.id)):0;
     const enemies=targets?targets.map(id=>byId.get(id)).filter(m=>m&&m.hp>0):livingFront(1-side);
     const sourceMove=referenceMove&&caster.id==='A1'?referenceMove:null;
     const resolvedSpec=sourceMove?yw2ReferenceSpecialDefinition(sourceMove.id):
@@ -723,8 +728,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
               loafing:loafingActors.has(target.id),
               moveCritBonus:caster.moveCritBonus,
               criticalImmune:target.criticalImmune}).units;
-            const statStage=deriveStatStage(statuses.list(caster.id),
-              moveKind==='attack'?'strength':'spirit');
+            const statStage=Math.max(-8,Math.min(8,
+              deriveStatStage(statuses.list(caster.id),
+                moveKind==='attack'?'strength':'spirit')+soultimateMomentumStage));
             const defenseStage=deriveStatStage(statuses.list(target.id),'defense');
             const formula=calculateOneHit({
               kind:moveKind,power:resolvedSpec.power*result.powerMultiplier,
