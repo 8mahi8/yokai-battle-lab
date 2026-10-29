@@ -40,7 +40,7 @@ import {RENTAL_MOVE_MASTER} from '../content/rental-move-master.mjs';
 import {compileTypedEffectPlan,commitTypedEffect} from './typed-effect-plan.mjs';
 import {RENTAL_SOULTIMATE_MOVES} from '../content/rental-soultimate-moves.mjs';
 import {compileSoultimateEffectPlan,assertSoultimatePlanMatches} from './soultimate-effect-plan.mjs';
-import {assertPlannedSpecialImpact,commitPlannedSpecialHp} from './special-impact-commit.mjs';
+import {assertPlannedSpecialImpact,commitPlannedSpecialHp,commitPlannedSpecialStatus} from './special-impact-commit.mjs';
 
 function seededRandom(seed) {
   let x = (seed >>> 0) || 1;
@@ -649,7 +649,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         const resisted=impact.kind==='debuff'&&rng()*100<target.inspiritResistance;
         impact.resisted=resisted;
         if(!resisted){
-          applyInspirit({id:target.id,sign:impact.statusSign,
+          if(sourcePlan)commitPlannedSpecialStatus({
+            plan:sourcePlan,impact,target,casterSide:side,casterId:caster.id,
+            applyStatus:applyInspirit
+          });
+          else applyInspirit({id:target.id,sign:impact.statusSign,
             effect:impact.statusEffect,level:impact.statusLevel,source:caster.id});
           impact.applied=true;
         }else impact.applied=false;
@@ -740,7 +744,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         const resisted=target.hp<=0||rng()*100<target.inspiritResistance;
         impact.resisted=resisted;
         if(!resisted){
-          applyInspirit({id:target.id,sign:impact.statusSign,
+          if(sourcePlan)commitPlannedSpecialStatus({
+            plan:sourcePlan,impact,target,casterSide:side,casterId:caster.id,
+            applyStatus:applyInspirit
+          });
+          else applyInspirit({id:target.id,sign:impact.statusSign,
             effect:impact.statusEffect,level:impact.statusLevel,source:caster.id});
           impact.applied=true;
         }else impact.applied=false;
