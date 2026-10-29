@@ -19,6 +19,14 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-29 V3-2継続｜必殺6技の複合Effect Planと全6キャラ新旧完全比較
+
+- [実装・原作資料・テスト・残件の詳細](./ENGINE_V3_2_COMPOSITE_SOULTIMATE_PLAN_20261029.md)。
+- `engine/soultimate-effect-plan.mjs`を新設。既存技マスターから6必殺を、damage、drain→heal、buff、damage→生存時status、revive＋healのatomic複合、debuffに分類。`hitPattern:unknown`は`originalHitCount:null`で保存（仮の一撃数を捏造しない）。
+- `combat.mjs`では組込6体の必殺Planと実際の効果定義を照合する。**旧ホストのtarget・乱数・damage/KO/interrupt/Soul・イベント順はまだ変更なし。** 共通実行器への全面移管は次フェーズ。
+- 最終**[Node 732/732 PASS・6体自然対戦耐久・browser smoke PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870875950)**。6必殺すべてで新しい組込Plan経路と旧カスタム編成経路を同seed・同入力で完全snapshot/event比較。初回テストの研究依存フラグ設定ミスを修正し再実行して合格。実Chromium [PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870366594)、同一エンジンコードのFirebase Friends no-Auth実2 iframe [PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870222395)、Google Sites単体HTML [PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40870222384)。
+- **現在地：V3-2進行中**。次：Status継続tick、Soul/割り込み/KOと複合effect実行の本格共通化→V3-3。学校iPad Safari最新版は未実機確認。main/Google Sites公開版/本番Firebase/Driveに変更なし。
+
 ## 2026-10-29 V3-2継続｜型付きEffectPlanで通常技18件を実ホストへ接続
 
 - [実装・原作未確定事項・受入条件・検証範囲](./ENGINE_V3_2_TYPED_EFFECT_PLAN_20261029.md)。
