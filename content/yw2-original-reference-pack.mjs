@@ -28,8 +28,9 @@ const disputed=claims=>({
  claims
 });
 const unknown=(...sourceIds)=>({status:'unknown',sourceIds,claims:[]});
-const move=(label,labelSourceIds,{power,hits,element,effect})=>({
- label,labelSourceIds,power,hits,element,effect
+const move=(label,labelSourceIds,{power,hits,element,effect,level=undefined})=>({
+ label,labelSourceIds,power,hits,element,effect,
+ ...(level===undefined?{}:{level})
 });
 const G='jibanyan_guide',M='jibanyan_mtw',E='jibanyan_game8';
 const K='komasan_guide',D='komasan_gamedb',C='komasan_gamecap',Q='komasan_game8';
@@ -64,7 +65,7 @@ const source=[
    inspirit:move('しびれるお札',[G],{
     power:unknown(G),hits:documented(0,G),
     element:unknown(G),
-    effect:two('speed-down',G,M)
+    effect:two('speed-down',G,M),level:documented(2,M)
    }),
    soultimate:move('ひゃくれつ肉球',[G],{
     power:two(20,G,M),
