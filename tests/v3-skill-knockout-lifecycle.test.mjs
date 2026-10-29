@@ -110,5 +110,5 @@ test('V3-2: after refactor a full canonical six-rental battle remains replayable
   const final=match.snapshot().game;
   for(const side of final.squads)for(const member of side)
    assert.ok(member.hp>=0&&member.hp<=member.maxHp);
- });
+ }
 });
