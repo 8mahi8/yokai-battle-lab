@@ -131,3 +131,35 @@ export function commitPlannedSpecialStatus({
  return applyStatus({id:target.id,sign:impact.statusSign,
   effect:impact.statusEffect,level:impact.statusLevel,source:casterId});
 }
+
+/**
+ * V3-2 legacy/reference Soultimate HP commit. Unlike authored rental plans,
+ * custom and reference research fixtures have no validated catalog plan.
+ * Validate their already-resolved HP impact and use the SAME authoritative
+ * EffectCommitter as planned Soultimates. Never infer move values or hits.
+ *
+ * The host retains impact ordering, status resistance, RNG, interruption,
+ * passive skill and KO policy. Buff/debuff are status-only, not HP impacts.
+ */
+export function commitResearchSpecialHp({impact,target,effects}={}){
+ if(!object(impact)||!object(target)||!word(target.id)||
+    target.id!==impact.targetId||
+    !Number.isSafeInteger(target.hp)||!Number.isSafeInteger(target.maxHp)||
+    target.hp<0||target.maxHp<1||target.hp>target.maxHp||
+    !object(effects))
+  throw new TypeError('valid resolved research special HP context required');
+ if(damaging.has(impact.kind)){
+  if(!Number.isSafeInteger(impact.amount)||impact.amount<0||
+     typeof effects.commitDamage!=='function')
+   throw new TypeError('valid research special damage commit required');
+  return effects.commitDamage(target,impact.amount);
+ }
+ if(recovering.has(impact.kind)){
+  if(!Number.isSafeInteger(impact.hpAfter)||
+     impact.hpAfter<target.hp||impact.hpAfter>target.maxHp||
+     typeof effects.commitHeal!=='function')
+   throw new TypeError('valid research special recovery commit required');
+  return effects.commitHeal(target,impact.hpAfter-target.hp);
+ }
+ throw new RangeError('unsupported research special HP impact kind');
+}
