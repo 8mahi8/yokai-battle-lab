@@ -21,7 +21,9 @@
 ## 検証と受け入れ基準
 
 - 検証対象のゲームコードは`engine/combat.mjs`と`engine/time-domain-contract.mjs`で、アクションや判定式の変更は0。
-- 正式Node CI [Research battle unit tests](https://github.com/8mahi8/yokai-battle-lab/actions/workflows/research-unit.yml)、実Chromiumの研究UI、Firebase Friends no-Auth Emulatorの二席とGoogle Sites HTMLの[Phase37](https://github.com/8mahi8/yokai-battle-lab/actions/workflows/phase37-firebase-friends.yml) の新SHAで合格してからV3-3-1を合格とする。
+- **正式CI確認済み**：コードSHA `94852603112dcffdf7411367362a44b60a1998e9` の[Research battle unit tests run 40903151441](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40903151441) は **Node 780/780 PASS、自然6vs6完走4seed、実Chromium研究UI PASS**。
+- 同SHAの[Firebase Friends Phase37 run 40903151393](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40903151393)も**全step SUCCESS**。単体HTMLは74→75個のsource module（今回の時間APIが1個増）、認証なしエミュ2席/24ホスト行動/ACK・snapshot、実Chromium 2iframe、4横幅、旧期限ルールの独立エミュ再現までPASS。本番FirebaseにはGET1回だけ、`UNAUTH_READ_HTTP_OK` HTTP 200、書き込みなし。
+- 上記はGitHub Actions実行ログを直接確認した結果。CIを通過した実コードSHAと、後続のドキュメント更新で進む最新HEADを混同しない。
 - 学校iPad SafariでのGoogle Sites実2台通信、原作カットインの実映像フレーム、ノーモーション/カウンターの本家と同一の発火瞬間は未確認。**V3-3全体完了/原作完全再現とは呼ばない**。
 
 ## 次工程
