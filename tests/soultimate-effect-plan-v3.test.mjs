@@ -94,3 +94,28 @@ test('V3-2: real special resolution keeps legacy impact and deterministic replay
   assert.equal(replayMatchJournal(protocol.exportJournal()).ok,true);
  }
 });
+
+test('V3-2: additional move definitions reuse effect families without new character branches',()=>{
+ const make=(id,kind,targetScope,power,hitPattern)=>{
+  const move={id,slot:'soultimate',category:kind,targetScope,
+   power,statusEffect:null,hitPattern,evidence:'fixture',sourceRefs:[]};
+  return move;
+ };
+ const multi=compileSoultimateEffectPlan(
+  make('test:new-multi','damage','enemy_front',120,{type:'multi',count:6}),
+  {kind:'damage',scope:'front',power:120,damageKind:'attack'});
+ assert.equal(multi.stages[0].hitPattern.count,6);
+ assert.equal(multi.originalHitCount,6);
+ const heal=compileSoultimateEffectPlan(
+  make('test:new-heal','heal','ally_front',70,{type:'none',count:0}),
+  {kind:'heal',scope:'front',power:70});
+ assert.equal(heal.stages[0].type,'heal');
+ const revival=compileSoultimateEffectPlan(
+  make('test:new-revival','revive','single_ally',90,{type:'none',count:0}),
+  {kind:'revive',scope:'one',power:90});
+ assert.equal(revival.stages[0].type,'revive');
+ assert.throws(()=>compileSoultimateEffectPlan(
+  make('test:bad-multi','damage','enemy_front',120,{type:'multi',count:100}),
+  {kind:'damage',scope:'front',power:120,damageKind:'attack'}),
+  /hit pattern/);
+});
