@@ -84,6 +84,7 @@ export function compileSoultimateEffectPlan(move,rawDefinition){
   originalHitCount:pattern.type==='unknown'?null:pattern.count,
   hitPattern:clonePattern(pattern),stages:freeze(stages),
   // This is a semantic plan ONLY. No new in-battle hook order is established.
+  ruleSignature:JSON.stringify(rule),
   orderEvidence:'legacy-playtest-only'});
 }
 
@@ -93,7 +94,8 @@ export function assertSoultimatePlanMatches(plan,rawDefinition){
     !word(plan.moveId)||!Array.isArray(plan.stages))
   throw new TypeError('invalid compiled Soultimate plan');
  const rule=validateSpecialSpec(rawDefinition);
- if(plan.category!==rule.kind||plan.targetScope!==scopeOf(rule))
+ if(plan.category!==rule.kind||plan.targetScope!==scopeOf(rule)||
+    plan.ruleSignature!==JSON.stringify(rule))
   throw new TypeError('Soultimate execution and authored plan disagree');
  return true;
 }
