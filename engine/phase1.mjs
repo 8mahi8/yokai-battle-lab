@@ -5,6 +5,7 @@
  */
 
 import {createOpeningPriority} from './opening-priority.mjs';
+import {advanceLogicalAction,validateActionWait} from './action-timeline-core.mjs';
 
 // YW2 first-action wait table, derived from the 94 YW2/YW3 speed rows
 // at https://www.mtwildwood.net/turn-order.php; ranges are inclusive.
@@ -170,29 +171,16 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
   }
 
   function step(actionWait = 3) {
-    if (!Number.isInteger(actionWait) || actionWait < 0 || actionWait > 10)
-      throw new RangeError('actionWait must be 0..10');
+    validateActionWait(actionWait);
     const active = frontlineAll().filter(x=>x.canAct && Number.isFinite(x.wait));
     if (!active.length) throw new Error('No eligible front-line actors; rotate to living reserves');
-    // For equal debt: front position within each team, then side A before B.
-    // Tie precedence is a *test convention*, not established source behavior.
-    const delta = Math.min(...active.map(x => x.wait));
-    for (const unit of active) unit.wait = Math.max(0, unit.wait - delta);
-    pointsElapsed += delta;
-    const scheduled = active.find(x => x.wait === 0);
-    const decision = openingPriority?.choose({
-      frontIds:active.map(x=>x.id),waits:active.map(x=>x.wait),
-      scheduledId:scheduled.id
+    // One logical action-point transition for true steps and forecasts.
+    // Host-wall milliseconds and animation time are different domains.
+    const {delta,scheduled,actor:winner,decision}=advanceLogicalAction(active,{
+      actionWait,openingPriority
     });
-    const winner = decision?active.find(x=>x.id===decision.actorId):scheduled;
-    // "Flash replaces the next planned action" is player-observed. Whether
-    // the skipped unit's debt resets is UNVERIFIED; both hypotheses are
-    // explicit options and only affect this opt-in research configuration.
-    if(decision?.skippedId&&decision.skippedTurnPolicy==='consume')
-      scheduled.wait=scheduled.cost*actionWait/3;
+    pointsElapsed += delta;
     winner.acted += 1;
-    winner.wait = winner.cost * actionWait / 3;
-    if(decision)openingPriority.commit(decision);
     const event = {
       action: ++turn, id: winner.id, name: winner.name,
       speed: winner.speed, cost: winner.cost, actionWait,
@@ -213,24 +201,16 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
    */
   function predict(count = 5, actionWait = 3) {
     if (!Number.isInteger(count) || count < 0 || count > 30) throw new RangeError('count 0..30');
-    if (!Number.isInteger(actionWait) || actionWait < 0 || actionWait > 10)
-      throw new RangeError('actionWait must be 0..10');
+    validateActionWait(actionWait);
     const active = frontlineAll().filter(m => m.canAct && Number.isFinite(m.wait))
       .map(m => ({ id: m.id, cost: m.cost, wait: m.wait }));
     const events = [];
     const previewPriority=openingPriority?.fork();
     let sinceNow = 0;
     for (let n = 0; n < count && active.length; n++) {
-      const delta = Math.min(...active.map(m => m.wait));
-      for (const member of active) member.wait = Math.max(0, member.wait - delta);
-      const scheduled=active.find(m=>m.wait===0);
-      const decision=previewPriority?.choose({
-        frontIds:active.map(x=>x.id),waits:active.map(x=>x.wait),
-        scheduledId:scheduled.id
+      const {delta,scheduled,actor,decision}=advanceLogicalAction(active,{
+        actionWait,openingPriority:previewPriority
       });
-      const actor=decision?active.find(m=>m.id===decision.actorId):scheduled;
-      if(decision?.skippedId&&decision.skippedTurnPolicy==='consume')
-        scheduled.wait=scheduled.cost*actionWait/3;
       sinceNow += delta;
       const current = frontlineAll().find(m => m.id === actor.id);
       events.push({
@@ -240,8 +220,6 @@ export function createBattle({ seed = 20261023, teams, rotationCooldownMs = 3000
           originalScheduledId:scheduled.id,skippedId:decision.skippedId,
           flashConsumed:decision.consumedFlash}:{})
       });
-      actor.wait = actor.cost * actionWait / 3;
-      if(decision)previewPriority.commit(decision);
     }
     return events;
   }
