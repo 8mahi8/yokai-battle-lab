@@ -19,6 +19,15 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-3｜7体目の明示BattleProfileから実戦まで
+
+- [設計・原作引用・テストとV3-4-4の引き継ぎ](./ENGINE_V3_4_BATTLE_EXECUTION_PROFILES_20261030.md)。`engine/catalog-battle-profile.mjs`で共通の`Battle Execution Profile`を新設。キャラID、ランク/妖気容量、Inspiritレベル、Soultimate複合効果、情報の確からしさ/sourceRefsを**明示して初めて**未認証の創作キャラを旧`createCombat`入力へコンパイルする。技4枠と元のHP/攻撃/性格/skillは既存`createCombatCatalog`を唯一の定義ソースとして取得。現在実装済みの6種類のSkill/7種類のInspirit/8種類のSoultimate研究fixture以外は、実戦で憶測実行しない。
+- V3-4-2の`compileCatalogTeamsForCombat`に任意`executionProfiles`を追加。既存6レンタルの5つのsource resolver + 旧入力への完全一致ガードは無変更のまま。創作7体目のみ明示profile/characterIdで処理し、入力不足/不正Soul rank/技効果矛盾/未実装Skillは試合前にfail-closed。main上の本番オンラインルーム/UIへは未接続。
+- 新規`tests/v3-battle-execution-profile.test.mjs`7件。架空の「うみねこ（試験用）」を既存3技とSkill参照+新物理技威力47（playtest fixture）で**実際に6vs6試合・必殺チャージ・敵HP減少・消費Soul**まで実行。seed4種の全戦闘/RNG/HP/イベント比較、seed2種のonline`MatchProtocol`とjournal replay成功、未知Skillや誤データの拒否、旧6体の無変更を検証。
+- **正式コードSHA `0731fd071c2e3e888dcb7af626db58f5636f945c`の[研究CI #40921171174](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40921171174)：Node **814/814件PASS**、自然6vs6耐久・実Chromium操作もSUCCESS**。[Firebase no-Auth CI #40921171183](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40921171183)は認証なし2席・公開遅延・再接続・Google Sites未配布HTMLビルドまで正式検証対象（最終状態はActions参照）。
+- [Mt. Wildwood YW2 Soultimates](https://www.mtwildwood.net/soultimates.php?g=yw2)はSoul Rank1〜4の100/150/200/250を示すが、**技レベルの上昇による必要妖気や威力の変化も載っている**。今回のschool rentalは育成省略のrank固定fixtureで、レベル成長は未実装。原作の特定妖怪/必殺技の完全再現とは区別する。
+- **現在地：V3-4-3 完了（創作7体目を任意profileで研究試合に投入可能）／V3-4全体と本家再現は未完**。V3-4-4では複合必殺`damageKind`/状態レベル/技ランク/研究レベルの保持先を改めて単一の技定義へ移し、スキルの共通実行型とUI表示IDのデータ駆動契約を進める。学校Safari実機2台・本家動画原本の比較・本番Firebase書込・ホスト再起動後の復元は未実行。main/学校公開HTML/本番Firebase Rules/DB/Auth/Google Drive無変更。
+
 ## 2026-10-30 V3-4-2｜戦闘用ロスター変換・シード付き完全差分QA
 
 - [実装・未対応範囲・本物のCI](./ENGINE_V3_4_CATALOG_TO_COMBAT_ROSTER_20261030.md)。`engine/catalog-battle-roster.mjs`の`compileCatalogTeamsForCombat({catalog,teamCharacterIds,school})`を新設。2陣営×6明示キャラIDから既存のimmutable catalog（4技/スキル/HP等5Stats/人格）を解決、5つの既存`resolveRental*Spec`検証器で**現行の旧ゲーム実行値と照合**し、`createCombat({teams})`と`createMatchProtocol({battleOptions:{teams}})`に与えられる守備的な入力を生成。IDの並び替え可、同じチーム内の重複ID禁止。未移行のSoul容量、複合必殺等が不明な**登録済み7体目は戦闘へ推測投入せず拒否**。
