@@ -36,6 +36,8 @@ import {resolveRentalSkillSpec} from './catalog-skill-spec.mjs';
 import {createEffectCommitter} from './effect-commit.mjs';
 import {createSkillHookPipeline} from './skill-hook-pipeline.mjs';
 import {createKnockoutLifecycle} from './knockout-lifecycle.mjs';
+import {RENTAL_MOVE_MASTER} from '../content/rental-move-master.mjs';
+import {compileTypedEffectPlan,commitTypedEffect} from './typed-effect-plan.mjs';
 
 function seededRandom(seed) {
   let x = (seed >>> 0) || 1;
@@ -243,6 +245,28 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     member.id,resolveRentalSkillSpec(member,index,{school:playtestSoulTuning})
    ]))):null;
   const skillFor=member=>catalogSkillByActor?.get(member.id)?.legacyKey??member.skill;
+  // Existing 6x4 authoring master is the only source; special effects stay
+  // on their multi-target/multi-hit resolver until that plan is source-backed.
+  const typedRentalPlans=teams===undefined?new Map(
+    RENTAL_MOVE_MASTER.filter(move=>move.slot!=='soultimate')
+      .map(move=>[move.id,compileTypedEffectPlan(move)])):null;
+  const typedPlansByActor=typedRentalPlans?new Map(
+    squads.flatMap(team=>team.map((member,index)=>{
+      const baseId='rental-'+String(index+1).padStart(2,'0');
+      const plans=Object.freeze(Object.fromEntries(
+        ['attack','technique','inspirit'].map(slot=>[
+          slot,typedRentalPlans.get(baseId+':'+slot)
+        ])
+      ));
+      if(!plans.attack||!plans.technique||!plans.inspirit||
+         plans.attack.effect.power!==member.attackPower||
+         plans.technique.effect.power!==member.techniquePower||
+         plans.inspirit.effect.statusId!==member.inspirit||
+         (plans.technique.effect.type==='heal')!==(member.technique==='heal'))
+        throw new TypeError('rental ordinary move and effect plan disagree');
+      return [member.id,plans];
+    }))
+  ):null;
   // Stat reductions and HP-over-time are distinct move categories.
   // Do not enable unverified negative HP-loss math to use real debuff types.
   const statDebuffs=['strength-down','defense-down','spirit-down'];
@@ -408,7 +432,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     return result;
   }
   /** Experimental injection: not an auto AI Inspirit move; hit/resistance unimplemented. */
-  function applyInspirit({id,sign,effect,source=null,duration=null,level=1}={}){
+  function applyInspirit({id,sign,effect,source=null,duration=null,level=1,effectPlan=null}={}){
     if(winner!==null)throw new Error('battle finished');
     if(!byId.has(id))throw new RangeError('unknown member');
     if(!['sleep','strength-up','research-marker','strength-down','defense-down',
@@ -425,7 +449,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(['hp-loss','hp-regen'].includes(effect)&&!researchTurnInspirits)
       throw new RangeError('HP-over-time Inspirit requires researchTurnInspirits');
     if(effect==='sleep'&&duration!==null)throw new RangeError('sleep owner-turn duration is unsupported');
-    return effects.commitStatus({id,sign,effect,source,duration,level});
+    const statusSpec={id,sign,effect,source,duration,level};
+    return effectPlan
+      ?commitTypedEffect(effectPlan,effects,{target:byId.get(id),statusSpec})
+      :effects.commitStatus(statusSpec);
   }
   /** Debug shortcut retained only to preserve legacy engine tests.
    * Player UI must use beginPurify + purifyInput. This function deliberately
@@ -954,6 +981,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     // A guard lasts until the next time that actor begins an action.
     actor.guard=false;
     const kind=enableLoafing&&rng()*100<actor.loafChance?'loaf':choice(actor);
+    const ordinaryEffectPlan=typedPlansByActor?.get(actor.id)?.[kind]??null;
     // Resolve before branches: event metadata is emitted after every kind,
     // and the legacy source fields remain the exact fallback.
     const attackSpec=kind==='attack'?catalogAttackByActor?.get(actor.id):null;
@@ -988,7 +1016,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
       resisted=sign==='negative'&&rng()*100<target.inspiritResistance;
       hit=!resisted;
       if(hit)applyInspirit({id:target.id,sign,effect,source:actor.id,
-       level:inspiritSpec?.level??actor.inspiritLevel});
+       level:inspiritSpec?.level??actor.inspiritLevel,effectPlan:ordinaryEffectPlan});
     }else if(kind==='technique'&&techniqueKind==='heal'){
       const hurt=livingFront(actor.side).filter(x=>x.hp<x.maxHp).sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp);
       target=hurt[0]??null;
@@ -1000,11 +1028,16 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
           targetHp:target.hp,maxHp:target.maxHp,
           varianceRoll:researchHealingVariance?rng():null
         });
-        amount=effects.commitHeal(target,healingResearch.amount).amount;
+        amount=(ordinaryEffectPlan
+          ?commitTypedEffect(ordinaryEffectPlan,effects,{target,amount:healingResearch.amount})
+          :effects.commitHeal(target,healingResearch.amount)).amount;
       }else{
         // Provisional legacy base healing magnitude.
         const heal=Math.max(1,Math.floor((techniquePower+actor.spirit)/3));
-        amount=effects.commitHeal(target,Math.min(target.maxHp-target.hp,heal)).amount;
+        const resolvedHeal=Math.min(target.maxHp-target.hp,heal);
+        amount=(ordinaryEffectPlan
+          ?commitTypedEffect(ordinaryEffectPlan,effects,{target,amount:resolvedHeal})
+          :effects.commitHeal(target,resolvedHeal)).amount;
       }
     }else{
       const opponents=livingFront(1-actor.side);
@@ -1073,7 +1106,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
             const range=Math.floor(damage/10+1);
             damage=Math.max(1,Math.min(999,damage+Math.floor(rng()*(2*range+1))-range));
           }
-          const dealt=effects.commitDamage(target,Math.min(target.hp,damage));
+          const resolvedDamage=Math.min(target.hp,damage);
+          const dealt=ordinaryEffectPlan
+            ?commitTypedEffect(ordinaryEffectPlan,effects,{target,amount:resolvedDamage})
+            :effects.commitDamage(target,resolvedDamage);
           oneDamage=dealt.amount;
           amount+=oneDamage;
           oneInterruption=interruptOnHit(target,oneDamage,oneCritical);
