@@ -18,9 +18,10 @@ const freeze=x=>Object.freeze({...x,hitPattern:Object.freeze({...x.hitPattern}),
  ...(x.execution?{execution:Object.freeze({...x.execution})}:{})});
 function makeMove(id,slot,{category,power=null,element=null,targetScope='unknown',
  hitPattern:pattern={type:'unknown',count:null},statusEffect=null,
- execution=undefined}){
+ level=undefined,execution=undefined}){
  return freeze({id:id+':'+slot,slot,displayName:null,category,power,
   element,targetScope,hitPattern:pattern,statusEffect,
+  ...(level===undefined?{}:{level}),
   ...(execution?{execution}:{}),
   evidence:'fixture',sourceRefs:[]});
 }
@@ -41,6 +42,7 @@ function buildMoves(i){
   inspirit:makeMove(id,'inspirit',{
    category:inspirit.sign==='positive'?'status_positive':'status_negative',
    targetScope:inspirit.targetScope,statusEffect:inspirit.effect,
+   level:inspirit.level,
    hitPattern:{type:'none',count:0}}),
   soultimate:makeMove(id,'soultimate',{category:soultimate.kind,
    power:soultimate.power,targetScope:soultimate.targetScope,
