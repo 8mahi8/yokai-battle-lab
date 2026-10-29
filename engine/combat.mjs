@@ -25,7 +25,7 @@ import { createCounterWindow } from './counter-window.mjs';
 import { createWheelCoalescing } from './wheel-coalescing.mjs';
 import { createPokeTrial } from './poke-input.mjs';
 import { createPurifyTrial, choosePurifyKind, PURIFY_KINDS } from './purify-input.mjs';
-import {ELEMENTS, validateElementResistances, calculateOneHit, deriveStatStage} from './damage-model.mjs';
+import {ELEMENTS, validateElementResistances, calculateOneHit, deriveStatStage,statStageMultiplier} from './damage-model.mjs';
 import {resolveTechniqueElementMultiplier} from './element-model.mjs';
 import {createOwnerTurnEffectLifecycle} from './owner-turn-effect-lifecycle.mjs';
 import {createActionSoulAccrual} from './action-soul-accrual.mjs';
@@ -95,7 +95,7 @@ function buildMember(source,side,index) {
   if(source.guardBoost!==undefined&&typeof source.guardBoost!=='boolean')
     throw new TypeError('guardBoost must be a boolean');
  if(!['sleep','strength-up','strength-down','defense-down','spirit-down',
-  'hp-loss','hp-regen'].includes(source.inspirit))
+  'hp-loss','hp-regen','speed-down'].includes(source.inspirit))
     throw new TypeError('unsupported Inspirit');
  if(source.loafChance!==undefined){
     intStat(source.loafChance,'loafChance');
@@ -140,13 +140,16 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   researchSoulRecoveryMode='none',researchPresentation=false,researchCounterTiming=false,
   researchWheelCoalescing=false,researchOpeningPriority=null,
   researchPokeSoulTransfer=0,playtestSoulTuning=false,researchDamageModel=false,researchMultiHit=false,researchSoultimateHitCount=null,researchYw2Soultimate=null,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false,enableRentalSkills=playtestSoulTuning,
-  researchYw2Momentum=false,
+  researchYw2Momentum=false,researchSpeedInspirit=false,
   catalogAttackResolution=false,catalogTechniqueResolution=false,
   catalogInspiritResolution=false,catalogSoultimateResolution=false,
   catalogSkillResolution=false}={}) {
   if(!Number.isInteger(seed))throw new TypeError('seed must be integer');
   if(typeof enableRentalSkills!=='boolean')throw new TypeError('enableRentalSkills must be boolean');
   if(typeof researchYw2Momentum!=='boolean')throw new TypeError('researchYw2Momentum must be boolean');
+  if(typeof researchSpeedInspirit!=='boolean')throw new TypeError('researchSpeedInspirit must be boolean');
+  if(researchSpeedInspirit&&(teams===undefined||!researchDamageModel))
+    throw new RangeError('speed Inspirit trial requires custom teams and researchDamageModel');
   if(researchYw2Momentum&&(teams===undefined||!enableRentalSkills||!researchSpecialEffects))
     throw new RangeError('YW2 Adrenaline trial requires explicit custom teams, active skills and special effects');
   if(typeof researchSpecialEffects!=='boolean')throw new TypeError('researchSpecialEffects must be boolean');
@@ -295,6 +298,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   // Stat reductions and HP-over-time are distinct move categories.
   // Do not enable unverified negative HP-loss math to use real debuff types.
   const statDebuffs=['strength-down','defense-down','spirit-down'];
+  if(squads.flat().some(m=>m.inspirit==='speed-down')&&!researchSpeedInspirit)
+    throw new RangeError('speed-down Inspirit requires researchSpeedInspirit');
   if(squads.flat().some(m=>statDebuffs.includes(m.inspirit))&&
       !researchStatInspirits&&!researchTurnInspirits)
     throw new RangeError('stat debuffs require researchStatInspirits');
@@ -430,6 +435,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   });
   function syncCanAct(id){
     const member=byId.get(id);
+    if(researchSpeedInspirit){
+      const stage=deriveStatStage(statuses.list(id),'speed');
+      const effective=Math.max(1,Math.floor(member.speed*statStageMultiplier(stage)));
+      clock.setEffectiveSpeed(id,effective);
+    }
     const pending=soul.snapshot().pending[member.side];
     const charging=pending?.casterId===id;
     clock.setCanAct(id,member.hp>0&&!statuses.has(id,'sleep')&&!charging);
@@ -476,13 +486,15 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(winner!==null)throw new Error('battle finished');
     if(!byId.has(id))throw new RangeError('unknown member');
     if(!['sleep','strength-up','research-marker','strength-down','defense-down',
-      'spirit-down','hp-loss','hp-regen'].includes(effect))
+      'spirit-down','hp-loss','hp-regen','speed-down'].includes(effect))
       throw new RangeError('effect not modeled');
     const positive=['strength-up','hp-regen','research-marker'];
     if(positive.includes(effect)&&sign!=='positive'&&effect!=='research-marker')
       throw new RangeError('positive effect requires positive sign');
     if(!positive.includes(effect)&&sign!=='negative')
       throw new RangeError('negative effect requires negative sign');
+    if(effect==='speed-down'&&!researchSpeedInspirit)
+      throw new RangeError('speed-down requires researchSpeedInspirit');
     if(['strength-down','defense-down','spirit-down'].includes(effect)&&
        !researchStatInspirits&&!researchTurnInspirits)
       throw new RangeError('stat Inspirit requires researchStatInspirits');
@@ -1080,7 +1092,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     }else if(kind==='inspirit'){
       const inspiritSpec=catalogInspiritByActor?.get(actor.id);
       const sign=inspiritSpec?.sign??(
-       ['sleep','strength-down','defense-down','spirit-down','hp-loss']
+       ['sleep','strength-down','defense-down','spirit-down','speed-down','hp-loss']
         .includes(actor.inspirit)?'negative':'positive');
       const inspiritEffect=inspiritSpec?.effect??actor.inspirit;
       const group=sign==='negative'?livingFront(1-actor.side):livingFront(actor.side);
