@@ -28,7 +28,11 @@
 6. 誤ったowner、手動overrideとの競合、研究flag無し、通常onlineでの研究flag要求を拒否。
 7. 元6体Lab/School×3seedの試合/Journal replay全一致。
 
-最初のCIでテスト用Soultimate威力を`1000`に設定して**既存入力の上限999に拒否**された（実装バグではなくテスト条件ミス）。入力仕様を変更せず威力`999`に修正して正式CIを再実行する。正式検証コードSHA、Node全件数、Firebase/Chromium結果は最終runを確認して追記する。
+最初のCIでテスト用Soultimate威力を`1000`に設定して**既存入力の上限999に拒否**された（実装バグではなくテスト条件ミス）。エンジン入力仕様を変更せず威力`999`へテストのみ修正。
+
+- **正式コード/テストSHA `21a8654099997392eb1de4533b2be9407bd74461`**：[Research battle unit tests #40972019512](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40972019512) **全job SUCCESS、Node 895/895 PASS、fail0/skip0**。自然6vs6耐久、実Chromiumで零式つつく・妖気移動・カウンター輪の操作もSUCCESS。
+- [Phase37 Firebase friends noAuth #40972019539](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40972019539) **全job SUCCESS**。実Firebase RTDB Emulatorで2席24ホスト行動/ACK・正規snapshot一致、切断再接続・再送冪等、8ホスト行動の公開遅延/正しいACK順序、実Chromium 2iframe/4埋込幅、学校用**未配布**inline HTML build（77 source modules）全PASS。本番Firebaseでは予約済み非ルームキーGET1回の**HTTP200（body未閲覧、write0）**だけ。
+- このCIは学校Safari iPad実機2台の試験/本番Google Sites更新ではない。
 
 ## ロードマップと次
 
