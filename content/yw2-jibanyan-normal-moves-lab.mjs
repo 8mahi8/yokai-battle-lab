@@ -105,9 +105,6 @@ export function buildJibanyanNormalMoveLab({index=YW2_ORIGINAL_REFERENCE_INDEX,
  const stats=Object.fromEntries(props.map(k=>[
   k,sourcedValue(entry.stats[k],'stats.'+k,positive)
  ]));
- const sourceLoafWeight=includeSourceAttitude?
-  sourcedValue(entry.behavior?.loafWeight,'behavior.loafWeight',x=>
-   Number.isSafeInteger(x)&&x>=0&&x<=100):null;
  const reference=clone(base);
  reference.id=JIBANYAN_NORMAL_TRIAL_ID;
  reference.name=includeSpeedDown?'ジバニャン（速度とりつき研究）':
