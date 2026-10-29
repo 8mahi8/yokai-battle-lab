@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-8｜原作速度とりつき Level2 を共通行動時計へ接続
+
+- [原作資料と実装・検証の詳細](./ENGINE_V3_4_8_SPEED_DOWN_CLOCK_20261030.md)。[Mt. Wildwoodのジバニャン YW2欄](https://mtwildwood.net/yw2/yokai/jibanyan)・[Inspirits YW2](https://mtwildwood.net/inspirits.php?g=yw2)に基づき「しびれるお札」は**SPD down level2＝すばやさ×0.7**、負statusは浄化まで基本**持続**。研究用`YW2_ORIGINAL_REFERENCE_INDEX`に出典付き`inspirit.level=2`を追加し、`buildJibanyanNormalMoveLab({includeSpeedDown:true})`で初めて原作2つの通常技+原作速度とりつき**3技**を共通`CombatCatalog`に登録。キャラの残り必殺技（20×5対20×7の資料衝突）やAI/Skill詳細はfixtureであり、**3技の採用は完全再現ではない**。
+- 既存`INSPIRIT_EFFECT_MASTER`に`speed-down`、既存`deriveStatStage('speed')`と`statStageMultiplier(-2)=0.7`を接続。既存`phase1.createBattle`に`setEffectiveSpeed(id,newSpeed)`を追加し、`waitCostFromSpeed`による**次回行動の再チャージcost**だけ変える。**すでに蓄積済みのwaitを原作がどう扱うかは未解明**なので今は保持する研究仮説。戦闘`createCombat({teams,researchDamageModel:true,researchSpeedInspirit:true})`だけで負のstatusを付与・反映し、`purify`で元のspeed/costに復帰。基本HP/元のSPD・RNG・学校用オンライン通信には影響しない。Speed↓が命中率へ与える効果と複数の速度Inspirit積み重ね方は**まだ完全に再現していない**。
+- 新規`tests/v3-yw2-speed-down-clock.test.mjs`**6件**：原作レベル2/技名/引用、時計speed165→115/cost/未使用waitの保存と解除、35行動後も状態残留・ベンチPurify後の復帰、間違ったsign/level/不明原作valueの拒否、デフォルトLab/School×3seedの試合結果/リプレイと通信契約不変。既存のEffect masterの登録数固定を7→8に更新、研究データのB6と元レンタルB4の試験比較ミスのみ修正。**正式検証コードSHA `7bbdcf9f0f3b4b8e5b6256cf0a2b5e169a7b2c0e`**：[研究CI #40929350968](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40929350968) **Node 849/849 PASS・自然6vs6/実Chromium操作PASS**。[Firebase Friends CI #40929351028](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40929351028) **全job SUCCESS**：実RTDB Emulator2席・24 host行動ACK/同期、切断・再接続、publish lag、Chromium2iframe/4幅、Google Sites未配布HTML build（76 modules）。本番Firebaseは非ルームキーGET1回HTTP200、本文未閲覧・writeなし。
+- **現在地：V3-4-8 源資料の速度低下を研究用戦闘と行動時計まで接続・検証済み。** 次V3-4-9はSpeedによる命中率の波及、未確定の付与直後の待ち時間/他速度Buffの振る舞いを原作/動画と比較して優先実装。ジバニャンの原作仕様を全4技/Skill・AI・演出で正確に遊べる状態ではない。原作動画原本、学校Safari iPad2台/Google Sites実埋込は未検証。main/公開版/本番Firebase DB/Rules/Auth/Drive変更なし。
+
 ## 2026-10-30 V3-4-7｜ジバニャン通常2技を共通戦闘で実行
 
 - [実装・原作根拠・試験用/未対応の区別と正式CI](./ENGINE_V3_4_7_JIBANYAN_NORMAL_MOVES_20261030.md)。[攻略大百科](https://gamepedia.jp/youkai-yw2/monsters/272)・[game-cap](https://game-cap.com/youkaiwatch2/data/youkai_jibanyan.html)・[Mt. Wildwood YW2](https://mtwildwood.net/ja/yw2/yokai/jibanyan)の同版資料を照合し、ジバニャン**「するどいつめ」威力10×2**、**「火花の術」威力20・火属性**を確認。後者はLv1値、前者もLv10は別値（45×2）。正確な技レベル成長を今回再現したと主張しない。
