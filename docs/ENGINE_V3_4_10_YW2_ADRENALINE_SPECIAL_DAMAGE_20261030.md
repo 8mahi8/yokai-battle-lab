@@ -32,7 +32,7 @@
 5. Lab/School既存6体のMatchProtocol 3seed×2条件で全正規state/replay/ACK不変、オンラインallowlistは研究フラグ拒否。
 
 - **実装・新テスト検証コードSHA `6a6746cf946fbe71648dcfbb8ff50448d6df4b99`**：[研究CI #40931768460](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40931768460) **Node 861/861 PASS、0 fail/skip、自然6vs6耐久・実Chromium UI操作もSUCCESS**。[Firebase Friends noAuth QA #40931768252](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40931768252) **全job SUCCESS**。実RTDB Emulator2席24host auto/ACK・正規state一致、断線復帰、8host action公開遅延、Chromium 2iframe/4画面幅、Google Sites用HTML 76 modulesを未配布build。本番Firebaseの予約済み非ルームキーGET1回だけ（HTTP200、body未閲覧、writeなし）。
-- 追加の注釈更新コードSHA `412998198403becf3a68cb61377b349b51eba79a`：実行コード・テストに変化なし。正式CIはこのSHAの実行を別途確認（本行は確証のあるコードrunと区別）。
+- 追加の注釈更新コードSHA `412998198403becf3a68cb61377b349b51eba79a`：実行コード・テストに変化なし。[研究CI #40932080595](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40932080595)・[Firebase Friends QA #40932080638](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40932080638)も**双方正式SUCCESS**。したがってコード/テスト/コメント修正まで合格済み。
 
 ## 次のV3-4-11優先順位
 
