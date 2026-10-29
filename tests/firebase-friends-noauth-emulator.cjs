@@ -103,6 +103,80 @@ async function main(){
    'guest must read the same canonical multi-action state, not a separate damage simulation');
   console.log('FIREBASE-FRIENDS-COMBAT-REGRESSION-PASS 24 host actions, ACK, canonical snapshot parity');
   stop();hClient.leaveLocal();gClient.leaveLocal();
+  // V3-3: actual isolated RTDB clients, not the fake in-memory transport.
+  // A disconnected guest must catch up to host authoritative revisions,
+  // and an identical resend must never execute a second logical command.
+  const {createFirebaseMatchHost,createFirebaseMatchGuest}=
+   await import('../network/firebase-match.mjs');
+  const h2=createFirebaseRoomClient({database:hostDb,uid:h});
+  const g2=createFirebaseRoomClient({database:guestDb,uid:g});
+  assert.equal((await h2.createRoom({code:'827396'})).ok,true);
+  assert.equal((await g2.joinRoom('827396')).ok,true);
+  assert.equal((await h2.startRoom()).ok,true);
+  const errors=[],acks=[],views=[];
+  const hostBridge=createFirebaseMatchHost({
+   roomClient:h2,
+   protocol:createMatchProtocol({battleOptions:{seed:212,playtestSoulTuning:true}}),
+   onError:e=>errors.push('host:'+e.message)
+  });
+  const guestBridge=createFirebaseMatchGuest({
+   roomClient:g2,onAck:x=>acks.push(x),
+   onSnapshot:s=>views.push(s),
+   onError:e=>errors.push('guest:'+e.message)
+  });
+  const until=async(check,label)=>{
+   for(let i=0;i<150;i++){
+    if(check())return;
+    await new Promise(resolve=>setTimeout(resolve,40));
+   }
+   throw new Error('Firebase Friends reconnect timeout: '+label+
+    ' '+JSON.stringify({host:hostBridge.status(),
+     guestRevision:guestBridge.status().revision,errors}));
+  };
+  try{
+   guestBridge.start();
+   assert.equal((await hostBridge.start()).ok,true);
+   await until(()=>guestBridge.status().revision===0,'initial authoritative snapshot');
+   assert.equal(guestBridge.submit({type:'rotate',direction:1}).clientSeq,1);
+   await until(()=>guestBridge.status().acked===1,'first canonical ACK');
+   assert.deepEqual(acks.map(x=>x.clientSeq),[1]);
+   assert.equal(acks[0].applied,true);
+   const authoritativeRev=hostBridge.snapshot().revision;
+   const repeated=await g2.sendIntent(1,{type:'rotate',direction:1});
+   assert.equal(repeated.ok,true,'same seq and payload may be idempotently resent');
+   await new Promise(resolve=>setTimeout(resolve,120));
+   assert.equal(hostBridge.snapshot().revision,authoritativeRev);
+   assert.equal(guestBridge.status().acked,1);
+   assert.equal(acks.length,1);
+   guestDb.goOffline();
+   guestBridge.setDeliveryEnabled(false);
+   const disconnectedAt=guestBridge.status().revision;
+   assert.equal(guestBridge.submit({type:'watch',mode:'zero'}).reason,
+    'connection_paused');
+   for(let i=0;i<3;i++)assert.equal(hostBridge.advanceAuto().ok,true);
+   await hostBridge.retryPublish();
+   assert.equal(hostBridge.snapshot().revision,authoritativeRev+3);
+   await new Promise(resolve=>setTimeout(resolve,140));
+   assert.equal(guestBridge.status().revision,disconnectedAt,
+    'offline guest cannot observe unconfirmed remote host actions');
+   guestDb.goOnline();
+   guestBridge.setDeliveryEnabled(true);
+   await until(()=>guestBridge.status().revision===hostBridge.snapshot().revision,
+    'guest catches up without any speculative offline input');
+   assert.deepEqual(guestBridge.status().lastState,hostBridge.snapshot());
+   assert.equal(acks.length,1,'reconnect must not repeat command ACK');
+   assert.equal(guestBridge.status().pendingSequence,null);
+   assert.equal(guestBridge.submit({type:'watch',mode:'zero'}).clientSeq,2);
+   await until(()=>guestBridge.status().acked===2,'new command after reconnect');
+   assert.equal(acks[1].applied,true);
+   assert.equal(hostBridge.snapshot().game.soul.modes[1],'zero');
+   assert.deepEqual(guestBridge.status().lastState,hostBridge.snapshot());
+   assert.deepEqual(errors,[]);
+   console.log('FIREBASE-FRIENDS-RECONNECT-ACK-PASS real RTDB offline catchup, idempotent resend, one ACK, new seq');
+  }finally{
+   guestDb.goOnline();
+   hostBridge.stop();guestBridge.stop();h2.leaveLocal();g2.leaveLocal();
+  }
   console.log('FIREBASE-FRIENDS-NOAUTH-PASS room, seat, command, snapshot, rules');
  } finally {await env.cleanup();}
 }
