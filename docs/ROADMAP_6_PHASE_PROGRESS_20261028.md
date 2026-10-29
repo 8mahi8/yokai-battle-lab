@@ -19,6 +19,12 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-29 V3-2継続｜研究用必殺状態異常を共通Commitへ
+
+- [根拠・実コード・検証限界](./ENGINE_V3_2_RESEARCH_SPECIAL_STATUS_COMMIT_20261029.md)。`commitResearchSpecialStatus`で、既存`combat.mjs`のカスタム/原作形状研究用必殺のbuff/debuffおよびdamage-status直付与を同一Effect/Status確定境界に移す。組込6体の`commitPlannedSpecialStatus`、原作未確定のresist・KO・割り込み・時間優先は変更しない。
+- GitHub実ソースを用いたV8で12条件の直接検査PASS、実プランが生成する状態付与7ケースのCommitペイロード一致PASS、関連2モジュール/新規Nodeテストの構文PASS。Nodeテスト3件を追加したが**正式Node全件・Chromium・Firebase Friends・単体HTML buildは現HEADで未確認**、学校Safari2台未実機試験。
+- **V3-2後半・未完成**。次は正式CI/旧新同seed完全snapshot・event・Soul・KO比較、残るEffect所有と状態優先の棚卸し。V3-3行動/表示時間→V3-4データID汎用化→V3-5オンライン試合/実機の順。main・学校サイト・本番Firebase Rules/DB・Driveは変更しない。
+
 ## 2026-10-29 V3-2継続｜研究用必殺HP確定を共通Commitへ
 
 - [研究用必殺の変更・原作根拠・未検証範囲](./ENGINE_V3_2_RESEARCH_SPECIAL_HP_COMMIT_20261029.md)。
