@@ -10,6 +10,7 @@ const specs=[
  ['strength-down','negative','stat_down'],
  ['defense-down','negative','stat_down'],
  ['spirit-down','negative','stat_down'],
+ ['speed-down','negative','stat_down'],
  ['hp-loss','negative','hp_over_time'],
  ['hp-regen','positive','hp_over_time']
 ];
