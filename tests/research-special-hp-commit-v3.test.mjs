@@ -91,7 +91,8 @@ test('V3-2: legacy custom special categories still replay deterministically',()=
  for(const special of cases){
   const roster=RENTAL_SQUAD.map(x=>({...x}));
   roster[0]={...roster[0],special};
-  const options={teams:[roster,roster],seed:20261029,researchSpecialEffects:true};
+  const options={teams:[roster,roster],seed:20261029,researchSpecialEffects:true,
+   researchDamageModel:true,researchStatInspirits:true};
   const make=()=>{
    const game=createCombat(options);
    game.giveSoul('A1',250);
