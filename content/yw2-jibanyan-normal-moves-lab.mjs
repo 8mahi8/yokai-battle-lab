@@ -130,15 +130,13 @@ export function buildJibanyanNormalMoveLab({index=YW2_ORIGINAL_REFERENCE_INDEX,
   const options=sourcedValue(fact,'behavior.attitudeOptions',x=>
    Array.isArray(x)&&x.length===1&&
    x[0]?.attitude==='grouchy'&&x[0]?.chance===100);
-  const loafFact=entry.behavior?.loafWeight;
   // Only a 100%-fixed documented Attitude can skip a random draw.
-  // This field is NOT loafChancePercent: actual loaf chance is level-
-  // adjusted and may be modified by leader/status/skills.
+  // YW2 loaf weight is UNKNOWN; its YW1 numeric value cannot be reused.
+  // Keep the existing loafChancePercent fixture without reinterpretation.
   reference.personality.attitude=options[0].attitude;
   reference.fieldSourceRefs.personality=[
    ...new Set([...reference.fieldSourceRefs.personality,
-    ...sourceUrls(index,fact.claims[0].sourceIds),
-    ...sourceUrls(index,loafFact.claims[0].sourceIds)])
+    ...sourceUrls(index,fact.claims[0].sourceIds)])
   ];
  }
  if(originalInspirit)reference.moveIds.inspirit=originalInspirit.id;
@@ -171,7 +169,7 @@ export function buildJibanyanNormalMoveLab({index=YW2_ORIGINAL_REFERENCE_INDEX,
   originalLevel99Stats:true,
   originalBaseActionWeights:includeSourceWeights,
   originalFixedAttitude:includeSourceAttitude?'grouchy':null,
-  originalLoafWeight:sourceLoafWeight,
+  originalLoafWeight:null,
   fixtureFields:Object.freeze([
    'personality',...(includeSourceWeights?[]:['actionWeights']),
    ...(includeSourceAttitude?[]:['attitude']),
