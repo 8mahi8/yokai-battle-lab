@@ -186,6 +186,14 @@ exportAuditJournal(); // internal deterministic QA, not a friend replay feature
 - [Node **712/712** PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40837995784)、[実Chromium PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40837995888)、[Firebase Friends no-Auth 2 iframe PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40837911108)。
 - 次は**Hit/割り込み/KO/skill各段階を共有hookへ移行**し、最終的に追加キャラの4技ID/skillIDを既存データカタログから流す。原作の不明な優先順位は未確証として留保する。
 
+## 7E. V3-2共通KO/Passive Skill Hookの段階移行
+
+- [**KO・スキルの契約・原作出典・実装・719テスト結果**](./ENGINE_V3_2_KO_SKILL_LIFECYCLE_20261029.md)。
+- `engine/knockout-lifecycle.mjs`へ通常/必殺/つつくの死亡後副作用を統合。HP0確認→行動可否・KO実績・スキル・Pin更新を既存順で処理（**本家がまったく同じ順序とは未確認**）。
+- `engine/skill-hook-pipeline.mjs`へ`afterEnemyKO`と`afterAnyAction`を統合。**発動トリガーのauthoring sourceは既存`content/skill-catalog.mjs`**。一度だけHP1で耐える効果は共通Damage Commitに残し、KOと混同しない。
+- [Node **719/719**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40840254872)、[Stage Chromium PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40840255136)、[Firebase Friends RTDB 2 iframe PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40840226006)。
+- **残るV3-2**：Critical/Guard/LastStandの実行hook規約の完全共通化、Effect Planとカタログ統合、KO後以外の同時発動順の原作根拠確認。**V3-2完全完成・原作戦闘完全再現とは呼ばない**。
+
 ## 8. 今回の決定
 
 **E1-B単独のオンラインおはらい演出拡張、トホホの砲、個別Soultimate追加などのfeature単位ロードマップを凍結**。これまで積んだコード/動画解析/テストは保存。優先順位は**V3-0→V3-1→V3-2→V3-3→V3-4→V3-5**に切り替える。原作動画の局面は今後の統合受入テストとして再利用し、実装順序を決める一単位にはしない。
