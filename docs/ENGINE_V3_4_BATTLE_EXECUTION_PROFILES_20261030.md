@@ -38,7 +38,7 @@
 
 - **追加Nodeテスト7件**：プロフィール不正検出／7体目編成・全実行入力一致／実特殊技HPダメージ／seed4種×90行動分の完全戦闘パリティ／seed2種のオンライン試合とjournal replay／不足profileや攻撃設定矛盾・未実装skillの拒否／旧6体ロスター契約維持。
 - コードSHA **`0731fd071c2e3e888dcb7af626db58f5636f945c`**：[Research battle unit CI #40921171174](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40921171174)：**Node 814/814件PASS、failure0**、自然6vs6耐久と実Chromium操作ジョブSUCCESS。
-- [Firebase Friends noAuth #40921171183](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40921171183)：新しい制作機能が既存の学校オンライン2席/RTDBエミュ/Google Sites未配布HTMLの動作を変えないことを確かめる正式統合ジョブ。最終結果はrunの状態を見ること。
+- [Firebase Friends noAuth #40921171183](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40921171183)：**正式ジョブ全工程SUCCESS**。Google Sites用未配布HTML（76 modules、295,781 bytes）ビルド、実RTDB Emulator 2席で24ホスト行動のACKと正規snapshot一致、ゲストのオフライン復帰、公開遅延中の8ホスト行動と2件の順序ACK、実Chromium2iframeの4画面幅・タイマー停止復帰、期限付きRulesの別Emulator再現も成功。本番Firebaseでは予約済み非ルームキーGET1回HTTP200だけ（本文非閲覧・書込0）。
 - 元の6体やseedによる戦闘コードは変更ゼロ。登録できる必殺効果は`engine/special-effects.mjs`がすでに対応している研究用8種。**ノーモーション・原作の正確な演出フレーム数・3回以上のサークル回転による対象変更には触らない。**
 
 ## 原作資料との区別・技レベルの注意
