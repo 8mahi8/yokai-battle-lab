@@ -25,7 +25,11 @@
 6. 元の`actionWeights`による条件付き倍率が実`pickAction`へ入ることと、旧fixtureのGrouchyを変えていないこと。
 7. ジバニャンの原作3技・基本55/30/10/5と研究AIの合成`createCombat`、相手のSoultimateチャージ・Pin・同一seed再現、元6体Lab/Schoolオンライン試合とjournal replayの不変性、オンライン新研究flagの拒否。
 
-CIで実際に合格確認したSHA/件数/Run URLを後で追記する。単にテストを作成しただけで「学校Safari2台で検証済み」とは書かない。
+**正式検証対象コード SHA `41d8d992197be574580d527768aebf4888465002`。**
+- [Research battle unit tests #40934411455](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40934411455)：**全job SUCCESS、Node 874/874 PASS、fail 0、skip 0**。新7件・6vs6自然対戦の耐久と実Chromiumのタップ操作もPASS。
+- [Phase37 Firebase Friends noAuth QA #40934411141](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40934411141)：**全job SUCCESS**。実RTDB Emulatorの2席・24ホスト行動ACK/正規状態一致、ゲスト切断・再接続後の重複再送処理、8ホスト行動の公開遅延と順序ACK、実Chromium2iframe/4埋込幅、Google Sites用**未配布HTML** build（76 source modules）を全検証。本番Firebaseは予約済み非ルームキーへのGET1回HTTP200（response body未閲覧、write 0）。本番Rules変更・学校公開HTML変更なし。
+- これは**学校Safari実機2台・原作3DS動画のフレーム照合を実施したという意味ではない**。この2項目は別工程で必要。
+
 
 ## 次のV3-4-13
 
