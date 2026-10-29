@@ -52,6 +52,44 @@ function checkMove(move,slot){
  if(h.type==='none'&&h.count!==0)fail(slot+' non-hit count must be 0');
  if(h.type==='single'&&h.count!==1)fail(slot+' single hit count must be 1');
  if(h.type==='multi'&&(!int(h.count)||h.count<2))fail(slot+' multi count must be >= 2');
+ // V3-4-4: backward-compatible optional composite rule lives on THE MOVE,
+ // never in a character record. Unknown hit count must stay unknown.
+ if(move.execution!==undefined){
+  if(slot!=='soultimate'||!object(move.execution))
+   fail('only Soultimate moves may have execution');
+  const rule=move.execution;
+  const allowed=new Set(['kind','scope','power','damageKind','effect','level']);
+  if(Object.keys(rule).some(key=>!allowed.has(key))||
+     rule.kind!==move.category||
+     !['one','front','team'].includes(rule.scope))
+   fail('Soultimate execution kind or scope');
+  const kind=rule.kind;
+  const status=['buff','debuff','damage-status'].includes(kind);
+  const damaging=['damage','drain','damage-status'].includes(kind);
+  const noHit=['heal','buff','debuff','revive','revive-heal'].includes(kind);
+  const target=kind==='revive-heal'?'ally_team':
+   kind==='revive'?'single_ally':
+   kind==='heal'||kind==='buff'?'ally_front':
+   rule.scope==='one'?'single_enemy':'enemy_front';
+  if(move.targetScope!==target||
+     (kind==='revive-heal')!==(rule.scope==='team')||
+     (kind==='revive'&&rule.scope!=='one')||
+     (kind==='heal'&&rule.scope!=='front')||
+     (['buff','debuff'].includes(kind)&&rule.scope!=='front')||
+     (status?move.statusEffect!==rule.effect:move.statusEffect!==null)||
+     (status?(!text(rule.effect)||!int(rule.level)||
+       rule.level<1||rule.level>4):
+       rule.effect!==undefined||rule.level!==undefined)||
+     (['buff','debuff'].includes(kind)?
+       move.power!==null||rule.power!==undefined:
+       !int(rule.power)||rule.power<1||rule.power>999||
+       move.power!==rule.power)||
+     (damaging?!['attack','technique'].includes(rule.damageKind):
+       rule.damageKind!==undefined)||
+     (noHit?h.type!=='none'||h.count!==0:
+       h.type!=='unknown'||h.count!==null))
+   fail('Soultimate execution disagrees with authored move metadata');
+ }
 }
 /** Throws if a record could silently conflate a multi-target move with hits. */
 export function validateYokaiDefinition(definition){
