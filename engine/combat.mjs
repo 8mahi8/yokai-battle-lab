@@ -27,7 +27,7 @@ import { createPokeTrial } from './poke-input.mjs';
 import { createPurifyTrial, choosePurifyKind, PURIFY_KINDS } from './purify-input.mjs';
 import {ELEMENTS, validateElementResistances, calculateOneHit, deriveStatStage} from './damage-model.mjs';
 import {resolveTechniqueElementMultiplier} from './element-model.mjs';
-import {calculateTurnInspirit} from './turn-inspirit.mjs';
+import {createOwnerTurnEffectLifecycle} from './owner-turn-effect-lifecycle.mjs';
 import {calculateHeal} from './heal-model.mjs';
 import {yw2HitProbability,yw2CriticalProbability,rollPercent} from './hit-model.mjs';
 import {PLAYTEST_SOUL_TUNING,choosePlaytestPokeOutcome} from './playtest-soul-tuning.mjs';
@@ -451,6 +451,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   // aftermath coordinator; KO/interrupt eligibility orders remain legacy.
   const hitAftermath=createHitAftermath({
     interrupt:interruptOnHit,knockout:koLifecycle,syncRevived:syncCanAct
+  });
+  // Owner-turn HP-over-time is NOT a direct hit. Preserve its separate
+  // research survival/interrupt policy and tick expiry after Care/Soul.
+  const ownerTurnEffects=createOwnerTurnEffectLifecycle({
+    statuses,effects,syncEligibility:syncCanAct,refreshPins:syncPinned
   });
   /** Experimental injection: not an auto AI Inspirit move; hit/resistance unimplemented. */
   function applyInspirit({id,sign,effect,source=null,duration=null,level=1,effectPlan=null}={}){
@@ -1161,16 +1166,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         if(target.hp===0)break; // remaining hits cannot strike a KO body
       }
     }
-    let turnInspirit=null;
-    if(researchTurnInspirits&&actor.hp>0){
-      const next=calculateTurnInspirit({
-        statuses:statuses.list(actor.id),currentHp:actor.hp,maxHp:actor.maxHp});
-      if(next.amount>0){
-        actor.hp=next.hpAfter;
-        if(actor.hp===0){syncCanAct(actor.id);syncPinned();}
-        turnInspirit={id:actor.id,...next};
-      }
-    }
+    const turnInspirit=researchTurnInspirits&&actor.hp>0
+      ?ownerTurnEffects.applyHpTick(actor):null;
     if(squads.some(team=>team.every(member=>member.hp===0)))winner=squads[0].every(m=>m.hp===0)?1:0;
     const action={type:'action',turn:clockEvent.action,elapsed:clockEvent.elapsed,pointsElapsed:clockEvent.pointsElapsed,
       actor:actor.id,kind:kind==='technique'&&techniqueKind==='heal'?'heal':kind,target:target?.id??null,
@@ -1228,8 +1225,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         (kind==='technique'&&techniqueKind==='heal');
       if(didNotAttack && actor.hp>0)soul.addSoul(actor.id,5);
     }
-    const expired=statuses.tick({actorId:actor.id});
-    for(const item of expired)syncCanAct(item.id);
+    ownerTurnEffects.expireAfterAction(actor.id);
     return {...action};
   }
   function simulate(count=1){
