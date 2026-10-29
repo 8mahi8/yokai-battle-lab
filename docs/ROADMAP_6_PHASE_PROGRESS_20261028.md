@@ -19,6 +19,15 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-29 V3-2更新｜共通KO後処理・スキルhook・既存スキルカタログの統合
+
+- [**実KO/スキルhookのコード変更・原作確認・検証証拠・未完部分**](./ENGINE_V3_2_KO_SKILL_LIFECYCLE_20261029.md)
+- **共通KO確定**：`engine/knockout-lifecycle.mjs`新設。通常打撃（複数Hit）・必殺・つつくが`koLifecycle.commit`を利用。行動可否同期、KO実績/スキル発動、ピン解放の**旧順序差を明示して保持**。HP1耐久の後にKOが発生しなければ呼べない。つつくのKOを勝手に通常撃破へ追加計上しない。
+- **共通スキルhook**：`engine/skill-hook-pipeline.mjs`新設。`afterEnemyKO`（まえのめり）と`afterAnyAction`（おせわ/強化経過/終了）を分離し、コード内の手書きの複製を削減。**スキル発動条件は`content/skill-catalog.mjs`から派生**するため、二重のトリガーカタログは持たない。他4種の技能の実行hook本体は今後移行。
+- **3DS版出典**：どひょうぎわ＝一度HP1で耐える、まえのめり＝KO後に強化、おせわ＝隣接妖怪の回復。**現行5ターン/2段階/HP2%は旧作情報も含む研究fixtureであり、原作2の確証なし**。本工程で原作の不明な割り込み優先や計算式は変更しない。
+- **最終受入**：[**Node 719/719 PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40840254872)、[**実Chromium Stage/Purify/Gesture PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40840255136)、[**Firebase Friends認証なし実RTDB/2 iframe PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40840226006)。CIはゲーム本体`841a6788b`と専用テスト`a34541cac`を検証。Safari実機最新試験は未実施。
+- **次する作業**：`beforeCriticalRoll`/`beforeGuard`/`beforeLethalDamage`もスキルtrigger IDで実処理へ移行 → 技カタログからtyped Effect Planへ結線。**新キャラ・個別演出の追加はまだ保留**。main/学校Google Sites/Firebase本番/Drive配布物は変更していない。
+
 ## 2026-10-29 V3-2着手｜共通Effect確定で通常攻撃・必殺・つつく・回復・とりつきを束ねた
 
 - [**V3-2共通Effect実装・原作根拠・検証・未完のhook/キャラ拡張**](./ENGINE_V3_2_SHARED_EFFECT_COMMIT_20261029.md)
