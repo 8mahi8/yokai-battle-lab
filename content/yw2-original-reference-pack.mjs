@@ -40,6 +40,9 @@ const source=[
   schema:YW2_SOURCE_INTAKE_SCHEMA,game:'yw2',id:'yw2:jibanyan',
   name:'ジバニャン',rank:'D',tribe:'プリチー',
   identitySourceIds:[G,E,M],
+  // YW2-only Jibanyan battle table: Attack55/Technique30/Inspirit10/Guard5.
+  // Actual decision also applies Attitude rules, which are NOT encoded here.
+  behavior:{baseActionWeights:documented([55,30,10,5],M)},
   stats:{
    hp:two(322,M,E),strength:two(153,M,E),spirit:two(90,M,E),
    defense:two(108,M,E),speed:two(165,M,E)
