@@ -88,7 +88,7 @@ test('V3-4-15 source holder KO disables global restriction when no other holder 
  const roster=teams();
  roster[1][0].sourceYw2CharacterId='yw2:houzzat';
  roster[1][0].maxHp=1;
- roster[0][0].special={kind:'damage',scope:'one',power:1000,
+ roster[0][0].special={kind:'damage',scope:'one',power:999,
   damageKind:'attack'};
  roster[0][0].weights=[0,0,0,100];
  roster[1][1].weights=[0,0,0,100];
