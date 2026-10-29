@@ -97,6 +97,26 @@ export function createYw2SourceIndex({sources,characters}={}){
    if(value!==null&&(!Array.isArray(value)||value.length!==4||
       value.some(x=>!integer(x))||value.reduce((x,y)=>x+y,0)!==100))
     throw new TypeError('invalid YW2 base action weights');
+   if(entry.behavior.attitudeOptions!==undefined){
+    const fact=entry.behavior.attitudeOptions;
+    validateFact(fact,sources,entry.id+'/behavior/attitudeOptions');
+    const candidates=readDocumented(fact);
+    if(candidates!==null&&(!Array.isArray(candidates)||
+       candidates.length<1||candidates.length>4||
+       candidates.some(c=>!obj(c)||!text(c.attitude)||
+        Object.keys(c).some(k=>!['attitude','chance'].includes(k))||
+        !integer(c.chance)||c.chance>100)||
+       new Set(candidates.map(c=>c.attitude)).size!==candidates.length||
+       candidates.reduce((a,c)=>a+c.chance,0)!==100))
+      throw new TypeError('invalid YW2 attitude distribution');
+   }
+   if(entry.behavior.loafWeight!==undefined){
+    const fact=entry.behavior.loafWeight;
+    validateFact(fact,sources,entry.id+'/behavior/loafWeight');
+    const weight=readDocumented(fact);
+    if(weight!==null&&(!integer(weight)||weight>100))
+     throw new TypeError('invalid YW2 loaf weight');
+   }
   }
   for(const k of ['label','effect'])validateFact(entry.skill[k],sources,
     entry.id+'/skill/'+k);
@@ -132,6 +152,10 @@ export function createYw2SourceIndex({sources,characters}={}){
     moveLabels:fields,skillLabel:readDocumented(c.skill.label),
     baseActionWeights:c.behavior?
      readDocumented(c.behavior.baseActionWeights):null,
+    attitudeOptions:c.behavior?.attitudeOptions?
+     readDocumented(c.behavior.attitudeOptions):null,
+    loafWeight:c.behavior?.loafWeight?
+     readDocumented(c.behavior.loafWeight):null,
     level99Stats:stats,conflicts,
     // No adapter from original facts to the provisional game formulas.
     battleReady:false,
