@@ -73,9 +73,11 @@ function sourcedMove(index,entry,slot,template){
  * claim, because the source pack is disputed/engine-incompatible there.
  */
 export function buildJibanyanNormalMoveLab({index=YW2_ORIGINAL_REFERENCE_INDEX,
- includeSpeedDown=false,includeSourceWeights=false}={}){
+ includeSpeedDown=false,includeSourceWeights=false,
+ includeSourceAttitude=false}={}){
  if(typeof includeSpeedDown!=='boolean')throw new TypeError('includeSpeedDown must be boolean');
  if(typeof includeSourceWeights!=='boolean')throw new TypeError('includeSourceWeights must be boolean');
+ if(typeof includeSourceAttitude!=='boolean')throw new TypeError('includeSourceAttitude must be boolean');
  const entry=index?.getCharacter?.('yw2:jibanyan');
  if(!entry||entry.id!=='yw2:jibanyan'||entry.game!=='yw2'||
     entry.name!=='ジバニャン')
@@ -103,6 +105,9 @@ export function buildJibanyanNormalMoveLab({index=YW2_ORIGINAL_REFERENCE_INDEX,
  const stats=Object.fromEntries(props.map(k=>[
   k,sourcedValue(entry.stats[k],'stats.'+k,positive)
  ]));
+ const sourceLoafWeight=includeSourceAttitude?
+  sourcedValue(entry.behavior?.loafWeight,'behavior.loafWeight',x=>
+   Number.isSafeInteger(x)&&x>=0&&x<=100):null;
  const reference=clone(base);
  reference.id=JIBANYAN_NORMAL_TRIAL_ID;
  reference.name=includeSpeedDown?'ジバニャン（速度とりつき研究）':
@@ -122,6 +127,23 @@ export function buildJibanyanNormalMoveLab({index=YW2_ORIGINAL_REFERENCE_INDEX,
   // Only base action weights are source-backed, NOT the complete personality
   // (Attitude multipliers, seriousness/Loaf and overrides remain fixture).
   reference.fieldSourceRefs.personality=sourceUrls(index,fact.claims[0].sourceIds);
+ }
+ if(includeSourceAttitude){
+  const fact=entry.behavior?.attitudeOptions;
+  const options=sourcedValue(fact,'behavior.attitudeOptions',x=>
+   Array.isArray(x)&&x.length===1&&
+   x[0]?.attitude==='grouchy'&&x[0]?.chance===100);
+  const loafFact=entry.behavior?.loafWeight;
+  const loafWeight=sourceLoafWeight;
+  // Only a 100%-fixed documented Attitude can skip a random draw.
+  // This field is NOT loafChancePercent: actual loaf chance is level-
+  // adjusted and may be modified by leader/status/skills.
+  reference.personality.attitude=options[0].attitude;
+  reference.fieldSourceRefs.personality=[
+   ...new Set([...reference.fieldSourceRefs.personality,
+    ...sourceUrls(index,fact.claims[0].sourceIds),
+    ...sourceUrls(index,loafFact.claims[0].sourceIds)])
+  ];
  }
  if(originalInspirit)reference.moveIds.inspirit=originalInspirit.id;
  reference.provenance.identity='documented';
@@ -152,8 +174,11 @@ export function buildJibanyanNormalMoveLab({index=YW2_ORIGINAL_REFERENCE_INDEX,
   originalMoves:Object.freeze(['attack','technique',...(includeSpeedDown?['inspirit']:[])]),
   originalLevel99Stats:true,
   originalBaseActionWeights:includeSourceWeights,
+  originalFixedAttitude:includeSourceAttitude?'grouchy':null,
+  originalLoafWeight:sourceLoafWeight,
   fixtureFields:Object.freeze([
    'personality',...(includeSourceWeights?[]:['actionWeights']),
+   ...(includeSourceAttitude?[]:['attitude']),
    'loafChance','passiveMagnitudeAndDuration',
    ...(includeSpeedDown?[]:['inspirit']),'soultimate','soulRank','equipmentAndResistances',
    'hitRngAndDamageFormula','chargeAndAnimationTiming',
@@ -161,7 +186,8 @@ export function buildJibanyanNormalMoveLab({index=YW2_ORIGINAL_REFERENCE_INDEX,
   ]),
   originalSoultimateHitCount:null,
   battleReady:false,
-  mode:includeSourceWeights?'source-base-actions-lab':
+  mode:includeSourceAttitude?'source-fixed-attitude-lab':
+   includeSourceWeights?'source-base-actions-lab':
    includeSpeedDown?'speed-down-lab':'normal-moves-only-lab'
  });
  return Object.freeze({catalog,profile,researchProvenance,
