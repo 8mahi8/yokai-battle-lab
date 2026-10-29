@@ -42,7 +42,7 @@ import {RENTAL_MOVE_MASTER} from '../content/rental-move-master.mjs';
 import {compileTypedEffectPlan,commitTypedEffect} from './typed-effect-plan.mjs';
 import {RENTAL_SOULTIMATE_MOVES} from '../content/rental-soultimate-moves.mjs';
 import {compileSoultimateEffectPlan,assertSoultimatePlanMatches} from './soultimate-effect-plan.mjs';
-import {assertPlannedSpecialImpact,commitPlannedSpecialHp,commitPlannedSpecialStatus,commitResearchSpecialHp} from './special-impact-commit.mjs';
+import {assertPlannedSpecialImpact,commitPlannedSpecialHp,commitPlannedSpecialStatus,commitResearchSpecialHp,commitResearchSpecialStatus} from './special-impact-commit.mjs';
 
 function seededRandom(seed) {
   let x = (seed >>> 0) || 1;
@@ -669,8 +669,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
             plan:sourcePlan,impact,target,casterSide:side,casterId:caster.id,
             applyStatus:applyInspirit
           });
-          else applyInspirit({id:target.id,sign:impact.statusSign,
-            effect:impact.statusEffect,level:impact.statusLevel,source:caster.id});
+          else commitResearchSpecialStatus({
+            impact,target,casterSide:side,casterId:caster.id,
+            applyStatus:applyInspirit
+          });
           impact.applied=true;
         }else impact.applied=false;
         continue;
@@ -758,8 +760,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
             plan:sourcePlan,impact,target,casterSide:side,casterId:caster.id,
             applyStatus:applyInspirit
           });
-          else applyInspirit({id:target.id,sign:impact.statusSign,
-            effect:impact.statusEffect,level:impact.statusLevel,source:caster.id});
+          else commitResearchSpecialStatus({
+            impact,target,casterSide:side,casterId:caster.id,
+            applyStatus:applyInspirit
+          });
           impact.applied=true;
         }else impact.applied=false;
       }
