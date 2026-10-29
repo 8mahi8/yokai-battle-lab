@@ -194,6 +194,13 @@ exportAuditJournal(); // internal deterministic QA, not a friend replay feature
 - [Node **719/719**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40840254872)、[Stage Chromium PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40840255136)、[Firebase Friends RTDB 2 iframe PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40840226006)。
 - **残るV3-2**：Critical/Guard/LastStandの実行hook規約の完全共通化、Effect Planとカタログ統合、KO後以外の同時発動順の原作根拠確認。**V3-2完全完成・原作戦闘完全再現とは呼ばない**。
 
+## 7F. V3-2 会心・ガード・生存Hookも共通化（2026-10-29 引き継ぎ後）
+
+- 詳細：[ENGINE_V3_2_PASSIVE_ROLL_HOOKS_20261029](./ENGINE_V3_2_PASSIVE_ROLL_HOOKS_20261029.md)。
+- `skill-catalog.mjs` の単一trigger台帳から、`sharpCrit`・`critImmune`・`guardBreak`・`lastStand` を共通Hook経由で実行。通常戦闘の `combat.mjs` を接続、旧計算式・RNG/イベント順を変えずに移行。専用テストを2件追加。
+- **V8で最新の純粋Hookを158条件実行して旧式との一致PASS**。これは正式なNode全件/Chromium/Firebase 2端末の合格ではない。更新コードの最終CI結果は未確認。直前の719件PASSは以前のHEADのもの。
+- 次：現在のHEADでNode/自然6体戦闘/Chrome/Firebase Friendsの正規回帰確認 → 旧新版seed完全差分 → typed EffectPlan。原作の正確な発火優先/倍率は依然研究課題。まだV3-2完成ではない。
+
 ## 8. 今回の決定
 
 **E1-B単独のオンラインおはらい演出拡張、トホホの砲、個別Soultimate追加などのfeature単位ロードマップを凍結**。これまで積んだコード/動画解析/テストは保存。優先順位は**V3-0→V3-1→V3-2→V3-3→V3-4→V3-5**に切り替える。原作動画の局面は今後の統合受入テストとして再利用し、実装順序を決める一単位にはしない。
