@@ -31,7 +31,7 @@ import {calculateTurnInspirit} from './turn-inspirit.mjs';
 import {calculateHeal} from './heal-model.mjs';
 import {yw2HitProbability,yw2CriticalProbability,rollPercent} from './hit-model.mjs';
 import {PLAYTEST_SOUL_TUNING,choosePlaytestPokeOutcome} from './playtest-soul-tuning.mjs';
-import {validateRentalSkill,skillMomentumStage,critSkillBonus,resolveLastStand} from './skill-effects.mjs';
+import {validateRentalSkill,skillMomentumStage} from './skill-effects.mjs';
 import {resolveRentalSkillSpec} from './catalog-skill-spec.mjs';
 import {createEffectCommitter} from './effect-commit.mjs';
 import {createSkillHookPipeline} from './skill-hook-pipeline.mjs';
@@ -354,11 +354,12 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   // V3-2: one canonical effect commit point for direct hits (physical,
   // Soultimate, Poke), healing and ledger mutation. Formulae, random rolls
   // and hit->interruption->KO order remain exactly as in the legacy host.
+  // Each trigger is now resolved through the same passive hook registry.
+  // The closure runs only after skillHooks is initialized, at damage commit.
+  let skillHooks;
   const effects=createEffectCommitter({
-    resolveDirectDamage:(target,incoming)=>resolveLastStand({
-      skill:skillFor(target),enabled:enableRentalSkills,
-      spent:spentLastStand.has(target.id),hp:target.hp,amount:incoming
-    }),
+    resolveDirectDamage:(target,incoming)=>skillHooks.beforeLethalDamage(
+      target,incoming,spentLastStand.has(target.id)),
     onSurvival:target=>{
       spentLastStand.add(target.id);
       events.push({type:'skill',actor:target.id,skill:'lastStand',
@@ -367,7 +368,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     applyStatus:spec=>statuses.apply(spec),
     onStatus:id=>syncCanAct(id)
   });
-  const skillHooks=createSkillHookPipeline({
+  skillHooks=createSkillHookPipeline({
     enabled:enableRentalSkills,skillOf:skillFor,teams:squads,
     boosts:skillBoosts,byId,emit:e=>events.push(e),
     commitHeal:(recipient,amount)=>effects.commitHeal(recipient,amount)
@@ -1024,8 +1025,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
           if(researchDamageModel){
             criticalResearch=yw2CriticalProbability({
               loafing:loafingActors.has(target.id),
-              moveCritBonus:Math.min(98,actor.moveCritBonus+(enableRentalSkills?critSkillBonus(skillFor(actor)):0)),
-              criticalImmune:target.criticalImmune||(enableRentalSkills&&skillFor(target)==='critImmune')});
+              moveCritBonus:skillHooks.beforeCriticalRoll(actor,actor.moveCritBonus),
+              criticalImmune:skillHooks.beforeDefenderCriticalRoll(target,target.criticalImmune)});
             oneCritical=rng()*99<criticalResearch.units;
           }else oneCritical=rng()*99<1;
           critical=critical||oneCritical;
@@ -1048,7 +1049,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
               strength:actor.strength,spirit:actor.spirit,defense:target.defense,
               criticalDefense:target.criticalDefense,critical:oneCritical,
               guarded:target.guard,guardBoost:target.guardBoost??false,
-              guardBreak:actor.guardBreak||(enableRentalSkills&&skillFor(actor)==='guardBreak'),
+              guardBreak:skillHooks.beforeGuardedPhysicalHit(actor,actor.guardBreak),
               elementMultiplier:elemental,statStage,defenseStage,hits:attemptedHits
             });
             // Keep default rental metadata unchanged; only explicit custom
@@ -1062,13 +1063,13 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
             damage=baseDamage({...actor,attackPower,
               strength:Math.floor(actor.strength*(statuses.has(actor.id,'strength-up')?1.10:1)*extra),
               spirit:Math.floor(actor.spirit*extra)},target,kind,oneCritical);
-            if(target.guard&&!(actor.guardBreak||enableRentalSkills&&skillFor(actor)==='guardBreak')&&kind==='attack')
+            if(target.guard&&!skillHooks.beforeGuardedPhysicalHit(actor,actor.guardBreak)&&kind==='attack')
               damage=Math.max(1,Math.floor(damage*(target.guardBoost?.25:.5)));
             else if(target.guard&&kind==='technique')
               damage=Math.max(1,Math.floor(damage*(target.guardBoost?.25:.5)));
           }
           // A separate seeded spread is drawn for each unguarded hit.
-          if(!target.guard||damageResearch?.guardIgnored||(enableRentalSkills&&skillFor(actor)==='guardBreak'&&kind==='attack')){
+          if(!target.guard||damageResearch?.guardIgnored||(kind==='attack'&&skillHooks.beforeGuardedPhysicalHit(actor,false))){
             const range=Math.floor(damage/10+1);
             damage=Math.max(1,Math.min(999,damage+Math.floor(rng()*(2*range+1))-range));
           }
