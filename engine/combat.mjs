@@ -36,6 +36,7 @@ import {resolveRentalSkillSpec} from './catalog-skill-spec.mjs';
 import {createEffectCommitter} from './effect-commit.mjs';
 import {createSkillHookPipeline} from './skill-hook-pipeline.mjs';
 import {createKnockoutLifecycle} from './knockout-lifecycle.mjs';
+import {createHitAftermath} from './hit-aftermath.mjs';
 import {RENTAL_MOVE_MASTER} from '../content/rental-move-master.mjs';
 import {compileTypedEffectPlan,commitTypedEffect} from './typed-effect-plan.mjs';
 import {RENTAL_SOULTIMATE_MOVES} from '../content/rental-soultimate-moves.mjs';
@@ -446,6 +447,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     }else chargeHits[side]++;
     return result;
   }
+  // Both ordinary and special hit paths now use one explicitly-phased
+  // aftermath coordinator; KO/interrupt eligibility orders remain legacy.
+  const hitAftermath=createHitAftermath({
+    interrupt:interruptOnHit,knockout:koLifecycle,syncRevived:syncCanAct
+  });
   /** Experimental injection: not an auto AI Inspirit move; hit/resistance unimplemented. */
   function applyInspirit({id,sign,effect,source=null,duration=null,level=1,effectPlan=null}={}){
     if(winner!==null)throw new Error('battle finished');
@@ -697,7 +703,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
             const applied=effects.commitDamage(target,Math.min(target.hp,attempt));
             damage=applied.amount;
             if(applied.activated)impact.lastStand=true;
-            const interrupted=interruptOnHit(target,damage,critical);
+            const interrupted=hitAftermath.afterSpecialStrike({target,damage,critical});
             if(interrupted)interruptions.push(interrupted);
           }
           total+=damage;
@@ -727,17 +733,11 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
         });
         else effects.commitHeal(target,Math.max(0,impact.hpAfter-target.hp));
       }else target.hp=impact.hpAfter;
-      if(!(actualHitCount!==null&&impact.kind==='damage')&&
-         (impact.kind==='damage'||impact.kind==='damage-status'||impact.kind==='drain')){
-        const changed=interruptOnHit(target,impact.amount,false);
-        if(changed)interruptions.push(changed);
-      }
-      if(impact.predictedKO){
-        koLifecycle.commit({caster,target,eligibilityPhase:'after-skill'});
-      }else if(impact.kind==='revive'&&impact.revived){
-        // A KO ally, including a reserve, can act again on being rotated in.
-        syncCanAct(target.id);
-      }
+      hitAftermath.afterSpecialImpact({
+        caster,target,impact,
+        perHit:actualHitCount!==null&&impact.kind==='damage',
+        onInterrupt:changed=>interruptions.push(changed)
+      });
       if(impact.kind==='damage-status'){
         // An attack cannot Inspirit a member it just KOed. Effect odds and
         // level are temporary; never label as exact original game data.
@@ -1148,11 +1148,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
             :effects.commitDamage(target,resolvedDamage);
           oneDamage=dealt.amount;
           amount+=oneDamage;
-          oneInterruption=interruptOnHit(target,oneDamage,oneCritical);
-          if(oneInterruption?.stopped||!interruption)interruption=oneInterruption??interruption;
-          if(target.hp===0)koLifecycle.commit({
-            caster:actor,target,refreshPin:true
+          oneInterruption=hitAftermath.afterOrdinaryHit({
+            caster:actor,target,damage:oneDamage,critical:oneCritical
           });
+          if(oneInterruption?.stopped||!interruption)interruption=oneInterruption??interruption;
         }
         if(multiHitDetails)multiHitDetails.push({
           index:index+1,hit:landed,critical:oneCritical,
