@@ -39,7 +39,7 @@ added.moves.length; // 25（既存3技の定義は共有し、攻撃1技だけ�
 - 新規`tests/v3-character-pack-authoring.test.mjs` **7件**：既存Lab/School6体をすべてskillId方式へ置き換えても**24技と全キャラ生成結果が完全一致**、7体目と1技追加のregistry増分、8体目・新しいskillを1個だけ共通定義、ID/slot衝突と欠損のatomic拒否、証拠sourceRefs、入力データの防御的コピーと不変性、6シード条件（School/Lab×3seed）で75行動まで**従来の本番型match snapshot・journal・戦闘出力が変わらない**ことを検証。
 - 初回CIでは今回の新規テスト2件が**誤ったテスト期待値**（4体目のskill同定ミスと、cloneされた技にオブジェクト参照同一性を要求）で失敗。ゲームコードのロジック修正ではなく、masterを実際に参照して値と防御的コピーを検証するようテストを修正した。
 - 検証コードSHA `0e3fdb2daedc779070ffab1cb40f1f9d74fe54d0`。GitHub Actions [Research battle unit tests #40918704679](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40918704679)：**Node 801/801 PASS、fail0**、自然6vs6・Chromium実操作も全ジョブ SUCCESS。
-- GitHub Actions [Phase37 Firebase Friends QA #40918704743](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40918704743)：本番RTDBではなく**localhost emulator**で、学校Friends no-Auth用Google Sites HTMLをビルドしてRTDBルーム・2席/24ホスト行動ACK・再接続・公開遅延・Chromium2iframe・既存の時限ルールを確認するもの。最終結果はActionsログを確認すること。本番Firebaseには従来の読み取りプローブ以外の操作をしない。
+- GitHub Actions [Phase37 Firebase Friends QA #40918704743](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40918704743)：**全ジョブSUCCESS**。本番RTDBではなく**localhost emulator**でGoogle Sites Friends no-Auth単体HTML build（76 source modules、未配布版295,781bytes）、RTDBルーム・2席/24ホスト行動ACK・再接続・公開遅延・実Chromium2iframe・既存の時限ルールを確認。すべてPASS。本番Firebaseには予約済み非ルームキーへの**GET1回のみ**（HTTP 200、body未閲覧、writeなし）。
 
 ## 重要な未実装と次工程
 
