@@ -130,7 +130,7 @@ test('V3-2: all six built-in Soultimate effects preserve complete legacy battle 
   const actor='A'+(index+1);
   const options={seed:20261029+index,playtestSoulTuning:true,
    researchSpecialEffects:true,researchStatInspirits:true,
-   enableRentalSkills:true};
+   researchDamageModel:true,enableRentalSkills:true};
   const typed=createCombat(options);
   const legacy=createCombat({...options,teams:[school,school]});
   for(const game of [typed,legacy]){
