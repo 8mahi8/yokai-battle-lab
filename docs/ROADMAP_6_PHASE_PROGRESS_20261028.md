@@ -19,6 +19,14 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-12｜原作Grouchy性格の条件付き優先順位（研究限定）
+
+- [原作YW2 Attitudes資料・実装・回帰テスト・未確認事項の記録](./ENGINE_V3_4_12_GROUCHY_ATTITUDE_20261030.md)。[Mt. Wildwood YW2性格AI表](https://mtwildwood.net/attitudes.php?g=yw2)で、原作はまず基本行動重み→**上から最初に該当する性格条件の倍率だけ**を適用→行動の可否制限→重みによる乱数抽選を実施。前工程で原作ジバニャンの基本`55/30/10/5`を`CombatCatalog`へ入れたが、旧Grouchyの研究fixtureは**「味方瀕死時の回復」「自分の攻撃と相手守備比較」しか不完全に処理**していなかった。
+- `engine/selection.mjs`に**純粋な`sourceYw2GrouchyWeights(actor,context)`**を追加、原作の優先**1〜10**（回復、Attack damage-down、敵必殺チャージ、力vs守備、相手への負とりつき数、味方への敵とりつき/味方への正とりつき数など）の第一該当ルールのみ倍率反映。**旧`actionWeights`/既存`pickAction`の加重抽選をそのまま再利用**し、新AI二重化/RNG追加なし。敵Pin時の対象判定、Inspirit発生源、現在のチャージは既存情報から取得する。**Attack damage-downとSTR-downは同義でないため**rule2の明示コンテキスト入口はあるが、元エンジンに独立したAttack damage-down状態がまだ無く通常研究試合ではrule2自動発動しない。これを「原作全ルールがライブで完成」とは扱わない。
+- `engine/combat.mjs`に**研究`researchYw2Grouchy:true`＋custom teams**の時だけ、実`StatusLedger`、`soul.snapshot().pending`、`pins`からGrouchyの条件を作って`actionWeights`へ渡す配線を追加。既存学校6体のAI/通信/効果は既定flag falseで完全維持。源資料の本人の他性格の抽選・Loaf/装備/Skill特殊Overrideは未検証なので**ジバニャン完全再現ではない**。原作必殺「ひゃくれつ肉球」5vs7ヒットの文献衝突も維持。
+- 新規`tests/v3-yw2-grouchy-priority.test.mjs`**7件**：全10優先ルールの条件と倍率、Pin/必殺チャージの先行判定、元のGrouchyルールとの違い、実`createCombat`への原作3技＋55/30/10/5＋性格優先度の投入、学校版Lab/School×3seedで通常6体の正規状態/host replay不変、研究フラグは学校`MatchProtocol`が拒否。**正式検証コードSHA `41d8d992197be574580d527768aebf4888465002`**：[Research CI #40934411455](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40934411455) **Node 874/874 PASS・自然6vs6耐久/Chromium操作SUCCESS**。[Firebase Friends CI #40934411141](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40934411141) **全job SUCCESS**：実RTDB Emulator2席の24行動ACK/正規状態一致、切断復帰・公開遅延、実Chromium2iframe/4幅、未配布の学校用HTML（76 source modules）build。本番Firebase非ルームキーGET1回HTTP200のみ、body未閲覧/書込0。
+- **現在地：V3-4-12 原作Grouchy優先判断を既存の選択エンジンへ研究限定で実装・検証完了。** 次工程V3-4-13は現行のGrouchy以外の性格4択・原作に裏付けられたLoaf/Attitude条件、原作Skill封印/必殺5vs7衝突と戦闘UIを、実際の完成度優先で比較し実装。学校iPad Safari2台とユーザー提供原作動画の直接照合は未実施。main・Google Sites直接貼付けHTML・本番Firebase DB/Rules/Auth・Drive無変更。
+
 ## 2026-10-30 V3-4-11｜原作ジバニャンの基本AI重み55/30/10/5を実戦へ
 
 - [出典・実装範囲・原作とfixtureの境界・実行テストと次の作業](./ENGINE_V3_4_11_JIBANYAN_BASE_ACTION_WEIGHTS_20261030.md)。[Mt. Wildwoodの**Jibanyan YW2欄**](https://mtwildwood.net/yw2/yokai/jibanyan)の行動基本重みは**Attack55 / Technique30 / Inspirit10 / Guard5**。前工程で原作3技を処理する研究ジバニャンは、仮レンタルあかねこの**60/25/10/5**をそのまま使っていたためAIの根本的な行動頻度が違っていた。**YW1欄に出る50/35/10/5とは別**。この資料差を版別確認し、hit数の5/7対立やスキル封印の未確認仕様は無理に実装しない。
