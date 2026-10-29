@@ -19,7 +19,7 @@ const damageKinds=new Set(['damage','drain','damage-status']);
 
 export function createHitAftermath({interrupt,knockout,syncRevived}={}){
  if(typeof interrupt!=='function'||!object(knockout)||
-    typeof knockout.commit!=='function'||typeof syncRevived!=='function')
+    typeof knockout.commitForCause!=='function'||typeof syncRevived!=='function')
   throw new TypeError('hit aftermath needs canonical host callbacks');
  function checkHit(target,damage,critical){
   if(!object(target)||typeof target.id!=='string'||!target.id||
@@ -34,7 +34,7 @@ export function createHitAftermath({interrupt,knockout,syncRevived}={}){
  function afterOrdinaryHit({caster,target,damage,critical=false}={}){
   checkCaster(caster);checkHit(target,damage,critical);
   const interrupted=interrupt(target,damage,critical);
-  if(target.hp===0)knockout.commit({caster,target,refreshPin:true});
+  if(target.hp===0)knockout.commitForCause({cause:'ordinary',caster,target});
   return interrupted;
  }
  function afterSpecialStrike({target,damage,critical=false}={}){
@@ -59,7 +59,7 @@ export function createHitAftermath({interrupt,knockout,syncRevived}={}){
    if(changed)onInterrupt(changed);
   }
   if(impact.predictedKO){
-   knockout.commit({caster,target,eligibilityPhase:'after-skill'});
+   knockout.commitForCause({cause:'special',caster,target});
   }else if(impact.kind==='revive'&&impact.revived){
    syncRevived(target.id);
   }
