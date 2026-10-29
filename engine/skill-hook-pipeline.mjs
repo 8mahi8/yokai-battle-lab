@@ -21,11 +21,13 @@ export const SKILL_HOOK_CATALOG=Object.freeze(Object.fromEntries(
  ])
 ));
 
-export function createSkillHookPipeline({enabled,skillOf,teams,boosts,byId,emit,commitHeal}={}){
+export function createSkillHookPipeline({enabled,skillOf,teams,boosts,byId,emit,commitHeal,
+ sourceYw2Momentum=false}={}){
  if(typeof enabled!=='boolean'||typeof skillOf!=='function'||
     !Array.isArray(teams)||teams.length!==2||
     !(boosts instanceof Map)||!(byId instanceof Map)||
-    typeof emit!=='function'||typeof commitHeal!=='function')
+    typeof emit!=='function'||typeof commitHeal!=='function'||
+    typeof sourceYw2Momentum!=='boolean')
   throw new TypeError('skill hook pipeline requires canonical host dependencies');
 
  // The catalog declares *when* each passive fires. Keep the existing
@@ -56,6 +58,11 @@ export function createSkillHookPipeline({enabled,skillOf,teams,boosts,byId,emit,
    hp:target.hp,amount,spent
   });
  }
+ // Source-backed YW2 behavior is opt-in; the legacy six rental fixture
+ // retains its existing event stream and battle hash. Multiple KOs caused by
+ // a single action or Soultimate trigger Adrenaline ONCE, not per victim.
+ const alreadyTriggered=new Set();
+ function beginResolution(){alreadyTriggered.clear();}
  const onEnemyKO=Object.freeze({
   momentum(caster,target){
    boosts.set(caster.id,{remainingTurns:SKILL_TRIAL.momentumOwnerTurns});
@@ -67,6 +74,10 @@ export function createSkillHookPipeline({enabled,skillOf,teams,boosts,byId,emit,
   if(!enabled||caster.side===target.side)return;
   const skill=skillOf(caster);
   if(SKILL_HOOK_CATALOG[skill]?.trigger!=='after_ko')return;
+  if(sourceYw2Momentum&&skill==='momentum'){
+   if(caster.hp<=0||alreadyTriggered.has(caster.id))return;
+   alreadyTriggered.add(caster.id);
+  }
   const handler=onEnemyKO[skill];
   if(handler)handler(caster,target);
  }
@@ -91,6 +102,6 @@ export function createSkillHookPipeline({enabled,skillOf,teams,boosts,byId,emit,
    }
   }
  }
- return Object.freeze({afterEnemyKO,afterAnyAction,beforeCriticalRoll,
+ return Object.freeze({beginResolution,afterEnemyKO,afterAnyAction,beforeCriticalRoll,
   beforeDefenderCriticalRoll,beforeGuardedPhysicalHit,beforeLethalDamage});
 }
