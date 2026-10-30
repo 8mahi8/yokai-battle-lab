@@ -34,7 +34,13 @@ const purifyQaMode=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&(()=>{
  try{return location.href==='about:srcdoc'&&window.parent!==window&&
   window.parent.location.search==='?purify';}catch{return false;}
 })();
-const touchQaMode=chargeQaMode||purifyQaMode;
+// Reproduce a whole 6v6 with actual Host action, KO, reserve replacement,
+// and seat-specific result; HP/power are explicitly local QA ONLY.
+const fullMatchQaMode=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&(()=>{
+ try{return location.href==='about:srcdoc'&&window.parent!==window&&
+  window.parent.location.search==='?fullmatch';}catch{return false;}
+})();
+const touchQaMode=chargeQaMode||purifyQaMode||fullMatchQaMode;
 const motionTimingQa=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__?[]:null;
 let lastTimedActionId=0;
 if(__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__)
@@ -218,7 +224,16 @@ $('.yw-online-start').addEventListener('click',async()=>{
    RENTAL_SQUAD.map(unit=>({...unit,inspirit:'sleep',weights:[0,0,100,0]})),
    RENTAL_SQUAD.map(unit=>({...unit,weights:[0,0,0,100]}))
   ]:null;
-  const battleOptions=purifyQaMode?{seed:12,teams:purifyTeams,
+  const fullMatchTeams=fullMatchQaMode?[
+   RENTAL_SQUAD.map(unit=>({...unit,maxHp:35,defense:5,
+    weights:[0,0,0,100]})),
+   RENTAL_SQUAD.map(unit=>({...unit,maxHp:750,speed:450,
+    strength:450,attackPower:380,weights:[100,0,0,0]}))
+  ]:null;
+  const battleOptions=fullMatchQaMode?{seed:12,teams:fullMatchTeams,
+   rotationCooldownMs:0,researchSpecialEffects:true,
+   researchDamageModel:true,researchStatInspirits:true}:
+   purifyQaMode?{seed:12,teams:purifyTeams,
    rotationCooldownMs:0,researchSpecialEffects:true,
    researchDamageModel:true,researchStatInspirits:true}:
    chargeQaMode?{seed:12,teams:[chargeGuard,chargeGuard],
