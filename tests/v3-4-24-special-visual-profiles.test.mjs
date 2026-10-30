@@ -20,7 +20,7 @@ function hostSpecial(i){
  for(let n=0;n<6&&!host.snapshot().clock.teams[0].frontIds.includes(actor);n++)
   assert.equal(host.rotate(0,1).ok,true);
  assert.ok(host.snapshot().clock.teams[0].frontIds.includes(actor));
- assert.equal(host.giveSoul(actor,100),true);
+ assert.equal(host.giveSoul(actor,100),100);
  const begin=host.prepareSoultimate(0,actor);
  assert.equal(begin.ok,true);
  assert.equal(host.resolveSoultimate(0,begin.token,true).ok,true);
