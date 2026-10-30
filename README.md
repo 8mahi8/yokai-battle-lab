@@ -1,3 +1,5 @@
+> **【2026-10-31 V3-5-5 最新】** [一試合の全操作・Firebase2席通し結果](./docs/ENGINE_V3_5_5_ONE_ROOM_FULL_MATCH_E2E_20261031.md)：とりつき→おはらい→通常必殺→控え交代→零式G→6体KO→両者反対の勝敗まで**同じ部屋の正規実通信でPASS**。Node949/949・Stage Chrome・No-Auth RTDB二席成功。学校Safari実機・本家元動画直接再視聴・原作数値は未検証。次は通常レンタルの試合テンポ/学校実戦の品質検証。
+
 > **【2026-10-31 V3-5-4 最新】** [オンライン実2席・おはらい完了E2E](./docs/ENGINE_V3_5_4_FRIENDS_PURIFY_E2E_20261031.md)：Node946件・Chromium/Firebase Emulator二席PASS。次はV3-5-5全試合統合。学校Safari実機と原作MP4直接比較は未検証。現行通信は認証なしFirebase Friends。
 
 > **【2026-10-31 現行開発入口】** [最新V3-5-3 Friends GわざE2E・検証・次工程](./docs/ENGINE_V3_5_3_FRIENDS_ZERO_G_DAMAGE_E2E_20261031.md) / [引き継ぎ現況](./docs/HANDOFF_LATEST_20261030.md) / [6段階ロードマップ](./docs/ROADMAP_6_PHASE_PROGRESS_20261028.md)。開発はV3-5途中。原作値/学校Safari最新版は未検証。以下の旧2.5Dデモ記述は現行ゲーム仕様ではありません。
