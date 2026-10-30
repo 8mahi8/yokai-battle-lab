@@ -57,11 +57,15 @@ export function projectKoViewChange(before,after){
     eventId:event.eventId}));
   }
   const changed=old.frontIds.some((id,i)=>id!==next.frontIds[i]);
-  if(changed){
+  // Only the existing host compulsory-switch condition is evidenced here:
+  // ALL three previous front members are already KO. Ordinary voluntary
+  // rotation is not a "reserve rescue" animation.
+  if(changed&&old.frontIds.every(id=>oldMembers.get(id)?.hp===0)){
    const entered=next.frontIds.filter(id=>!old.frontIds.includes(id)&&
     nextMembers.get(id)?.hp>0);
-   if(entered.length){
-    arrivals.push(Object.freeze({side,
+   const action=fresh.findLast(e=>e.type==='action');
+   if(entered.length&&action){
+    arrivals.push(Object.freeze({side,eventId:action.eventId,
      ids:Object.freeze([...entered]),
      frontIds:Object.freeze([...next.frontIds])}));
    }
