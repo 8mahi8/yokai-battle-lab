@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-22｜実RTDB Emulator二席の同一Action表示差を観測、追加時刻同期は現時点不要
+
+- [実測方法・全サンプル・出典・未検証事項](./ENGINE_V3_4_22_FIREBASE_IFRAME_MOTION_TIMING_20261030.md)：学校向けの認証不要Firebase Friendsと同一入口を`--emulator-friends`としてビルドした**localhost限定2 iframe / 同一Chromium**で、Host/Guestの`onSnapshot`到達・`stage.render`完了時刻を`eventId`単位で記録。標準Friendsで研究用の相手表示保留をONにはしない。
+- [最終Firebase実通信・2 iframe QA成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41052221741)：**3イベント×2試行、計6件で同一Action ID/演出IDに対応**。ゲスト表示のホスト表示との差は**11〜23ms、中央値11msと19ms**（同一CIランナー・localhost）。[別試行でも9〜18ms、中央値10ms/16ms](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41051989432)。この値はゲーム実機のPing/レンダリングされた物理フレームではなく、**ホストイベント確定後からGuest側の描画関数復帰まで**。iPad Safari2台では未測定。
+- **学校版の分離をビルドで検査**：研究`__ywMotionTimingTrace`は`--emulator-friends`にのみ存在し、`--friends`成果物に現れればビルド失敗。初回の漏出検出後、明示ビルド定数で除去済み。[Node929件維持](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41052219969)、[実Chromium Stage既存操作回帰成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41052219936)。本番RTDB/Rules/Auth、学校Google Sites HTML、mainは不変。
+- **判断**：この環境で重大な遅延が観測されないため、推測だけでサーバー時刻同期・新ペイロード・認証方式を導入しない。次 **V3-4-23**：原作動画観察資料に沿って**既存6体の通常1試合の統合受け入れ試験**を組み、開始/操作→スキル/必殺→KO→勝敗のゲーム体験に残る不足を優先調査。原作時刻と学校iPad実試遊は未達、V3-5完成未達。
+
 ## 2026-10-30 V3-4-21｜Firebase取りこぼし/再接続の相手サークル誤保留を防止
 
 - [実装・研究根拠・厳密な限界](./ENGINE_V3_4_21_FIREBASE_MOTION_DELIVERY_20261030.md)：現行`network/firebase-match.mjs`は正規`revision`と`eventId`を配信するが**ホストのモーション開始時刻は共有しない**。ゲストがrev0→rev2をまとめ受信した場合、rev1の行動がすでに終了していてもローカルで全長演出を開始して古い相手前衛を再表示する可能性があった。
