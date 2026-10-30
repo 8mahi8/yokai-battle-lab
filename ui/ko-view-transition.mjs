@@ -61,8 +61,11 @@ export function projectKoViewChange(before,after){
   // ALL three previous front members are already KO. Ordinary voluntary
   // rotation is not a "reserve rescue" animation.
   if(changed&&old.frontIds.every(id=>oldMembers.get(id)?.hp===0)){
+   // An entering reserve can be KOed by the SAME host action that
+   // performed the compulsory swap. Require it to have been alive BEFORE,
+   // not still alive in the already-resolved latest snapshot.
    const entered=next.frontIds.filter(id=>!old.frontIds.includes(id)&&
-    nextMembers.get(id)?.hp>0);
+    oldMembers.get(id)?.hp>0);
    const action=fresh.findLast(e=>e.type==='action');
    if(entered.length&&action){
     arrivals.push(Object.freeze({side,eventId:action.eventId,
