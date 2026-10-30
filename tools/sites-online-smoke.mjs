@@ -114,7 +114,7 @@ if(friends){
   " el(g,'#mb-target').getAttribute('aria-pressed')==='true',\n"+
   " 'Zero Watch Poke target mode missing');\n"+
   "el(g,'#mb-mode-cancel').click();\n"+
-  "watch.click();\n"+
+  "el(g,'#mb-team1 .mb-center-symbol').click();\n"+
   "await until(()=>el(g,'#mb-revision')?.textContent.includes('B 5')&&\n"+
   " el(h,'#mb-revision')?.textContent.includes('B 5'),\n"+
   " 'return to Standard Watch not host ACKed on both seats');\n"+
