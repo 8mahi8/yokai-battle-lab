@@ -112,6 +112,17 @@ if(review==='seat-motion-v3'){
      .opponentViewBlocked==='false','A visual delay stuck');
     check(protocol.snapshot().game.clock.teams[1].frontIds.join(',')==='B2,B3,B4',
      'visual updates changed canonical front');
+    // A fresh game has eventId=0. Old FIFO/motion locks cannot leak from the
+    // previous battle even if it is restarted DURING a newer animation.
+    check(protocol.advanceAuto().ok,'second real motion failed');
+    stage.render(protocol.snapshot());
+    check(stage.getStatus().opponentVisibility.blocked,
+     'new motion lock not present before restart');
+    begin(); // new host round; canonical first front restored
+    check(!stage.getStatus().opponentVisibility.blocked,
+     'old opponent lock survived a brand-new match');
+    check(front(el('battle-stage'),'#mb-foe-line [data-unit]')==='B1,B2,B3',
+     'new match did not show its own fresh opponent front');
     el('lab-state').textContent='V3-4-20-SEAT-ROUNDTRIP-PASS';
    }catch(error){el('lab-state').textContent='V3-4-20-SEAT-FAIL '+error.message;}
    finally{peer.destroy();peerRoot.remove();}
