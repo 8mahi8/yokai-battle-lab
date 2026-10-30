@@ -84,13 +84,12 @@ if(friends){
   "assert(motionSummary.sampleCount>=3,'insufficient true host/guest event pairs');\n"+
   "window.__ywMotionTimingReport=motionSummary;\n"
  );
+ qa=qa.replace('SITES-ONLINE-EMULATOR-PASS real two-iframe inline HTML, auth/RTDB',
+  'SITES-FIREBASE-FRIENDS-EMULATOR-PASS real two-iframe inline HTML, no Auth/RTDB');
  qa=qa.replace(
   "result.textContent='SITES-FIREBASE-FRIENDS-EMULATOR-PASS real two-iframe inline HTML, no Auth/RTDB room, authoritative ACK, host auto clock pause and resume, four embed widths';",
   "result.textContent='SITES-FIREBASE-FRIENDS-EMULATOR-PASS real two-iframe inline HTML, no Auth/RTDB room, authoritative ACK, host auto clock pause and resume, four embed widths MOTION-METRICS '+JSON.stringify(window.__ywMotionTimingReport);"
  );
-
- qa=qa.replace('SITES-ONLINE-EMULATOR-PASS real two-iframe inline HTML, auth/RTDB',
-  'SITES-FIREBASE-FRIENDS-EMULATOR-PASS real two-iframe inline HTML, no Auth/RTDB');
   // Firebase Friends: actual target selection after wheel cooldown rejection.
   // Same seeded host/guest room; never bypass the real game rules.
   qa=qa.replace("assert(el(g,'.yw-online-auto').hidden,'guest cannot control host auto progression');","el(g,'#mb-target').click();\n el(g,'#mb-team0 [data-unit=A2]').click();\n await until(()=>el(g,'#mb-revision')?.textContent.includes('B 3')&&\n  el(h,'#mb-revision')?.textContent.includes('B 3'),\n  'guest pin command consumed by host and ACKed on both screens');\n assert(el(g,'#mb-team0 [data-unit=A2]').classList.contains('mb-pinned'),\n  'guest did not see pinned target after authoritative ACK');\n assert(el(g,'.yw-online-auto').hidden,'guest cannot control host auto progression');");
