@@ -128,7 +128,7 @@ test('V3-4-19 tampered cleanse / wrong count / forged damage fail visual contrac
  assert.ok(trueLedger);
  const alter=x=>copy(x);
  for(const patch of [
-  {removedCount:5},{removeSign:'negative'},{applied:false},{amount:1},
+  {removedCount:-1},{removeSign:'negative'},{applied:false},{amount:1},
   {kind:'damage'},{hpAfter:999}
  ]){
   const changed=alter(trueLedger);Object.assign(changed.impacts[0],patch);
