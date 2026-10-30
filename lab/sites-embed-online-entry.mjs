@@ -21,15 +21,20 @@ const config=__YW_ONLINE_CONFIG__;
  * This measures listener->stage render, NOT Internet RTT or 2-iPad clock sync.
  * Esbuild removes every probe from the school --friends production bundle.
  */
-// Isolated E2E only: ?charge normal and ?gcharge Zero G use the same
-// canonical Phase22C guard/5-Soul fixture; neither enters school HTML.
-// Never 3DS
-// balance or the school's real battle. A srcdoc's parent opt-in is readable
+// Local-only E2E: ?charge and ?gcharge use the existing canonical guard/
+// 5-Soul fixture. ?purify uses an enemy negative-Inspirit fixture but the
+// real MatchProtocol must cast it and the guest must cure it by touch.
+// These are NOT school balance changes or original 3DS numbers. A srcdoc's parent opt-in is readable
 // only in our localhost emulator, with build-time flags for dead-code removal.
 const chargeQaMode=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&(()=>{
  try{return location.href==='about:srcdoc'&&window.parent!==window&&
   ['?charge','?gcharge'].includes(window.parent.location.search);}catch{return false;}
 })();
+const purifyQaMode=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&(()=>{
+ try{return location.href==='about:srcdoc'&&window.parent!==window&&
+  window.parent.location.search==='?purify';}catch{return false;}
+})();
+const touchQaMode=chargeQaMode||purifyQaMode;
 const motionTimingQa=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__?[]:null;
 let lastTimedActionId=0;
 if(__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__)
@@ -162,7 +167,7 @@ function setupSeat(role){
  const debugStep=$('#mb-step');
  if(debugStep){debugStep.hidden=true;debugStep.setAttribute('aria-hidden','true');}
  if(role===0){
-  friendsAutoStarted=chargeQaMode;
+  friendsAutoStarted=touchQaMode;
   autoClock=createHostAutoClock({
    step:()=>match.advanceAuto(),
    canAdvance:canHostAdvance,
@@ -206,10 +211,20 @@ $('.yw-online-start').addEventListener('click',async()=>{
   // Even in emulation the Host's real MatchProtocol resolves every action.
   const chargeGuard=chargeQaMode?RENTAL_SQUAD.map(unit=>({...unit,
    soulCapacity:5,weights:[0,0,0,100]})):null;
-  const battleOptions=chargeQaMode?{seed:12,teams:[chargeGuard,chargeGuard],
+  // Purify fixture is never installed into a normal Friends match.
+  // Enemy uses legitimate autonomous negative Inspirit; the guest must
+  // choose a benched poisoned member and finish the real touch minigame.
+  const purifyTeams=purifyQaMode?[
+   RENTAL_SQUAD.map(unit=>({...unit,inspirit:'sleep',weights:[0,0,100,0]})),
+   RENTAL_SQUAD.map(unit=>({...unit,weights:[0,0,0,100]}))
+  ]:null;
+  const battleOptions=purifyQaMode?{seed:12,teams:purifyTeams,
+   rotationCooldownMs:0,researchSpecialEffects:true,
+   researchDamageModel:true,researchStatInspirits:true}:
+   chargeQaMode?{seed:12,teams:[chargeGuard,chargeGuard],
    rotationCooldownMs:0,researchSpecialEffects:true,
    researchDamageModel:true,researchStatInspirits:true}:null;
-  match=createFirebaseMatchHost({roomClient:room,protocol:chargeQaMode?
+  match=createFirebaseMatchHost({roomClient:room,protocol:touchQaMode?
    createMatchProtocol({battleOptions}):createMatchProtocol({battleOptions:__YW_FRIENDS_MODE__?{
     playtestSoulTuning:true,enableLoafing:true,
     // A finished charge must execute the six rental effects in actual
@@ -220,7 +235,7 @@ $('.yw-online-start').addEventListener('click',async()=>{
     researchStatInspirits:true
    }:{}}),
    onSnapshot:s=>{renderConfirmedSnapshot(s);},onError:err});
-  if(__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&chargeQaMode){
+  if(__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&touchQaMode){
    window.__ywFriendsChargeQa={step:()=>connected()?match.advanceAuto():
     {ok:false,reason:'peer_offline'},status:()=>match.status(),
     snapshot:()=>match.snapshot()};
