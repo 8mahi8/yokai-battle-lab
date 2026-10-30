@@ -4,7 +4,7 @@
 
 ## 再開時の正規入口
 - repo: `8mahi8/yokai-battle-lab`、開発ブランチ: `feat/phase1-action-circle-lab-20261023`
-- 監査時HEAD: `a5bbd41061060f81e49c1399b56daf15b49e2026`（V3-4-16 docs）
+- 初回監査時HEAD: `a5bbd41061060f81e49c1399b56daf15b49e2026`（V3-4-16 docs）。**その後同日V3-4-17開発済み**：[V3-4-17詳細](./ENGINE_V3_4_17_FRIENDLY_FIRE_CONFUSION_20261030.md)
 - Draft PR #1: https://github.com/8mahi8/yokai-battle-lab/pull/1
 - まず読む現行工程・設計: [6段階ロードマップ](./ROADMAP_6_PHASE_PROGRESS_20261028.md)、[V3アーキテクチャ](./ENGINE_V3_ARCHITECTURE_SOURCE_FIRST_20261029.md)、[学校通信の正規方針](./SCHOOL_NETWORK_SOURCE_OF_TRUTH_20261029.md)、[直近V3-4-16](./ENGINE_V3_4_16_MEMORY_DUO_NORMAL_MOVES_20261030.md)
 - 以前のPhase資料やSupabase資料は過去研究の経緯。コードの正規状態とユーザーの新しい承認済み方針を優先。
