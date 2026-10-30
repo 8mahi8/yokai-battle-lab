@@ -11,6 +11,7 @@ import {latestBattleCue,visualReactionClass} from './battle-vfx.mjs';
 import {collectNewBattleCues,MAX_VISUAL_CATCHUP_CUES,actionForVisibleCue} from './battle-cue-sequence.mjs';
 import {passiveSkillNoticesForAction} from './passive-feedback.mjs';
 import {soultimateDisplayTitle} from '../content/presentation-labels.mjs';
+import {projectSoultimateVisual} from '../presentation/soultimate-visual-profiles.mjs';
 import {yw2ReferenceSoultimate} from '../content/yw2-soultimate-reference.mjs';
 import {planActionChoreography,choreographyFrame} from '../presentation/action-choreography.mjs';
 import {createSeatMotionVisibility} from './seat-motion-visibility.mjs';
@@ -130,11 +131,13 @@ export function makeStageView(state,side=0){
   const actionOutcomeV2=projectAttackOutcomeV2(event,game.squads);
   const specialImpactLedger=projectSoultimateImpactLedger(event);
   const specialHitLedger=projectSoultimateHitLedger(event);
-  return projection||actionOutcomeV2||specialImpactLedger||specialHitLedger?{...event,
+  const specialVisual=projectSoultimateVisual(event,game.squads);
+  return projection||actionOutcomeV2||specialImpactLedger||specialHitLedger||specialVisual?{...event,
    ...(projection?{attackProjection:projection}:{}),
    ...(actionOutcomeV2?{actionOutcomeV2}:{}),
    ...(specialImpactLedger?{specialImpactLedger}:{}),
-   ...(specialHitLedger?{specialHitLedger}:{})
+   ...(specialHitLedger?{specialHitLedger}:{}),
+   ...(specialVisual?{specialVisual}:{})
   }:event;
  });
  const roster=teams[side];
@@ -224,6 +227,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     <div class="mb-screen-caption">BATTLE FIELD <span id="mb-choice-status" role="status">上画面 / 前衛3体ずつ</span></div>
     <div class="mb-battle-backdrop">
      <div class="mb-scenery mb-scenery-back" aria-hidden="true"></div>
+     <div id="mb-special-impact-style" class="mb-special-impact-style" hidden aria-hidden="true"><i></i><i></i><i></i></div>
      <div id="mb-special-flare" class="mb-special-flare" hidden aria-hidden="true">
       <div class="mb-special-cutin-lines"></div>
       <div id="mb-special-portrait" class="mb-special-portrait"></div>
@@ -671,6 +675,11 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   backdrop.dataset.specialImpactSchema=String(scenePlan?.specialImpactLedger?.schema??'');
   backdrop.dataset.specialHitSchema=String(scenePlan?.specialHitLedger?.schema??'');
   backdrop.dataset.specialHitIndex=sceneSpecialHitIndex===null?'':String(sceneSpecialHitIndex+1);
+  backdrop.dataset.specialTreatment=scenePlan?.specialVisual?.treatment??'';
+  const specialImpactStyle=$('mb-special-impact-style');
+  specialImpactStyle.hidden=!(flash?.type==='special'&&scenePhase==='impact'&&
+   scenePlan?.specialVisual);
+  specialImpactStyle.dataset.treatment=scenePlan?.specialVisual?.treatment??'';
   // Passive Skill events are resolved by the host. During the impact/recovery
   // phase, explain any automatically applied ability without a fake attack.
   const notice=$('mb-passive-notice');
@@ -697,6 +706,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    }
    cutin.dataset.creature=String(Number(id?.slice(1))||1);
    cutin.dataset.mode=flash.mode==='g-tech'?'g':'normal';
+   cutin.dataset.treatment=scenePlan?.specialVisual?.treatment??'';
    $('mb-special-actor').textContent=(actor?.name??'妖怪')+' / '+(flash.mode==='g-tech'?'Gわざ':'必殺技');
   }
   const callout=$('mb-action-callout');
