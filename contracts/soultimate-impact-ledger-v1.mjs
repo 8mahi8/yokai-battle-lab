@@ -11,7 +11,7 @@ export const SOULTIMATE_IMPACT_SCHEMA=1;
 const unit=id=>typeof id==='string'&&/^[AB][1-6]$/.test(id);
 const hp=n=>Number.isSafeInteger(n)&&n>=0;
 const kinds=new Set(['damage','damage-status','drain',
- 'heal','revive','buff','debuff']);
+ 'heal','revive','buff','debuff','dispel']);
 const dealing=new Set(['damage','damage-status','drain']);
 const recovering=new Set(['heal','revive']);
 
@@ -32,8 +32,20 @@ export function projectSoultimateImpactLedger(event){
     (delta!==-source.amount||source.hpBefore<source.hpAfter))return null;
   if(recovering.has(source.kind)&&
     (delta!==source.amount||source.hpAfter<source.hpBefore))return null;
-  if((source.kind==='buff'||source.kind==='debuff')&&
+  if(['buff','debuff','dispel'].includes(source.kind)&&
      (source.amount!==0||delta!==0))return null;
+  // Wazzat's status-only Soultimate removes existing positive Inspirits.
+  // There is no damage, miss or inferred new status. Preserve the host's
+  // count without exposing/mutating the canonical removed status records.
+  const dispel=source.kind==='dispel';
+  const removedCount=dispel?(Array.isArray(source.removed)?
+    source.removed.length:source.removedCount):null;
+  if(dispel&&(
+    !Number.isSafeInteger(removedCount)||removedCount<0||removedCount>20||
+    source.removeSign!=='positive'||
+    typeof source.applied!=='boolean'||source.applied!==(removedCount>0)||
+    (Array.isArray(source.removed)&&source.removed.some(e=>e?.sign!=='positive'))
+   ))return null;
   if(source.kind==='revive'&&
      (source.hpBefore!==0||source.hpAfter===0))return null;
   const statusSource=source.kind==='debuff'||source.kind==='buff'||
@@ -49,6 +61,8 @@ export function projectSoultimateImpactLedger(event){
     hpAfter:source.hpAfter,deltaHp:delta,
     ...(statusSource?{statusEffect,applied:source.applied,
        resisted:source.resisted}:{}),
+    ...(dispel?{removeSign:'positive',removedCount,
+       applied:source.applied}:{}),
     ...(source.lastStand===true?{lastStand:true}:{})
   };
   rows.push(Object.freeze(row));
@@ -74,6 +88,8 @@ export function assertSoultimateImpactLedger(ledger){
     hpBefore:x.hpBefore,hpAfter:x.hpAfter,deltaHp:x.deltaHp,
     ...(x.statusEffect===undefined?{}:{
       statusEffect:x.statusEffect,applied:x.applied,resisted:x.resisted}),
+    ...(x.removeSign===undefined?{}:{
+      removeSign:x.removeSign,removedCount:x.removedCount,applied:x.applied}),
     ...(x.lastStand?{lastStand:true}:{})
   }))};
  const canonical=projectSoultimateImpactLedger(event);
