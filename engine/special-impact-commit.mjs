@@ -40,6 +40,9 @@ function stageFor(plan,impact){
   if(recovering.has(kind)&&impact.linkedReviveHeal===true)
    stage=plan.stages.find(s=>s.type==='combined-revive-heal');
   break;
+ case 'dispel':
+  if(kind==='dispel')stage=plan.stages.find(s=>s.type==='remove-status');
+  break;
  case 'heal':
   if(kind==='heal')stage=plan.stages.find(s=>s.type==='heal');
   break;
@@ -72,6 +75,9 @@ export function assertPlannedSpecialImpact(plan,impact,{casterSide,target}={}){
   throw new RangeError('Soultimate impact violates authored target side');
  // Validate HP payloads for the entire planned impact set BEFORE any
  // previous impact can commit. Never wait until mid-combo to reject bad data.
+ if(impact.kind==='dispel'&&
+    (impact.removeSign!=='positive'||impact.amount!==0||target.hp<=0))
+  throw new TypeError('Soultimate dispel shape invalid');
  if(damaging.has(impact.kind)&&
     (!Number.isSafeInteger(impact.amount)||impact.amount<0))
   throw new TypeError('Soultimate damage amount invalid');
@@ -147,11 +153,14 @@ export function assertResearchSpecialImpact(impact,{casterSide,target}={}){
   throw new TypeError('valid canonical research impact target required');
  const kind=impact.kind;
  const allied=kind==='heal'||kind==='revive'||kind==='buff';
- const hostile=damaging.has(kind)||kind==='debuff';
+ const hostile=damaging.has(kind)||kind==='debuff'||kind==='dispel';
  if((!allied&&!hostile)||
     (allied&&target.side!==casterSide)||
     (hostile&&target.side===casterSide))
   throw new RangeError('research impact kind or target side invalid');
+ if(kind==='dispel'&&
+    (impact.removeSign!=='positive'||impact.amount!==0||target.hp<=0))
+  throw new TypeError('research dispel requires living target and positive status sign');
  if(damaging.has(kind)&&
     (!Number.isSafeInteger(impact.amount)||impact.amount<0))
   throw new TypeError('research impact damage must be a nonnegative integer');
