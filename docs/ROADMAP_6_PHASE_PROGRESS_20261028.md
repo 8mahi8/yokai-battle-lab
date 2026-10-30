@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-23｜本人の原作対戦録画（過去フレーム台帳）とゲーム1試合の総合照合
+
+- [動画時刻別の原作/現実装の一致・不一致/証拠区分](./ENGINE_V3_4_23_ORIGINAL_VIDEO_FULL_MATCH_ACCEPTANCE_20261030.md)を作成。過去に直接観察された2本の原作録画（第1試合約126.83秒・別Phase49約216.53秒）の**タイムコード付き記録**を今ターンで再読。**元MP4ファイル本体は再取得できず、今回直接動画を再生・目視した事実はない**。追加4試合の第2〜第4試合も直接観察結果なしと区別。レベルファイブ公式の零式、原作対人技術解説、Game8の原作操作資料を横断。
+- 新規`tests/v3-4-23-original-video-acceptance.test.mjs` **3件**：**本物のMatchProtocol**で原作映像の戦闘要所に対応する6体×2席→pin→実Soul貯蓄→chargeStart/ジェスチャー→Host Special結果→カットイン→個別impact/復帰の筋、KO後の自動交代→全6体撃破→双方勝敗、負のとりつきの後衛おはらい中も戦闘続行→解除、Match Journal一致を実行。**原作と同じ技の内容/ヒット/秒数を証明するテストではない**。
+- [全自動テスト **932/932 PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41053968313)、[実Chromium Stage QA成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41053959107)、[認証不要Firebase二席QA成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41053968547)。実操作/描画の既存QAと**原作動画への直接目視比較は別**。
+- **不一致が重大：** 現行6体は原作ジバニャン/トホホギス/大ガマ等ではなく**独自レンタル6体**、必殺は`fixture`＋未知ヒット数、全技共通の演出時間、開戦演出/技固有背景/青いKO火/正式な原作テンポや結果遷移は未完成。**コード929件PASSを原作再現度100%と取り違えない**。次 **V3-4-24** は原作に確認できる「必殺の技固有の演出/対象とヒット表示の差」を、共通Choreography/SoultimatePlan/HitLedgerを使い最小限で改善する。ヒット数5/7食い違いは無断で確定しない。学校Safari未検証、V3-5未完成。
+
 ## 2026-10-30 V3-4-22｜実RTDB Emulator二席の同一Action表示差を観測、追加時刻同期は現時点不要
 
 - [実測方法・全サンプル・出典・未検証事項](./ENGINE_V3_4_22_FIREBASE_IFRAME_MOTION_TIMING_20261030.md)：学校向けの認証不要Firebase Friendsと同一入口を`--emulator-friends`としてビルドした**localhost限定2 iframe / 同一Chromium**で、Host/Guestの`onSnapshot`到達・`stage.render`完了時刻を`eventId`単位で記録。標準Friendsで研究用の相手表示保留をONにはしない。
