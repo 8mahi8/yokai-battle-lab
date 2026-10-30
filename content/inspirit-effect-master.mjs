@@ -19,8 +19,13 @@ const specs=[
 ];
 export const INSPIRIT_EFFECT_MASTER=Object.freeze(specs.map(
  ([id,sign,category])=>Object.freeze({
-  id,sign,category,defaultDuration:null,evidence:'fixture',
-  sourceRefs:Object.freeze([])
+  id,sign,category,defaultDuration:null,
+  evidence:id==='friendly-fire'?'documented':'fixture',
+  sourceRefs:Object.freeze(id==='friendly-fire'?[
+   'https://www.mtwildwood.net/inspirits.php?g=yw2',
+   'https://www.mtwildwood.net/yw2/yokai/wazzat',
+   'https://www.mtwildwood.net/yw2/yokai/houzzat'
+  ]:[])
  })
 ));
 const byId=new Map(INSPIRIT_EFFECT_MASTER.map(x=>[x.id,x]));
