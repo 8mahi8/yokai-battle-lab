@@ -326,6 +326,34 @@ try{
  }
  if(!seatDelayPass)throw Error('V3-4-20 two-seat motion visibility browser QA failed');
 
+ // V3-4-21: browser sees a Firebase-style skipped revision after an action
+ // and opponent rotation; old foe wheel must not be re-frozen for the guest.
+ let catchupPass=false;
+ for(let trial=1;trial<=2;trial++){
+  const source='http://127.0.0.1:'+server.address().port+
+   '/lab/match-stage.html?review=seat-motion-gap-v3';
+  const child=spawn(browser,[
+   '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+   '--no-first-run','--disable-extensions',
+   '--user-data-dir='+path.join(tmp,'seat-motion-gap-v3-'+trial),
+   '--window-size=1180,900','--virtual-time-budget=1600','--dump-dom',source
+  ],{stdio:['ignore','pipe','pipe']});
+  let body='',stderr='',timedOut=false;
+  child.stdout.on('data',x=>body+=String(x).slice(0,300000));
+  child.stderr.on('data',x=>stderr+=String(x).slice(0,2500));
+  const timeout=setTimeout(()=>{timedOut=true;child.kill('SIGKILL');},17000);
+  const code=await new Promise(resolve=>child.on('close',resolve));
+  clearTimeout(timeout);
+  const result=body.match(/<span id="lab-state">([^<]*)<[/]span>/)?.[1]??'';
+  if(!timedOut&&code===0&&result==='V3-4-21-GAP-PASS'){
+   catchupPass=true;console.log('V3-4-21-GAP-PASS real Chromium missed revision no false freeze');
+   break;
+  }
+  console.warn('V3-4-21 motion catchup trial '+trial+' failed: '+
+   (result||'no rendered result')+' '+stderr.slice(-150));
+ }
+ if(!catchupPass)throw Error('V3-4-21 missed-revision browser motion policy failed');
+
  // Create a visual review artifact from the actual ESM app (not a mock image).
  const shot=path.join(root,'phase14-stage-preview.png');
  const child=spawn(browser,[
