@@ -49,6 +49,7 @@ test('V3-4-25 actual host auto match: KO seen only on confirmed damage and repla
   }
   latest=after;
  }
+ console.log('V3-4-25-KO-TRACE',JSON.stringify({actualKOs,actualArrivals,turn:latest.game.clock.turn}));
  assert.equal(latest.game.winner,0);
  assert.ok(actualKOs>=1,'at least one visible KO must be confirmed by a new damage event');
  assert.equal(latest.game.squads[1].filter(u=>u.hp===0).length,6,
