@@ -13,7 +13,7 @@ import {spawn} from 'node:child_process';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-const localOnly=u=>/^http:\/\/127\.0\.0\.1:\d+\/qa(?:\?(?:setup|charge|gcharge|purify))?$/.test(u);
+const localOnly=u=>/^http:\/\/127\.0\.0\.1:\d+\/qa(?:\?(?:setup|charge|gcharge|purify|fullmatch))?$/.test(u);
 async function devtoolsPage(profile,url,deadline){
  let last='';
  while(Date.now()<deadline){
