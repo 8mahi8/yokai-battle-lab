@@ -17,8 +17,8 @@ test('V3-5-2 regression: actual Friends production options must enable real six-
  for(const key of Object.keys(battleOptions))
   assert.match(host[1],new RegExp('\\b'+key+':true\\b'),
    key+' disabled in the production Friends host');
- assert.match(source,/if\(__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&chargeQaMode\)/,
-  'test driver is not explicitly compile-time gated');
+ assert.match(source,/if\(__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&touchQaMode\)/,
+  'local-only charge/Purify test driver is not explicitly compile-time gated');
 });
 
 test('V3-5-2 same production battle flags: confirmed A1 special applies actual host damage and creates visible scene',()=>{
