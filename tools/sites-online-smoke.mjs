@@ -287,6 +287,10 @@ try{
  }
  if(!passed)throw Error('Actual Chromium inline online Sites test failed');
  if(friends){
+  // Run an independent fresh two-seat session after baseline Friends QA.
+  // Charge actions are never replayed into the school production room.
+  if(!chargeQa.includes('SITES-FRIENDS-CHARGE-PASS'))
+   throw Error('charge acceptance page marker missing');
   const proof=await runRealtimeQa({
    browser,profile:path.join(tmp,'charge-profile'),
    url:'http://127.0.0.1:'+server.address().port+'/qa?charge',
