@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-31 V3-5-4｜後衛おはらいを実Firebase Friends二席で通し検証
+
+- [原作資料・実装内容・実通信・未検証事項](./ENGINE_V3_5_4_FRIENDS_PURIFY_E2E_20261031.md)。ゲームエンジン/オンライン通信を重複実装せず、既存`purifyStart`/`purifyInput`/`purification`イベントと正規Host自動行動を再利用。
+- **実Firebase No-Auth localhost 2 iframe**：HostがB1にピン→敵側が本物の自動`sleep`とりつき1行動→GuestがB1を後衛へ移動→下画面「おはらい」でB1選択→`pop`5回の実Pointerタップと両席ACK→Hostが負状態を削除→両画面から⚠が消え、Guest「おはらい完了！」を表示。JS偽Snapshot/直接ステータス書込はなし。既存通常必殺/GわざE2Eも再合格。
+- 新規2テストでNode **946/946 PASS**：[Research Unit](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41086694292)、[Stage Chromium成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41086684935)、[Firebase Friendsブラウザ2席成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41086694176)。**発生を確定しやすいテスト用編成**であり、通常レンタル試合の原作確率/旧Safari実機を証明するものではない。原作の玉の場所/おはらい長さもfixture。
+- **次 V3-5-5**：ピン→とりつき/おはらい→通常/G必殺→KO/控え/勝敗まで**1試合での正規Online統合受け入れ**、本人提供原作動画の観察台帳との表示/因果照合。学校稼働Google Sites/本番Firebase Rules/DB/Auth/main/Drive無変更。V3-5全体未完成。
+
 ## 2026-10-31 V3-5-3｜零式Gわざの認証なしFirebase実2席チャージと研究DamageModel回帰
 
 - [出典・実装・正規Hostへの効果・検証範囲](./ENGINE_V3_5_3_FRIENDS_ZERO_G_DAMAGE_E2E_20261031.md)：原作公式＋零式Gわざ研究で発動者・左右3体の妖気/2倍の効果を照合（個別原作値は未確定）。新しい技を作らず既存Host共通戦闘を利用。
