@@ -12,7 +12,10 @@ const specs=[
  ['spirit-down','negative','stat_down'],
  ['speed-down','negative','stat_down'],
  ['hp-loss','negative','hp_over_time'],
- ['hp-regen','positive','hp_over_time']
+ ['hp-regen','positive','hp_over_time'],
+ // YW2 documented category; activation odds and ally targeting are handled
+ // by the separate opt-in confusion action resolver, not by this master.
+ ['friendly-fire','negative','target_override']
 ];
 export const INSPIRIT_EFFECT_MASTER=Object.freeze(specs.map(
  ([id,sign,category])=>Object.freeze({
