@@ -106,7 +106,7 @@ if(review==='ko-phase-v3'){
  const returnStage=createMatchStage({element:reentryRoot,seat:0,
   onAction:()=>({accepted:false})});
  try{
-  check(knockout&&arrival,'real host did not produce KO + reserve on this seed');
+  check(knockout&&arrival,'real host did not produce KO + reserve on this seed; observed KO='+!!knockout+' arrival='+!!arrival);
   matchStage.render(knockout.before);
   check(!root.querySelector('#mb-foe-line [data-unit="'+knockout.row.id+'"] .mb-ko-wisp'),
    'a live fighter had a KO flame');
