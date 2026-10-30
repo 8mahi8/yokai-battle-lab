@@ -127,11 +127,143 @@ if(friends){
   );
 
 }
+
+/**
+ * V3-5-2: second, isolated real Friends srcdoc + local RTDB scenario.
+ * Host uses the canonical match engine with the SAME 5-Soul guard fixture as
+ * tools/firebase-charge-smoke.mjs, but NO Auth SDK. Every touch is sent
+ * through Guest -> SDK -> room -> Host -> published snapshot -> Guest ACK.
+ * Never inject fake snapshot/HP or alter a production/school HTML build.
+ */
+const chargeQa=String.raw`<!doctype html><html lang="ja"><meta charset="utf-8">
+<body><strong id="result">SITES-FRIENDS-CHARGE-WAIT</strong>
+<iframe id="host" style="width:1080px;height:750px"></iframe>
+<iframe id="guest" style="width:1080px;height:750px"></iframe>
+<script>
+const h=document.getElementById('host'),g=document.getElementById('guest');
+const result=document.getElementById('result');
+const doc=f=>f.contentDocument,el=(f,s)=>doc(f)?.querySelector(s);
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+function check(test,reason){if(!test)throw Error(reason);}
+async function until(pred,label){
+ for(let i=0;i<250;i++){if(pred())return;await sleep(75);}
+ throw Error('timeout '+label+' host='+el(h,'.yw-online-status')?.textContent+
+  ' guest='+el(g,'.yw-online-status')?.textContent+
+  ' rev='+el(g,'#mb-revision')?.textContent);
+}
+function gauge(frame,id){
+ return el(frame,'#mb-team'+(id[0]==='A'?0:1)+
+ ' [data-unit="'+id+'"] .mb-soulbar i')?.style.width;
+}
+(async()=>{
+ const fragment=await (await fetch('/embed')).text();
+ h.srcdoc=fragment;g.srcdoc=fragment;
+ await until(()=>!el(h,'.yw-online-make')?.disabled&&
+  !el(g,'.yw-online-join')?.disabled,'two Friends embeds online');
+ check(doc(h).querySelectorAll('script[src]').length===2,
+  'no-Auth Friends must load only app+database SDK');
+ check(typeof h.contentWindow.firebase.auth==='undefined',
+  'Friends QA silently depended on anonymous Auth');
+ el(h,'.yw-online-make').click();
+ await until(()=>el(h,'.yw-online-role')?.textContent.includes('ホスト / 部屋'),
+  'six-digit host room');
+ const room=el(h,'.yw-online-role').textContent.match(/部屋 (\d{6})/);
+ check(!!room,'missing host six-digit room code');
+ el(g,'.yw-online-code').value=room[1];
+ el(g,'.yw-online-join').click();
+ await until(()=>el(g,'.yw-online-role')?.textContent.includes('ゲスト / 部屋'),
+  'guest joined room');
+ el(h,'.yw-online-start').click();
+ await until(()=>el(h,'#battle-stage')?.dataset.stageReady==='true',
+  'host canonical battle stage');
+ await until(()=>el(g,'#battle-stage')?.dataset.stageReady==='true',
+  'guest auto-connect without extra tap');
+ await until(()=>el(h,'.yw-online-presence')?.textContent==='相手と接続中'&&
+  el(g,'.yw-online-presence')?.textContent==='相手と接続中','both peer presences');
+ const hostQa=h.contentWindow.__ywFriendsChargeQa;
+ check(hostQa&&typeof hostQa.step==='function'&&
+  typeof hostQa.snapshot==='function','localhost-only charge driver absent');
+ check(el(h,'.yw-online-auto')?.getAttribute('aria-pressed')==='false',
+  'charge-only fixture should not enable the wall-time auto clock');
+ let turns=0;
+ while(gauge(g,'B1')!=='100%'&&turns<80){
+  const status=hostQa.status();
+  await until(()=>{const x=hostQa.status();return x.lastPublished>=x.revision&&
+   !x.dirty;},'previous authoritative snapshot published');
+  const a=hostQa.step();
+  check(a.ok,'canonical guard step '+turns+' '+a.reason);
+  turns++;
+  const revision=hostQa.status().revision;
+  await until(()=>el(g,'#mb-revision')?.textContent.startsWith('REV '+revision+' /'),
+   'guest receives real guard action '+revision);
+ }
+ await until(()=>gauge(g,'B1')==='100%'&&gauge(h,'B1')==='100%',
+  'B1 full gauge confirmed on both genuine seats');
+ check(!el(g,'#mb-team1 [data-unit="B1"]').classList.contains('mb-bench'),
+  'B1 lost its frontline before real charge');
+ const hpBefore=hostQa.snapshot().game.squads[0].map(x=>x.hp);
+ el(g,'#mb-charge').click();
+ check(el(g,'#mb-charge').classList.contains('mb-command-active'),
+  'guest charge button not selecting medals');
+ const medal=el(g,'#mb-team1 [data-unit="B1"]');
+ check(medal&&medal.classList.contains('mb-choice-eligible'),
+  'B1 with full Soul was not eligible for charging');
+ medal.click();
+ await until(()=>!el(g,'#mb-modal').hidden&&
+  el(g,'#mb-revision')?.textContent.includes('B 1'),
+  'Host ACK of guest chargeStart and touch panel');
+ check(el(g,'#mb-gesture-help')?.textContent.includes('タップ'),
+  'existing seed12 guest B1 fixture should be tap; original weights unverified');
+ check(gauge(g,'B1')==='100%',
+  'chargeStart consumed Soul before completing touch');
+ for(let i=0;i<6;i++){
+  const dot=el(g,'#mb-touch-points .mb-touch-target');
+  const pad=el(g,'#mb-touch-pad');
+  check(dot&&!pad.closest('[hidden]'), 'host touch target not rendered '+i);
+  const box=dot.getBoundingClientRect();
+  check(box.width>0&&box.height>0,'zero-sized touch target '+i);
+  const ptr={bubbles:true,cancelable:true,button:0,pointerType:'touch',
+   pointerId:100+i,isPrimary:true,clientX:box.left+box.width/2,
+   clientY:box.top+box.height/2};
+  pad.dispatchEvent(new PointerEvent('pointerdown',ptr));
+  pad.dispatchEvent(new PointerEvent('pointerup',ptr));
+  await until(()=>el(g,'#mb-revision')?.textContent.includes('B '+(i+2))&&
+   el(h,'#mb-revision')?.textContent.includes('B '+(i+2)),
+   'host+guest authoritative ACK for touch #'+(i+1));
+  if(i<5){
+   check(!el(g,'#mb-modal').hidden,'touch prematurely finished charge '+i);
+   check(gauge(g,'B1')==='100%'&&gauge(h,'B1')==='100%',
+    'partial tap consumed host Soul '+i);
+  }
+ }
+ await until(()=>el(g,'#mb-modal').hidden&&
+  gauge(g,'B1')==='0%'&&gauge(h,'B1')==='0%',
+  'charge completed by host, Soul consumed on both screens');
+ const latest=hostQa.snapshot().game.events.filter(e=>e.type==='special').at(-1);
+ check(!!latest&&latest.actor==='B1','real host did not emit the B1 special');
+ check(hostQa.snapshot().game.squads[0].some((x,i)=>x.hp!==hpBefore[i]),
+  'real guest special did not change opponent HP');
+ // Two independently rendered, event-driven cut-ins, not fake local alerts.
+ await until(()=>!el(h,'#mb-special-flare').hidden&&
+  !el(g,'#mb-special-flare').hidden,
+  'both seats display the host-confirmed special cut-in');
+ check(el(h,'#mb-special-title').textContent===
+  el(g,'#mb-special-title').textContent,
+  'host and guest disagree on the same special title');
+ check(el(g,'.yw-online-status')?.textContent.includes('わざを発動しました'),
+  'guest never received successful final touch ACK');
+ result.textContent='SITES-FRIENDS-CHARGE-PASS '+turns+
+  ' canonical Soul actions, 6 real Guest touch ACK, host B1 Special and both cut-ins';
+})().catch(error=>{result.textContent='SITES-FRIENDS-CHARGE-FAIL '+(error.stack||error.message)});
+<\/script></body></html>`;
+
 const server=createServer((req,res)=>{
- if(new URL(req.url,'http://localhost').pathname==='/embed'){
+ const route=new URL(req.url,'http://localhost');
+ if(route.pathname==='/embed'){
   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(fragment);return;
  }
- res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(qa);
+ res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(
+  friends&&route.search==='?charge'?chargeQa:qa);
 });
 const tmp=mkdtempSync(path.join(tmpdir(),'yw-sites-online-'));
 try{
@@ -154,4 +286,14 @@ try{
    ' reason='+proof.reason+' stderr='+String(proof.stderr||'').slice(-250));
  }
  if(!passed)throw Error('Actual Chromium inline online Sites test failed');
+ if(friends){
+  const proof=await runRealtimeQa({
+   browser,profile:path.join(tmp,'charge-profile'),
+   url:'http://127.0.0.1:'+server.address().port+'/qa?charge',
+   sentinel:'SITES-FRIENDS-CHARGE-PASS',timeoutMs:90000
+  });
+  if(!proof.ok)throw Error('V3-5-2 actual two-seat Friends charge failed: '+
+   String(proof.rendered||proof.reason).slice(0,1400));
+  console.log(proof.rendered);
+ }
 }finally{await new Promise(ok=>server.close(ok));rmSync(tmp,{recursive:true,force:true});}
