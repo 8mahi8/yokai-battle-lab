@@ -19,6 +19,12 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-31 V3-5-6｜通常学校レンタルの実戦テンポを8シード測定／Friends UI研究文言整理
+
+- [詳細な実測・原作2録画の過去観察との比較・実装・未検証事項](./ENGINE_V3_5_6_SCHOOL_PACING_AND_FRIENDS_UI_20261031.md)。通常学校版と**同じ**`MatchProtocol`/既存レンタル6体で、実Host自動行動×最大240回を8シード監査。7/8が**121〜227行動で決着**、1/8は240時点で続行、進行停止0。2.6秒の自動進行なら約5〜10分以上の可能性。**これは両者無操作の研究試合であり、実際の友達対戦の平均ではない**。原作の内部時刻・行動ポイントと同期した秒数ではないため、ルール・バランス・時計を勝手に変更しない。
+- 学校Friendの対戦画面から、研究用ディスクレーマー/REV番号/英語の開発タグ/入力の試験用文言を非表示。接続ヘッダーを「輪戦｜友達対戦／ホスト画面を開いたまま」に整理。研究版UIは変更せず、HP/妖気/行動/原作操作/Firebase方式も不変。**Node [950/950成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41143884193)、[Chromium Stage成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41143884079)、[Firebase No-Auth二席・同じ全試合シナリオ／歴史的Rules試験成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41143893018)**。
+- **次 V3-5-7**：学校Safari2台での友達試遊・通常編成の試合時間と体感を最優先にし、学校向けHTMLの見た目とタップ領域を端末で点検。実機で問題が確認されれば根拠に基づき対処する。**学校稼働Google Sites、GitHub main、本番Firebase Rules/DB/Auth、Drive配布は未変更**。V3-5全体は未完了。
+
 ## 2026-10-31 V3-5-5｜一試合・全操作・6体KO・結果まで実Firebase二席通し受け入れ成功
 
 - [原作一次録画時刻との具体比較・検証範囲・差分・次工程](./ENGINE_V3_5_5_ONE_ROOM_FULL_MATCH_E2E_20261031.md) を正式な最新入口とする。**V3-5-5終了、V3-5全体は学校実機未検証のため未完了。**
