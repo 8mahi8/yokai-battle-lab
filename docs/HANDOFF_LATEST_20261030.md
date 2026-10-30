@@ -17,7 +17,7 @@
 - 原作の対戦動画ファイルを今回直接見たわけではない。過去の観察台帳は参照可能だが、元動画を確認したかのように報告しない。学校Safariで未検証なら明記。
 
 ## 今回コード／CIから確認した最新現在地
-- **Engine V3-4 第16工程**まで開発履歴と実コード・テストが存在。V3-4-15は原作キャラID→共有スキル「まもりわすれ」→既存行動選択器の接続。V3-4-16はわすれん帽・メゾン・ドワスレの**原作通常攻撃/妖術の計4技**・能力・基本行動重みを共通カタログ経由で研究用6vs6へ接続。実ファイル `content/yw2-memory-duo-normal-lab.mjs`、`tests/v3-yw2-memory-duo-normal-lab.test.mjs`。
+- **Engine V3-4 第17工程**まで開発履歴と実コード・テストが存在。V3-4-17は研究用の混乱（味方を確率攻撃する状態）を共通行動・物理Hit/KOへ接続、[Node908/908 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41038374000)、[Firebase Friends 2-client PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41038374004)、[stage PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41038368804)。混乱の味方対象抽選は研究fixture。通常online未導入。V3-4-15は原作キャラID→共有スキル「まもりわすれ」→既存行動選択器の接続。V3-4-16はわすれん帽・メゾン・ドワスレの**原作通常攻撃/妖術の計4技**・能力・基本行動重みを共通カタログ経由で研究用6vs6へ接続。実ファイル `content/yw2-memory-duo-normal-lab.mjs`、`tests/v3-yw2-memory-duo-normal-lab.test.mjs`。
 - **重要：**上記2体のとりつき/必殺は原作効果がまだ未実装で、研究fixtureを使用、`battleReady=false`。通常の学校レンタル6体と現行online MatchProtocolへその2体は導入されていない。進捗を「原作キャラ2体完成」と読み替えない。
 - 監査時HEAD `a5bbd410` に対する [Research battle CI #40973249690](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40973249690)、[Firebase Friends 2-client #40973249628](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40973249628)、[Chromium stage #40973242426](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40973242426) の全jobが **success**。直前の実装コミット `01d55eea91dac5bb31cc1c37699f2600d8e7ae5a` は [Node 901/901 PASS と文書で記録](./ENGINE_V3_4_16_MEMORY_DUO_NORMAL_MOVES_20261030.md)、[実装時CI #40972890661](https://github.com/8mahi8/yokai-battle-lab/actions/runs/40972890661) も success。
 - 2026-10-30のこの引き継ぎ確認では**新たなローカル単体テスト・iPad実機試験は実施していない**。成功の根拠はGitHub上の既存Actions。
