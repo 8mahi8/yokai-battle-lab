@@ -30,7 +30,7 @@ V3-4-20は既存`engine/presentation-timeline.mjs`を利用し、研究画面に
 ## テストと証拠
 
 - [Research CI（V3-4-21テスト追加後）](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41050085643)：**929/929 pass, 0 fail**（新規4件）。
-- [Phase14 Stage CI（新規通信テスト追加後）](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41050078719)：成功。さらに`seat-motion-gap-v3`を追加した最終ブラウザQAは結果を確認し追記。
+- [Phase14 Stage CI（**最終Chromium実DOM・全job成功**）](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41050226846)：既存の通常戦闘/実PointerEvent/おはらいE1/二席のモーション保留に加え、**V3-4-21-GAP-PASS：rev0→rev2の飛び受信でも旧サークルを再固定しない**とログで確認。
 - [Firebase Friends no-Auth QA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41050085717)：既存の二席回帰は成功。通信間引きは上記のメモリRoom試験で実施し、本番DB・Rules・認証は変更していない。
 - 学校のiPad Safari 2台、実際のGoogle Sites埋め込みでの表示の時刻同期、元動画との同時比較は**未実施**。
 
