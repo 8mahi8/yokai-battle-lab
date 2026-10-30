@@ -190,13 +190,15 @@ export function projectMatchResult(winner,seat){
 
 export function createMatchStage({element,onAction,onStep=()=>{},
  seat=null,onError=()=>{},showResearchForecast=false,
- researchOpponentVisibility=false}={}){
+ researchOpponentVisibility=false,showResearchLabels=true}={}){
  if(!element||typeof element.addEventListener!=='function')throw new TypeError('root DOM element required');
  if(typeof onAction!=='function'||typeof onStep!=='function'||typeof onError!=='function')
   throw new TypeError('callbacks required');
  if(seat!==null&&seat!==0&&seat!==1)throw new RangeError('seat must be null, 0 or 1');
  if(typeof researchOpponentVisibility!=='boolean')
   throw new TypeError('researchOpponentVisibility must be boolean');
+ if(typeof showResearchLabels!=='boolean')
+  throw new TypeError('showResearchLabels must be boolean');
  const fixedSeat=seat;
  let activeSeat=seat??0,wireState=null,view=null,selection=null;
  let recentMessage='準備中',pointer=null,lastMove=0;
@@ -310,6 +312,12 @@ export function createMatchStage({element,onAction,onStep=()=>{},
 
  </div>`;
  const $=id=>element.querySelector('#'+id);
+ // Lab disclosures and wire ACK counters remain available to development
+ // builds, not painted in the friend-match battle screen. The DOM ACK id
+ // stays present for the existing real Firebase E2E tests.
+ element.querySelector('.mb-disclaimer').hidden=!showResearchLabels;
+ $('mb-revision').hidden=!showResearchLabels;
+ element.querySelector('.mb-title-group small').hidden=!showResearchLabels;
  // Presentation-only clock. All authoritative results already come from host.
  const showImpact=()=>scenePhase==='impact'||scenePhase==='recovery';
  const visibleHit=id=>{
@@ -568,7 +576,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   $('mb-gesture-help').textContent=INSTRUCTIONS[kind]||'画面をタッチして進めよう';
   const progress=Math.max(0,Math.min(100,Math.round((x.challenge?.progress||0)*100)));
   $('mb-gesture-bar').style.width=progress+'%';
-  $('mb-gesture-progress').textContent=progress+'% 完了（試験用の入力条件）';
+  $('mb-gesture-progress').textContent=progress+'% 完了'+
+   (showResearchLabels?'（試験用の入力条件）':'');
   const challenge=x.challenge||{};
   let points='';
   if(kind==='tap'&&Array.isArray(challenge.target)){
