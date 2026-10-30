@@ -24,7 +24,12 @@ export function validateSpecialSpec(spec) {
  if(spec.kind!=='revive-heal'&&spec.scope==='team')
   throw new RangeError('team scope is reserved for revive-heal');
  if(spec.kind==='dispel'){
-  if(spec.scope!=='front'||Object.keys(spec).some(k=>!['kind','scope'].includes(k)))
+  // This validator is also called on its own normalized result by the
+  // Soultimate compiler; accept only the canonical metadata it emits.
+  if(spec.scope!=='front'||
+     Object.keys(spec).some(k=>!['kind','scope','power','damageKind'].includes(k))||
+     (spec.power!==undefined&&spec.power!==1)||
+     (spec.damageKind!==undefined&&spec.damageKind!==null))
    throw new RangeError('dispel requires front scope and no damage/status fixture');
   return Object.freeze({kind:'dispel',scope:'front',power:1,damageKind:null});
  }
