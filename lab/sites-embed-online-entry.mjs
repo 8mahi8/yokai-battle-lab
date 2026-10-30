@@ -208,7 +208,15 @@ $('.yw-online-start').addEventListener('click',async()=>{
    rotationCooldownMs:0,researchSpecialEffects:true,
    researchDamageModel:true,researchStatInspirits:true}:null;
   match=createFirebaseMatchHost({roomClient:room,protocol:chargeQaMode?
-   createMatchProtocol({battleOptions}):createMatchProtocol({battleOptions:__YW_FRIENDS_MODE__?{playtestSoulTuning:true,enableLoafing:true}:{}}),
+   createMatchProtocol({battleOptions}):createMatchProtocol({battleOptions:__YW_FRIENDS_MODE__?{
+    playtestSoulTuning:true,enableLoafing:true,
+    // A finished charge must execute the six rental effects in actual
+    // Friends PvP, not return effectStatus:'unimplemented' after spending Soul.
+    // These are existing explicitly-labelled PLAYTEST effects (not verified
+    // original 3DS power/hit odds), requiring shared stat/damage support.
+    researchSpecialEffects:true,researchDamageModel:true,
+    researchStatInspirits:true
+   }:{}}),
    onSnapshot:s=>{renderConfirmedSnapshot(s);},onError:err});
   if(__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&chargeQaMode){
    window.__ywFriendsChargeQa={step:()=>connected()?match.advanceAuto():
