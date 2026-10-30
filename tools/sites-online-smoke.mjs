@@ -145,6 +145,7 @@ const result=document.getElementById('result');
 const isG=location.search==='?gcharge';
 const isPurify=location.search==='?purify';
 const isFull=location.search==='?fullmatch';
+const isOneGame=location.search==='?onegame';
 const doc=f=>f.contentDocument,el=(f,s)=>doc(f)?.querySelector(s);
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function check(test,reason){if(!test)throw Error(reason);}
@@ -191,6 +192,160 @@ function gauge(frame,id){
   'charge-only fixture should not enable the wall-time auto clock');
 
 
+
+ // V3-5-5: one real connected match carries EVERY major manual system.
+ // Unlike separate synthetic acceptance screens, no state or result is set
+ // by the browser: only canonical commands and Host auto actions mutate it.
+ if(isOneGame){
+  const snap=()=>hostQa.snapshot();
+  const negative=id=>snap().game.inspirits[id].some(t=>t.sign==='negative');
+  let seqA=0,seqB=0,actions=0;
+  async function ack(side,label){
+   const n=side===0?++seqA:++seqB;
+   await until(()=>el(g,'#mb-revision')?.textContent.includes(
+    (side===0?'A ':'B ')+n)&&
+    el(h,'#mb-revision')?.textContent.includes(
+     (side===0?'A ':'B ')+n),label+' ACK '+n);
+  }
+  async function step(){
+   await until(()=>{const a=hostQa.status();return
+    a.lastPublished>=a.revision&&!a.dirty;},'previous Host action published');
+   const result=hostQa.step();
+   check(result.ok,'true Host auto step failed: '+JSON.stringify(result));
+   actions++;
+   const rev=hostQa.status().revision;
+   await until(()=>el(g,'#mb-revision')?.textContent.startsWith('REV '+rev+' /')&&
+    el(h,'#mb-revision')?.textContent.startsWith('REV '+rev+' /'),
+    'both seats received Host action '+actions);
+  }
+  async function tapTargets(kind,count){
+   for(let i=0;i<count;i++){
+    const pad=el(g,'#mb-touch-pad');
+    const dot=el(g,'#mb-touch-points')?.querySelectorAll('.mb-touch-target')[i];
+    check(pad&&dot,'missing actual '+kind+' touch target '+i);
+    const box=dot.getBoundingClientRect();
+    check(box.width>0&&box.height>0,'invisible '+kind+' target '+i);
+    const ptr={bubbles:true,cancelable:true,button:0,pointerType:'touch',
+     pointerId:(kind==='pop'?310:kind==='normal'?330:350)+i,isPrimary:true,
+     clientX:box.left+box.width/2,clientY:box.top+box.height/2};
+    pad.dispatchEvent(new PointerEvent('pointerdown',ptr));
+    pad.dispatchEvent(new PointerEvent('pointerup',ptr));
+    await ack(1,kind+' physical Pointer tap '+(i+1));
+    if(i<count-1)check(!el(g,'#mb-modal').hidden,kind+' closed too soon');
+   }
+  }
+  // Phase 1: a REAL negative Inspirit from the first Host fighter.
+  el(h,'#mb-target').click();
+  el(h,'.mb-fighter[data-unit="B1"]').click();
+  await ack(0,'Host opponent pin B1');
+  while(!negative('B1')&&actions<100)await step();
+  check(negative('B1')&&snap().game.events.some(e=>
+   e.type==='action'&&e.kind==='inspirit'&&e.target==='B1'&&e.hit),
+   'the B1 negative Inspirit was not caused by an enemy action');
+  check(el(g,'#mb-team1 [data-unit="B1"] .mb-unit-stat')?.textContent.includes('⚠'),
+   'guest missing real negative status');
+
+  // Phase 2: guest wheel B1 to bench; 5 true Guest touch ACKs cleanse it.
+  el(g,'[data-rotate="1"]').click();
+  await ack(1,'guest benches B1');
+  check(el(g,'#mb-team1 [data-unit="B1"]').classList.contains('mb-bench'),
+   'B1 was not benched');
+  el(g,'#mb-purify').click();
+  const affected=el(g,'#mb-team1 [data-unit="B1"]');
+  check(affected.classList.contains('mb-choice-eligible'),'cannot select afflicted bench');
+  affected.click();
+  await ack(1,'Purify start B1');
+  check(el(g,'#mb-gesture-help')?.textContent.includes('紫の玉をタップ'),
+   'first genuine Purify challenge is not expected pop');
+  check(negative('B1'),'Purify start erased status');
+  await tapTargets('pop',5);
+  await until(()=>el(g,'#mb-modal').hidden&&!negative('B1')&&
+   !el(g,'#mb-team1 [data-unit="B1"] .mb-unit-stat')?.textContent.includes('⚠'),
+   'Host did not clear B1 from real guest Purify');
+  check(snap().game.events.filter(e=>e.type==='purification').length===1,
+   'no canonical Purify completion event');
+
+  // Phase 3: standard B2 has EARNED Soul from real Guard actions.
+  let b2Steps=0;
+  while(gauge(g,'B2')!=='100%'&&b2Steps<80){await step();b2Steps++;}
+  check(gauge(g,'B2')==='100%'&&gauge(h,'B2')==='100%',
+   'B2 did not earn genuine Soul');
+  check(!negative('B2'),'B2 cannot cast while sleeping');
+  el(g,'#mb-charge').click();
+  const b2=el(g,'#mb-team1 [data-unit="B2"]');
+  check(b2.classList.contains('mb-choice-eligible'),'B2 normal Soultimate not eligible');
+  b2.click();
+  await ack(1,'real B2 standard charge start');
+  check(el(g,'#mb-gesture-help')?.textContent.includes('タップ'),
+   'seed12 first real charge trial not tap');
+  await tapTargets('normal',6);
+  await until(()=>el(g,'#mb-modal').hidden&&
+   snap().game.events.some(x=>x.type==='special'&&
+    x.actor==='B2'&&x.mode==='soultimate'),
+   'normal Soultimate did not resolve on Host');
+  check(snap().game.squads[0].filter(x=>x.hp===0).length===3&&
+   snap().game.winner===null,
+   'B2 ordinary special did not KO the real first trio');
+
+  // Phase 4: Host responds with THREE legal circle commands, no HP hacks.
+  for(let i=0;i<3;i++){
+   el(h,'[data-rotate="1"]').click();
+   await ack(0,'Host enters reserve member '+(i+1));
+  }
+  check(['A4','A5','A6'].every(id=>snap().game.clock.teams[0].frontIds.includes(id)),
+   'real reserve rotation did not expose remaining enemy trio');
+  for(let i=0;i<2;i++){
+   el(g,'[data-rotate="-1"]').click();
+   await ack(1,'Guest rotates toward Zero G trio '+(i+1));
+  }
+  check(['B6','B1','B2'].every(id=>snap().game.clock.teams[1].frontIds.includes(id)),
+   'B6 B1 B2 not all in G circle');
+  el(g,'#mb-team1 .mb-center-symbol').click();
+  await ack(1,'Guest switches to Zero');
+  check(el(g,'#mb-charge span').textContent==='Gわざ',
+   'Zero Watch G button not visible');
+  let gSteps=0;
+  while(!['B6','B1','B2'].every(id=>gauge(g,id)==='100%'&&
+   gauge(h,id)==='100%')&&gSteps<120){await step();gSteps++;}
+  check(['B6','B1','B2'].every(id=>gauge(g,id)==='100%'),
+   'G triple Soul not earned from real Guard actions');
+  el(g,'#mb-charge').click();
+  const b1=el(g,'#mb-team1 [data-unit="B1"]');
+  check(b1.classList.contains('mb-choice-eligible'),'G caster B1 ineligible');
+  b1.click();
+  await ack(1,'Guest B1 Zero G charge');
+  check(el(g,'#mb-gesture-help').textContent.includes('タップ'),
+   'seed12 second real charge unexpectedly changed input kind');
+  await tapTargets('g',6);
+  await until(()=>el(g,'#mb-modal').hidden&&
+   ['B6','B1','B2'].every(id=>gauge(g,id)==='0%'&&gauge(h,id)==='0%'),
+   'G did not consume all three real Soul gauges');
+
+  const ending=snap(),specials=ending.game.events.filter(x=>x.type==='special');
+  check(ending.game.winner===1&&ending.game.squads[0].every(x=>x.hp===0),
+   'Host did not really KO six opponents and declare guest winner');
+  check(specials.length===2&&
+   specials[0].mode==='soultimate'&&specials[0].actor==='B2'&&
+   specials[1].mode==='g-tech'&&specials[1].actor==='B1',
+   'normal and G must be consecutive legitimate Host special outcomes');
+  let ended=false;
+  for(let i=0;i<840;i++){
+   if(el(h,'#mb-finish-screen')?.hidden===false&&
+      el(g,'#mb-finish-screen')?.hidden===false){ended=true;break;}
+   await sleep(80);
+  }
+  check(ended,'one-room result overlays never appeared after final scene');
+  check(el(h,'#mb-finish-title')?.textContent==='敗北…'&&
+   el(g,'#mb-finish-title')?.textContent==='勝利！',
+   'final same-room opponent seats disagree on the winner');
+  check(el(g,'#mb-revision')?.textContent.startsWith('REV '+ending.revision+' /'),
+   'guest failed to apply final one-room snapshot');
+  result.textContent='SITES-FRIENDS-ONE-GAME-PASS '+actions+
+   ' real Host actions, negative Inspirit, bench Purify 5 pointer ACK, '+
+   'normal B2 6 touch, Host 3 legal reserve rotations, Zero G B1 6 touch, '+
+   'all six KO and opposite two-seat results';
+  return;
+ }
  // V3-5-5: ONE actual authoritative 6v6, not a fake result overlay.
  // Set only initial localhost roster stats. Every KO and substitution must
  // arise from normal Host attack actions and real RTDB snapshot delivery.
@@ -484,7 +639,7 @@ const server=createServer((req,res)=>{
   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(fragment);return;
  }
  res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(
-  friends&&['?charge','?gcharge','?purify','?fullmatch'].includes(route.search)?chargeQa:qa);
+  friends&&['?charge','?gcharge','?purify','?fullmatch','?onegame'].includes(route.search)?chargeQa:qa);
 });
 const tmp=mkdtempSync(path.join(tmpdir(),'yw-sites-online-'));
 try{
@@ -545,5 +700,13 @@ try{
   if(!full.ok)throw Error('V3-5-5 canonical 6v6 online result failed: '+
    String(full.rendered||full.reason).slice(0,1600));
   console.log(full.rendered);
+  const integrated=await runRealtimeQa({
+   browser,profile:path.join(tmp,'onegame-profile'),
+   url:'http://127.0.0.1:'+server.address().port+'/qa?onegame',
+   sentinel:'SITES-FRIENDS-ONE-GAME-PASS',timeoutMs:150000
+  });
+  if(!integrated.ok)throw Error('V3-5-5 same-room Friends full match failed: '+
+   String(integrated.rendered||integrated.reason).slice(0,1800));
+  console.log(integrated.rendered);
  }
 }finally{await new Promise(ok=>server.close(ok));rmSync(tmp,{recursive:true,force:true});}
