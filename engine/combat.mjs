@@ -1300,7 +1300,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
           oneDamage=dealt.amount;
           amount+=oneDamage;
           oneInterruption=hitAftermath.afterOrdinaryHit({
-            caster:actor,target,damage:oneDamage,critical:oneCritical
+            caster:actor,target,damage:oneDamage,critical:oneCritical,
+            friendlyFire:!!friendlyFire?.triggered
           });
           if(oneInterruption?.stopped||!interruption)interruption=oneInterruption??interruption;
         }
