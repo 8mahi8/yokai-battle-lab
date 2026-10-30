@@ -44,7 +44,10 @@ test('V3-4-25 actual host auto match: KO seen only on confirmed damage and repla
    for(const id of row.ids){
     assert.ok(!before.game.clock.teams[row.side].frontIds.includes(id));
     assert.ok(after.game.clock.teams[row.side].frontIds.includes(id));
-    assert.ok(after.game.squads[row.side].find(u=>u.id===id).hp>0);
+    assert.ok(before.game.squads[row.side].find(u=>u.id===id).hp>0,
+     'an entrant must have been a living reserve before this action');
+    // The same authoritative action may immediately KO the entrant:
+    // that must not erase evidence of the already performed substitution.
    }
   }
   latest=after;
