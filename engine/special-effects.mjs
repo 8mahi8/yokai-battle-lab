@@ -13,16 +13,21 @@
 // not an assertion of exact Yo-kai 2 character move/level data.
 const SPECIAL_STATUS_EFFECTS=Object.freeze({
  buff:Object.freeze(['strength-up']),
- debuff:Object.freeze(['strength-down','defense-down','spirit-down','sleep'])
+ debuff:Object.freeze(['strength-down','defense-down','spirit-down','sleep','friendly-fire'])
 });
 export function validateSpecialSpec(spec) {
  if(!spec||typeof spec!=='object'||Array.isArray(spec))throw new TypeError('research special config required');
- if(!['damage','heal','buff','debuff','revive','revive-heal','drain','damage-status'].includes(spec.kind))throw new RangeError('unsupported special.kind');
+ if(!['damage','heal','buff','debuff','revive','revive-heal','drain','damage-status','dispel'].includes(spec.kind))throw new RangeError('unsupported special.kind');
  if(!['one','front','team'].includes(spec.scope))throw new RangeError('unsupported special.scope');
  if(spec.kind==='revive-heal'&&spec.scope!=='team')
   throw new RangeError('revive-heal must target whole team');
  if(spec.kind!=='revive-heal'&&spec.scope==='team')
   throw new RangeError('team scope is reserved for revive-heal');
+ if(spec.kind==='dispel'){
+  if(spec.scope!=='front'||Object.keys(spec).some(k=>!['kind','scope'].includes(k)))
+   throw new RangeError('dispel requires front scope and no damage/status fixture');
+  return Object.freeze({kind:'dispel',scope:'front',power:1,damageKind:null});
+ }
  if(spec.kind==='buff'||spec.kind==='debuff'){
   if(!SPECIAL_STATUS_EFFECTS[spec.kind].includes(spec.effect))
    throw new RangeError('unsupported special status effect');
@@ -105,6 +110,13 @@ export function planResearchSpecial({spec,caster,allies,enemies,powerMultiplier=
    hpBefore:0,hpAfter:amount,predictedKO:false,revived:true,
    model:'revival-playtest-fixture'}];
  }
+ // Original YW2 Wazzat: remove positive Inspirits from the living enemy
+ // front; the canonical ledger determines what actually existed/was removed.
+ if(rule.kind==='dispel')return enemies.filter(x=>x.hp>0).map(target=>({
+  targetId:target.id,kind:'dispel',amount:0,deltaHp:0,
+  hpBefore:target.hp,hpAfter:target.hp,predictedKO:false,
+  removeSign:'positive',model:'source-yw2-positive-inspirit-dispel'
+ }));
  const friendly=rule.kind==='heal'||rule.kind==='buff';
  const living=(friendly?allies:enemies).filter(x=>x.hp>0);
  const targets=rule.scope==='front'?living:
