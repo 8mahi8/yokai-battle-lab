@@ -57,9 +57,9 @@ export function createSeatMotionVisibility({seat}={}){
   return status();
  }
  function advance(elapsed){
-  if(key===null)return status();
   if(!Number.isFinite(elapsed)||elapsed<0)
    throw new RangeError('elapsed motion time must be nonnegative');
+  if(key===null)return status();
   const next=Math.min(endMs,Math.max(elapsedMs,Math.floor(elapsed)));
   if(next>elapsedMs)timeline.advance(next-elapsedMs);
   elapsedMs=next;
