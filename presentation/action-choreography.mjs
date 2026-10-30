@@ -13,6 +13,7 @@ import {defineActionOutcomeV2} from '../contracts/action-outcome-v2.mjs';
 import {assertSoultimateImpactLedger} from '../contracts/soultimate-impact-ledger-v1.mjs';
 import {assertSoultimateHitLedger} from '../contracts/soultimate-hit-ledger-v1.mjs';
 import {yw2ReferenceSoultimate} from '../content/yw2-soultimate-reference.mjs';
+import {RENTAL_SPECIAL_TREATMENTS} from './soultimate-visual-profiles.mjs';
 export const CHOREOGRAPHY_SCHEMA=1;
 const allowedTargets=new Set(['damage','heal','revive','buff','debuff','status','miss','dispel']);
 const freezeTargets=values=>Object.freeze(values.map(e=>Object.freeze({...e})));
@@ -106,6 +107,12 @@ export function planActionChoreography(event){
    throw new TypeError('unmatched host Soultimate hit rows');
  }
  const referenceSoultimate=event.referenceSoultimate??null;
+ const specialVisual=event.specialVisual??null;
+ if(specialVisual!==null&&
+    (kind!=='special'||referenceSoultimate!==null||!actorId||
+     !RENTAL_SPECIAL_TREATMENTS.includes(specialVisual)||
+     specialVisual.slot!==Number(actorId.slice(1))))
+  throw new TypeError('untrusted Soultimate presentation profile');
  if(referenceSoultimate){
   const ref=yw2ReferenceSoultimate(referenceSoultimate.id);
   if(kind!=='special'||!specialHitLedger||!specialImpactLedger||
@@ -154,7 +161,7 @@ export function planActionChoreography(event){
   schema:CHOREOGRAPHY_SCHEMA,eventKey:key,kind,actorId,
   label:preset.label,pose:preset.pose,durationMs,phases,impacts,
   moveId,hitResults,actionOutcomeV2,specialImpactLedger,specialHitLedger,
-  referenceSoultimate
+  referenceSoultimate,specialVisual
  });
 }
 /**
