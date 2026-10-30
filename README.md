@@ -1,3 +1,5 @@
+> **【2026-10-31 V3-5-4 最新】** [オンライン実2席・おはらい完了E2E](./docs/ENGINE_V3_5_4_FRIENDS_PURIFY_E2E_20261031.md)：Node946件・Chromium/Firebase Emulator二席PASS。次はV3-5-5全試合統合。学校Safari実機と原作MP4直接比較は未検証。現行通信は認証なしFirebase Friends。
+
 > **【2026-10-31 現行開発入口】** [最新V3-5-3 Friends GわざE2E・検証・次工程](./docs/ENGINE_V3_5_3_FRIENDS_ZERO_G_DAMAGE_E2E_20261031.md) / [引き継ぎ現況](./docs/HANDOFF_LATEST_20261030.md) / [6段階ロードマップ](./docs/ROADMAP_6_PHASE_PROGRESS_20261028.md)。開発はV3-5途中。原作値/学校Safari最新版は未検証。以下の旧2.5Dデモ記述は現行ゲーム仕様ではありません。
 
 > **【2026-10-25最新入口】** この`main`由来のREADME本文は旧2.5D造形デモの記録です。**現在の開発状況は[再監査済み引き継ぎ](./docs/HANDOFF_VERIFIED_20261025.md)と[設計全体図](./docs/PROJECT_MAP_AND_PROGRESS.md)**を参照（開発ブランチ`feat/phase1-action-circle-lab-20261023`）。Phase25でSupabase実2 iframe E2EとNode497/497テストに成功。実Google Sites／学校iPad Safari／原作完全一致は未検証。以下のPhase20などの古い記述は履歴です。
