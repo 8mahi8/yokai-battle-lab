@@ -295,6 +295,37 @@ try{
  }
  if(!e1Pass)throw Error('E1 actual host purification lower-only finish QA failed');
 
+ // V3-4-20: two actual DOM seats share a single authoritative host. The
+ // B seat rotates during a scene. The A opponent wheel is initially delayed,
+ // while host/owner update immediately; visual unlock must follow. Timings
+ // are explicitly research fixtures, NOT original 3DS millisecond evidence.
+ let seatDelayPass=false;
+ for(let trial=1;trial<=2;trial++){
+  const url='http://127.0.0.1:'+server.address().port+
+   '/lab/match-stage.html?review=seat-motion-v3';
+  const motionChild=spawn(browser,[
+   '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+   '--no-first-run','--disable-extensions',
+   '--user-data-dir='+path.join(tmp,'seat-motion-v3-'+trial),
+   '--window-size=1180,900','--virtual-time-budget=4300','--dump-dom',url
+  ],{stdio:['ignore','pipe','pipe']});
+  let body='',errors='',timedOut=false;
+  motionChild.stdout.on('data',x=>body+=String(x).slice(0,300000));
+  motionChild.stderr.on('data',x=>errors+=String(x).slice(0,2500));
+  const timeout=setTimeout(()=>{timedOut=true;motionChild.kill('SIGKILL');},20000);
+  const code=await new Promise(resolve=>motionChild.on('close',resolve));
+  clearTimeout(timeout);
+  const result=body.match(/<span id="lab-state">([^<]*)<[/]span>/)?.[1]??'';
+  if(!timedOut&&code===0&&result==='V3-4-20-SEAT-ROUNDTRIP-PASS'){
+   seatDelayPass=true;
+   console.log('V3-4-20-SEAT-ROUNDTRIP-PASS real two-seat Chromium/host motion');
+   break;
+  }
+  console.warn('V3-4-20 seat visible DOM trial '+trial+' failed: '+
+   (result||'no result')+' '+errors.slice(-220));
+ }
+ if(!seatDelayPass)throw Error('V3-4-20 two-seat motion visibility browser QA failed');
+
  // Create a visual review artifact from the actual ESM app (not a mock image).
  const shot=path.join(root,'phase14-stage-preview.png');
  const child=spawn(browser,[
