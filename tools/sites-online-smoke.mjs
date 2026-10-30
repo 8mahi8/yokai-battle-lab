@@ -208,8 +208,8 @@ function gauge(frame,id){
      (side===0?'A ':'B ')+n),label+' ACK '+n);
   }
   async function step(){
-   await until(()=>{const a=hostQa.status();return
-    a.lastPublished>=a.revision&&!a.dirty;},'previous Host action published');
+   await until(()=>{const a=hostQa.status();return a.lastPublished>=a.revision&&!a.dirty;},
+    'previous Host action published');
    const result=hostQa.step();
    check(result.ok,'true Host auto step failed: '+JSON.stringify(result));
    actions++;
