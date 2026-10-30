@@ -241,8 +241,11 @@ export function buildYw2MemoryDuoNormalLab({
   characters.push(ref);
   profiles[id]=Object.freeze({
    schema:BATTLE_EXECUTION_PROFILE_SCHEMA_V2,characterId:id,
-   evidence:'fixture',sourceRefs:[],soultimateRank:1,
-   soulCapacity:soulCapacityForRank(1)
+   evidence:'fixture',sourceRefs:[],
+   // YW2 Wazzat charge100, Houzzat charge200 (Mt. Wildwood YW2).
+   // Original move effects are sourced, but turn timing/RNG remain fixtures.
+   soultimateRank:includeSourceStatusMoves?(i===0?1:3):1,
+   soulCapacity:soulCapacityForRank(includeSourceStatusMoves?(i===0?1:3):1)
   });
  }
  const catalog=extendCombatCatalog({
