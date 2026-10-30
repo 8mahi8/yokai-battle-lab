@@ -20,8 +20,8 @@ export function latestBattleCue(events){
   if(event.type==='special'){
    const targets=Array.isArray(event.impacts)?event.impacts.filter(x=>x&&
     typeof x.targetId==='string'&&Number.isFinite(x.amount)).map(x=>({
-     id:x.targetId,amount:x.amount,kind:['heal','revive','buff','debuff'].includes(x.kind)?x.kind:'damage',
-     hit:x.kind==='buff'||x.kind==='debuff'?x.applied!==false:true
+     id:x.targetId,amount:x.amount,kind:['heal','revive','buff','debuff','dispel'].includes(x.kind)?x.kind:'damage',
+     hit:['buff','debuff','dispel'].includes(x.kind)?x.applied!==false:true
     })):[];
    return {key:Number.isSafeInteger(event.eventId)&&event.eventId>0?'event:'+event.eventId:'special:'+i+':'+JSON.stringify(event),type:'special',actor:event.actor,
     mode:event.mode,kind:'special',targets,target:targets[0]?.id??null,
@@ -52,6 +52,8 @@ export function latestBattleCue(events){
  * resolve MISS before the intended effect type. Presentation only. */
 export function visualReactionClass(impact){
  if(!impact)return '';
+ // A harmless no-op cleanse is not a failed attack or a MISS.
+ if(impact.kind==='dispel')return impact.hit===false?'':'mb-inspirited';
  if(impact.hit===false)return 'mb-missed';
  if(['heal','revive','buff'].includes(impact.kind))return 'mb-healed';
  if(impact.kind==='status')return 'mb-inspirited';
