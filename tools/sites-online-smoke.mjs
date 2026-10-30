@@ -142,6 +142,7 @@ const chargeQa=String.raw`<!doctype html><html lang="ja"><meta charset="utf-8">
 <script>
 const h=document.getElementById('host'),g=document.getElementById('guest');
 const result=document.getElementById('result');
+const isG=location.search==='?gcharge';
 const doc=f=>f.contentDocument,el=(f,s)=>doc(f)?.querySelector(s);
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function check(test,reason){if(!test)throw Error(reason);}
@@ -186,8 +187,29 @@ function gauge(frame,id){
   typeof hostQa.snapshot==='function','localhost-only charge driver absent');
  check(el(h,'.yw-online-auto')?.getAttribute('aria-pressed')==='false',
   'charge-only fixture should not enable the wall-time auto clock');
+ // G uses the SAME authoritative guard actions, with a legal guest rotation
+ // to put the left neighbor B6 in front. Neither Soul nor HP is injected.
+ if(isG){
+  el(g,'[data-rotate="-1"]').click();
+  await until(()=>el(g,'#mb-revision')?.textContent.includes('B 1')&&
+   el(h,'#mb-revision')?.textContent.includes('B 1'),'G left rotation ACK');
+  check(['B6','B1','B2'].every(id=>!
+   el(g,'#mb-team1 [data-unit="'+id+'"]').classList.contains('mb-bench')),
+   'G caster and both ring neighbors must be in reachable front');
+  el(g,'#mb-team1 .mb-center-symbol').click();
+  await until(()=>el(g,'#mb-revision')?.textContent.includes('B 2')&&
+   el(h,'#mb-revision')?.textContent.includes('B 2'),'Zero Watch ACK');
+  check(el(g,'#mb-charge span').textContent==='Gわざ',
+   'Zero Watch must actually expose G move');
+  check(el(h,'#mb-team1 .mb-center-symbol').textContent==='零式',
+   'host did not mirror guest Zero Watch');
+ }
+ const startSeq=isG?3:1;
+ const consumers=isG?['B6','B1','B2']:['B1'];
+ const gaugesFull=()=>consumers.every(id=>
+  gauge(g,id)==='100%'&&gauge(h,id)==='100%');
  let turns=0;
- while(gauge(g,'B1')!=='100%'&&turns<80){
+ while(!gaugesFull()&&turns<120){
   const status=hostQa.status();
   await until(()=>{const x=hostQa.status();return x.lastPublished>=x.revision&&
    !x.dirty;},'previous authoritative snapshot published');
@@ -198,8 +220,7 @@ function gauge(frame,id){
   await until(()=>el(g,'#mb-revision')?.textContent.startsWith('REV '+revision+' /'),
    'guest receives real guard action '+revision);
  }
- await until(()=>gauge(g,'B1')==='100%'&&gauge(h,'B1')==='100%',
-  'B1 full gauge confirmed on both genuine seats');
+ await until(gaugesFull,'all real consumer Soul gauges full in both seats');
  check(!el(g,'#mb-team1 [data-unit="B1"]').classList.contains('mb-bench'),
   'B1 lost its frontline before real charge');
  const hpBefore=hostQa.snapshot().game.squads[0].map(x=>x.hp);
@@ -211,7 +232,7 @@ function gauge(frame,id){
   'B1 with full Soul was not eligible for charging');
  medal.click();
  await until(()=>!el(g,'#mb-modal').hidden&&
-  el(g,'#mb-revision')?.textContent.includes('B 1'),
+  el(g,'#mb-revision')?.textContent.includes('B '+startSeq),
   'Host ACK of guest chargeStart and touch panel');
  check(el(g,'#mb-gesture-help')?.textContent.includes('タップ'),
   'existing seed12 guest B1 fixture should be tap; original weights unverified');
@@ -228,20 +249,21 @@ function gauge(frame,id){
    clientY:box.top+box.height/2};
   pad.dispatchEvent(new PointerEvent('pointerdown',ptr));
   pad.dispatchEvent(new PointerEvent('pointerup',ptr));
-  await until(()=>el(g,'#mb-revision')?.textContent.includes('B '+(i+2))&&
-   el(h,'#mb-revision')?.textContent.includes('B '+(i+2)),
+  await until(()=>el(g,'#mb-revision')?.textContent.includes('B '+(startSeq+i+1))&&
+   el(h,'#mb-revision')?.textContent.includes('B '+(startSeq+i+1)),
    'host+guest authoritative ACK for touch #'+(i+1));
   if(i<5){
    check(!el(g,'#mb-modal').hidden,'touch prematurely finished charge '+i);
-   check(gauge(g,'B1')==='100%'&&gauge(h,'B1')==='100%',
-    'partial tap consumed host Soul '+i);
+   check(gaugesFull(),'partial tap consumed a G/normal consumer Soul '+i);
   }
  }
  await until(()=>el(g,'#mb-modal').hidden&&
-  gauge(g,'B1')==='0%'&&gauge(h,'B1')==='0%',
-  'charge completed by host, Soul consumed on both screens');
+  consumers.every(id=>gauge(g,id)==='0%'&&gauge(h,id)==='0%'),
+  'charge completed by host, every consumer spent Soul on both screens');
  const latest=hostQa.snapshot().game.events.filter(e=>e.type==='special').at(-1);
- check(!!latest&&latest.actor==='B1','real host did not emit B1 special: '+
+ check(!!latest&&latest.actor==='B1'&&
+  latest.mode===(isG?'g-tech':'soultimate'),
+  'real host did not emit the selected normal/G B1 special: '+
   JSON.stringify(hostQa.snapshot().game.events.slice(-7))+' guest '+
   el(g,'.yw-online-status')?.textContent);
  check(hostQa.snapshot().game.squads[0].some((x,i)=>x.hp!==hpBefore[i]),
@@ -255,8 +277,9 @@ function gauge(frame,id){
   'host and guest disagree on the same special title');
  check(el(g,'.yw-online-status')?.textContent.includes('わざを発動しました'),
   'guest never received successful final touch ACK');
- result.textContent='SITES-FRIENDS-CHARGE-PASS '+turns+
-  ' canonical Soul actions, 6 real Guest touch ACK, host B1 Special and both cut-ins';
+ result.textContent=(isG?'SITES-FRIENDS-G-CHARGE-PASS ':'SITES-FRIENDS-CHARGE-PASS ')+turns+
+  ' canonical Soul actions, 6 real Guest touch ACK, host B1 '+(isG?
+   'Zero G 3-Soul 2x-power':'normal')+' Special and both cut-ins';
 })().catch(error=>{result.textContent='SITES-FRIENDS-CHARGE-FAIL '+(error.stack||error.message)});
 </script></body></html>`;
 
@@ -266,7 +289,7 @@ const server=createServer((req,res)=>{
   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(fragment);return;
  }
  res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(
-  friends&&route.search==='?charge'?chargeQa:qa);
+  friends&&['?charge','?gcharge'].includes(route.search)?chargeQa:qa);
 });
 const tmp=mkdtempSync(path.join(tmpdir(),'yw-sites-online-'));
 try{
@@ -302,5 +325,14 @@ try{
   if(!proof.ok)throw Error('V3-5-2 actual two-seat Friends charge failed: '+
    String(proof.rendered||proof.reason).slice(0,1400));
   console.log(proof.rendered);
+
+  const gProof=await runRealtimeQa({
+   browser,profile:path.join(tmp,'gcharge-profile'),
+   url:'http://127.0.0.1:'+server.address().port+'/qa?gcharge',
+   sentinel:'SITES-FRIENDS-G-CHARGE-PASS',timeoutMs:90000
+  });
+  if(!gProof.ok)throw Error('V3-5-3 real 3-Soul Zero G charge failed: '+
+   String(gProof.rendered||gProof.reason).slice(0,1400));
+  console.log(gProof.rendered);
  }
 }finally{await new Promise(ok=>server.close(ok));rmSync(tmp,{recursive:true,force:true});}
