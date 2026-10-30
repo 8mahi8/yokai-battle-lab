@@ -1183,7 +1183,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     }else if(kind==='inspirit'){
       const inspiritSpec=catalogInspiritByActor?.get(actor.id);
       const sign=inspiritSpec?.sign??(
-       ['sleep','strength-down','defense-down','spirit-down','speed-down','hp-loss']
+       ['sleep','strength-down','defense-down','spirit-down','speed-down','hp-loss','friendly-fire']
         .includes(actor.inspirit)?'negative':'positive');
       const inspiritEffect=inspiritSpec?.effect??actor.inspirit;
       const group=sign==='negative'?livingFront(1-actor.side):livingFront(actor.side);
