@@ -98,7 +98,11 @@ test('V3-5-5 ONE room: enemy Inspirit, bench Purify, normal Soultimate, Zero G, 
  assert.equal(first.game.squads[0].filter(u=>u.hp===0).length,3,
   'normal special must KO the first three without a fabricated result');
  assert.equal(first.game.winner,null,'three reserves must remain alive');
- advance(); // canonical automatic replacement of the wiped enemy front
+ // The opponent uses its ordinary Watch wheel to bring in all three
+ // reserves. This is a legal player command, NOT a simulated KO/HP update.
+ for(let i=0;i<3;i++)cmd(0,{type:'rotate',direction:1});
+ assert.deepEqual(match.snapshot().game.clock.teams[0].frontIds,['A4','A5','A6'],
+  'opponent must expose actual three remaining reserves for G');
 
  cmd(1,{type:'rotate',direction:-1});
  cmd(1,{type:'rotate',direction:-1});
