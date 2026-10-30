@@ -8,7 +8,7 @@
 import {renderSpiritPortrait} from './character-art.mjs';
 import {wheelAngle,wheelGestureAt} from './wheel-gesture.mjs';
 import {latestBattleCue,visualReactionClass} from './battle-vfx.mjs';
-import {collectNewBattleCues,MAX_VISUAL_CATCHUP_CUES} from './battle-cue-sequence.mjs';
+import {collectNewBattleCues,MAX_VISUAL_CATCHUP_CUES,actionForVisibleCue} from './battle-cue-sequence.mjs';
 import {passiveSkillNoticesForAction} from './passive-feedback.mjs';
 import {soultimateDisplayTitle} from '../content/presentation-labels.mjs';
 import {yw2ReferenceSoultimate} from '../content/yw2-soultimate-reference.mjs';
@@ -593,7 +593,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   }
   $('mb-finish-screen').hidden=view.winner===null||resultDismissed;
   element.dataset.matchFinished=String(view.winner!==null);
-  const action=view.events.slice().reverse().find(e=>e.type==='action')??null;
+  // A batched host update may be newer than the FIFO scene on screen.
+  // Resolve the label from the cue AFTER processing its sequence below.
+  let action=null;
   const cue=latestBattleCue(view.events);
   const seen=collectNewBattleCues(view.events,lastEventId);
   const maxId=seen.latestEventId;
@@ -628,6 +630,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    seenCueKey=cue.key;
    beginScene(cue,previousView);
   }
+  action=actionForVisibleCue(view.events,flash);
   const backdrop=element.querySelector('.mb-battle-backdrop');
   backdrop.dataset.sceneKind=scenePlan?.kind??'none';
   backdrop.dataset.scenePhase=scenePhase;
@@ -740,7 +743,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const target=view.teams[action.target?.startsWith('B')?1:0]?.members.find(u=>u.id===action.target);
    const kindNames={attack:'攻撃',technique:'妖術',inspirit:'とりつき',guard:'ガード',heal:'回復',loaf:'サボり'};
    $('mb-action-label').textContent=(actor?.name||action.actor||'妖怪')+' → '+(target?.name||'行動')+
-    ' / '+(kindNames[action.kind]||action.kind)+(action.hit===false?'（ミス）':
+    ' / '+(kindNames[action.kind]||action.kind)+(showImpact()&&
+    flash?.type==='action'&&action.hit===false?'（ミス）':
     showImpact()&&flash?.type==='action'&&action.amount>0?' '+action.amount:'');
   }else $('mb-action-label').textContent='次の行動を待機中';
   $('mb-active-label').textContent='PLAYER '+(activeSeat?'B':'A')+' の操作';
