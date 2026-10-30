@@ -209,7 +209,7 @@ $('.yw-online-start').addEventListener('click',async()=>{
   match=createFirebaseMatchHost({roomClient:room,protocol:chargeQaMode?
    createMatchProtocol({battleOptions}):createMatchProtocol({battleOptions:__YW_FRIENDS_MODE__?{playtestSoulTuning:true,enableLoafing:true}:{}}),
    onSnapshot:s=>{renderConfirmedSnapshot(s);},onError:err});
-  if(chargeQaMode){
+  if(__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&chargeQaMode){
    window.__ywFriendsChargeQa={step:()=>connected()?match.advanceAuto():
     {ok:false,reason:'peer_offline'},status:()=>match.status(),
     snapshot:()=>match.snapshot()};
