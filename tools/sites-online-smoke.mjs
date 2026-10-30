@@ -255,7 +255,7 @@ function gauge(frame,id){
  result.textContent='SITES-FRIENDS-CHARGE-PASS '+turns+
   ' canonical Soul actions, 6 real Guest touch ACK, host B1 Special and both cut-ins';
 })().catch(error=>{result.textContent='SITES-FRIENDS-CHARGE-FAIL '+(error.stack||error.message)});
-<\/script></body></html>`;
+</script></body></html>`;
 
 const server=createServer((req,res)=>{
  const route=new URL(req.url,'http://localhost');
