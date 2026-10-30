@@ -19,6 +19,14 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-20｜相手のサークル/チャージ状態の表示保留を研究画面へ統合
+
+- [原作対人資料・設計境界・研究用画面/QA](./ENGINE_V3_4_20_SEAT_MOTION_VISIBILITY_20261030.md)：熟練対戦者の記録で、**モーション中の自分のサークル入力は受理されても相手画面にはモーション終端まで反映されない**仕組みを再確認。原作の秒数と視界の全項目は未確証であるため既存ActionChoreography時間を研究fixtureとして使用。
+- 既存`engine/presentation-timeline.mjs`を再利用し、描画専用`ui/seat-motion-visibility.mjs`を新設。研究用`createMatchStage({researchOpponentVisibility:true})`では相手の**前衛/メダル配置・Soulゲージ/必殺Ready・Watch表示だけ**を演出終了まで保留。**操作本人の円・正規Host/MatchCoreの入力/HP/状態/勝敗/RNGは絶対に保留しない**。通常学校Friendsにはflagを付けず、現行ゲーム体験/通信を維持。
+- `lab/match-stage.html?review=seat-motion-v3`で**実Chromium DOMのA/B 2席＋同一権威MatchProtocol**を試験。Bがモーション中に回転→B本人/ホストは即B2/B3/B4、Aには旧B1/B2/B3→解除後に更新。さらにモーション中に**新しい試合を開始しても旧表示ロックが残らない**よう空イベントログへの巻き戻りを修正。別サーバー通信や新認証を入れていない。
+- [Node 925件の最終実装CI](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41048381398)、[Chromium Stage二席QA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41048373283)、[Firebase Friends 2席QA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41048381335) を起点に確認。**Chromiumのラボ成功と学校iPad Safari/本番Firebaseで相手視点が完全一致することは別**。学校Safari2台実機と元原作動画の再視聴・同フレーム比較は未実施。
+- 次 **V3-4-21**：現行の研究用クライアント時計だけではホスト/ゲストのネットワーク遅延でモーション開始/解除が一致しない可能性がある。**既存Firebase通信とホスト確定イベント時刻に基づく二席表示境界**を研究し、2iframeの遅延・再接続検証を通してから学校有効化を判断。原作msの捏造や専用ノーモーションボタンを作らない。V3-5エンジン完了は未達。
+
 ## 2026-10-30 V3-4-19｜行動IDに紐付けた画面説明と状態系必殺表示を共通化
 
 - [実装・既存動画観察/外部資料/未確定の区別](./ENGINE_V3_4_19_EVENT_SCENE_PRESENTATION_20261030.md)：原作『妖怪ウォッチ2』では入力受付と相手側のモーション表示が異なる。今回はそれを即再現したとは扱わず、**ホスト確定ActionのeventIdと、FIFO演出中の行動説明が常に一致する**ようUIを修正。前モーション中の別行動名と攻撃着弾前のMISS先出しを防止。
