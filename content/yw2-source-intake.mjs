@@ -79,7 +79,8 @@ export function createYw2SourceIndex({sources,characters}={}){
    for(const k of ['power','hits','element','effect'])
     validateFact(move[k],sources,entry.id+'/'+slot+'/'+k);
    if(move.level!==undefined){
-    if(slot!=='inspirit')throw new TypeError('only Inspirit moves may carry status level');
+    if(!['inspirit','soultimate'].includes(slot))
+     throw new TypeError('only Inspirit/Soultimate moves may carry status level');
     validateFact(move.level,sources,entry.id+'/'+slot+'/level');
     const level=readDocumented(move.level);
     if(level!==null&&(!Number.isSafeInteger(level)||level<1||level>4))
