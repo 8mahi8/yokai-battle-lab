@@ -19,7 +19,9 @@
 export const KO_CAUSE_POLICY=Object.freeze({
  ordinary:Object.freeze({eligibilityPhase:'before-skill',refreshPin:true,creditCaster:true}),
  special:Object.freeze({eligibilityPhase:'after-skill',refreshPin:false,creditCaster:true}),
- poke:Object.freeze({eligibilityPhase:'before-skill',refreshPin:true,creditCaster:false})
+ poke:Object.freeze({eligibilityPhase:'before-skill',refreshPin:true,creditCaster:false}),
+ // Confused ally hits can KO, but do not credit an enemy KO skill.
+ 'friendly-fire':Object.freeze({eligibilityPhase:'before-skill',refreshPin:true,creditCaster:false})
 });
 
 export function createKnockoutLifecycle({
