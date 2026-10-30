@@ -19,6 +19,14 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-26｜原作対戦資料に照らした実ホスト6vs6の二席通し描画・最後の一撃→結果
+
+- [全工程／原作公式・対人研究・本人の動画台帳との比較](./ENGINE_V3_4_26_SOURCE_COMPARE_FULL_MATCH_RESULT_GATE_20261030.md)。公式は3前衛/6体サークル・零式Gわざ/つつく、ピン・おはらいを確認できるが、**3DS内部の勝敗Overlay待ちmsは原資料にない**。本人提供動画の第1試合でKO青い火→控え→敗北結果の順番が観察されている。今回MP4原本を直接開いていないため、同じ画面/秒数になったとは判断しない。
+- 修正：**実Hostのwinnerが確定した段階では操作と勝敗の真実は即時確定**するが、`ui/match-stage.mjs`の大きな結果Overlayは**最後のHost確定Action/Special/Pokeの演出Sceneと溜まった表示Cueが終わった後**に描画。以前は勝敗Overlayを`beginScene`より先に表示し、最後の一撃とKO青い火を隠していた。**終了済み部屋への新規/再接続ではSceneQueueが空なので即結果**、ホスト時計/HP/KO/通信/Rulesは変更しない。
+- `lab/match-stage.html?review=full-match-v3`+`tools/stage-smoke.mjs`の**一試合通し実Chromium2席QA**：試験用の強弱レンタル6v6を**本物のMatchProtocol**で9行動完走→2席Stageへ全Snapshotを流す。開始の上画面3体/下画面6体、真のKO3件＋控え登場3件、最終Host敵6体KO・A勝、**最終攻撃impactと青いKO火が両席で見えている間は結果を隠し**、キュー終了後A勝/ B敗と同じ最終ターン、終了後参加のBは即敗北、と一連で検査（Host内の偽winnerは使用しない）。
+- [**実Chromeフルマッチ成功**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41059871488)（`V3-4-26-FULL-MATCH-DOM-PASS`＋全既存Stage）、[**Node 940/940合格**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41059880932)、[**Firebase認証なしFriends二席QA成功**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41059880917)。**Stage通し試験は同一PCローカルホスト**であり、Safari実機2台での再現検証ではない。
+- **次はV3-5受け入れ準備**：見た目だけの追加を抑え、学校配布方式に近いFriends単体HTMLの操作フローと元動画観察台帳の差を実ブラウザで試す。原作の相手視点/行動テンポ・技の個別ヒットと本家表示ms、学校Safari2台実試遊が未完成ゲート。ゲームとしての原作再現は未完成。
+
 ## 2026-10-30 V3-4-25｜KO青い火と前衛全滅後の控えの登場
 
 - [**実装/過去動画の証拠/確認した表示順と限界**](./ENGINE_V3_4_25_KO_WISP_AND_RESERVE_ENTRY_20261030.md)：2026-10-27の本人提供原作動画の第1試合**01:08〜01:23・01:52〜02:00の観察台帳**に、気絶した位置の青い火と控え復帰が確認されている。今工程では原本MP4へ再アクセス不可、火の厳密な形/秒数は未検証。既存の自動KO交代は**前衛全員がKOで控えに生存者がいる時**にホストが行うため、演出の都合で1体KOごとの交代へ変更しない。
