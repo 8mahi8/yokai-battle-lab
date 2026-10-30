@@ -383,6 +383,35 @@ try{
  }
  if(!koVisualPass)throw Error('V3-4-25 real host KO and reserve browser visual QA failed');
 
+ // V3-4-26: a complete TRUE host 6v6 battle is rendered on two browser
+ // seats. Its lethal final hit/KO must finish before either result overlay.
+ // Late join after a finished match must show the result immediately.
+ let fullMatchPass=false;
+ for(let attempt=1;attempt<=2;attempt++){
+  const source='http://127.0.0.1:'+server.address().port+
+   '/lab/match-stage.html?review=full-match-v3';
+  const child=spawn(browser,[
+   '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+   '--no-first-run','--disable-extensions',
+   '--user-data-dir='+path.join(tmp,'full-match-v3-'+attempt),
+   '--window-size=1180,900','--virtual-time-budget=17000','--dump-dom',source
+  ],{stdio:['ignore','pipe','pipe']});
+  let body='',stderr='',timedOut=false;
+  child.stdout.on('data',x=>body+=String(x).slice(0,340000));
+  child.stderr.on('data',x=>stderr+=String(x).slice(0,2500));
+  const timeout=setTimeout(()=>{timedOut=true;child.kill('SIGKILL');},26000);
+  const code=await new Promise(resolve=>child.on('close',resolve));
+  clearTimeout(timeout);
+  const state=body.match(/<span id="lab-state">([^<]*)<[/]span>/)?.[1]??'';
+  if(!timedOut&&code===0&&state.startsWith('V3-4-26-FULL-MATCH-DOM-PASS ')){
+   fullMatchPass=true;console.log(state);
+   break;
+  }
+  console.warn('V3-4-26 full match attempt '+attempt+' failed: '+
+   (state||'no actual DOM state')+' '+stderr.slice(-200));
+ }
+ if(!fullMatchPass)throw Error('V3-4-26 full-match two-seat original-sequence browser QA failed');
+
  // Create a visual review artifact from the actual ESM app (not a mock image).
  const shot=path.join(root,'phase14-stage-preview.png');
  const child=spawn(browser,[
