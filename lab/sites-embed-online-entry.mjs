@@ -15,6 +15,40 @@ import {checkSitesBrowserCapabilities} from '../ui/sites-browser-capabilities.mj
 
 const config=__YW_ONLINE_CONFIG__;
 /**
+ * V3-4-22 emulator FRIENDS QA only. Compare the two iframe realms via
+ * performance.timeOrigin + performance.now() inside ONE Chromium browser.
+ * This measures listener->stage render, NOT Internet RTT or 2-iPad clock sync.
+ * Esbuild removes every probe from the school --friends production bundle.
+ */
+const motionTimingQa=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__?[]:null;
+let lastTimedActionId=0;
+if(motionTimingQa)window.__ywMotionTimingTrace=motionTimingQa;
+const motionClock=()=>performance.timeOrigin+performance.now();
+function renderConfirmedSnapshot(state){
+ if(!motionTimingQa){
+  stage.render(state);updatePresence();return;
+ }
+ const actions=(state?.game?.events||[]).filter(e=>e?.type==='action'&&
+  Number.isSafeInteger(e.eventId)&&e.eventId>0);
+ const newest=actions.at(-1);
+ let sample=null;
+ if(newest&&newest.eventId>lastTimedActionId){
+  const newCount=actions.filter(e=>e.eventId>lastTimedActionId).length;
+  lastTimedActionId=newest.eventId;
+  sample={eventId:newest.eventId,revision:state.revision,
+   actionsInDelivery:newCount,receivedAt:motionClock()};
+  motionTimingQa.push(sample);
+  if(motionTimingQa.length>64)motionTimingQa.shift();
+ }
+ stage.render(state);
+ if(sample){
+  sample.renderedAt=motionClock();
+  sample.sceneEventKey=stage.getStatus().sceneEventKey;
+ }
+ updatePresence();
+}
+
+/**
  * Phase37 friend-only Firebase mode: same BRAWL/Shokoku project, no
  * Firebase Authentication, no Google sign-in, no anonymous signup.
  * This ID is a per-page client label, NOT proof of identity. RTDB
@@ -158,7 +192,7 @@ $('.yw-online-start').addEventListener('click',async()=>{
  try{
   const begun=await room.startRoom();if(!begun.ok)throw Error(begun.reason);
   match=createFirebaseMatchHost({roomClient:room,protocol:createMatchProtocol({battleOptions:__YW_FRIENDS_MODE__?{playtestSoulTuning:true,enableLoafing:true}:{}}),
-   onSnapshot:s=>{stage.render(s);updatePresence();},onError:err});
+   onSnapshot:s=>{renderConfirmedSnapshot(s);},onError:err});
   const initial=await match.start();
   if(!initial.ok)throw Error(initial.reason||initial.error||'snapshot_publish_failed');
   $('.yw-online-start').disabled=true;
@@ -176,7 +210,7 @@ async function connectGuestMatch(){
   if(phase!=='playing')throw Error('ホストがまだ開始していません');
   if(match)return;
   const next=createFirebaseMatchGuest({roomClient:room,
-   onSnapshot:s=>{stage.render(s);updatePresence();},
+   onSnapshot:s=>{renderConfirmedSnapshot(s);},
    onAck:result=>{say(matchAckMessage(result));updatePresence();},
    onError:err});
   next.start();
