@@ -25,7 +25,7 @@
 
 - `tests/v3-4-19-presentation-event-contract.test.mjs`：3行動のまとめ受信と演出中のevent ID参照・旧turn ID・無いID・改ざん・履歴変化無しを検証。
 - 実際のV3-4-18原作研究`createCombat`でわすれん帽の`dispel`、0件解除、メゾン・ドワスレの前衛混乱を発動し、`host events→special impact ledger→visual cue→choreographyFrame`を通して検証。**0ダメージ/0解除でミスや攻撃が捏造されない**ことを確認。
-- Node全件/Stage Chromium/RTDB Emulator 2席のCI結果は実際に完了したものだけロードマップ/引き継ぎに追記。学校iPad Safari実機2席・Google Sites直接貼付版と、本人原作動画の同フレーム比較は未実施。
+- **確認済み：** [Node全920件PASS (0 fail)](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41042504204)、[Chromium Stage QA SUCCESS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41042495298)、[Firebase Friends無認証RTDB Emulator+Chromium二席試合SUCCESS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41042504206)。研究テスト中、解除数が任意の正数へ改変されても元の正規Removedリストなしでは証明できないことに気づき、**検証不能なtamper検知を主張しないようテストを修正**。悪い入力の構造/HP/効果矛盾は検出する。学校iPad Safari実機2席・Google Sites直接貼付版と、本人原作動画の同フレーム比較は未実施。
 
 ## 今後の順番
 
