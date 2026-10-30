@@ -40,7 +40,13 @@ const fullMatchQaMode=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&(()=>{
  try{return location.href==='about:srcdoc'&&window.parent!==window&&
   window.parent.location.search==='?fullmatch';}catch{return false;}
 })();
-const touchQaMode=chargeQaMode||purifyQaMode||fullMatchQaMode;
+// One continuous room: negative Inspirit, guest Purify, normal special,
+// legal reserve wheel swaps, Zero G, true KO/winner. All initial QA data only.
+const oneGameQaMode=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&(()=>{
+ try{return location.href==='about:srcdoc'&&window.parent!==window&&
+  window.parent.location.search==='?onegame';}catch{return false;}
+})();
+const touchQaMode=chargeQaMode||purifyQaMode||fullMatchQaMode||oneGameQaMode;
 const motionTimingQa=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__?[]:null;
 let lastTimedActionId=0;
 if(__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__)
@@ -230,7 +236,16 @@ $('.yw-online-start').addEventListener('click',async()=>{
    RENTAL_SQUAD.map(unit=>({...unit,maxHp:750,speed:450,
     strength:450,attackPower:380,weights:[100,0,0,0]}))
   ]:null;
-  const battleOptions=fullMatchQaMode?{seed:12,teams:fullMatchTeams,
+  const oneGameTeams=oneGameQaMode?[
+   RENTAL_SQUAD.map((u,i)=>({...u,maxHp:1,speed:80,
+    weights:i===0?[0,0,100,0]:[0,0,0,100],inspirit:'sleep'})),
+   RENTAL_SQUAD.map(u=>({...u,maxHp:700,soulCapacity:5,
+    weights:[0,0,0,100]}))
+  ]:null;
+  const battleOptions=oneGameQaMode?{seed:12,teams:oneGameTeams,
+   rotationCooldownMs:0,researchSpecialEffects:true,
+   researchDamageModel:true,researchStatInspirits:true}:
+   fullMatchQaMode?{seed:12,teams:fullMatchTeams,
    rotationCooldownMs:0,researchSpecialEffects:true,
    researchDamageModel:true,researchStatInspirits:true}:
    purifyQaMode?{seed:12,teams:purifyTeams,
