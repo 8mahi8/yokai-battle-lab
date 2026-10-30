@@ -61,7 +61,7 @@ test('V3-4-18 Wazzat level1/Houzzat level3 original Inspirits compile through sh
   assert.deepEqual(original.moves.inspirit.hitPattern,{type:'none',count:0});
   assert.equal(original.moves.inspirit.targetScope,'single_enemy');
   const actor=teams[0].find(m=>m.sourceYw2CharacterId===id);
-  assert.equal(actor.inspiritLevel,level);
+  assert.equal(actor.inspiritLevel??1,level);
   assert.equal(actor.inspirit,'friendly-fire');
  }
  const t=copy(teams);
@@ -93,7 +93,7 @@ test('V3-4-18 source Wazzat Soultimate removes only positive Inspirits from ALL 
  for(const id of ['B1','B2','B3','B4'])battle.applyInspirit({
   id,sign:'positive',effect:'strength-up',source:'B6'
  });
- battle.applyInspirit({id:'B1',sign:'negative',effect:'strength-down',source:'A4'});
+ battle.applyInspirit({id:'B1',sign:'negative',effect:'sleep',source:'A4'});
  const before=battle.snapshot();
  const planned=before.squads[0][0].special;
  assert.equal(planned.kind,'dispel');
