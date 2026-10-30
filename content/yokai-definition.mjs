@@ -17,7 +17,7 @@ const SCOPE=new Set(['single_enemy','enemy_front','single_ally','ally_front',
 const PATTERN=new Set(['single','multi','none','unknown']);
 const CATEGORY=new Set(['physical_damage','technique_damage','heal',
  'status_positive','status_negative','damage','drain','buff','debuff',
- 'damage-status','revive','revive-heal']);
+ 'damage-status','revive','revive-heal','dispel']);
 const evidence=new Set(YOKAI_EVIDENCE_LEVELS);
 const object=x=>!!x&&typeof x==='object'&&!Array.isArray(x);
 const text=x=>typeof x==='string'&&x.length>0;
@@ -71,7 +71,7 @@ function checkMove(move,slot){
   const kind=rule.kind;
   const status=['buff','debuff','damage-status'].includes(kind);
   const damaging=['damage','drain','damage-status'].includes(kind);
-  const noHit=['heal','buff','debuff','revive','revive-heal'].includes(kind);
+  const noHit=['heal','buff','debuff','revive','revive-heal','dispel'].includes(kind);
   const target=kind==='revive-heal'?'ally_team':
    kind==='revive'?'single_ally':
    kind==='heal'||kind==='buff'?'ally_front':
@@ -80,12 +80,12 @@ function checkMove(move,slot){
      (kind==='revive-heal')!==(rule.scope==='team')||
      (kind==='revive'&&rule.scope!=='one')||
      (kind==='heal'&&rule.scope!=='front')||
-     (['buff','debuff'].includes(kind)&&rule.scope!=='front')||
+     (['buff','debuff','dispel'].includes(kind)&&rule.scope!=='front')||
      (status?move.statusEffect!==rule.effect:move.statusEffect!==null)||
      (status?(!text(rule.effect)||!int(rule.level)||
        rule.level<1||rule.level>4):
        rule.effect!==undefined||rule.level!==undefined)||
-     (['buff','debuff'].includes(kind)?
+     (['buff','debuff','dispel'].includes(kind)?
        move.power!==null||rule.power!==undefined:
        !int(rule.power)||rule.power<1||rule.power>999||
        move.power!==rule.power)||
