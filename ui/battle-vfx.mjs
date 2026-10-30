@@ -28,7 +28,8 @@ export function latestBattleCue(events){
     amount:targets[0]?.amount??0,
     ...(event.specialImpactLedger?{specialImpactLedger:event.specialImpactLedger}:{}),
     ...(event.specialHitLedger?{specialHitLedger:event.specialHitLedger}:{}),
-    ...(event.referenceSoultimate?{referenceSoultimate:event.referenceSoultimate}:{})};
+    ...(event.referenceSoultimate?{referenceSoultimate:event.referenceSoultimate}:{}),
+    ...(event.specialVisual?{specialVisual:event.specialVisual}:{})};
   }
   if(!Number.isFinite(event.turn))continue;
   return {key:Number.isSafeInteger(event.eventId)&&event.eventId>0?'event:'+event.eventId:'action:'+event.turn,type:'action',actor:event.actor,
