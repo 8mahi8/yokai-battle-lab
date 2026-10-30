@@ -24,6 +24,7 @@
 import {createMatchProtocol} from '../engine/match-protocol.mjs';
 import {createCombat,RENTAL_SQUAD} from '../engine/combat.mjs';
 import {createMatchStage} from '../ui/match-stage.mjs';
+import {projectKoViewChange} from '../ui/ko-view-transition.mjs';
 import {passiveSkillNoticesForAction} from '../ui/passive-feedback.mjs';
 const el=id=>document.getElementById(id);
 let protocol=null,autoTimer=null;
@@ -69,6 +70,77 @@ el('auto').addEventListener('click',()=>{
 });
 begin();
 const review=new URL(location.href).searchParams.get('review');
+if(review==='ko-phase-v3'){
+ // V3-4-25: real seeded host, never injected fake HP or a local KO event.
+ const check=(ok,message)=>{if(!ok)throw Error(message);};
+ const sideSquad=strong=>RENTAL_SQUAD.map(u=>({...u,
+  maxHp:strong?420:85,strength:strong?570:10,spirit:strong?310:10,
+  defense:strong?180:25,attackPower:strong?175:18,
+  techniquePower:strong?100:10,technique:'damage',
+  weights:[100,0,0,0],attackAccuracy:4}));
+ const host=createMatchProtocol({battleOptions:{seed:20261026,
+  teams:[sideSquad(true),sideSquad(false)],rotationCooldownMs:3000,
+  playtestSoulTuning:true},hostNowMs:()=>10000});
+ let knockout=null,arrival=null;
+ for(let n=0;n<200&&host.snapshot().game.winner===null;n++){
+  const before=host.snapshot();host.advanceAuto();
+  const after=host.snapshot();
+  const result=projectKoViewChange(
+   {revision:before.revision,events:before.game.events,
+    teams:[0,1].map(i=>({side:i,frontIds:before.game.clock.teams[i].frontIds,
+     members:before.game.squads[i]}))},
+   {revision:after.revision,events:after.game.events,
+    teams:[0,1].map(i=>({side:i,frontIds:after.game.clock.teams[i].frontIds,
+     members:after.game.squads[i]}))});
+  if(!knockout&&result.knockouts.some(x=>x.side===1))
+   knockout={before,after,row:result.knockouts.find(x=>x.side===1)};
+  if(!arrival&&result.arrivals.some(x=>x.side===1))
+   arrival={before,after,row:result.arrivals.find(x=>x.side===1)};
+ }
+ const root=document.createElement('div'),reentryRoot=document.createElement('div');
+ root.style.cssText='position:absolute;left:-10000px;width:990px';
+ reentryRoot.style.cssText=root.style.cssText;
+ document.body.append(root,reentryRoot);
+ const matchStage=createMatchStage({element:root,seat:0,
+  onAction:()=>({accepted:false})});
+ const returnStage=createMatchStage({element:reentryRoot,seat:0,
+  onAction:()=>({accepted:false})});
+ try{
+  check(knockout&&arrival,'real host did not produce KO + reserve on this seed');
+  matchStage.render(knockout.before);
+  check(!root.querySelector('#mb-foe-line [data-unit="'+knockout.row.id+'"] .mb-ko-wisp'),
+   'a live fighter had a KO flame');
+  matchStage.render(knockout.after);
+  check(!root.querySelector('#mb-foe-line [data-unit="'+knockout.row.id+'"] .mb-ko-wisp'),
+   'KO visual appeared before the actual hit impact frame');
+  returnStage.render(arrival.before);
+  returnStage.render(arrival.after);
+  const arriving=reentryRoot.querySelector(
+   '#mb-foe-line [data-unit="'+arrival.row.ids[0]+'"]');
+  check(arriving?.classList.contains('mb-arriving'),
+   'host-confirmed reserve newcomer has no entrance animation');
+  const left=arrival.before.game.clock.teams[1].frontIds;
+  check(left.every(id=>arrival.before.game.squads[1]
+   .find(u=>u.id===id).hp===0),'reserve animation shown before full front KO');
+  setTimeout(()=>{
+   try{
+    const affected=root.querySelector(
+     '#mb-foe-line [data-unit="'+knockout.row.id+'"]');
+    check(affected?.classList.contains('mb-ko'),
+     'KO not reflected by canonical staged HP during impact');
+    check(affected.querySelector('.mb-ko-wisp'),
+     'blue KO spirit missing after authoritative strike impact');
+    check(knockout.after.game.squads[1].find(u=>u.id===knockout.row.id).hp===0,
+     'KO visual contradicted real host');
+    el('lab-state').textContent='V3-4-25-KO-RESERVE-DOM-PASS';
+   }catch(error){el('lab-state').textContent='V3-4-25-KO-RESERVE-DOM-FAIL '+error.message;}
+   finally{matchStage.destroy();returnStage.destroy();root.remove();reentryRoot.remove();}
+  },1000);
+ }catch(error){
+  el('lab-state').textContent='V3-4-25-KO-RESERVE-DOM-FAIL '+error.message;
+  matchStage.destroy();returnStage.destroy();root.remove();reentryRoot.remove();
+ }
+}
 if(review==='seat-motion-gap-v3'){
  // The remote guest misses an action snapshot and receives a later host
  // snapshot AFTER the opponent has rotated: no causally trustworthy motion
