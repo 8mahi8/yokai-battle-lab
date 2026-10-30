@@ -517,3 +517,71 @@
  .mb-yw2 .mb-special-flare:before,.mb-yw2 .mb-special-portrait,
  .mb-yw2 .mb-pin-reticle{animation:none!important}
 }
+
+/* Engine V3-4-24: the 6 existing rental effects have distinct cut-in and
+   field-impact treatments, derived from the rental move master. No original
+   3DS frames or unverified hit count are encoded by these effects. */
+.mb-yw2 .mb-special-flare[data-treatment="strike"] .mb-special-cutin-lines{
+ transform:skewY(-9deg) rotate(-3deg)}
+.mb-yw2 .mb-special-flare[data-treatment="siphon"] .mb-special-cutin-lines{
+ border-radius:44%;transform:rotate(13deg) scale(.89)}
+.mb-yw2 .mb-special-flare[data-treatment="rally"] .mb-special-cutin-lines{
+ transform:skewY(8deg);border-top-style:double;border-bottom-width:6px}
+.mb-yw2 .mb-special-flare[data-treatment="storm"] .mb-special-cutin-lines{
+ transform:rotate(-12deg);border-left:5px solid var(--special-accent)}
+.mb-yw2 .mb-special-flare[data-treatment="renew"] .mb-special-cutin-lines{
+ transform:rotate(0);border-radius:50%;border-left:3px solid var(--special-accent);
+ border-right:3px solid var(--special-accent)}
+.mb-yw2 .mb-special-flare[data-treatment="suppress"] .mb-special-cutin-lines{
+ transform:skewY(12deg) scale(.86);border-bottom-width:7px}
+.mb-yw2 .mb-special-impact-style{
+ position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;
+ --impact:#f8c58e;--impact-soft:#f4bd7440;
+ background:radial-gradient(ellipse at 50% 50%,var(--impact-soft),transparent 65%);
+ animation:mb-special-impact-glow .38s ease-out both}
+.mb-yw2 .mb-special-impact-style[hidden]{display:none!important}
+.mb-yw2 .mb-special-impact-style i{
+ position:absolute;left:50%;top:50%;width:38%;height:23%;
+ display:block;border:4px solid var(--impact);border-radius:50%;
+ box-shadow:0 0 17px var(--impact);transform:translate(-50%,-50%);
+ opacity:.8;animation:mb-special-impact-ripple .52s ease-out both}
+.mb-yw2 .mb-special-impact-style i:nth-child(2){animation-delay:.10s}
+.mb-yw2 .mb-special-impact-style i:nth-child(3){animation-delay:.20s}
+.mb-yw2 .mb-special-impact-style[data-treatment="strike"]{
+ --impact:#ffe1a1;--impact-soft:#ef6b314d;
+ background:repeating-linear-gradient(133deg,transparent 0 40px,#ffd69b55 42px 48px,transparent 50px 86px)}
+.mb-yw2 .mb-special-impact-style[data-treatment="strike"] i{
+ height:3px;width:65%;border-radius:0;border-top:0;border-bottom-width:4px;
+ transform:translate(-50%,-50%) rotate(-23deg)}
+.mb-yw2 .mb-special-impact-style[data-treatment="siphon"]{
+ --impact:#aeffe1;--impact-soft:#21887870;
+ background:radial-gradient(ellipse at center,#82f9d574,#173c5e26 45%,transparent 70%)}
+.mb-yw2 .mb-special-impact-style[data-treatment="siphon"] i{
+ width:21%;height:70%;border-style:dashed;transform:translate(-50%,-50%) rotate(24deg)}
+.mb-yw2 .mb-special-impact-style[data-treatment="rally"]{
+ --impact:#f9e49c;--impact-soft:#a9df7663;
+ background:linear-gradient(0deg,#c9f5a74b,transparent 73%)}
+.mb-yw2 .mb-special-impact-style[data-treatment="rally"] i{
+ width:24%;height:55%;border-radius:2px;transform:translate(-50%,-50%) rotate(45deg)}
+.mb-yw2 .mb-special-impact-style[data-treatment="storm"]{
+ --impact:#abeaff;--impact-soft:#487de168;
+ background:repeating-conic-gradient(from 10deg at center,#63bce849 0deg 13deg,transparent 14deg 48deg)}
+.mb-yw2 .mb-special-impact-style[data-treatment="storm"] i{
+ width:36%;height:65%;border-radius:9px;transform:translate(-50%,-50%) skew(-25deg)}
+.mb-yw2 .mb-special-impact-style[data-treatment="renew"]{
+ --impact:#e0ffcf;--impact-soft:#72d8a184;
+ background:radial-gradient(ellipse at 50% 77%,#ddffcc99,transparent 70%)}
+.mb-yw2 .mb-special-impact-style[data-treatment="renew"] i{
+ border-radius:48% 48% 8% 8%;height:55%;width:24%}
+.mb-yw2 .mb-special-impact-style[data-treatment="suppress"]{
+ --impact:#e8c1ff;--impact-soft:#9960c977;
+ background:linear-gradient(180deg,#593b8c88,transparent 80%)}
+.mb-yw2 .mb-special-impact-style[data-treatment="suppress"] i{
+ border-radius:12%;width:58%;height:23%;transform:translate(-50%,-50%) rotate(-8deg)}
+@keyframes mb-special-impact-glow{from{opacity:0}to{opacity:1}}
+@keyframes mb-special-impact-ripple{
+ from{opacity:.93;scale:.55}to{opacity:0;scale:1.45}}
+@media(prefers-reduced-motion:reduce){
+ .mb-yw2 .mb-special-impact-style,.mb-yw2 .mb-special-impact-style i{
+  animation:none!important}
+}
