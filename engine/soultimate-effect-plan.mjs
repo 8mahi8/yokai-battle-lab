@@ -12,10 +12,10 @@ import {validateSpecialSpec} from './special-effects.mjs';
 const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const word=x=>typeof x==='string'&&x.length>0;
 const categories=new Set(['damage','drain','buff','debuff',
- 'damage-status','revive-heal','heal','revive']);
+ 'damage-status','revive-heal','heal','revive','dispel']);
 const attackKinds=new Set(['damage','drain','damage-status']);
 const statusKinds=new Set(['buff','debuff','damage-status']);
-const noHitKinds=new Set(['buff','debuff','revive','revive-heal','heal']);
+const noHitKinds=new Set(['buff','debuff','revive','revive-heal','heal','dispel']);
 const freeze=x=>Object.freeze(x);
 const clonePattern=pattern=>freeze({type:pattern.type,count:pattern.count});
 function scopeOf(spec){
@@ -39,7 +39,7 @@ export function compileSoultimateEffectPlan(move,rawDefinition){
   throw new TypeError('invalid Soultimate source move');
  const rule=validateSpecialSpec(rawDefinition);
  if(move.category!==rule.kind||move.targetScope!==scopeOf(rule)||
-    move.power!==(statusKinds.has(rule.kind)&&rule.kind!=='damage-status'
+    move.power!==((statusKinds.has(rule.kind)&&rule.kind!=='damage-status')||rule.kind==='dispel'
      ?null:rule.power)||
     move.statusEffect!==(statusKinds.has(rule.kind)?rule.effect:null))
   throw new TypeError('Soultimate source and existing effect rules disagree');
@@ -76,6 +76,7 @@ export function compileSoultimateEffectPlan(move,rawDefinition){
   atomicPerTarget:true,power:rule.power})];break;
  case 'revive':stages=[stage('revive',{targetScope,power:rule.power})];break;
  case 'heal':stages=[stage('heal',{targetScope,power:rule.power})];break;
+ case 'dispel':stages=[stage('remove-status',{targetScope,sign:'positive'})];break;
  default:throw new RangeError('unsupported Soultimate effect');
  }
  return freeze({version:1,moveId:move.id,slot:'soultimate',
