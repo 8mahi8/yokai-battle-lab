@@ -1,3 +1,5 @@
+> **【2026-10-31 V3-5-6 最新】** [通常学校対戦8シードのテンポ実測と友達用UI整理](./docs/ENGINE_V3_5_6_SCHOOL_PACING_AND_FRIENDS_UI_20261031.md)：**放置8試合で7試合121〜227行動で決着、1件240行動時点で未決着（停止なし）**。2.6秒/行動の暫定時計はそのまま。Friendsの開発用帯/REV/試験用文言を非表示、研究UIと戦闘ルールは不変。**Node950/950、Chrome Stage、Firebase No-Auth実2席と同一試合フルE2Eが成功**。学校iPad Safari2台と元MP4の原本直接比較は引き続き未検証。次V3-5-7は通常学校版の体感・端末画面確認。
+
 > **【2026-10-31 V3-5-5 最新】** [一試合の全操作・Firebase2席通し結果](./docs/ENGINE_V3_5_5_ONE_ROOM_FULL_MATCH_E2E_20261031.md)：とりつき→おはらい→通常必殺→控え交代→零式G→6体KO→両者反対の勝敗まで**同じ部屋の正規実通信でPASS**。Node949/949・Stage Chrome・No-Auth RTDB二席成功。学校Safari実機・本家元動画直接再視聴・原作数値は未検証。次は通常レンタルの試合テンポ/学校実戦の品質検証。
 
 > **【2026-10-31 V3-5-4 最新】** [オンライン実2席・おはらい完了E2E](./docs/ENGINE_V3_5_4_FRIENDS_PURIFY_E2E_20261031.md)：Node946件・Chromium/Firebase Emulator二席PASS。次はV3-5-5全試合統合。学校Safari実機と原作MP4直接比較は未検証。現行通信は認証なしFirebase Friends。
