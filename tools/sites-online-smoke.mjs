@@ -221,7 +221,7 @@ function gauge(frame,id){
   async function tapTargets(kind,count){
    for(let i=0;i<count;i++){
     const pad=el(g,'#mb-touch-pad');
-    const dot=el(g,'#mb-touch-points')?.querySelectorAll('.mb-touch-target')[i];
+    const dot=el(g,'#mb-touch-points')?.querySelectorAll('.mb-touch-target')[kind==='pop'?i:0];
     check(pad&&dot,'missing actual '+kind+' touch target '+i);
     const box=dot.getBoundingClientRect();
     check(box.width>0&&box.height>0,'invisible '+kind+' target '+i);
