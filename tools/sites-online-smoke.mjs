@@ -143,6 +143,7 @@ const chargeQa=String.raw`<!doctype html><html lang="ja"><meta charset="utf-8">
 const h=document.getElementById('host'),g=document.getElementById('guest');
 const result=document.getElementById('result');
 const isG=location.search==='?gcharge';
+const isPurify=location.search==='?purify';
 const doc=f=>f.contentDocument,el=(f,s)=>doc(f)?.querySelector(s);
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function check(test,reason){if(!test)throw Error(reason);}
@@ -187,6 +188,101 @@ function gauge(frame,id){
   typeof hostQa.snapshot==='function','localhost-only charge driver absent');
  check(el(h,'.yw-online-auto')?.getAttribute('aria-pressed')==='false',
   'charge-only fixture should not enable the wall-time auto clock');
+
+ // V3-5-4: real negative Inspirit (no debug status write), then genuine
+ // guest wheel/purification gestures and authoritative two-seat ACK.
+ if(isPurify){
+  el(h,'#mb-target').click();
+  const foe=el(h,'.mb-fighter[data-unit="B1"]');
+  check(foe&&foe.classList.contains('mb-choice-eligible'),
+   'Host pin must target the real enemy front B1');
+  foe.click();
+  await until(()=>el(h,'#mb-revision')?.textContent.includes('A 1')&&
+   el(g,'#mb-revision')?.textContent.includes('A 1'),
+   'real Host pin B1 published to both clients');
+  check(el(h,'.mb-fighter[data-unit="B1"]').classList.contains('mb-pinned'),
+   'Host did not display B1 pin');
+
+  let turns=0;
+  const negative=()=>hostQa.snapshot().game.inspirits.B1.some(x=>x.sign==='negative');
+  while(!negative()&&turns<35){
+   await until(()=>{const status=hostQa.status();
+    return status.lastPublished>=status.revision&&!status.dirty;},
+    'published previous canonical action');
+   const advanced=hostQa.step();
+   check(advanced.ok,'real auto Inspirit failed at step '+turns+': '+advanced.reason);
+   turns++;
+   const rev=hostQa.status().revision;
+   await until(()=>el(g,'#mb-revision')?.textContent.startsWith('REV '+rev+' /'),
+    'guest received canonical Inspirit action '+rev);
+  }
+  check(negative(),'enemy never gave B1 a genuine negative status');
+  check(el(g,'#mb-team1 [data-unit="B1"] .mb-unit-stat')?.textContent.includes('⚠'),
+   'Guest cannot see the Host-confirmed negative Inspirit');
+  check(el(h,'.mb-fighter[data-unit="B1"] .mb-condition-icon'),
+   'Host did not render the actual negative Inspirit');
+
+  // B1 starts front. A legal one-step right rotation moves it to bench.
+  el(g,'[data-rotate="1"]').click();
+  await until(()=>el(g,'#mb-revision')?.textContent.includes('B 1')&&
+   el(h,'#mb-revision')?.textContent.includes('B 1'),
+   'Guest bench rotation not confirmed on both seats');
+  check(el(g,'#mb-team1 [data-unit="B1"]').classList.contains('mb-bench'),
+   'negative subject did not enter bench');
+
+  el(g,'#mb-purify').click();
+  const subject=el(g,'#mb-team1 [data-unit="B1"]');
+  check(subject.classList.contains('mb-choice-eligible'),
+   'real negative bench subject not selectable for Purify');
+  subject.click();
+  await until(()=>!el(g,'#mb-modal').hidden&&
+   el(g,'#mb-revision')?.textContent.includes('B 2')&&
+   el(h,'#mb-revision')?.textContent.includes('B 2'),
+   'Host ACK did not begin guest Purification gesture');
+  check(el(g,'#mb-gesture-help')?.textContent.includes('紫の玉をタップ'),
+   'first canonical Purify trial should be pop, not an invented shortcut');
+  check(negative(),'Purify start illegally cleared negative status');
+  const initial=hostQa.snapshot().game.purification[1];
+  check(initial?.challenge?.kind==='pop'&&initial.challenge.total===5,
+   'actual Host Purify challenge differs from visible pop fixture');
+
+  for(let i=0;i<5;i++){
+   const target=el(g,'#mb-touch-points')?.querySelectorAll('.mb-touch-target')[i];
+   const pad=el(g,'#mb-touch-pad');
+   check(target&&pad&&!pad.closest('[hidden]'),
+    'real Purify target not rendered '+i);
+   const box=target.getBoundingClientRect();
+   check(box.width>0&&box.height>0,'zero-sized purification target '+i);
+   const ptr={bubbles:true,cancelable:true,button:0,pointerType:'touch',
+    pointerId:220+i,isPrimary:true,
+    clientX:box.left+box.width/2,clientY:box.top+box.height/2};
+   pad.dispatchEvent(new PointerEvent('pointerdown',ptr));
+   pad.dispatchEvent(new PointerEvent('pointerup',ptr));
+   await until(()=>el(g,'#mb-revision')?.textContent.includes('B '+(3+i))&&
+    el(h,'#mb-revision')?.textContent.includes('B '+(3+i)),
+    'Host/Guest purification touch ACK '+(i+1));
+   if(i<4){
+    check(negative(),'partial Purify touch illegally removed status '+i);
+    check(!el(g,'#mb-modal').hidden,'Purify closed too early '+i);
+   }
+  }
+  await until(()=>el(g,'#mb-modal').hidden&&!negative()&&
+   !el(g,'#mb-team1 [data-unit="B1"] .mb-unit-stat')?.textContent.includes('⚠')&&
+   !el(h,'.mb-fighter[data-unit="B1"] .mb-condition-icon'),
+   'real Purify not cleared in authoritative Host and both client UIs');
+  const events=hostQa.snapshot().game.events.filter(x=>x.type==='purification');
+  const last=events.at(-1);
+  check(events.length===1&&last.targetId==='B1'&&last.side===1&&
+   last.removed.some(x=>x.sign==='negative'),
+   'Host purification event missing or not causally tied to B1');
+  await until(()=>!el(g,'#mb-purify-complete').hidden&&
+   el(g,'#mb-purify-complete').dataset.eventId===String(last.eventId),
+   'Guest did not render confirmed Purify success feedback');
+  result.textContent='SITES-FRIENDS-PURIFY-PASS '+turns+
+   ' canonical enemy actions, Host negative Inspirit, guest bench rotation, '+
+   '5 real Pointer taps and ACK, authoritative status removal and UI feedback';
+  return;
+ }
  // G uses the SAME authoritative guard actions, with a legal guest rotation
  // to put the left neighbor B6 in front. Neither Soul nor HP is injected.
  if(isG){
@@ -289,7 +385,7 @@ const server=createServer((req,res)=>{
   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(fragment);return;
  }
  res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(
-  friends&&['?charge','?gcharge'].includes(route.search)?chargeQa:qa);
+  friends&&['?charge','?gcharge','?purify'].includes(route.search)?chargeQa:qa);
 });
 const tmp=mkdtempSync(path.join(tmpdir(),'yw-sites-online-'));
 try{
@@ -334,5 +430,13 @@ try{
   if(!gProof.ok)throw Error('V3-5-3 real 3-Soul Zero G charge failed: '+
    String(gProof.rendered||gProof.reason).slice(0,1400));
   console.log(gProof.rendered);
+  const pProof=await runRealtimeQa({
+   browser,profile:path.join(tmp,'purify-profile'),
+   url:'http://127.0.0.1:'+server.address().port+'/qa?purify',
+   sentinel:'SITES-FRIENDS-PURIFY-PASS',timeoutMs:90000
+  });
+  if(!pProof.ok)throw Error('V3-5-4 real 2-seat Friends Purify failed: '+
+   String(pProof.rendered||pProof.reason).slice(0,1500));
+  console.log(pProof.rendered);
  }
 }finally{await new Promise(ok=>server.close(ok));rmSync(tmp,{recursive:true,force:true});}
