@@ -39,6 +39,56 @@ if(friends){
   "assert(el(h,'.yw-online-auto').getAttribute('aria-pressed')==='true',",
   "assert(el(h,'.yw-online-auto').getAttribute('aria-pressed')==='true',"
  );
+ // V3-4-22: ONE Chromium browser and TWO real Firebase RTDB emulator iframe
+ // listeners. Probe is compiled only into --emulator-friends, NOT --friends.
+ // Absolute same-browser Performance timestamps allow pairing by host eventId.
+ qa=qa.replace(
+  "assert(!doc(h).querySelector('link[rel=stylesheet]'),'CSS not inline');",
+  "assert(!doc(h).querySelector('link[rel=stylesheet]'),'CSS not inline');\n"+
+  "const trace=f=>f.contentWindow.__ywMotionTimingTrace;\n"+
+  "assert(Array.isArray(trace(h))&&Array.isArray(trace(g)),\n"+
+  " 'emulator-only event trace not installed in both iframe receivers');\n"+
+  "const pairs=()=>{\n"+
+  " const b=new Map(trace(g).map(e=>[e.eventId,e]));\n"+
+  " return trace(h).filter(a=>b.has(a.eventId))\n"+
+  "  .map(a=>({eventId:a.eventId,host:a,guest:b.get(a.eventId)}));\n"+
+  "};\n"
+ );
+ qa=qa.replace(
+  "'host auto progression published to remote guest without manual step');",
+  "'host auto progression published to remote guest without manual step');\n"+
+  "await until(()=>pairs().length>=2,'two paired host/guest action timestamps');\n"
+ );
+ qa=qa.replace(
+  "'automatic host progression resumes on same battle after reconnect');",
+  "'automatic host progression resumes on same battle after reconnect');\n"+
+  "await until(()=>pairs().length>=3,'three paired host/guest action timestamps');\n"+
+  "const motionSamples=pairs().map(({eventId,host,guest})=>{\n"+
+  " assert(Number.isFinite(host.receivedAt)&&Number.isFinite(guest.receivedAt),\n"+
+  "  'receipt timestamp missing for event '+eventId);\n"+
+  " assert(host.renderedAt>=host.receivedAt&&guest.renderedAt>=guest.receivedAt,\n"+
+  "  'render finished before receipt on event '+eventId);\n"+
+  " return {eventId,hostRenderMs:Math.round(host.renderedAt-host.receivedAt),\n"+
+  "  guestRenderMs:Math.round(guest.renderedAt-guest.receivedAt),\n"+
+  "  receiptLagMs:Math.round(guest.receivedAt-host.receivedAt),\n"+
+  "  displayLagMs:Math.round(guest.renderedAt-host.renderedAt),\n"+
+  "  hostSceneMatched:host.sceneEventKey==='event:'+eventId,\n"+
+  "  guestSceneMatched:guest.sceneEventKey==='event:'+eventId,\n"+
+  "  hostBatched:host.actionsInDelivery>1,guestBatched:guest.actionsInDelivery>1};\n"+
+  "});\n"+
+  "const lagValues=motionSamples.map(x=>x.displayLagMs).sort((a,b)=>a-b);\n"+
+  "const motionSummary={sampleCount:motionSamples.length,\n"+
+  " medianDisplayLagMs:lagValues[Math.floor(lagValues.length/2)],\n"+
+  " minDisplayLagMs:lagValues[0],maxDisplayLagMs:lagValues.at(-1),\n"+
+  " sameEventId:motionSamples.every(x=>x.eventId>0),samples:motionSamples.slice(0,8)};\n"+
+  "assert(motionSummary.sampleCount>=3,'insufficient true host/guest event pairs');\n"+
+  "window.__ywMotionTimingReport=motionSummary;\n"
+ );
+ qa=qa.replace(
+  "result.textContent='SITES-FIREBASE-FRIENDS-EMULATOR-PASS real two-iframe inline HTML, no Auth/RTDB room, authoritative ACK, host auto clock pause and resume, four embed widths';",
+  "result.textContent='SITES-FIREBASE-FRIENDS-EMULATOR-PASS real two-iframe inline HTML, no Auth/RTDB room, authoritative ACK, host auto clock pause and resume, four embed widths MOTION-METRICS '+JSON.stringify(window.__ywMotionTimingReport);"
+ );
+
  qa=qa.replace('SITES-ONLINE-EMULATOR-PASS real two-iframe inline HTML, auth/RTDB',
   'SITES-FIREBASE-FRIENDS-EMULATOR-PASS real two-iframe inline HTML, no Auth/RTDB');
   // Firebase Friends: actual target selection after wheel cooldown rejection.
