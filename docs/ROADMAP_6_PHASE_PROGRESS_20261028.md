@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-19｜行動IDに紐付けた画面説明と状態系必殺表示を共通化
+
+- [実装・既存動画観察/外部資料/未確定の区別](./ENGINE_V3_4_19_EVENT_SCENE_PRESENTATION_20261030.md)：原作『妖怪ウォッチ2』では入力受付と相手側のモーション表示が異なる。今回はそれを即再現したとは扱わず、**ホスト確定ActionのeventIdと、FIFO演出中の行動説明が常に一致する**ようUIを修正。前モーション中の別行動名と攻撃着弾前のMISS先出しを防止。
+- V3-4-18で追加した`dispel`（敵前衛の**良いとりつき解除**）について、`special-impact-ledger`・`battle-vfx`・`action-choreography`へ**非ダメージ、解除数/適用の正規結果**として結合。何も解除していない場合はダメージ技やMISSの偽表示をしない。メゾン・ドワスレのLv3混乱必殺は既存debuff経路で表示回帰。
+- [Node920/920自動テスト成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41042504204)、[Chromium Stage QA成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41042495298)。[Firebase Friends 2席QA（最終コード）](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41042504206) は実行結果を確認する。前段コードの[Firebase 2席QAは成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41042154807)。**学校Safari実機2席/元動画の今回の直接再観察は未実施。**
+- 次 **V3-4-20** は本家「モーション中は相手画面へのサークル/チャージの反映が保留される」視界機構の根拠再点検、既存PresentationTimelineと正規MatchCoreを跨ぐ**表示専用の席別バッファ**の最小設計と回帰。ホスト入力は止めない。新たな技の大量追加や独自ノーモーションボタンは作らない。V3-5完成判定は未達。
+
 ## 2026-10-30 V3-4-18｜原作記憶系2体の4技を共通Status/Soultimateへ（研究限定）
 
 - [原作資料・実装/未確定・詳細回帰](./ENGINE_V3_4_18_MEMORY_DUO_FOUR_MOVES_20261030.md)：Wazzat/わすれん帽とHouzzat/メゾン・ドワスレを原作2資料で再確認。**わすれん帽**とりつき混乱Lv1/必殺敵前衛全員の良いとりつき解除/Charge100、**メゾン・ドワスレ**とりつき混乱Lv3/必殺敵前衛全員にLv3混乱/Charge200。原作の成功率/混乱の味方ターゲット/時系列は未確証。
