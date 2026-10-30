@@ -144,6 +144,7 @@ const h=document.getElementById('host'),g=document.getElementById('guest');
 const result=document.getElementById('result');
 const isG=location.search==='?gcharge';
 const isPurify=location.search==='?purify';
+const isFull=location.search==='?fullmatch';
 const doc=f=>f.contentDocument,el=(f,s)=>doc(f)?.querySelector(s);
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function check(test,reason){if(!test)throw Error(reason);}
@@ -189,6 +190,104 @@ function gauge(frame,id){
  check(el(h,'.yw-online-auto')?.getAttribute('aria-pressed')==='false',
   'charge-only fixture should not enable the wall-time auto clock');
 
+
+ // V3-5-5: ONE actual authoritative 6v6, not a fake result overlay.
+ // Set only initial localhost roster stats. Every KO and substitution must
+ // arise from normal Host attack actions and real RTDB snapshot delivery.
+ if(isFull){
+  const before=hostQa.snapshot();
+  check(before.game.squads.every(team=>team.length===6),'not six versus six');
+  el(g,'#mb-target').click();
+  const target=el(g,'.mb-fighter[data-unit="A2"]');
+  check(target&&target.classList.contains('mb-choice-eligible'),
+   'guest opponent pin cannot select A2');
+  target.click();
+  await until(()=>el(g,'#mb-revision')?.textContent.includes('B 1')&&
+   el(h,'#mb-revision')?.textContent.includes('B 1'),
+   'guest pin target host ACK');
+  check(hostQa.snapshot().game.pins[1]==='A2','pin absent on canonical Host');
+
+  el(g,'[data-rotate="1"]').click();
+  await until(()=>el(g,'#mb-revision')?.textContent.includes('B 2')&&
+   el(h,'#mb-revision')?.textContent.includes('B 2'),
+   'guest actual rotation host ACK');
+  check(hostQa.snapshot().game.clock.teams[1].offset!==before.game.clock.teams[1].offset,
+   'guest rotation did not change Host front');
+
+  el(g,'#mb-team1 .mb-center-symbol').click();
+  await until(()=>el(g,'#mb-revision')?.textContent.includes('B 3')&&
+   el(h,'#mb-revision')?.textContent.includes('B 3'),
+   'guest zero watch host ACK');
+  check(el(g,'#mb-charge span')?.textContent==='Gわざ',
+   'G command missing in the same match');
+  el(g,'#mb-team1 .mb-center-symbol').click();
+  await until(()=>el(g,'#mb-revision')?.textContent.includes('B 4')&&
+   el(h,'#mb-revision')?.textContent.includes('B 4'),
+   'guest returned to standard watch');
+  check(el(g,'#mb-charge span')?.textContent==='わざ',
+   'standard command not restored');
+
+  let actions=0,hostSubstitutions=0,hostKos=0;
+  let prior=hostQa.snapshot();
+  while(hostQa.snapshot().game.winner===null&&actions<90){
+   await until(()=>{const p=hostQa.status();
+    return p.lastPublished>=p.revision&&!p.dirty;},
+    'previous legitimate Host revision published');
+   const next=hostQa.step();
+   check(next.ok,'Host stopped normal auto combat at '+actions+': '+
+    JSON.stringify(next));
+   actions++;
+   const revision=hostQa.status().revision;
+   await until(()=>el(g,'#mb-revision')?.textContent.startsWith('REV '+revision+' /')&&
+    el(h,'#mb-revision')?.textContent.startsWith('REV '+revision+' /'),
+    'true guest+host delivery for action '+actions);
+   const now=hostQa.snapshot();
+   check(now.game.clock.turn>=prior.game.clock.turn,
+    'Host battle time reversed');
+   for(const team of now.game.squads){
+    check(team.every(u=>u.hp>=0&&u.hp<=u.maxHp),
+     'normal action produced invalid HP');
+   }
+   hostKos=Math.max(hostKos,now.game.squads[0].filter(x=>x.hp===0).length);
+   if(now.game.clock.teams[0].offset!==prior.game.clock.teams[0].offset)
+    hostSubstitutions++;
+   prior=now;
+  }
+  const final=hostQa.snapshot();
+  check(final.game.winner===1,'regular 6v6 did not end with guest victory after '+
+   actions+' actions, winner='+final.game.winner);
+  check(final.game.squads[0].filter(x=>x.hp===0).length===6,
+   'victory did not truly KO all six opponent units');
+  check(hostKos===6&&hostSubstitutions>=1,
+   'did not observe KO and actual reserve replacement');
+  check(final.game.events.filter(e=>e.type==='action'&&e.kind==='attack').length>=6,
+   'winner came from a shortcut rather than real attack events');
+  // The winner is canonical immediately, but existing battle animations are
+  // allowed to finish before the actual victory/defeat overlay appears.
+  let overlayReady=false;
+  for(let i=0;i<600;i++){
+   if(el(h,'#mb-finish-screen')?.hidden===false&&
+      el(g,'#mb-finish-screen')?.hidden===false){
+    overlayReady=true;break;
+   }
+   await sleep(90);
+  }
+  check(overlayReady,
+   'final action scenes never completed or one seat never got result overlay');
+  check(el(h,'#mb-finish-title')?.textContent==='敗北…'&&
+   el(g,'#mb-finish-title')?.textContent==='勝利！',
+   'Host/Guest must see opposite results, not the same winner');
+  check(el(h,'#battle-stage')?.dataset.matchFinished==='true'&&
+   el(g,'#battle-stage')?.dataset.matchFinished==='true',
+   'match result arrived on one seat only');
+  check(el(g,'#mb-revision')?.textContent.startsWith('REV '+final.revision+' /'),
+   'last Host canonical revision not visible on the Guest');
+  result.textContent='SITES-FRIENDS-FULL-MATCH-PASS '+actions+
+   ' real Host actions, six KO, '+hostSubstitutions+
+   ' reserve substitutions, guest pin/rotation/Zero/Standard ACK, '+
+   'both final overlays and identical final revision';
+  return;
+ }
  // V3-5-4: real negative Inspirit (no debug status write), then genuine
  // guest wheel/purification gestures and authoritative two-seat ACK.
  if(isPurify){
@@ -385,7 +484,7 @@ const server=createServer((req,res)=>{
   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(fragment);return;
  }
  res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(
-  friends&&['?charge','?gcharge','?purify'].includes(route.search)?chargeQa:qa);
+  friends&&['?charge','?gcharge','?purify','?fullmatch'].includes(route.search)?chargeQa:qa);
 });
 const tmp=mkdtempSync(path.join(tmpdir(),'yw-sites-online-'));
 try{
@@ -438,5 +537,13 @@ try{
   if(!pProof.ok)throw Error('V3-5-4 real 2-seat Friends Purify failed: '+
    String(pProof.rendered||pProof.reason).slice(0,1500));
   console.log(pProof.rendered);
+  const full=await runRealtimeQa({
+   browser,profile:path.join(tmp,'fullmatch-profile'),
+   url:'http://127.0.0.1:'+server.address().port+'/qa?fullmatch',
+   sentinel:'SITES-FRIENDS-FULL-MATCH-PASS',timeoutMs:120000
+  });
+  if(!full.ok)throw Error('V3-5-5 canonical 6v6 online result failed: '+
+   String(full.rendered||full.reason).slice(0,1600));
+  console.log(full.rendered);
  }
 }finally{await new Promise(ok=>server.close(ok));rmSync(tmp,{recursive:true,force:true});}
