@@ -15,7 +15,8 @@ const css=readFileSync(new URL('../lab/yw2-layout.css',import.meta.url),'utf8');
 const stage=readFileSync(new URL('../ui/match-stage.mjs',import.meta.url),'utf8');
 function hostSpecial(i){
  const host=createCombat({seed:20261030+i,
-  catalogSoultimateResolution:true,researchSpecialEffects:true});
+  catalogSoultimateResolution:true,researchSpecialEffects:true,
+  researchDamageModel:true,researchStatInspirits:true});
  const actor='A'+(i+1);
  for(let n=0;n<6&&!host.snapshot().clock.teams[0].frontIds.includes(actor);n++)
   assert.equal(host.rotate(0,1).ok,true);
