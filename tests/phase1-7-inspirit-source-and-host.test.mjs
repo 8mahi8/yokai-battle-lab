@@ -15,7 +15,12 @@ import {createCombat} from '../engine/combat.mjs';
 import {actionWeights} from '../engine/selection.mjs';
 
 test('6 rental Inspirits have immutable canonical effects, signs, target and level',()=>{
- assert.equal(INSPIRIT_EFFECT_MASTER.length,8);
+ // The eight existing fixture kinds stay unchanged; V3-4-17 adds one
+ // opt-in, source-backed confusion kind outside the rental six slots.
+ assert.equal(INSPIRIT_EFFECT_MASTER.length,9);
+ assert.deepEqual(INSPIRIT_EFFECT_MASTER.filter(x=>x.id!=='friendly-fire')
+  .map(x=>x.id),['sleep','strength-up','strength-down','defense-down',
+   'spirit-down','speed-down','hp-loss','hp-regen']);
  assert.equal(inspiritEffectById('speed-down').sign,'negative');
  assert.deepEqual(RENTAL_INSPIRIT_MOVES.map(x=>x.effect),
   ['sleep','strength-up','strength-up','sleep','strength-up','sleep']);
