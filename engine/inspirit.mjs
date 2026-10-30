@@ -46,6 +46,19 @@ export function createInspiritLedger(validIds) {
     entries.set(id,all.filter(x=>x.sign!=='negative'));
     return {ok:true,removed};
   }
+  /** Shared removal channel for enemy-wide Soultimate cleanses.
+   * Keep positive/negative ledger entries and unique serials intact.
+   * Unlike purification, this is not restricted to own bench members.
+   */
+  function removeBySign({id,sign}={}){
+    checkId(id);
+    if(!['positive','negative'].includes(sign))
+      throw new RangeError('valid Inspirit removal sign required');
+    const all=entries.get(id);
+    const removed=all.filter(x=>x.sign===sign).map(clone);
+    if(removed.length)entries.set(id,all.filter(x=>x.sign!==sign));
+    return removed;
+  }
   function has(id,effect){checkId(id);return entries.get(id).some(x=>x.effect===effect);}
-  return {list,apply,tick,purify,has};
+  return {list,apply,tick,purify,removeBySign,has};
 }
