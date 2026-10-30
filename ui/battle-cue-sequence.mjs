@@ -28,3 +28,31 @@ export function collectNewBattleCues(events,afterEventId,{maxCues=MAX_VISUAL_CAT
   cues:Object.freeze(cues.slice(-maxCues)),
   skipped:cues.length>maxCues?cues.length-maxCues:0});
 }
+
+/**
+ * Return the host action whose ANIMATION is currently on screen, not the
+ * latest host action from a newer bundled Firebase snapshot. Read-only.
+ * The stage never infers an action from an older title or current HP.
+ */
+export function actionForVisibleCue(events,visibleCue=null){
+ if(!Array.isArray(events))throw new TypeError('battle events array required');
+ if(visibleCue!==null&&(!visibleCue||typeof visibleCue!=='object'))
+  throw new TypeError('visible battle cue must be an object');
+ const actions=events.filter(e=>e?.type==='action');
+ if(visibleCue?.type==='action'){
+  const key=visibleCue.key;
+  if(typeof key!=='string')return null;
+  const id=/^event:([1-9]\d*)$/.exec(key);
+  if(id){
+   const eventId=Number(id[1]);
+   return actions.find(e=>e.eventId===eventId)??null;
+  }
+  const turn=/^action:([1-9]\d*)$/.exec(key);
+  if(turn){
+   const turnId=Number(turn[1]);
+   return actions.find(e=>e.turn===turnId)??null;
+  }
+  return null; // never substitute a later action when cue cannot be matched
+ }
+ return actions.at(-1)??null;
+}
