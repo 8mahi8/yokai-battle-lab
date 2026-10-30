@@ -107,6 +107,10 @@ if(friends&&!fragment.includes('yokaiRoomsV1'))
 // Do not export emulator-only latency instrumentation to actual school HTML.
 if(!emulator&&fragment.includes('__ywMotionTimingTrace'))
  throw Error('Emulator-only motion timing probe leaked into school build');
+if(!emulator&&/__(?:ywFriendsChargeQa|ywCharge|ywFriendsQa)/.test(fragment))
+ throw Error('V3-5 emulator-only real-charge driver leaked into school build');
+if(emulatorFriends&&!fragment.includes('__ywFriendsChargeQa'))
+ throw Error('V3-5 emulator real-charge E2E driver missing');
 if(emulatorFriends&&!fragment.includes('__ywMotionTimingTrace'))
  throw Error('Emulator Friends build lost V3-4-22 motion timing QA probe');
 if(mode==='cloud-configured-not-deployed'){
