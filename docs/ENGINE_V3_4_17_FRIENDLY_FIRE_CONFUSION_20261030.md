@@ -22,7 +22,7 @@
 
 - 新規 `tests/v3-yw2-friendly-fire-confusion.test.mjs`：確率境界Lv1/Lv3/Lv5・二重付与上限、原作とfixtureの区別、既存AIでの負とりつき付与、実6vs6で同陣営への攻撃とHP減少、同陣営KOの敵扱い防止、後衛の既存おはらい、追加flagなしの戦闘/RNGスナップショット一致、オンラインflag拒否。
 - `tests/phase1-7-inspirit-source-and-host.test.mjs` の分類マスター8件固定という旧assertを、新型追加を明示した9件+旧8ID不変へ修正。これは**既存本番レンタルの6つの技を変更したものではない**。
-- GitHub Actionsの結果はランIDを監査して後から追記する。ローカル/学校Safari2台・元3DS動画フレームとの比較はこの工程では未実施。CIだけを原作完全再現の証拠としない。
+- 実装・新テストを含むHEAD `19370a4ee4991fcc7a329ba420ad646088bf56e5` の [Research CI #41038374000](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41038374000) は **Node 908/908 PASS**（fail0）、自然6体耐久とChromium研究UIもSUCCESS。[Firebase Friends QA #41038374004](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41038374004) で無認証RTDB Emulator 2席／Chromium 2iframe／再接続・ACK・Google Sites向け未配布ビルド全ステップSUCCESS。[Phase14 stage #41038368804](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41038368804) もSUCCESS。途中のCIでは旧8件固定assertが失敗したが、分類を9件＋旧8ID不変に更新して全件合格。ローカル/学校Safari2台・元3DS動画フレームとの比較はこの工程では未実施。CIだけを原作完全再現の証拠としない。
 
 ## 次の1工程
 
