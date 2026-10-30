@@ -205,7 +205,8 @@ $('.yw-online-start').addEventListener('click',async()=>{
   const chargeGuard=chargeQaMode?RENTAL_SQUAD.map(unit=>({...unit,
    soulCapacity:5,weights:[0,0,0,100]})):null;
   const battleOptions=chargeQaMode?{seed:12,teams:[chargeGuard,chargeGuard],
-   rotationCooldownMs:0,researchSpecialEffects:false}:null;
+   rotationCooldownMs:0,researchSpecialEffects:true,
+   researchDamageModel:true,researchStatInspirits:true}:null;
   match=createFirebaseMatchHost({roomClient:room,protocol:chargeQaMode?
    createMatchProtocol({battleOptions}):createMatchProtocol({battleOptions:__YW_FRIENDS_MODE__?{playtestSoulTuning:true,enableLoafing:true}:{}}),
    onSnapshot:s=>{renderConfirmedSnapshot(s);},onError:err});
