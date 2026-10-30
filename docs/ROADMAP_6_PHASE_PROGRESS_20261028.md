@@ -19,6 +19,14 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-5-2｜必殺「妖気を消費するだけで効果なし」の本番Friends Host不具合を解消
+
+- [原作公式資料・コード上の原因・実装・検証・副作用](./ENGINE_V3_5_2_FRIENDS_REAL_SOULTIMATE_E2E_20261030.md)：原作の必殺は妖気ゲージ→タッチチャージ→**実攻撃・回復などの効果**が成立しなければならない。既存Friendsが`researchSpecialEffects=false`のデフォルトで作成され、Host`resolveSoultimate()`は妖気だけ消費して`effectStatus:'unimplemented'`を返していたことを確認。**基本ゲーム体験を損なう重大不具合のため優先修正**。
+- 開発版Friends Hostに既存の効果機構`researchSpecialEffects:true,researchDamageModel:true,researchStatInspirits:true`を有効化。**この組み合わせでは通常攻撃/妖術も既存の研究ダメージ計算を使うため、バランス変化は後の試遊で要確認**。ゲーム本体の新攻撃ロジック・Hit数/技データ・Firebase Protocol/Rules/Authは追加変更しない。
+- 既存Phase22CのSeed12+5Soulガードを再利用し、localhost限定の`--emulator-friends` `?charge`で本物のHost正規`advanceAuto()`を2回行い妖気を回復。学校形式`srcdoc`の2席実Chromium＋**認証なし**RTDB roomで、ゲストB1のわざ開始→6回の**本物のPointer操作/正規Host/Guest双方ACK**→妖気消費→正規`special`イベント・敵HP減少→両者の本物の必殺カットインを確認。QA用制御を学校向け`--friends`へ出さない**双方向ビルドガード**も実施。
+- [**実Firebase二席チャージ/効果E2E PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41063794276)（`SITES-FRIENDS-CHARGE-PASS 2 canonical Soul actions, 6 real Guest touch ACK, host B1 Special and both cut-ins`）、[**Node **942/942 PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41064107772)（新規2テストはFriends本番起動フラグと実Host A1必殺ダメージ）、[**Stage Chromium PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41064096333)。
+- **次 V3-5-3**：Friends版で新しく有効にした研究ダメージモデルのバランス回帰、零式Gわざの3体妖気・効果の本物のFirebase 2席E2E（次に後衛おはらい）。原作数値、ヒット数、3DS動作秒数/相手視点、学校Safari2台、元MP4直接比較は未達。**稼働中学校Google Sitesは未更新**。
+
 ## 2026-10-30 V3-5-1｜学校配布形式のFirebase Friends二席で零式/G/つつくモードの実操作受け入れ
 
 - [**実E2E手順・原作公式資料照合・未完部分**](./ENGINE_V3_5_1_FRIENDS_WATCH_ZERO_E2E_20261030.md)：Level-5公式の零式Gわざ・つつくと、原作動画のウォッチ操作を照合。**元MP4本体を今回直接視聴したわけではない**。6体サークルの見た目に加え、同じホスト/ゲストが**標準→零式→標準**を実操作して正規Firebase ACKを受けるところを受入。
