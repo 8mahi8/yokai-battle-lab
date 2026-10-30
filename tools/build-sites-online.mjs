@@ -104,6 +104,11 @@ if(friendsMode&&(/firebase-auth-compat\.js/.test(fragment)||
  throw Error('Friend mode must not embed Auth SDK or anonymous signup');
 if(friends&&!fragment.includes('yokaiRoomsV1'))
  throw Error('Friend mode lost isolated game room path');
+// Do not export emulator-only latency instrumentation to actual school HTML.
+if(!emulator&&fragment.includes('__ywMotionTimingTrace'))
+ throw Error('Emulator-only motion timing probe leaked into school build');
+if(emulatorFriends&&!fragment.includes('__ywMotionTimingTrace'))
+ throw Error('Emulator Friends build lost V3-4-22 motion timing QA probe');
 if(mode==='cloud-configured-not-deployed'){
  const marker=fragment.match(/demo-yokai-lab|127\.0\.0\.1:9000|127\.0\.0\.1:9099/);
  if(marker)throw Error('Cloud build contains emulator marker: '+marker[0]);
