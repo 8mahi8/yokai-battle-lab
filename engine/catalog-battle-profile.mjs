@@ -29,7 +29,7 @@ const expectedScope=spec=>spec.kind==='revive-heal'?'ally_team':
  spec.kind==='revive'?'single_ally':
  spec.kind==='heal'||spec.kind==='buff'?'ally_front':
  spec.scope==='one'?'single_enemy':'enemy_front';
-const powerOf=spec=>spec.kind==='buff'||spec.kind==='debuff'?null:spec.power;
+const powerOf=spec=>['buff','debuff','dispel'].includes(spec.kind)?null:spec.power;
 const effectOf=spec=>['buff','debuff','damage-status'].includes(spec.kind)
  ?spec.effect:null;
 const frozenMember=member=>Object.freeze({...member,
@@ -150,7 +150,7 @@ export function compileBattleProfileCharacter({catalog,characterId,profile}={}){
     soultimate.statusEffect!==effectOf(special)||
     !['none','unknown'].includes(soultimate.hitPattern?.type)||
     (soultimate.hitPattern.type==='none')!==
-      (['buff','debuff','heal','revive','revive-heal'].includes(special.kind)))
+      (['buff','debuff','heal','revive','revive-heal','dispel'].includes(special.kind)))
   throw new TypeError('Soultimate move and executable composite spec disagree');
  if(soultimate.hitPattern.type==='none'&&soultimate.hitPattern.count!==0||
     soultimate.hitPattern.type==='unknown'&&soultimate.hitPattern.count!==null)
