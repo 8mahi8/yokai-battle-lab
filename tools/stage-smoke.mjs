@@ -354,6 +354,35 @@ try{
  }
  if(!catchupPass)throw Error('V3-4-21 missed-revision browser motion policy failed');
 
+ // V3-4-25: real host's KO hit & fully KO front substitution must be
+ // visible in Chromium: no early flame, fire at impact, reserve arrives.
+ let koVisualPass=false;
+ for(let trial=1;trial<=2;trial++){
+  const source='http://127.0.0.1:'+server.address().port+
+   '/lab/match-stage.html?review=ko-phase-v3';
+  const child=spawn(browser,[
+   '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+   '--no-first-run','--disable-extensions',
+   '--user-data-dir='+path.join(tmp,'ko-phase-v3-'+trial),
+   '--window-size=1180,900','--virtual-time-budget=2500','--dump-dom',source
+  ],{stdio:['ignore','pipe','pipe']});
+  let body='',stderr='',timedOut=false;
+  child.stdout.on('data',x=>body+=String(x).slice(0,300000));
+  child.stderr.on('data',x=>stderr+=String(x).slice(0,2500));
+  const timeout=setTimeout(()=>{timedOut=true;child.kill('SIGKILL');},17000);
+  const code=await new Promise(resolve=>child.on('close',resolve));
+  clearTimeout(timeout);
+  const result=body.match(/<span id="lab-state">([^<]*)<[/]span>/)?.[1]??'';
+  if(!timedOut&&code===0&&result==='V3-4-25-KO-RESERVE-DOM-PASS'){
+   koVisualPass=true;
+   console.log('V3-4-25-KO-RESERVE-DOM-PASS host KO only at impact + true reserve arrival');
+   break;
+  }
+  console.warn('V3-4-25 KO visual trial '+trial+' failed: '+
+   (result||'no rendered result')+' '+stderr.slice(-150));
+ }
+ if(!koVisualPass)throw Error('V3-4-25 real host KO and reserve browser visual QA failed');
+
  // Create a visual review artifact from the actual ESM app (not a mock image).
  const shot=path.join(root,'phase14-stage-preview.png');
  const child=spawn(browser,[
