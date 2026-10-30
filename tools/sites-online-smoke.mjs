@@ -241,7 +241,9 @@ function gauge(frame,id){
   gauge(g,'B1')==='0%'&&gauge(h,'B1')==='0%',
   'charge completed by host, Soul consumed on both screens');
  const latest=hostQa.snapshot().game.events.filter(e=>e.type==='special').at(-1);
- check(!!latest&&latest.actor==='B1','real host did not emit the B1 special');
+ check(!!latest&&latest.actor==='B1','real host did not emit B1 special: '+
+  JSON.stringify(hostQa.snapshot().game.events.slice(-7))+' guest '+
+  el(g,'.yw-online-status')?.textContent);
  check(hostQa.snapshot().game.squads[0].some((x,i)=>x.hp!==hpBefore[i]),
   'real guest special did not change opponent HP');
  // Two independently rendered, event-driven cut-ins, not fake local alerts.
