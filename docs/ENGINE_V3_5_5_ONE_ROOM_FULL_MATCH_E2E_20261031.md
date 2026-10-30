@@ -11,7 +11,8 @@
 - 実装・テスト HEAD（QAソース修正）：`af182a09ccf849d9b3df97bbd453b4158ef27703`。
 - **Node 949/949件成功**：https://github.com/8mahi8/yokai-battle-lab/actions/runs/41089362492 。一試合統合ログ：`V3-5-5-ONE-ROOM-COMPLETE-PASS initialAuto=10 waitB2=0 waitG=3 normal=tap G=tap revision=41 ownerActions=13`。
 - **別のFirebase実通信6対6成功**：https://github.com/8mahi8/yokai-battle-lab/actions/runs/41088420666 の `SITES-FRIENDS-FULL-MATCH-PASS 7 real Host actions, six KO, 3 reserve substitutions, guest pin/rotation/Zero/Standard ACK, both final overlays and identical final revision`。
-- **最新ブラウザQA**：https://github.com/8mahi8/yokai-battle-lab/actions/runs/41090175095 。これは一試合全操作の実Firebaseテストと、通常必殺・G・おはらいの個別回帰、認証なし通信／Rules、歴史的Rulesを含む。**各ブラウザ実測マーカーはActionsログの完了結果と合わせて判断すること**。最終CIの完了/成功を未確認の時点では、冒頭のNode成功と同等に扱わない。
+- **最新Firebase実通信2席／過去Rules再試験を含めて全工程 SUCCESS**：https://github.com/8mahi8/yokai-battle-lab/actions/runs/41090175095 。`SITES-FRIENDS-ONE-GAME-PASS 13 real Host actions, negative Inspirit, bench Purify 5 pointer ACK, normal B2 6 touch, Host 3 legal reserve rotations, Zero G B1 6 touch, all six KO and opposite two-seat results` をローカルの実RTDBエミュレーターで**2回成功**。既存の通常必殺・G・単独おはらい・通常6vs6を含む全ブラウザシナリオも二度通過。認証なしSDK/Rules/通信検査も成功。
+- **最終HEADのNode・Stage CIも成功**：[Node 949件（同一コードHEAD）](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41090175098)、[Chromium Stage](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41090163180)。
 
 ## 原作映像の一次観察と現在の再現の照合
 
