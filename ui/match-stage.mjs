@@ -13,6 +13,7 @@ import {passiveSkillNoticesForAction} from './passive-feedback.mjs';
 import {soultimateDisplayTitle} from '../content/presentation-labels.mjs';
 import {yw2ReferenceSoultimate} from '../content/yw2-soultimate-reference.mjs';
 import {planActionChoreography,choreographyFrame} from '../presentation/action-choreography.mjs';
+import {createSeatMotionVisibility} from './seat-motion-visibility.mjs';
 import {projectLegacyAttackOutcome} from '../presentation/legacy-attack-outcome.mjs';
 import {projectAttackOutcomeV2} from '../presentation/legacy-attack-to-v2.mjs';
 import {projectSoultimateImpactLedger} from '../contracts/soultimate-impact-ledger-v1.mjs';
@@ -183,11 +184,14 @@ export function projectMatchResult(winner,seat){
 }
 
 export function createMatchStage({element,onAction,onStep=()=>{},
- seat=null,onError=()=>{},showResearchForecast=false}={}){
+ seat=null,onError=()=>{},showResearchForecast=false,
+ researchOpponentVisibility=false}={}){
  if(!element||typeof element.addEventListener!=='function')throw new TypeError('root DOM element required');
  if(typeof onAction!=='function'||typeof onStep!=='function'||typeof onError!=='function')
   throw new TypeError('callbacks required');
  if(seat!==null&&seat!==0&&seat!==1)throw new RangeError('seat must be null, 0 or 1');
+ if(typeof researchOpponentVisibility!=='boolean')
+  throw new TypeError('researchOpponentVisibility must be boolean');
  const fixedSeat=seat;
  let activeSeat=seat??0,wireState=null,view=null,selection=null;
  let recentMessage='準備中',pointer=null,lastMove=0;
@@ -198,6 +202,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  let sceneSpecialTargetIndex=null; // resolved target, not a hit count
  let sceneSpecialHitIndex=null; // custom host hit, never target count
  const stagedHealth=new Map();
+ const opponentVisibility=researchOpponentVisibility?[
+  createSeatMotionVisibility({seat:0}),createSeatMotionVisibility({seat:1})]:null;
  let commandMode=null,battleDrawCache=null,resultDismissed=false;
  // Host-only completion event drives owner-local feedback; never a tap ACK.
  let lastPurificationId=null,purificationFeedback=null,purificationTimer=null;
@@ -357,12 +363,14 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   clearTimeout(sceneTimer);sceneTimer=null;flash=null;scenePlan=null;
   scenePhase='done';sceneHitIndex=null;sceneSpecialTargetIndex=null;
   sceneSpecialHitIndex=null;stagedHealth.clear();
+  if(opponentVisibility)for(const gate of opponentVisibility)gate.finish();
  }
  function advanceScene(){
   if(!scenePlan)return;
   if(document.hidden){cancelScene();if(wireState)render(wireState);return;}
   const elapsed=Math.max(0,performance.now()-sceneStartedAt);
   const frame=choreographyFrame(scenePlan,elapsed);
+  opponentVisibility?.[activeSeat].advance(elapsed);
   if(frame.finished){
    cancelScene();
    if(!document.hidden&&pendingCues.length)beginScene(pendingCues.shift(),null);
@@ -392,6 +400,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   flash=cue;scenePhase='anticipation';sceneHitIndex=null;
   sceneSpecialTargetIndex=null;sceneSpecialHitIndex=null;
   sceneStartedAt=performance.now();
+  // Only the opponent's visual wheel/charge is held, never the host truth.
+  opponentVisibility?.[activeSeat].begin({eventKey:cue.key,
+   durationMs:scenePlan.durationMs,view:previousView??view});
   for(const impact of cue.targets||[]){
    const side=impact.id?.startsWith('B')?1:0;
    const old=previousView?.teams?.[side]?.members.find(m=>m.id===impact.id);
@@ -631,7 +642,10 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    beginScene(cue,previousView);
   }
   action=actionForVisibleCue(view.events,flash);
+  const shownView=opponentVisibility?.[activeSeat].project(view)??view;
   const backdrop=element.querySelector('.mb-battle-backdrop');
+  backdrop.dataset.opponentViewBlocked=String(
+   opponentVisibility?.[activeSeat].status().blocked??false);
   backdrop.dataset.sceneKind=scenePlan?.kind??'none';
   backdrop.dataset.scenePhase=scenePhase;
   // Machine-readable evidence of the actual move connected through the
@@ -703,24 +717,24 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   $('mb-turn').textContent=String(view.turn);
   $('mb-team0').hidden=activeSeat!==0;
   $('mb-team1').hidden=activeSeat!==1;
-  const fieldKey=JSON.stringify({side:activeSeat,own:view.teams[activeSeat],
-   enemy:view.teams[1-activeSeat],flash,phase:scenePhase,hitIndex:sceneHitIndex,
+  const fieldKey=JSON.stringify({side:activeSeat,own:shownView.teams[activeSeat],
+   enemy:shownView.teams[1-activeSeat],flash,phase:scenePhase,hitIndex:sceneHitIndex,
    specialTargetIndex:sceneSpecialTargetIndex,specialHitIndex:sceneSpecialHitIndex,
    staged:[...stagedHealth],commandMode});
   if(fieldKey!==battleDrawCache){
-   $('mb-foe-line').innerHTML=frontlineHTML(view.teams[1-activeSeat],false);
-   $('mb-ally-line').innerHTML=frontlineHTML(view.teams[activeSeat],true);
+   $('mb-foe-line').innerHTML=frontlineHTML(shownView.teams[1-activeSeat],false);
+   $('mb-ally-line').innerHTML=frontlineHTML(shownView.teams[activeSeat],true);
    battleDrawCache=fieldKey;
   }
   // Touch challenges may send many authoritative snapshots per second.
   // The SVG cards must not be torn down for each tiny touch update.
   for(let index=0;index<2;index++){
-   const key=JSON.stringify({team:view.teams[index],seat:activeSeat,selection,
+   const key=JSON.stringify({team:shownView.teams[index],seat:activeSeat,selection,
     ownerPin:view.teams[activeSeat].pin,flash,phase:scenePhase,hitIndex:sceneHitIndex,
     specialTargetIndex:sceneSpecialTargetIndex,specialHitIndex:sceneSpecialHitIndex,
    staged:[...stagedHealth],commandMode});
    if(key!==teamDrawCache[index]&&!(wheelPointer&&wheelPointer.seat===index)){
-    $('mb-team'+index).innerHTML=teamHTML(view.teams[index]);
+    $('mb-team'+index).innerHTML=teamHTML(shownView.teams[index]);
     teamDrawCache[index]=key;
    }
   }
@@ -1029,9 +1043,11 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  return {render,setConnection,alert,destroy,selectSeat(nextSeat){
   if(fixedSeat!==null)throw new Error('network seat fixed');
   if(![0,1].includes(nextSeat))throw new RangeError('unknown seat');
+  if(opponentVisibility){cancelScene();pendingCues=[];seenCueKey=null;lastEventId=0;}
   activeSeat=nextSeat;selection=null;
   clearTimeout(purificationTimer);purificationTimer=null;purificationFeedback=null;
   if(wireState)render(wireState);
  },getStatus:()=>({activeSeat,selected:selection,revision:view?.revision??-1,
-  sceneEventKey:flash?.key??null,pendingVisualCues:pendingCues.length})};
+  sceneEventKey:flash?.key??null,pendingVisualCues:pendingCues.length,
+  ...(opponentVisibility?{opponentVisibility:opponentVisibility[activeSeat].status()}:{})})};
 }
