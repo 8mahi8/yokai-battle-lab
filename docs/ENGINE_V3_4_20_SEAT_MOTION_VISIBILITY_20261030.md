@@ -23,7 +23,7 @@
 
 - `tests/v3-4-20-seat-motion-visibility.test.mjs`：5テスト。実MatchProtocolのホストと自分のB円回転即時／Aの表示保留、HP/状態/勝敗の正規性、まとめ更新の最後の前衛へ即時再同期、タブ終了/時間スキップ/再開、invalid入力拒否と正規ハッシュ非変更。以前の920件を維持。
 - `tools/stage-smoke.mjs`へ**実Chromiumの2席同時表示テスト**を追加。ゲームの権威エンジンを使い、2席のホスト状態と画面を突き合わせ、画面が更新されないまま停止しないことを検証。さらに**モーション中の新しい試合開始**で旧敵前衛/ロックが残らないことを検証。
-- 開発中の最初の920+5件では`advance(-1)`がモーション非実行時に無検証で返る1件を発見→検証順を修正。**途中失敗を最終成功と偽らない**。コード完成判定はその後のCI、Chromium、2席Firebase QAの最終結果に従う。
+- 開発中の最初の920+5件では`advance(-1)`がモーション非実行時に無検証で返る1件を発見→検証順を修正。**途中失敗を最終成功と偽らない**。最終機能コードに対し[Research unit CI #41048530149](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41048530149) **925/925件全合格・失敗0**。[Chromium Stage QA #41048530125](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41048530125) **全段成功（モーション中相手表示保留→解除→試合再起動を実DOM確認）**。[Firebase Friends 2席QA #41048538273](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41048538273) は同一実装コミットの最終結果を確認する。前の同等戦闘コードは[2席QA #41048381335](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41048381335)成功。
 - 学校iPad Safari2台での実機試験なし。Google Sites配布中のHTMLは変更なし。**Chromium成功≠Safari実機成功、研究画面成功≠本番オンラインの表示遅延完成**。
 
 ## 次に優先する工程：V3-4-21
