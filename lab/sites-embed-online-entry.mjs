@@ -21,12 +21,14 @@ const config=__YW_ONLINE_CONFIG__;
  * This measures listener->stage render, NOT Internet RTT or 2-iPad clock sync.
  * Esbuild removes every probe from the school --friends production bundle.
  */
-// Isolated E2E only: an existing Phase22C guard/5-Soul fixture, never 3DS
+// Isolated E2E only: ?charge normal and ?gcharge Zero G use the same
+// canonical Phase22C guard/5-Soul fixture; neither enters school HTML.
+// Never 3DS
 // balance or the school's real battle. A srcdoc's parent opt-in is readable
 // only in our localhost emulator, with build-time flags for dead-code removal.
 const chargeQaMode=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&(()=>{
  try{return location.href==='about:srcdoc'&&window.parent!==window&&
-  window.parent.location.search==='?charge';}catch{return false;}
+  ['?charge','?gcharge'].includes(window.parent.location.search);}catch{return false;}
 })();
 const motionTimingQa=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__?[]:null;
 let lastTimedActionId=0;
