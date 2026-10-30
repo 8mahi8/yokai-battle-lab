@@ -269,7 +269,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const squads=source.map((team,side)=>team.map((member,i)=>buildMember(member,side,i)));
   if(!researchYw2Confusion&&squads.flat().some(m=>m.inspirit==='friendly-fire'||
     m.special.kind==='dispel'||m.special.effect==='friendly-fire'))
-    throw new RangeError('YW2 source memory effects require researchYw2Confusion');
+    throw new RangeError('YW2 source memory effect requires researchYw2Confusion');
   if(!researchDamageModel&&squads.flat().some(m=>
     m.techniquePlaySources>0||m.techniquePenetrate===true))
     throw new RangeError('Technique Play/Penetrate research requires researchDamageModel');
