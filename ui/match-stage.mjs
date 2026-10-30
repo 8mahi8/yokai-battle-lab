@@ -610,8 +610,10 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   const cue=latestBattleCue(view.events);
   const seen=collectNewBattleCues(view.events,lastEventId);
   const maxId=seen.latestEventId;
-  if(maxId>0&&maxId<lastEventId){
-   cancelScene();pendingCues=[];seenCueKey=null;
+  // A newly restarted match has an empty event log (maxId=0). Do not
+  // carry the last match's opponent freeze or animation into the new match.
+  if(maxId<lastEventId&&(maxId>0||view.revision===0)){
+   cancelScene();pendingCues=[];seenCueKey=null;lastEventId=0;
   }
   // Initial attach shows current truth; old events must not replay on join.
   if(seenCueKey===null){
