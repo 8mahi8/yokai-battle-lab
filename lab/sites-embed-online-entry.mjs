@@ -8,6 +8,7 @@
 import {createFirebaseRoomClient} from '../network/firebase-room.mjs';
 import {createFirebaseMatchHost,createFirebaseMatchGuest} from '../network/firebase-match.mjs';
 import {createMatchProtocol} from '../engine/match-protocol.mjs';
+import {RENTAL_SQUAD} from '../engine/combat.mjs';
 import {createMatchStage} from '../ui/match-stage.mjs';
 import {matchAckMessage} from '../ui/match-feedback.mjs';
 import {createHostAutoClock} from '../ui/host-auto-clock.mjs';
@@ -20,6 +21,13 @@ const config=__YW_ONLINE_CONFIG__;
  * This measures listener->stage render, NOT Internet RTT or 2-iPad clock sync.
  * Esbuild removes every probe from the school --friends production bundle.
  */
+// Isolated E2E only: an existing Phase22C guard/5-Soul fixture, never 3DS
+// balance or the school's real battle. A srcdoc's parent opt-in is readable
+// only in our localhost emulator, with build-time flags for dead-code removal.
+const chargeQaMode=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&(()=>{
+ try{return location.href==='about:srcdoc'&&window.parent!==window&&
+  window.parent.location.search==='?charge';}catch{return false;}
+})();
 const motionTimingQa=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__?[]:null;
 let lastTimedActionId=0;
 if(__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__)
@@ -152,7 +160,7 @@ function setupSeat(role){
  const debugStep=$('#mb-step');
  if(debugStep){debugStep.hidden=true;debugStep.setAttribute('aria-hidden','true');}
  if(role===0){
-  friendsAutoStarted=false;
+  friendsAutoStarted=chargeQaMode;
   autoClock=createHostAutoClock({
    step:()=>match.advanceAuto(),
    canAdvance:canHostAdvance,
@@ -192,8 +200,20 @@ $('.yw-online-join').addEventListener('click',async()=>{
 $('.yw-online-start').addEventListener('click',async()=>{
  try{
   const begun=await room.startRoom();if(!begun.ok)throw Error(begun.reason);
-  match=createFirebaseMatchHost({roomClient:room,protocol:createMatchProtocol({battleOptions:__YW_FRIENDS_MODE__?{playtestSoulTuning:true,enableLoafing:true}:{}}),
+  // Exactly the already-tested Phase22C deterministic battle fixture.
+  // Even in emulation the Host's real MatchProtocol resolves every action.
+  const chargeGuard=chargeQaMode?RENTAL_SQUAD.map(unit=>({...unit,
+   soulCapacity:5,weights:[0,0,0,100]})):null;
+  const battleOptions=chargeQaMode?{seed:12,teams:[chargeGuard,chargeGuard],
+   rotationCooldownMs:0,researchSpecialEffects:false}:null;
+  match=createFirebaseMatchHost({roomClient:room,protocol:chargeQaMode?
+   createMatchProtocol({battleOptions}):createMatchProtocol({battleOptions:__YW_FRIENDS_MODE__?{playtestSoulTuning:true,enableLoafing:true}:{}}),
    onSnapshot:s=>{renderConfirmedSnapshot(s);},onError:err});
+  if(chargeQaMode){
+   window.__ywFriendsChargeQa={step:()=>connected()?match.advanceAuto():
+    {ok:false,reason:'peer_offline'},status:()=>match.status(),
+    snapshot:()=>match.snapshot()};
+  }
   const initial=await match.start();
   if(!initial.ok)throw Error(initial.reason||initial.error||'snapshot_publish_failed');
   $('.yw-online-start').disabled=true;
