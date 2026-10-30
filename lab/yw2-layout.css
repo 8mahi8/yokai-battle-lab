@@ -585,3 +585,34 @@
  .mb-yw2 .mb-special-impact-style,.mb-yw2 .mb-special-impact-style i{
   animation:none!important}
 }
+
+/* V3-4-25: a freshly host-confirmed zero-HP fighter is represented by a
+   blue spirit flame. Rendered from HP, not from an untrusted local KO guess.
+   A subsequent true host reserve change marks the entering member briefly. */
+.mb-yw2 .mb-fighter.mb-ko{opacity:.83}
+.mb-yw2 .mb-ko-wisp{
+ position:relative;width:42px;height:52px;display:block;pointer-events:none;
+ filter:drop-shadow(0 0 8px #42c7ffcc);
+ animation:mb-ko-wisp-float 1.2s ease-in-out infinite alternate}
+.mb-yw2 .mb-ko-wisp:before{
+ content:'';position:absolute;inset:0;
+ background:radial-gradient(ellipse at 50% 74%,#fff 0 13%,#a9fcff 24%,#46d4ff 49%,#1756b6 76%,#343dbb 100%);
+ clip-path:polygon(50% 1%,67% 21%,62% 40%,81% 25%,90% 61%,80% 84%,62% 98%,34% 98%,18% 80%,12% 58%,26% 35%,32% 61%,39% 45%);
+ border-radius:44%}
+.mb-yw2 .mb-ko-wisp:after{
+ content:'';position:absolute;left:26%;top:36%;width:46%;height:48%;
+ background:radial-gradient(ellipse at center,#f3ffff 0,#b7ffff 45%,#88e9ff44 100%);
+ clip-path:polygon(50% 0,82% 40%,91% 80%,50% 100%,10% 81%,17% 35%);
+ border-radius:40%}
+.mb-yw2 .mb-fighter.mb-arriving .mb-fighter-sprite{
+ animation:mb-reserve-arrival .6s cubic-bezier(.12,.7,.24,1) both}
+@keyframes mb-ko-wisp-float{
+ from{transform:translateY(2px) scale(.96)}
+ to{transform:translateY(-4px) scale(1.04)}}
+@keyframes mb-reserve-arrival{
+ from{transform:translateY(27px) scale(.75);opacity:.3}
+ to{transform:translateY(0) scale(1);opacity:1}}
+@media(prefers-reduced-motion:reduce){
+ .mb-yw2 .mb-ko-wisp,.mb-yw2 .mb-fighter.mb-arriving .mb-fighter-sprite{
+  animation:none!important}
+}
