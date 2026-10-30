@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-18｜原作記憶系2体の4技を共通Status/Soultimateへ（研究限定）
+
+- [原作資料・実装/未確定・詳細回帰](./ENGINE_V3_4_18_MEMORY_DUO_FOUR_MOVES_20261030.md)：Wazzat/わすれん帽とHouzzat/メゾン・ドワスレを原作2資料で再確認。**わすれん帽**とりつき混乱Lv1/必殺敵前衛全員の良いとりつき解除/Charge100、**メゾン・ドワスレ**とりつき混乱Lv3/必殺敵前衛全員にLv3混乱/Charge200。原作の成功率/混乱の味方ターゲット/時系列は未確証。
+- 既存の6体/28技研究カタログは変更せず、**明示オプションで8体/32技**の研究版を構築。共通InspiritLedgerに`removeBySign`を追加し、通常の状態付与・敵前衛へのdebuffと同じEffect/SoultimatePlanを用いて4技を実戦入力。別のAI、状態台帳、通信を作らない。
+- [914/914 Node tests SUCCESS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41041189583)、[原作Stage Chromium QA SUCCESS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41041189598)、[Firebase Friends RTDB Emulator/Chromium 2席 QA SUCCESS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41041201748)。**学校Safari/Google Sites実機と3DS動画の同一画面比較は未実施**。実戦仕様の原作完全再現・V3-5エンジン完成は未達。
+- 次 **V3-4-19** は原作動画と現在のゲームの全試合進行・二画面の行動演出/入力受付を照合し、共通イベントの時系列/表示契約を強化する。新キャラを増やすことは優先しない。
+
 ## 2026-10-30 V3-4-17｜原作混乱の共通オーナー行動・同陣営攻撃とKO（研究のみ）
 
 - [詳細設計・外部資料・実装/未対応](./ENGINE_V3_4_17_FRIENDLY_FIRE_CONFUSION_20261030.md)。原作2 Wazzat のとりつきは所有者の行動時Lv1=10%/上限Lv5=50%、HouzzatはLv3。日本語攻略資料でも「味方を攻撃してしまう」を確認。原作の味方ターゲット分布/サボり優先順位/重ね付け順は未確認で、研究用一様ターゲットfixtureと明示。
