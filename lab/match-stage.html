@@ -70,6 +70,134 @@ el('auto').addEventListener('click',()=>{
 });
 begin();
 const review=new URL(location.href).searchParams.get('review');
+if(review==='full-match-v3'){
+ // V3-4-26: real authoritative 6-vs-6 host and two fixed browser seats.
+ // Original-facing checkpoints: active 3/6, KO, true reserve swap,
+ // finishing hit BEFORE result and a fresh guest after match completion.
+ const check=(test,reason)=>{if(!test)throw Error(reason);};
+ const fixture=strong=>RENTAL_SQUAD.map(u=>({...u,
+  maxHp:strong?420:85,strength:strong?570:10,spirit:strong?310:10,
+  defense:strong?180:25,attackPower:strong?175:18,
+  techniquePower:strong?100:10,technique:'damage',
+  weights:[100,0,0,0],attackAccuracy:4}));
+ const host=createMatchProtocol({battleOptions:{seed:20261026,
+  teams:[fixture(true),fixture(false)],playtestSoulTuning:true,
+  rotationCooldownMs:3000},hostNowMs:()=>10000});
+ const frameRoot=(name)=>{
+  const node=document.createElement('div');
+  node.id=name;node.style.cssText='position:absolute;left:-12000px;width:990px';
+  document.body.append(node);return node;
+ };
+ const rootA=frameRoot('full-a'),rootB=frameRoot('full-b'),
+  lateRoot=frameRoot('full-late');
+ const seatA=createMatchStage({element:rootA,seat:0,onAction:()=>({accepted:false})}),
+  seatB=createMatchStage({element:rootB,seat:1,onAction:()=>({accepted:false})}),
+  lateB=createMatchStage({element:lateRoot,seat:1,onAction:()=>({accepted:false})});
+ let checkTimer=null,completed=false;
+ function cleanup(){clearInterval(checkTimer);seatA.destroy();seatB.destroy();
+  lateB.destroy();rootA.remove();rootB.remove();lateRoot.remove();}
+ try{
+  const initial=host.snapshot();
+  seatA.render(initial);seatB.render(initial);
+  check(rootA.querySelectorAll('#mb-foe-line .mb-fighter').length===3&&
+   rootA.querySelectorAll('#mb-team0 .mb-creature').length===6,
+   'opening 3 active opponents / 6 own wheel medals missing');
+  check(rootB.querySelectorAll('#mb-foe-line .mb-fighter').length===3&&
+   rootB.querySelectorAll('#mb-team1 .mb-creature').length===6,
+   'second player opening ring/field differs from original 3/6 layout');
+  let confirmedKO=0,confirmedReserve=0,actions=0;
+  for(let i=0;i<200&&host.snapshot().game.winner===null;i++){
+   const before=host.snapshot(),receipt=host.advanceAuto();
+   check(receipt.ok&&receipt.result?.type==='action','real host action stalled');
+   const after=host.snapshot();
+   const oldView={revision:before.revision,events:before.game.events,
+    teams:[0,1].map(side=>({side,
+     frontIds:before.game.clock.teams[side].frontIds,members:before.game.squads[side]}))};
+   const newView={revision:after.revision,events:after.game.events,
+    teams:[0,1].map(side=>({side,
+     frontIds:after.game.clock.teams[side].frontIds,members:after.game.squads[side]}))};
+   const changes=projectKoViewChange(oldView,newView);
+   confirmedKO+=changes.knockouts.length;
+   confirmedReserve+=changes.arrivals.length;
+   actions++;
+   // Actual host snapshots go through BOTH genuine DOM stage renderers.
+   seatA.render(after);seatB.render(after);
+  }
+  const final=host.snapshot();
+  check(final.game.winner===0,'real host never reached a winner');
+  check(final.game.squads[1].every(u=>u.hp===0),
+   'final opponent six KOs were not committed by the host');
+  check(actions>6&&confirmedKO>=1&&confirmedReserve>=1,
+   'full match did not contain actual KO and reserve action transitions');
+  check(rootA.dataset.matchFinished==='true'&&rootB.dataset.matchFinished==='true',
+   'both seats did not receive canonical match finish');
+  check(rootA.querySelector('#mb-finish-screen').hidden&&
+   rootB.querySelector('#mb-finish-screen').hidden,
+   'result covered the lethal host hit before choreography');
+  check(seatA.getStatus().sceneEventKey&&seatB.getStatus().sceneEventKey,
+   'final match update never entered a visible action scene');
+
+  // Same final snapshot, but joining AFTER the game should not replay stale
+  // attacks: result is visible immediately for a late/reconnected client.
+  lateB.render(final);
+  check(!lateRoot.querySelector('#mb-finish-screen').hidden,
+   'late join after ended match should show result immediately');
+  check(lateRoot.querySelector('#mb-finish-title').textContent==='敗北…',
+   'late guest received the wrong final result');
+  check(lateB.getStatus().sceneEventKey===null,
+   'late join replayed a past attack');
+
+  const lastAction=final.game.events.filter(e=>e.type==='action').at(-1);
+  const finalScene='event:'+lastAction.eventId;
+  let sawFinalImpact=false,sawKOFlame=false,earlyResult=false,ticks=0;
+  checkTimer=setInterval(()=>{
+   if(completed)return;
+   try{
+    ticks++;
+    for(const [node,seat] of [[rootA,seatA],[rootB,seatB]]){
+     const current=seat.getStatus().sceneEventKey;
+     const backdrop=node.querySelector('.mb-battle-backdrop');
+     if(current===finalScene&&backdrop.dataset.scenePhase==='impact'){
+      sawFinalImpact=true;
+      if(node.querySelector('.mb-ko-wisp'))sawKOFlame=true;
+     }
+     if(current&& !node.querySelector('#mb-finish-screen').hidden)
+      earlyResult=true;
+    }
+    const resultA=rootA.querySelector('#mb-finish-screen');
+    const resultB=rootB.querySelector('#mb-finish-screen');
+    if(!resultA.hidden&&!resultB.hidden){
+     check(!earlyResult,'final result appeared during unresolved action cue');
+     check(sawFinalImpact,'the last confirmed attack was not shown');
+     check(sawKOFlame,'KO blue flame never appeared during lethal hit');
+     check(seatA.getStatus().sceneEventKey===null&&
+      seatB.getStatus().sceneEventKey===null,
+      'result visible while an animation is still running');
+     check(rootA.querySelector('#mb-finish-title').textContent==='勝利！'&&
+      rootB.querySelector('#mb-finish-title').textContent==='敗北…',
+      'opposite seats must show consistent winning/losing labels');
+     check(rootA.querySelector('#mb-turn').textContent===String(final.game.clock.turn)&&
+      rootB.querySelector('#mb-turn').textContent===String(final.game.clock.turn),
+      'players disagree on the final host turn');
+     completed=true;
+     el('lab-state').textContent='V3-4-26-FULL-MATCH-DOM-PASS '+actions+
+      ' host actions '+confirmedKO+' observed KO '+confirmedReserve+' reserve changes';
+     cleanup();
+    }else if(ticks>125){
+     throw Error('host winner scene did not finish and reveal result in 12.5s');
+    }
+   }catch(error){
+    completed=true;
+    el('lab-state').textContent='V3-4-26-FULL-MATCH-DOM-FAIL '+error.message;
+    cleanup();
+   }
+  },100);
+ }catch(error){
+  completed=true;
+  el('lab-state').textContent='V3-4-26-FULL-MATCH-DOM-FAIL '+error.message;
+  cleanup();
+ }
+}
 if(review==='ko-phase-v3'){
  // V3-4-25: real seeded host, never injected fake HP or a local KO event.
  const check=(ok,message)=>{if(!ok)throw Error(message);};
