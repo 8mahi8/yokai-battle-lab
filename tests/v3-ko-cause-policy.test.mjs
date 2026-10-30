@@ -21,7 +21,8 @@ test('V3-2 KO cause policies are immutable and explicitly retain legacy ordering
  assert.deepEqual(KO_CAUSE_POLICY,{
   ordinary:{eligibilityPhase:'before-skill',refreshPin:true,creditCaster:true},
   special:{eligibilityPhase:'after-skill',refreshPin:false,creditCaster:true},
-  poke:{eligibilityPhase:'before-skill',refreshPin:true,creditCaster:false}
+  poke:{eligibilityPhase:'before-skill',refreshPin:true,creditCaster:false},
+  'friendly-fire':{eligibilityPhase:'before-skill',refreshPin:true,creditCaster:false}
  });
  assert.equal(Object.isFrozen(KO_CAUSE_POLICY),true);
  for(const policy of Object.values(KO_CAUSE_POLICY))
