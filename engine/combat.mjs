@@ -267,8 +267,9 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const source=teams??[rentals,rentals];
   if(!Array.isArray(source)||source.length!==2||!source.every(x=>Array.isArray(x)&&x.length===6))throw new TypeError('requires two rosters of six');
   const squads=source.map((team,side)=>team.map((member,i)=>buildMember(member,side,i)));
-  if(!researchYw2Confusion&&squads.flat().some(m=>m.inspirit==='friendly-fire'))
-    throw new RangeError('friendly-fire Inspirit requires researchYw2Confusion');
+  if(!researchYw2Confusion&&squads.flat().some(m=>m.inspirit==='friendly-fire'||
+    m.special.kind==='dispel'||m.special.effect==='friendly-fire'))
+    throw new RangeError('YW2 source memory effects require researchYw2Confusion');
   if(!researchDamageModel&&squads.flat().some(m=>
     m.techniquePlaySources>0||m.techniquePenetrate===true))
     throw new RangeError('Technique Play/Penetrate research requires researchDamageModel');
@@ -733,6 +734,16 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const hitRecords=[];
     for(const impact of impacts){
       const target=byId.get(impact.targetId);
+      if(impact.kind==='dispel'){
+        // The same canonical ledger owns removal: no duplicate status store.
+        // This source move is opt-in and target selection was validated above.
+        if(!researchYw2Confusion)throw new RangeError('source dispel requires research mode');
+        const removed=statuses.removeBySign({id:target.id,sign:'positive'});
+        if(removed.length)syncCanAct(target.id);
+        impact.removed=removed;
+        impact.applied=removed.length>0;
+        continue;
+      }
       if(impact.kind==='buff'||impact.kind==='debuff'){
         // Status ledger/resistance shared with regular Inspirits.
         const resisted=impact.kind==='debuff'&&rng()*100<target.inspiritResistance;
