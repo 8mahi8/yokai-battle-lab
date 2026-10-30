@@ -24,7 +24,7 @@
 - `tests/v3-4-25-ko-flame-reserve-transition.test.mjs`：本物の`createMatchProtocol`で6体戦を実行し、過去と最新のHost正規状態から投影したKO/補充と**2席の同じ結果**を検証。実Host全6体撃破・実KOイベント対応・同じrev/飛び受信/手動サークル/MISS/不正データの誤演出防止。カスタム本物Host必殺がHP0にしたことも専用検証。
 - `lab/match-stage.html?review=ko-phase-v3`と`tools/stage-smoke.mjs`：本物の決定的Host対戦結果から**最初の敵KOと控え登場をそれぞれ取り出し**、Chromium DOMで「着弾前にはKO火がない／着弾後にだけ青い火が出る／3体全滅後の真の控えにだけ登場クラスが付く」を確認。偽のHP0状態を画面用に作らない。
 - 新しいテストを初めて実行した際、**旧控えが前衛に出た同じ行動でKOされる**ため、「最新スナップショットでもHP>0の控え」の条件は不十分と分かった。実Hostのコードに手を加えず、**控えが登場する直前のHP>0**へ修正した。古い失敗CIをテスト合格と数えない。
-- **CI結果は最終実装をテストしたworkflowのログで判定**。学校iPad Safari2台・Google Sites実貼付・元MP4直接比較は未検証。
+- [**新規テスト4件含む940/940全件PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41057890024)：実Hostの9行動で、前衛の確実な初回KOを3件、**同一行動でKOされる控えの登場**を3件確認（実Hostは敵6体をすべてKO）。両者は別の画面演出事実であるため、可視KOイベント数が総KO数と一致すると仮定しない。\n- [**本物のChromium画面でKO炎・控え登場の検証PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41057890044)：ログに`V3-4-25-KO-RESERVE-DOM-PASS`。通常のタッチ/必殺/原作研究サークルの画面QAも成功。[Firebase Friends 2席QA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41057896961)は最終コードの結果をジョブログで区別して確認する。学校iPad Safari2台・Google Sites実貼付・元MP4直接比較は未検証。
 
 ## 現在の原作再現度と次の作業
 
