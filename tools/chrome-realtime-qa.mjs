@@ -13,7 +13,7 @@ import {spawn} from 'node:child_process';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-const localOnly=u=>/^http:\/\/127\.0\.0\.1:\d+\/qa(?:\?setup)?$/.test(u);
+const localOnly=u=>/^http:\/\/127\.0\.0\.1:\d+\/qa(?:\?(?:setup|charge))?$/.test(u);
 async function devtoolsPage(profile,url,deadline){
  let last='';
  while(Date.now()<deadline){
@@ -89,7 +89,8 @@ export async function runRealtimeQa({browser,url,profile,sentinel,timeoutMs=9000
      observed=result;
      if(result.startsWith(sentinel+' '))
       return {ok:true,rendered:result};
-     if(result.startsWith('SITES-ONLINE-FAIL '))
+     if(result.startsWith('SITES-ONLINE-FAIL ')||
+        result.startsWith('SITES-FRIENDS-CHARGE-FAIL '))
       return {ok:false,rendered:result,reason:'visible_qa_error'};
     }
    }catch(e){
