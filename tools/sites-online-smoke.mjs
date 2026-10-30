@@ -158,8 +158,8 @@ function gauge(frame,id){
 (async()=>{
  const fragment=await (await fetch('/embed')).text();
  h.srcdoc=fragment;g.srcdoc=fragment;
- await until(()=>!el(h,'.yw-online-make')?.disabled&&
-  !el(g,'.yw-online-join')?.disabled,'two Friends embeds online');
+ await until(()=>el(h,'.yw-online-make')?.disabled===false&&
+  el(g,'.yw-online-join')?.disabled===false,'two Friends embeds online');
  check(doc(h).querySelectorAll('script[src]').length===2,
   'no-Auth Friends must load only app+database SDK: actual '+
   doc(h).querySelectorAll('script[src]').length+' '+[...doc(h).querySelectorAll('script[src]')].map(x=>x.src).join(','));
