@@ -359,6 +359,9 @@ if(review==='purify-e1'){
  if(!result.ok)throw Error('real special resolution failed');
  const actual=host.snapshot(),rows=actual.events.findLast(e=>e.type==='special').impacts;
  stage.render({game:actual,revision:1,clientSequences:[0,0],forecast:[]});
+ const cutin=el('battle-stage').querySelector('#mb-special-flare');
+ if(cutin.hidden||cutin.dataset.treatment!=='strike')
+  throw Error('V3-4-24 real A1 rental cutin did not use strike profile');
  const seen=[];
  const observer=setInterval(()=>{
   const field=el('battle-stage');
@@ -370,7 +373,10 @@ if(review==='purify-e1'){
    .map(n=>n.closest('.mb-fighter')?.dataset.unit);
   const fighter=field.querySelector('#mb-foe-line [data-unit="'+target+'"]');
   const renderedHp=fighter?.querySelector('.mb-fighter-meta small')?.textContent;
+  const layer=field.querySelector('#mb-special-impact-style');
   const ok=backdrop.dataset.specialImpactSchema==='1'&&
+   backdrop.dataset.specialTreatment==='strike'&&
+   layer&&!layer.hidden&&layer.dataset.treatment==='strike'&&
    shown.length===1&&shown[0]===target&&
    renderedHp?.startsWith(String(rows[i].hpAfter)+'/');
   seen.push(ok?index:'BAD-'+index);
