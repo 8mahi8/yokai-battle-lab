@@ -14,6 +14,7 @@ import {soultimateDisplayTitle} from '../content/presentation-labels.mjs';
 import {yw2ReferenceSoultimate} from '../content/yw2-soultimate-reference.mjs';
 import {planActionChoreography,choreographyFrame} from '../presentation/action-choreography.mjs';
 import {createSeatMotionVisibility} from './seat-motion-visibility.mjs';
+import {assessSeatMotionDelivery} from './seat-motion-delivery.mjs';
 import {projectLegacyAttackOutcome} from '../presentation/legacy-attack-outcome.mjs';
 import {projectAttackOutcomeV2} from '../presentation/legacy-attack-to-v2.mjs';
 import {projectSoultimateImpactLedger} from '../contracts/soultimate-impact-ledger-v1.mjs';
@@ -208,6 +209,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  // Host-only completion event drives owner-local feedback; never a tap ACK.
  let lastPurificationId=null,purificationFeedback=null,purificationTimer=null;
  const teamDrawCache=[null,null];let forecastDrawCache=null;
+ let lastMotionDelivery=null; // research-only evidence, never a host rule
  element.innerHTML=`
  <div class="mb-stage mb-yw2">
   <header class="mb-topbar">
@@ -392,7 +394,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   clearTimeout(sceneTimer);
   if(Number.isFinite(at))sceneTimer=setTimeout(advanceScene,Math.max(8,at-elapsed+1));
  }
- function beginScene(cue,previousView){
+ function beginScene(cue,previousView,allowOpponentHold=false){
   cancelScene();
   if(document.hidden)return;
   try{scenePlan=planActionChoreography(cue);}
@@ -401,8 +403,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   sceneSpecialTargetIndex=null;sceneSpecialHitIndex=null;
   sceneStartedAt=performance.now();
   // Only the opponent's visual wheel/charge is held, never the host truth.
-  opponentVisibility?.[activeSeat].begin({eventKey:cue.key,
-   durationMs:scenePlan.durationMs,view:previousView??view});
+  if(opponentVisibility&&allowOpponentHold&&previousView)
+   opponentVisibility[activeSeat].begin({eventKey:cue.key,
+    durationMs:scenePlan.durationMs,view:previousView});
   for(const impact of cue.targets||[]){
    const side=impact.id?.startsWith('B')?1:0;
    const old=previousView?.teams?.[side]?.members.find(m=>m.id===impact.id);
@@ -621,6 +624,10 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    lastEventId=maxId;
   }else if(maxId>0){
    if(maxId>lastEventId){
+    const delivery=opponentVisibility?assessSeatMotionDelivery({
+     previousView,currentView:view,freshCues:seen.cues.length,
+     skipped:seen.skipped,sceneActive:scenePlan!==null}):null;
+    lastMotionDelivery=delivery;
     lastEventId=maxId;
     if(!document.hidden&&seen.cues.length){
      if(seen.skipped>0){
@@ -633,7 +640,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
       pendingCues.push(...seen.cues);
       if(pendingCues.length>MAX_VISUAL_CATCHUP_CUES)
        pendingCues=pendingCues.slice(-MAX_VISUAL_CATCHUP_CUES);
-      if(!scenePlan)beginScene(pendingCues.shift(),previousView);
+      if(!scenePlan)beginScene(pendingCues.shift(),previousView,
+       delivery?.allowOpponentHold===true);
      }
     }
     if(seen.cues.length)seenCueKey=seen.cues.at(-1).key;
@@ -1045,11 +1053,13 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  return {render,setConnection,alert,destroy,selectSeat(nextSeat){
   if(fixedSeat!==null)throw new Error('network seat fixed');
   if(![0,1].includes(nextSeat))throw new RangeError('unknown seat');
-  if(opponentVisibility){cancelScene();pendingCues=[];seenCueKey=null;lastEventId=0;}
+  if(opponentVisibility){cancelScene();pendingCues=[];seenCueKey=null;lastEventId=0;
+   lastMotionDelivery=null;}
   activeSeat=nextSeat;selection=null;
   clearTimeout(purificationTimer);purificationTimer=null;purificationFeedback=null;
   if(wireState)render(wireState);
  },getStatus:()=>({activeSeat,selected:selection,revision:view?.revision??-1,
   sceneEventKey:flash?.key??null,pendingVisualCues:pendingCues.length,
-  ...(opponentVisibility?{opponentVisibility:opponentVisibility[activeSeat].status()}:{})})};
+  ...(opponentVisibility?{opponentVisibility:opponentVisibility[activeSeat].status(),
+   motionDelivery:lastMotionDelivery}:{})})};
 }
