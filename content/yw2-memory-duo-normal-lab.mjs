@@ -33,8 +33,9 @@ const links=Object.freeze({
 const doc=(value,...sourceIds)=>({status:'documented',sourceIds,
  claims:[{value,sourceIds}]});
 const unknown=(...sourceIds)=>({status:'unknown',sourceIds,claims:[]});
-const move=(label,sourceIds,{power,hits,element,effect})=>({
- label,labelSourceIds:sourceIds,power,hits,element,effect
+const move=(label,sourceIds,{power,hits,element,effect,level})=>({
+ label,labelSourceIds:sourceIds,power,hits,element,effect,
+ ...(level===undefined?{}:{level})
 });
 const definitions=[
  {schema:YW2_SOURCE_INTAKE_SCHEMA,game:'yw2',
@@ -62,7 +63,7 @@ const definitions=[
    }),
    inspirit:move('記憶を食べる',[A,'wazzat_jp'],{
     power:unknown(A),hits:doc(0,A),element:unknown(A),
-    effect:doc('friendly-fire',A,'wazzat_jp')
+    effect:doc('friendly-fire',A,'wazzat_jp'),level:doc(1,A)
    }),
    soultimate:move('スグワスレ〜ル',[A,'wazzat_jp'],{
     power:unknown(A),hits:doc(0,A),element:unknown(A),
@@ -95,11 +96,11 @@ const definitions=[
    }),
    inspirit:move('記憶をしまう',[B,'houzzat_jp'],{
     power:unknown(B),hits:doc(0,B),element:unknown(B),
-    effect:doc('friendly-fire',B,'houzzat_jp')
+    effect:doc('friendly-fire',B,'houzzat_jp'),level:doc(3,B)
    }),
    soultimate:move('記憶にございません！',[B,'houzzat_jp'],{
     power:unknown(B),hits:doc(0,B),element:unknown(B),
-    effect:doc('enemy-front-friendly-fire',B,'houzzat_jp')
+    effect:doc('enemy-front-friendly-fire',B,'houzzat_jp'),level:doc(3,B)
    })
   }
  }
@@ -140,10 +141,46 @@ function compileSlot(index,original,slot,template,researchId){
   hitPattern:{type:hits===1?'single':'multi',count:hits},
   statusEffect:null,evidence:'documented',sourceRefs:[...r]};
 }
+/**
+ * V3-4-18 opt-in source effects: compile only the documented shape, NOT the
+ * still-unverified original stick chance, charge timing or status priority.
+ * This uses the SAME immutable character and four-move catalog as the rentals.
+ */
+function compileMemoryStatusSlot(index,original,slot,template,researchId){
+ const fact=original.moves[slot],label=original.id+':'+slot;
+ const effect=documented(fact.effect,label+':effect',
+  v=>slot==='inspirit'?v==='friendly-fire':
+    original.id==='yw2:wazzat'?v==='remove-positive-inspirits':
+      v==='enemy-front-friendly-fire');
+ const level=slot==='inspirit'||effect==='enemy-front-friendly-fire'
+  ?documented(fact.level,label+':level',v=>Number.isSafeInteger(v)&&v>=1&&v<=4):null;
+ const sources=[...new Set([
+  ...fact.labelSourceIds.map(k=>index.sources[k]),
+  ...refs(index,fact.effect),...(level===null?[]:refs(index,fact.level))
+ ])];
+ if(sources.some(v=>typeof v!=='string'||!v.startsWith('https://')))
+  throw new TypeError('invalid memory status source URL');
+ if(slot==='inspirit')return {...clone(template),id:researchId+':inspirit',
+  slot,displayName:fact.label,category:'status_negative',
+  power:null,element:null,targetScope:'single_enemy',
+  hitPattern:{type:'none',count:0},statusEffect:'friendly-fire',
+  level,evidence:'documented',sourceRefs:sources};
+ const cleanse=effect==='remove-positive-inspirits';
+ const execution=cleanse?{kind:'dispel',scope:'front'}:
+  {kind:'debuff',scope:'front',effect:'friendly-fire',level};
+ return {...clone(template),id:researchId+':soultimate',
+  slot,displayName:fact.label,category:execution.kind,
+  power:null,element:null,targetScope:'enemy_front',
+  hitPattern:{type:'none',count:0},
+  statusEffect:cleanse?null:'friendly-fire',
+  execution,evidence:'documented',sourceRefs:sources};
+}
 /** Build both original normal-move actors via the SAME reusable catalog. */
 export function buildYw2MemoryDuoNormalLab({
- index=YW2_MEMORY_DUO_SOURCE_INDEX
+ index=YW2_MEMORY_DUO_SOURCE_INDEX,includeSourceStatusMoves=false
 }={}){
+ if(typeof includeSourceStatusMoves!=='boolean')
+  throw new TypeError('includeSourceStatusMoves must be boolean');
  const characters=[],moves=[],profiles={},researchIds={};
  for(let i=0;i<YW2_MEMORY_DUO_IDS.length;i++){
   const originalId=YW2_MEMORY_DUO_IDS[i];
@@ -163,13 +200,25 @@ export function buildYw2MemoryDuoNormalLab({
   const technique=compileSlot(index,data,'technique',
    RENTAL_LAB_CATALOG.getMove(base.moveIds.technique),id);
   moves.push(physical,technique);
-  ref.id=id;ref.name=data.name+'（通常技・共通スキル研究）';
+  const originalInspirit=includeSourceStatusMoves
+   ?compileMemoryStatusSlot(index,data,'inspirit',
+      RENTAL_LAB_CATALOG.getMove(base.moveIds.inspirit),id):null;
+  const originalSpecial=includeSourceStatusMoves
+   ?compileMemoryStatusSlot(index,data,'soultimate',
+      RENTAL_LAB_CATALOG.getMove(base.moveIds.soultimate),id):null;
+  if(originalInspirit&&originalSpecial)moves.push(originalInspirit,originalSpecial);
+  ref.id=id;ref.name=data.name+(includeSourceStatusMoves
+    ?'（原作4技の効果研究）':'（通常技・共通スキル研究）');
   ref.tribe=data.tribe;ref.rank=data.rank;
   ref.stats=Object.fromEntries(stats.map(k=>[
    k,documented(data.stats[k],id+':'+k,pos)
   ]));
   ref.moveIds.attack=physical.id;
   ref.moveIds.technique=technique.id;
+  if(originalInspirit&&originalSpecial){
+   ref.moveIds.inspirit=originalInspirit.id;
+   ref.moveIds.soultimate=originalSpecial.id;
+  }
   ref.personality.actionWeights=[
    ...documented(data.behavior?.baseActionWeights,id+':weights',
     x=>Array.isArray(x)&&x.length===4&&
@@ -202,9 +251,17 @@ export function buildYw2MemoryDuoNormalLab({
  return Object.freeze({catalog,profiles:Object.freeze(profiles),
   researchIds:Object.freeze(researchIds),
   originalSkillId:'yw2:skill:mamoriwasure',
-  fixtureSlots:Object.freeze(['inspirit','soultimate','personality',
+  fixtureSlots:Object.freeze(includeSourceStatusMoves?[
+   'personality','loafChance','soulRank','damageFormula','levelGrowth',
+   'originalChargeTiming','inspiritStickChance','confusionTargeting'
+  ]:['inspirit','soultimate','personality',
    'loafChance','soulRank','damageFormula','levelGrowth']),
+  sourceStatusMoves:includeSourceStatusMoves,
   battleReady:false});
+}
+/** V3-4-18: opt in to all four sourced move EFFECTS, still not battle-ready. */
+export function buildYw2MemoryDuoFourMoveLab(options={}){
+ return buildYw2MemoryDuoNormalLab({...options,includeSourceStatusMoves:true});
 }
 /**
  * Compiles actual authored physical/Technique/stat/weights via the existing
