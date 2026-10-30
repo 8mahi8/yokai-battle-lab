@@ -1,5 +1,7 @@
 # 妖怪ウォッチ2対戦再現｜引き継ぎ現況（2026-10-30）
 
+> **2026-10-31 継続引き継ぎ（V3-5-3完了）**：最新根拠 [V3-5-3 Friends Gわざ実二席・研究ダメージ回帰](./ENGINE_V3_5_3_FRIENDS_ZERO_G_DAMAGE_E2E_20261031.md)。開発HEAD `d8c7f855`（検証済みコードHEAD `4677b9f0`）。Gわざの3体の妖気を、Guest正規左回転＋零式切替＋Host 6ガード行動で蓄積し、Guest6タップACK→3体妖気消費→Host G実HP変化→両席カットインまで **認証なしFirebase RTDB Emulator+同一Chromium 2 iframeでPASS**。Node **944/944 PASS**、Stage Chromium PASS、Firebase二席PASS。原作原本MP4と学校Safari2台は未検証。**次 V3-5-4：負とりつき→控えおはらい→本当のHost状態解除を同じFirebase実二席で検証**。学校稼働Google Sites/本番Firebase Rules/DB/Auth/Drive/main未変更。
+
 > 前チャットが開けず、直前担当の専用引き継ぎ文がない状態から、2026-10-30にGitHubを再監査して記録したスナップショット。古いHANDOFF_*.mdやPR本文の過去Phase記述は、現行実装の証明に使わない。
 
 ## 再開時の正規入口
