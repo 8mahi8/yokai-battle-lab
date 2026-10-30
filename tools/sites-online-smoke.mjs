@@ -185,6 +185,21 @@ function gauge(frame,id){
   'guest auto-connect without extra tap');
  await until(()=>el(h,'.yw-online-presence')?.textContent==='相手と接続中'&&
   el(g,'.yw-online-presence')?.textContent==='相手と接続中','both peer presences');
+ // V3-5-6: the school Friends layout is playable, not a debug dashboard.
+ // Wire IDs stay in the DOM for QA ACKs but are hidden to a human player.
+ for(const frame of [h,g]){
+  check(el(frame,'.mb-disclaimer')?.hidden===true,
+   'school Friends is displaying a research disclaimer');
+  check(el(frame,'#mb-revision')?.hidden===true,
+   'school Friends is displaying internal network revisions');
+  check(el(frame,'.mb-title-group small')?.hidden===true,
+   'school Friends is displaying a developer caption');
+  check(el(frame,'#mb-purify')?.hidden===false&&
+   el(frame,'#mb-charge')?.hidden===false,
+   'hiding development labels accidentally disabled player commands');
+ }
+ check(doc(h).querySelector('.yw-online-bar strong')?.textContent==='輪戦｜友達対戦',
+  'Friends page retains the old research header');
  const hostQa=h.contentWindow.__ywFriendsChargeQa;
  check(hostQa&&typeof hostQa.step==='function'&&
   typeof hostQa.snapshot==='function','localhost-only charge driver absent');
@@ -588,6 +603,8 @@ function gauge(frame,id){
   'existing seed12 guest B1 fixture should be tap; original weights unverified');
  check(gauge(g,'B1')==='100%',
   'chargeStart consumed Soul before completing touch');
+ check(!el(g,'#mb-gesture-progress')?.textContent.includes('試験用'),
+  'visible Friends touch progress still reveals laboratory-only text');
  for(let i=0;i<6;i++){
   const dot=el(g,'#mb-touch-points .mb-touch-target');
   const pad=el(g,'#mb-touch-pad');
