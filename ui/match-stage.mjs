@@ -622,7 +622,6 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    $('mb-finish-winner').textContent=outcome.winnerLabel;
    $('mb-finish-description').textContent=outcome.description;
   }
-  $('mb-finish-screen').hidden=view.winner===null||resultDismissed;
   element.dataset.matchFinished=String(view.winner!==null);
   // A batched host update may be newer than the FIFO scene on screen.
   // Resolve the label from the cue AFTER processing its sequence below.
@@ -668,6 +667,12 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    seenCueKey=cue.key;
    beginScene(cue,previousView);
   }
+  // A host-declared winner ends INPUT immediately, but the original
+  // battle presentation should finish its last authoritative attack/KO
+  // before a result overlay covers the field. Fresh join to a completed
+  // room has no scene queue, so it still sees the result immediately.
+  $('mb-finish-screen').hidden=view.winner===null||resultDismissed||
+   scenePlan!==null||pendingCues.length>0;
   action=actionForVisibleCue(view.events,flash);
   const shownView=opponentVisibility?.[activeSeat].project(view)??view;
   const backdrop=element.querySelector('.mb-battle-backdrop');
