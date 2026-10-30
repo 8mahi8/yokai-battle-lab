@@ -19,6 +19,12 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-17｜原作混乱の共通オーナー行動・同陣営攻撃とKO（研究のみ）
+
+- [詳細設計・外部資料・実装/未対応](./ENGINE_V3_4_17_FRIENDLY_FIRE_CONFUSION_20261030.md)。原作2 Wazzat のとりつきは所有者の行動時Lv1=10%/上限Lv5=50%、HouzzatはLv3。日本語攻略資料でも「味方を攻撃してしまう」を確認。原作の味方ターゲット分布/サボり優先順位/重ね付け順は未確認で、研究用一様ターゲットfixtureと明示。
+- 単独のAIや状態ストアを作らず、既存Inspirit Effect Master→StatusLedger→共通owner action resolver→通常命中/ダメージ/KO→おはらいを再利用。**同陣営KOを敵KO扱いしない**ため共通KO cause追加。`researchYw2Confusion:true`＋custom teams＋DamageModel限定。通常レンタル6体/現行オンラインプロトコルは変更なし。
+- [Node 908/908全合格](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41038374000)、[Firebase Friends Emulator+Chromium二席成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41038374004)、[stage画面検証成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41038368804)。**学校Safari実機・原作動画フレーム比較は未実施**。次V3-4-18はsource-backed Inspirit/Soultimateの実キャラ参照・対象・レベル付与の統合検討。学校版への配布なし。V3-5完成判定未達。
+
 ## 2026-10-30 V3-4-16｜原作記憶系2体の通常技・能力・基本AI・既存スキルを共通戦闘へ
 
 - [原作の根拠・共通カタログ実装・未対応の明示・テスト](./ENGINE_V3_4_16_MEMORY_DUO_NORMAL_MOVES_20261030.md)。[Mt. Wildwood Wazzat YW2](https://www.mtwildwood.net/yw2/yokai/wazzat)、[Houzzat YW2](https://www.mtwildwood.net/yw2/yokai/houzzat)、[国内攻略大百科](https://gamepedia.jp/youkai-yw2/monsters/184)／[同メゾン・ドワスレ](https://gamepedia.jp/youkai-yw2/monsters/185)のYW2同版を照合。**わすれん帽**：かみつく15×1/つむじ風の術20×1風、Lv99 HP252/STR76/SPR150/DEF87/SPD192、基本行動重み10/55/30/5。**メゾン・ドワスレ**：くらいつく45×2/竜巻の術50×2風、Lv99 HP332/STR99/SPR187/DEF156/SPD185、基本行動重み5/60/25/10。後者の×2はMt. Wildwood YW2節の明記による。レベル成長と独自のヒット/ダメージ式は原作完全一致未検証。
