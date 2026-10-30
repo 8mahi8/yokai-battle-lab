@@ -14,7 +14,7 @@ import {assertSoultimateImpactLedger} from '../contracts/soultimate-impact-ledge
 import {assertSoultimateHitLedger} from '../contracts/soultimate-hit-ledger-v1.mjs';
 import {yw2ReferenceSoultimate} from '../content/yw2-soultimate-reference.mjs';
 export const CHOREOGRAPHY_SCHEMA=1;
-const allowedTargets=new Set(['damage','heal','revive','buff','debuff','status','miss']);
+const allowedTargets=new Set(['damage','heal','revive','buff','debuff','status','miss','dispel']);
 const freezeTargets=values=>Object.freeze(values.map(e=>Object.freeze({...e})));
 const isUnit=x=>typeof x==='string'&&/^[AB][1-6]$/.test(x);
 function extractKind(event){
@@ -74,11 +74,11 @@ export function planActionChoreography(event){
    throw new TypeError('Soultimate impact ledger identity/target conflict');
   for(let i=0;i<impacts.length;i++){
    const source=specialImpactLedger.impacts[i];
-   const expected=['heal','revive','buff','debuff'].includes(source.kind)?
+   const expected=['heal','revive','buff','debuff','dispel'].includes(source.kind)?
      source.kind:'damage';
    if(impacts[i].targetId!==source.targetId||
       impacts[i].amount!==source.amount||impacts[i].effect!==expected||
-      (['buff','debuff'].includes(source.kind)&&
+      (['buff','debuff','dispel'].includes(source.kind)&&
        impacts[i].hit!==source.applied))
     throw new TypeError('Soultimate visual target contradicts host ledger');
   }
