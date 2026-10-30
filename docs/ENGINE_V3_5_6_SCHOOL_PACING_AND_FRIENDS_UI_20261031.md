@@ -42,6 +42,14 @@
 3. `tools/build-sites-online.mjs`：Friends側の埋込画面上部を「輪戦｜友達対戦」と簡潔な**ホスト画面を開いたままにする**案内に変更。ローカル研究用/それ以外の構成は元の研究ラベルを維持。なお発生確率の低い通信再設計、匿名認証の追加、Rules変更は一切行っていない。
 4. `tools/sites-online-smoke.mjs`：本物のFirebase RTDB emulator/2つのChromium srcdocで、**友達対戦から研究ラベルを隠しつつ、必要なわざ/おはらいボタンは表示され、タッチバーには開発文言が残らない**ことを判定。通常の必殺、G、負のとりつき後のおはらい、六体KOまでの旧実通信E2Eも維持。
 
+## 自動テスト／実ブラウザの結果（検証済み）
+
+- コード最終変更：`dd2f08819827a191d7c7a6ff78341db11720b762`。資料のみを追加したコミット`71e8bf8`上の同一コードでCIを完走。
+- [**Node 950/950件 SUCCESS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41143884193)：新規8シード監査1件を含む。正常な戦闘ルール・旧試験の全回帰を維持。
+- [**Chromium Stage SUCCESS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41143884079)：実ブラウザの既存Stage操作/描画回帰。
+- [**Firebase No-Auth Friends実2席・全工程 SUCCESS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41143893018)：localhost RTDB Emulator＋同じChromium内2つのGoogle Sites型`srcdoc`で、**研究注意帯/REV/英語開発タグが非表示、操作ボタンは維持、わざの入力進捗に「試験用」が表示されない**ことを新規チェック。また既存の通常必殺、零式G、おはらい、通常6vs6 KO、同一試合での全部入り入力/全KO/両者結果が**2回通過**。Firebase Rulesの古い設定の再現検証、LIVE共有Firebaseの**読み取り専用GET HTTP200**も成功。**LIVEデータの書き込み・学校iPad2台の検証ではない**。
+- 学校向け`--friends`ビルドを生成するだけで、**Google Sites埋込・本番FirebaseのRules/DB/Auth・GitHub main・Drive配布を変更していない**。
+
 ## やっていないこと／次工程
 
 - 学校のGoogle Sitesに実際に貼られているHTML、本番Firebase Rules/Auth/DB、main、Google Drive配布物は変更しない。**開発ブランチだけ**。
