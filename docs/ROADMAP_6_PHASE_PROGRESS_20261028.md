@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-30 V3-4-21｜Firebase取りこぼし/再接続の相手サークル誤保留を防止
+
+- [実装・研究根拠・厳密な限界](./ENGINE_V3_4_21_FIREBASE_MOTION_DELIVERY_20261030.md)：現行`network/firebase-match.mjs`は正規`revision`と`eventId`を配信するが**ホストのモーション開始時刻は共有しない**。ゲストがrev0→rev2をまとめ受信した場合、rev1の行動がすでに終了していてもローカルで全長演出を開始して古い相手前衛を再表示する可能性があった。
+- 研究用`ui/seat-motion-delivery.mjs`で、**直前revとの差が1かつ新規行動1・履歴欠損なし・別の演出非再生中・未決着**の場合だけ相手のメダル/Soulの表示保留を許可。まとめ受信・再接続・重複は最新の正規状態を描画。戦闘進行/合法操作/ホスト時計/キャラ・技/通信ペイロードは変更なし。通常の学校Friends画面は引き続きflag OFF。
+- [Node **929/929 PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41050085643)：実`createFirebaseMatchHost/Guest`の遅延メモリRoomで4件の追加テスト（連続受信、rev飛び、再接続・逆順/重複、保留不可条件）。[**Chromium Stage全job成功・rev飛び新画面表示PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41050226846)、[**Firebase Friends二席QA成功**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41050235470)。実Firebase Emulatorによるルーム同期テストは既存正常系の回帰。意図的なrev飛びはメモリRoomとChromium研究ラボ内で実施した。
+- 次 **V3-4-22** はホスト/ゲストの`eventId`受信時刻差・切断からの復帰頻度を既存Emulator2iframeで**計測のみ**行い、最小の可視時刻メタデータ追加が必要か判断。rev差1でも通信遅延はあるため**本家の完全な両席同期を達成したとは言わない**。学校Safari実機/原作動画の同画面比較は未実施、V3-5完成判定未達。
+
 ## 2026-10-30 V3-4-20｜相手のサークル/チャージ状態の表示保留を研究画面へ統合
 
 - [原作対人資料・設計境界・研究用画面/QA](./ENGINE_V3_4_20_SEAT_MOTION_VISIBILITY_20261030.md)：熟練対戦者の記録で、**モーション中の自分のサークル入力は受理されても相手画面にはモーション終端まで反映されない**仕組みを再確認。原作の秒数と視界の全項目は未確証であるため既存ActionChoreography時間を研究fixtureとして使用。
