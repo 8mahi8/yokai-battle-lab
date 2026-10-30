@@ -19,6 +19,14 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-31 V3-5-5｜一試合・全操作・6体KO・結果まで実Firebase二席通し受け入れ成功
+
+- [原作一次録画時刻との具体比較・検証範囲・差分・次工程](./ENGINE_V3_5_5_ONE_ROOM_FULL_MATCH_E2E_20261031.md) を正式な最新入口とする。**V3-5-5終了、V3-5全体は学校実機未検証のため未完了。**
+- `?onegame` のみ localhost・Emulator Friends 専用の編成を試験開始時に作る。本当の Host 正規とりつき→Guest後衛おはらい→B2の通常必殺→Host正規サークル回転3回→B1の零式Gわざ→6体KO→ホスト「敗北…」/ゲスト「勝利！」まで、**実Firebase RTDB/2 Chrome srcdoc内の一試合**で通した。HPやSoulの事後注入・偽勝敗は禁止のまま、両者入力は Host ACK により確認。既存`?charge`/`?gcharge`/`?purify`/`?fullmatch`回帰も全部維持。
+- CI 最終コードHEAD`af182a09`： [Node **949/949**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41090175098)、[Stage Chromium](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41090163180)、[Firebase No-Auth/歴史的Rules + 新一試合E2Eが**二度PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41090175095)。
+- 現実の**学校用通常6体バランスは未調整**。Seed12通常編成160行動/10KO時点で勝敗未確定、Seed41は121行動で決着。2600ms固定AutoClockで長期化の可能性を発見。数値/テンポの原作一致は未確定なので独断変更しない。
+- **次 V3-5-6**：通常編成・実機Safari2台での長さ/視認性/画面停止/原作の見た目の差を検証し、確定的な不具合と主観的な改善候補を区別する。学校版/本番Firebase Rules/Auth/DB/main/Driveは未変更。
+
 ## 2026-10-31 V3-5-4｜後衛おはらいを実Firebase Friends二席で通し検証
 
 - [原作資料・実装内容・実通信・未検証事項](./ENGINE_V3_5_4_FRIENDS_PURIFY_E2E_20261031.md)。ゲームエンジン/オンライン通信を重複実装せず、既存`purifyStart`/`purifyInput`/`purification`イベントと正規Host自動行動を再利用。
