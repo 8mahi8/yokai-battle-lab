@@ -15,6 +15,7 @@ import {projectSoultimateVisual} from '../presentation/soultimate-visual-profile
 import {yw2ReferenceSoultimate} from '../content/yw2-soultimate-reference.mjs';
 import {planActionChoreography,choreographyFrame} from '../presentation/action-choreography.mjs';
 import {createSeatMotionVisibility} from './seat-motion-visibility.mjs';
+import {projectKoViewChange} from './ko-view-transition.mjs';
 import {assessSeatMotionDelivery} from './seat-motion-delivery.mjs';
 import {projectLegacyAttackOutcome} from '../presentation/legacy-attack-outcome.mjs';
 import {projectAttackOutcomeV2} from '../presentation/legacy-attack-to-v2.mjs';
@@ -201,6 +202,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  let recentMessage='準備中',pointer=null,lastMove=0;
  let wheelPointer=null,suppressWheelClick=false,wheelClickTimer=null;
  let seenCueKey=null,flash=null,scenePlan=null,scenePhase='done',sceneStartedAt=0,sceneTimer=null,lastEventId=0;
+ let lastKoArrival=[]; // visual only; host owns the complete frontline
  let pendingCues=[]; // read-only display queue; never delays authoritative host
  let sceneHitIndex=null; // presentation only: index into host-confirmed attack hits
  let sceneSpecialTargetIndex=null; // resolved target, not a hit count
@@ -501,14 +503,19 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const pinned=!isOwn&&view.teams[activeSeat].pin===id?' mb-pinned':'';
    const candidate=!isOwn&&commandMode==='target'&&!unit.ko?' mb-choice-eligible':'';
    const tonedDown=!isOwn&&commandMode==='target'&&unit.ko?' mb-choice-ineligible':'';
-   const ko=shownHp(unit)===0?' mb-ko':'';
+   const isKO=shownHp(unit)===0;
+   const ko=isKO?' mb-ko':'';
+   const arriving=!isKO&&scenePhase==='anticipation'&&lastKoArrival.some(row=>
+    row.side===team.side&&row.ids.includes(id)&&flash?.key==='event:'+row.eventId)
+    ?' mb-arriving':'';
    const status=(unit.positive?'<span class="mb-condition-icon" aria-label="良いとりつき">↑</span>':'')+
     (unit.negative?'<span class="mb-condition-icon" aria-label="悪いとりつき">⚠</span>':'');
    return '<button type="button" data-unit="'+id+'" class="mb-fighter'+
-    actor+target+pinned+ko+candidate+tonedDown+'" aria-label="'+name+
+    actor+target+pinned+ko+arriving+candidate+tonedDown+'" aria-label="'+name+
     (isOwn?' 味方前衛':' 敵前衛')+(candidate?' 選択可能':'')+
     (pinned?' ピンでねらい中':'')+(unit.negative?' 悪いとりつき':unit.positive?' 良いとりつき':'')+'">'+
-    '<span class="mb-fighter-sprite">'+renderSpiritPortrait(id)+'</span>'+
+    '<span class="mb-fighter-sprite">'+(isKO?
+      '<span class="mb-ko-wisp" aria-hidden="true"></span>':renderSpiritPortrait(id))+'</span>'+
     (pinned?'<span class="mb-pin-reticle" aria-hidden="true"></span>':'')+
     (unit.negative?'<span class="mb-status-marker mb-status-bad" aria-hidden="true">✕</span>':
      unit.positive?'<span class="mb-status-marker mb-status-good" aria-hidden="true">↑</span>':'')+
@@ -577,6 +584,12 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   const previousView=view;
   wireState=state;
   view=makeStageView(state,activeSeat);
+  // A compulsory reserve entrance is rendered only after the host wheel
+  // truly moves away from an entirely KO front, not after a manual rotation.
+  if(previousView){
+   const change=projectKoViewChange(previousView,view);
+   if(change.arrivals.length)lastKoArrival=change.arrivals;
+  }
   // Only newly delivered authoritative purification events activate feedback.
   // Initial attach may contain a past event: never replay it on join.
   const past=view.events.filter(e=>e.type==='purification'&&
@@ -620,7 +633,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   // A newly restarted match has an empty event log (maxId=0). Do not
   // carry the last match's opponent freeze or animation into the new match.
   if(maxId<lastEventId&&(maxId>0||view.revision===0)){
-   cancelScene();pendingCues=[];seenCueKey=null;lastEventId=0;
+   cancelScene();pendingCues=[];seenCueKey=null;lastEventId=0;lastKoArrival=[];
   }
   // Initial attach shows current truth; old events must not replay on join.
   if(seenCueKey===null){
