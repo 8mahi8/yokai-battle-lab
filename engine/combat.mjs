@@ -17,6 +17,7 @@ export {RENTAL_SQUAD,SCHOOL_RENTAL_PERSONALITIES} from '../content/rental-roster
 import { createBattle } from './phase1.mjs';
 import { createInspiritLedger } from './inspirit.mjs';
 import { actionWeights, pickAction } from './selection.mjs';
+import { planYw2FriendlyFire } from './confusion-action.mjs';
 import { createSoulSystem, chargeInterruptChance } from './soul.mjs';
 import { chooseChargeKind, createChargeTrial } from './charge-input.mjs';
 import { soulCapacityForRank } from './soul.mjs';
@@ -106,7 +107,7 @@ function buildMember(source,side,index) {
   const sourcedActionSkill=source.sourceYw2CharacterId===undefined?null:
     getYw2OriginalActionSkill(source.sourceYw2CharacterId);
  if(!['sleep','strength-up','strength-down','defense-down','spirit-down',
-  'hp-loss','hp-regen','speed-down'].includes(source.inspirit))
+  'hp-loss','hp-regen','speed-down','friendly-fire'].includes(source.inspirit))
     throw new TypeError('unsupported Inspirit');
  if(source.loafChance!==undefined){
     intStat(source.loafChance,'loafChance');
@@ -161,6 +162,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   researchPokeSoulTransfer=0,playtestSoulTuning=false,researchDamageModel=false,researchMultiHit=false,researchSoultimateHitCount=null,researchYw2Soultimate=null,researchStatInspirits=false,researchTurnInspirits=false,researchHealingVariance=false,enableRentalSkills=playtestSoulTuning,
   researchYw2Momentum=false,researchSpeedInspirit=false,
   researchYw2Grouchy=false,researchYw2ActionOverrides=false,
+  researchYw2Confusion=false,
   catalogAttackResolution=false,catalogTechniqueResolution=false,
   catalogInspiritResolution=false,catalogSoultimateResolution=false,
   catalogSkillResolution=false}={}) {
@@ -175,6 +177,10 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     throw new RangeError('YW2 action overrides require explicit custom teams');
   if(researchYw2Grouchy&&teams===undefined)
     throw new RangeError('YW2 Grouchy trial requires explicit custom teams');
+  if(typeof researchYw2Confusion!=='boolean')
+    throw new TypeError('researchYw2Confusion must be boolean');
+  if(researchYw2Confusion&&(teams===undefined||!researchDamageModel))
+    throw new RangeError('YW2 confusion requires custom teams and researchDamageModel');
   if(researchSpeedInspirit&&(teams===undefined||!researchDamageModel))
     throw new RangeError('speed Inspirit trial requires custom teams and researchDamageModel');
   if(researchYw2Momentum&&(teams===undefined||!enableRentalSkills||!researchSpecialEffects))
@@ -261,6 +267,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
   const source=teams??[rentals,rentals];
   if(!Array.isArray(source)||source.length!==2||!source.every(x=>Array.isArray(x)&&x.length===6))throw new TypeError('requires two rosters of six');
   const squads=source.map((team,side)=>team.map((member,i)=>buildMember(member,side,i)));
+  if(!researchYw2Confusion&&squads.flat().some(m=>m.inspirit==='friendly-fire'))
+    throw new RangeError('friendly-fire Inspirit requires researchYw2Confusion');
   if(!researchDamageModel&&squads.flat().some(m=>
     m.techniquePlaySources>0||m.techniquePenetrate===true))
     throw new RangeError('Technique Play/Penetrate research requires researchDamageModel');
@@ -521,7 +529,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(winner!==null)throw new Error('battle finished');
     if(!byId.has(id))throw new RangeError('unknown member');
     if(!['sleep','strength-up','research-marker','strength-down','defense-down',
-      'spirit-down','hp-loss','hp-regen','speed-down'].includes(effect))
+      'spirit-down','hp-loss','hp-regen','speed-down','friendly-fire'].includes(effect))
       throw new RangeError('effect not modeled');
     const positive=['strength-up','hp-regen','research-marker'];
     if(positive.includes(effect)&&sign!=='positive'&&effect!=='research-marker')
@@ -536,6 +544,8 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     if(['hp-loss','hp-regen'].includes(effect)&&!researchTurnInspirits)
       throw new RangeError('HP-over-time Inspirit requires researchTurnInspirits');
     if(effect==='sleep'&&duration!==null)throw new RangeError('sleep owner-turn duration is unsupported');
+    if(effect==='friendly-fire'&&(!researchYw2Confusion||duration!==null))
+      throw new RangeError('friendly-fire needs opt-in research and persistent negative status');
     const statusSpec={id,sign,effect,source,duration,level};
     return effectPlan
       ?commitTypedEffect(effectPlan,effects,{target:byId.get(id),statusSpec})
@@ -1145,7 +1155,13 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     loafingActors.delete(actor.id);
     // A guard lasts until the next time that actor begins an action.
     actor.guard=false;
-    const kind=enableLoafing&&rng()*100<actor.loafChance?'loaf':choice(actor);
+    const loafed=enableLoafing&&rng()*100<actor.loafChance;
+    // Confusion is a status on the ACTION OWNER, not an extra auto-action.
+    // Whether loafing precedes confusion is unverified; only research opts in.
+    const friendlyFire=researchYw2Confusion&&!loafed
+      ?planYw2FriendlyFire({actor,statuses:statuses.list(actor.id),
+        allies:livingFront(actor.side),random:rng}):null;
+    const kind=loafed?'loaf':friendlyFire?.triggered?'attack':choice(actor);
     const ordinaryEffectPlan=typedPlansByActor?.get(actor.id)?.[kind]??null;
     // Resolve before branches: event metadata is emitted after every kind,
     // and the legacy source fields remain the exact fallback.
@@ -1205,8 +1221,14 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
           :effects.commitHeal(target,resolvedHeal)).amount;
       }
     }else{
-      const opponents=livingFront(1-actor.side);
-      target=opponents.find(m=>m.id===pins[actor.side])??opponents[Math.floor(rng()*opponents.length)];
+      if(friendlyFire?.triggered){
+        target=livingFront(actor.side).find(m=>m.id===friendlyFire.targetId);
+        if(!target||target.id===actor.id)
+          throw new Error('friendly-fire research target no longer eligible');
+      }else{
+        const opponents=livingFront(1-actor.side);
+        target=opponents.find(m=>m.id===pins[actor.side])??opponents[Math.floor(rng()*opponents.length)];
+      }
       const attemptedHits=researchMultiHit
         ?(kind==='attack'?(attackSpec?.hits??actor.attackHits):techniqueHits):1;
       if(researchMultiHit)multiHitDetails=[];
@@ -1296,6 +1318,7 @@ export function createCombat({seed=20261023,teams,autoRotateReserves=true,enable
     const action={type:'action',turn:clockEvent.action,elapsed:clockEvent.elapsed,pointsElapsed:clockEvent.pointsElapsed,
       actor:actor.id,kind:kind==='technique'&&techniqueKind==='heal'?'heal':kind,target:target?.id??null,
       hit,critical,amount,targetHp:target?.hp??null,guard:target?.guard??false,effect,resisted,interruption,winner,
+      ...(friendlyFire?{confusion:{...friendlyFire}}:{}),
       ...(turnInspirit?{turnInspirit:{...turnInspirit}}:{}),
       ...(healingResearch?{healingResearch:{...healingResearch}}:{}),
       ...(multiHitDetails?{multiHit:{attempted:multiHitDetails.length,
