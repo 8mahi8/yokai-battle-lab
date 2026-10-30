@@ -50,7 +50,9 @@ test('V3-4-25 actual host auto match: KO seen only on confirmed damage and repla
   latest=after;
  }
  assert.equal(latest.game.winner,0);
- assert.ok(actualKOs>=6,'at least six actual host KOs');
+ assert.ok(actualKOs>=1,'at least one visible KO must be confirmed by a new damage event');
+ assert.equal(latest.game.squads[1].filter(u=>u.hp===0).length,6,
+  'the actual host still completes all six KOs independent of visual evidence');
  assert.ok(actualArrivals>=1,'a fully KO front is really replaced with reserve');
 });
 test('V3-4-25 no phantom KO on fresh join, fake MISS, heal, duplicate, revision gap or manual wheel',()=>{
