@@ -93,6 +93,38 @@ if(friends){
   // Firebase Friends: actual target selection after wheel cooldown rejection.
   // Same seeded host/guest room; never bypass the real game rules.
   qa=qa.replace("assert(el(g,'.yw-online-auto').hidden,'guest cannot control host auto progression');","el(g,'#mb-target').click();\n el(g,'#mb-team0 [data-unit=A2]').click();\n await until(()=>el(g,'#mb-revision')?.textContent.includes('B 3')&&\n  el(h,'#mb-revision')?.textContent.includes('B 3'),\n  'guest pin command consumed by host and ACKed on both screens');\n assert(el(g,'#mb-team0 [data-unit=A2]').classList.contains('mb-pinned'),\n  'guest did not see pinned target after authoritative ACK');\n assert(el(g,'.yw-online-auto').hidden,'guest cannot control host auto progression');");
+  // V3-5: actual touch-like DOM commands over the real RTDB room:
+  // Zero Watch / G / Poke mode, and returning to Standard. Guest cannot
+  // update the Host's authoritative Watch state locally.
+  qa=qa.replace(
+  "assert(el(g,'.yw-online-auto').hidden,'guest cannot control host auto progression');",
+  "const watch=el(g,'#mb-team1 .mb-center-symbol');\n"+
+  "assert(watch&&!watch.disabled,'guest own Watch center missing');\n"+
+  "watch.click();\n"+
+  "await until(()=>el(g,'#mb-revision')?.textContent.includes('B 4')&&\n"+
+  " el(h,'#mb-revision')?.textContent.includes('B 4'),\n"+
+  " 'Zero Watch change not host ACKed on both seats');\n"+
+  "assert(el(g,'#mb-target span').textContent==='つつく'&&\n"+
+  " el(g,'#mb-charge span').textContent==='Gわざ',\n"+
+  " 'guest Zero Watch commands not visible');\n"+
+  "assert(el(h,'#mb-team1 .mb-center-symbol').textContent==='零式',\n"+
+  " 'host failed to mirror guest Watch mode');\n"+
+  "el(g,'#mb-target').click();\n"+
+  "assert(el(g,'#mb-choice-status').textContent.includes('つつく')&&\n"+
+  " el(g,'#mb-target').getAttribute('aria-pressed')==='true',\n"+
+  " 'Zero Watch Poke target mode missing');\n"+
+  "el(g,'#mb-mode-cancel').click();\n"+
+  "watch.click();\n"+
+  "await until(()=>el(g,'#mb-revision')?.textContent.includes('B 5')&&\n"+
+  " el(h,'#mb-revision')?.textContent.includes('B 5'),\n"+
+  " 'return to Standard Watch not host ACKed on both seats');\n"+
+  "assert(el(g,'#mb-target span').textContent==='ねらう'&&\n"+
+  " el(g,'#mb-charge span').textContent==='わざ',\n"+
+  " 'guest Standard Watch commands not restored');\n"+
+  "assert(el(h,'#mb-team1 .mb-center-symbol').textContent==='標準',\n"+
+  " 'host did not reflect Standard Watch return');\n"+
+  "assert(el(g,'.yw-online-auto').hidden,'guest cannot control host auto progression');"
+  );
 
 }
 const server=createServer((req,res)=>{
