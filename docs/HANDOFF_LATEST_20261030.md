@@ -1,5 +1,7 @@
 # 妖怪ウォッチ2対戦再現｜引き継ぎ現況（2026-10-30）
 
+> **2026-10-31 最新引き継ぎ：V3-5-4完了**：[実Firebase No-Auth二席・おはらい操作/解除E2E記録](./ENGINE_V3_5_4_FRIENDS_PURIFY_E2E_20261031.md)。原作の後衛おはらいを既存MatchProtocolで検証。Host正規1行動によるB1への負とりつき→Guestサークル回転→後衛B1をタップ→`pop`5タップ/Host+Guest ACK→Host`purification`本当に状態解除→両画面状態マーク消失・成功表示を **localhost Firebase RTDB Emulatorの2つの実Chromium srcdoc iframeでPASS**。Node **946/946 PASS**、Chromium Stage PASS、Firebase 2席PASS。**学校版は未変更、Safari実機2台/元MP4直接照合は未検証**。本工程のコード・試験HEAD `06248728`、資料コミットは後続。**次はV3-5-5：独立検証してきた輪回し/ピン/必殺/G/おはらい/KO/結果を1試合の通常戦闘に結び、本人の原作録画観察と比較**。Supabase/匿名Authなど旧経路に戻さない。Google Sitesの学校稼働HTML、main、本番Firebase Rules/DB/Auth、Driveは変更しない。
+
 > **2026-10-31 継続引き継ぎ（V3-5-3完了）**：最新根拠 [V3-5-3 Friends Gわざ実二席・研究ダメージ回帰](./ENGINE_V3_5_3_FRIENDS_ZERO_G_DAMAGE_E2E_20261031.md)。開発HEAD `d8c7f855`（検証済みコードHEAD `4677b9f0`）。Gわざの3体の妖気を、Guest正規左回転＋零式切替＋Host 6ガード行動で蓄積し、Guest6タップACK→3体妖気消費→Host G実HP変化→両席カットインまで **認証なしFirebase RTDB Emulator+同一Chromium 2 iframeでPASS**。Node **944/944 PASS**、Stage Chromium PASS、Firebase二席PASS。原作原本MP4と学校Safari2台は未検証。**次 V3-5-4：負とりつき→控えおはらい→本当のHost状態解除を同じFirebase実二席で検証**。学校稼働Google Sites/本番Firebase Rules/DB/Auth/Drive/main未変更。
 
 > 前チャットが開けず、直前担当の専用引き継ぎ文がない状態から、2026-10-30にGitHubを再監査して記録したスナップショット。古いHANDOFF_*.mdやPR本文の過去Phase記述は、現行実装の証明に使わない。
