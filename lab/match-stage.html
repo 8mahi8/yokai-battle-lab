@@ -50,8 +50,8 @@ const stage=createMatchStage({element:el('battle-stage'),onAction:action,
  onStep:step,onError:error=>{el('lab-state').textContent=error.message;},
  // Source timing is not known: this is an isolated visual acceptance lab,
  // NOT the default offline/school Friends ruleset.
- researchOpponentVisibility:new URL(location.href).searchParams.get('review')===
-  'seat-motion-v3'});
+ researchOpponentVisibility:['seat-motion-v3','seat-motion-gap-v3'].includes(
+  new URL(location.href).searchParams.get('review'))});
 stage.setConnection('LOCAL 2-SEAT');
 el('restart').addEventListener('click',begin);
 el('auto').addEventListener('click',()=>{
@@ -69,6 +69,35 @@ el('auto').addEventListener('click',()=>{
 });
 begin();
 const review=new URL(location.href).searchParams.get('review');
+if(review==='seat-motion-gap-v3'){
+ // The remote guest misses an action snapshot and receives a later host
+ // snapshot AFTER the opponent has rotated: no causally trustworthy motion
+ // baseline remains. This is a research-only receive-lag fixture.
+ const fail=e=>{el('lab-state').textContent='V3-4-21-GAP-FAIL '+e.message;};
+ try{
+  const check=(ok,message)=>{if(!ok)throw Error(message);};
+  stage.selectSeat(1);
+  check(protocol.snapshot().revision===0,'wrong starting revision');
+  check(protocol.advanceAuto().ok,'auto action missing');
+  const rotate=protocol.dispatch(0,1,{type:'rotate',direction:1});
+  check(rotate.accepted&&rotate.result?.ok!==false,'host rotate rejected');
+  check(protocol.snapshot().revision===2,'host did not commit both revisions');
+  // Skip revision 1: guest B only receives revision 2. Previous FIFO stage
+  // view was revision 0, so a full 1700ms old-wheel hold would be false.
+  stage.render(protocol.snapshot());
+  const receipt=stage.getStatus().motionDelivery;
+  check(receipt?.reason==='revision_gap'&&receipt.revisionGap===2,
+   'guest did not recognize missed host snapshot');
+  check(!stage.getStatus().opponentVisibility.blocked,
+   'stale opponent wheel should not be frozen after a revision gap');
+  const ids=[...el('battle-stage').querySelectorAll('#mb-foe-line [data-unit]')]
+   .map(x=>x.dataset.unit).join(',');
+  check(ids==='A2,A3,A4','guest did not immediately show actual new host front: '+ids);
+  check(protocol.snapshot().game.clock.teams[0].frontIds.join(',')===ids,
+   'rendered enemy wheel does not match the host');
+  el('lab-state').textContent='V3-4-21-GAP-PASS';
+ }catch(error){fail(error);}
+}
 if(review==='seat-motion-v3'){
  // V3-4-20: two actual DOM seats and the same authoritative protocol.
  // B rotates DURING an A/B visible combat motion. Host + B should change
