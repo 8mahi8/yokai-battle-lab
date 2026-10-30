@@ -6,7 +6,7 @@
 - repo: `8mahi8/yokai-battle-lab`、開発ブランチ: `feat/phase1-action-circle-lab-20261023`
 - 初回監査時HEADは`a5bbd410`（V3-4-16）。**現在は同日V3-4-20まで実装・回帰済み**。正規入口は[最新V3-4-20工程](./ENGINE_V3_4_20_SEAT_MOTION_VISIBILITY_20261030.md)、続いてV3-4-19〜17を参照。旧HEADは歴史的監査値であり最新ではない。
 - Draft PR #1: https://github.com/8mahi8/yokai-battle-lab/pull/1
-- まず読む現行工程・設計: [6段階ロードマップ](./ROADMAP_6_PHASE_PROGRESS_20261028.md)、[V3アーキテクチャ](./ENGINE_V3_ARCHITECTURE_SOURCE_FIRST_20261029.md)、[学校通信の正規方針](./SCHOOL_NETWORK_SOURCE_OF_TRUTH_20261029.md)、[最新V3-4-19](./ENGINE_V3_4_19_EVENT_SCENE_PRESENTATION_20261030.md)
+- まず読む現行工程・設計: [6段階ロードマップ](./ROADMAP_6_PHASE_PROGRESS_20261028.md)、[V3アーキテクチャ](./ENGINE_V3_ARCHITECTURE_SOURCE_FIRST_20261029.md)、[学校通信の正規方針](./SCHOOL_NETWORK_SOURCE_OF_TRUTH_20261029.md)、[最新V3-4-20](./ENGINE_V3_4_20_SEAT_MOTION_VISIBILITY_20261030.md)
 - 以前のPhase資料やSupabase資料は過去研究の経緯。コードの正規状態とユーザーの新しい承認済み方針を優先。
 
 ## 本人の完成条件と厳守事項
