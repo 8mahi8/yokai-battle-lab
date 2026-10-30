@@ -22,7 +22,8 @@ const config=__YW_ONLINE_CONFIG__;
  */
 const motionTimingQa=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__?[]:null;
 let lastTimedActionId=0;
-if(motionTimingQa)window.__ywMotionTimingTrace=motionTimingQa;
+if(__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__)
+ window.__ywMotionTimingTrace=motionTimingQa;
 const motionClock=()=>performance.timeOrigin+performance.now();
 function renderConfirmedSnapshot(state){
  if(!motionTimingQa){
