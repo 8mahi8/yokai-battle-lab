@@ -167,6 +167,7 @@ function setupSeat(role){
  $('.yw-online-start').disabled=role!==0;
  $('.yw-online-connect').disabled=role!==1;
  stage=createMatchStage({element:$('#battle-stage'),seat:role,onError:err,
+  showResearchLabels:!__YW_FRIENDS_MODE__,
   onAction:(_side,intent)=>{
    if(!match)return {ok:false,reason:'battle_not_started'};
    const blocked=guard();if(blocked)return blocked;
