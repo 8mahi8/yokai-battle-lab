@@ -47,7 +47,11 @@ function step(){
  return result;
 }
 const stage=createMatchStage({element:el('battle-stage'),onAction:action,
- onStep:step,onError:error=>{el('lab-state').textContent=error.message;}});
+ onStep:step,onError:error=>{el('lab-state').textContent=error.message;},
+ // Source timing is not known: this is an isolated visual acceptance lab,
+ // NOT the default offline/school Friends ruleset.
+ researchOpponentVisibility:new URL(location.href).searchParams.get('review')===
+  'seat-motion-v3'});
 stage.setConnection('LOCAL 2-SEAT');
 el('restart').addEventListener('click',begin);
 el('auto').addEventListener('click',()=>{
@@ -65,6 +69,55 @@ el('auto').addEventListener('click',()=>{
 });
 begin();
 const review=new URL(location.href).searchParams.get('review');
+if(review==='seat-motion-v3'){
+ // V3-4-20: two actual DOM seats and the same authoritative protocol.
+ // B rotates DURING an A/B visible combat motion. Host + B should change
+ // immediately while A's opponent display remains at the pre-motion front.
+ const peerRoot=document.createElement('div');
+ peerRoot.id='seat-motion-peer';
+ peerRoot.style.cssText='position:absolute;left:-10000px;width:1100px;height:740px';
+ document.body.appendChild(peerRoot);
+ const peer=createMatchStage({element:peerRoot,seat:1,
+  researchOpponentVisibility:true,onAction:()=>({accepted:false})});
+ const fail=error=>{el('lab-state').textContent='V3-4-20-SEAT-FAIL '+error.message;
+  peer.destroy();peerRoot.remove();};
+ try{
+  peer.render(protocol.snapshot());
+  const check=(ok,message)=>{if(!ok)throw Error(message);};
+  check([...el('battle-stage').querySelectorAll('#mb-foe-line [data-unit]')]
+   .map(x=>x.dataset.unit).join(',')==='B1,B2,B3','initial enemy front');
+  check(protocol.advanceAuto().ok,'host auto action failed');
+  stage.render(protocol.snapshot());peer.render(protocol.snapshot());
+  check(stage.getStatus().opponentVisibility?.blocked,'A visual motion not started');
+  check(peer.getStatus().opponentVisibility?.blocked,'B visual motion not started');
+  const rotation=protocol.dispatch(1,1,{type:'rotate',direction:1});
+  check(rotation.accepted&&rotation.result?.ok!==false,'B host rotation rejected');
+  const hostFront=protocol.snapshot().game.clock.teams[1].frontIds;
+  check(hostFront.join(',')==='B2,B3,B4','host B front must change immediately');
+  stage.render(protocol.snapshot());peer.render(protocol.snapshot());
+  const front=(root,selector)=>[...root.querySelectorAll(selector)]
+   .map(x=>x.dataset.unit).join(',');
+  check(front(el('battle-stage'),'#mb-foe-line [data-unit]')==='B1,B2,B3',
+   'A saw the new opponent wheel DURING motion');
+  check(front(peerRoot,'#mb-ally-line [data-unit]')==='B2,B3,B4',
+   'B own wheel did not update immediately');
+  check(el('battle-stage').querySelector('.mb-battle-backdrop').dataset
+   .opponentViewBlocked==='true','A visual delay not active');
+  el('lab-state').textContent='V3-4-20-SEAT-BLOCKED';
+  setTimeout(()=>{
+   try{
+    check(front(el('battle-stage'),'#mb-foe-line [data-unit]')==='B2,B3,B4',
+     'A opponent wheel did not unlock after motion');
+    check(el('battle-stage').querySelector('.mb-battle-backdrop').dataset
+     .opponentViewBlocked==='false','A visual delay stuck');
+    check(protocol.snapshot().game.clock.teams[1].frontIds.join(',')==='B2,B3,B4',
+     'visual updates changed canonical front');
+    el('lab-state').textContent='V3-4-20-SEAT-ROUNDTRIP-PASS';
+   }catch(error){el('lab-state').textContent='V3-4-20-SEAT-FAIL '+error.message;}
+   finally{peer.destroy();peerRoot.remove();}
+  },3100);
+ }catch(error){fail(error);}
+}
 if(review==='purify-e1'){
  // Research ONLY: use real combat rules, with a deterministic bench Inspirit
  // injected by the lab. The player must still perform real touch gestures,
