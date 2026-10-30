@@ -31,10 +31,14 @@ export function createHitAftermath({interrupt,knockout,syncRevived}={}){
   if(!object(caster)||typeof caster.id!=='string'||!caster.id)
    throw new TypeError('valid canonical caster required');
  }
- function afterOrdinaryHit({caster,target,damage,critical=false}={}){
+ function afterOrdinaryHit({caster,target,damage,critical=false,friendlyFire=false}={}){
   checkCaster(caster);checkHit(target,damage,critical);
+  if(typeof friendlyFire!=='boolean'||
+     (friendlyFire&&caster.side!==target.side))
+    throw new TypeError('friendly-fire KO requires a same-side attack');
   const interrupted=interrupt(target,damage,critical);
-  if(target.hp===0)knockout.commitForCause({cause:'ordinary',caster,target});
+  if(target.hp===0)knockout.commitForCause(friendlyFire
+    ?{cause:'friendly-fire',target}:{cause:'ordinary',caster,target});
   return interrupted;
  }
  function afterSpecialStrike({target,damage,critical=false}={}){
