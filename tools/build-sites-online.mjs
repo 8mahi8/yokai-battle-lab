@@ -80,9 +80,12 @@ const fragment=['<!-- Phase24B: '+mode+'; iframe/Safari/real cloud not yet prove
  '#yw-sites-online .yw-online-bar input{width:118px;background:#10243a}',
  '#yw-sites-online .yw-online-status{font-size:12px;color:#d9e5f0;padding:9px;background:#142638}',
  '</style>',
- '<section id="yw-sites-online" aria-label="輪戦 オンライン通信開発版">',
- '<div class="yw-online-bar"><strong>輪戦｜2人対戦の接続検証</strong>',
- '<span>開発版：原作の未確定仕様と旧iPad実機は未検証。ホストのブラウザが動作中だけ進行します。</span>',
+ friendsMode?'<section id="yw-sites-online" aria-label="輪戦 オンライン友達対戦">':
+  '<section id="yw-sites-online" aria-label="輪戦 オンライン通信開発版">',
+ friendsMode?'<div class="yw-online-bar"><strong>輪戦｜友達対戦</strong>':
+  '<div class="yw-online-bar"><strong>輪戦｜2人対戦の接続検証</strong>',
+ friendsMode?'<span>対戦中はホストのiPadでこの画面を開いておいてね。</span>':
+  '<span>開発版：原作の未確定仕様と旧iPad実機は未検証。ホストのブラウザが動作中だけ進行します。</span>',
  '<button class="yw-online-make" disabled type="button">ホスト：部屋作成</button>',
  '<input class="yw-online-code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" placeholder="6桁番号" aria-label="部屋番号">',
  '<button class="yw-online-join" disabled type="button">ゲスト：参加</button>',
