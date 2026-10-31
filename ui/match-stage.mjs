@@ -218,7 +218,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  const teamDrawCache=[null,null];let forecastDrawCache=null;
  let lastMotionDelivery=null; // research-only evidence, never a host rule
  element.innerHTML=`
- <div class="mb-stage mb-yw2">
+ <div class="mb-stage mb-yw2${showResearchLabels?'':' mb-friends-stage'}">
   <header class="mb-topbar">
    <div class="mb-title-group"><span class="mb-mark">◈</span><div>
     <small>CIRCLE BATTLE / ORIGINAL INSPIRED LAYOUT</small>
