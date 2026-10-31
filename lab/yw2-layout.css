@@ -616,3 +616,21 @@
  .mb-yw2 .mb-ko-wisp,.mb-yw2 .mb-fighter.mb-arriving .mb-fighter-sprite{
   animation:none!important}
 }
+
+
+/* V3-5-7: school Friends iPad touch affordances only.
+   A finger dragging the watch wheel must not begin a page pan; everything
+   outside the wheel remains scrollable in the Google Sites iframe.
+   Research/lab screens retain their existing compact controls. */
+.mb-friends-stage .mb-wheel{
+ touch-action:none;-webkit-user-select:none;user-select:none;
+}
+.mb-friends-stage .mb-wheel-turn button{
+ min-height:44px;padding:8px 9px;touch-action:manipulation;
+}
+.mb-friends-stage .mb-command-footer button{
+ min-height:44px;touch-action:manipulation;
+}
+.mb-friends-stage .mb-modal-surface button{
+ min-height:44px;touch-action:manipulation;
+}
