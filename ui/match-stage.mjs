@@ -202,7 +202,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  const fixedSeat=seat;
  let activeSeat=seat??0,wireState=null,view=null,selection=null;
  let recentMessage='準備中',pointer=null,lastMove=0;
- let wheelPointer=null,suppressWheelClick=false,wheelClickTimer=null;
+ let wheelPointer=null,suppressWheelClick=false,suppressWheelSeat=null,wheelClickTimer=null;
  let seenCueKey=null,flash=null,scenePlan=null,scenePhase='done',sceneStartedAt=0,sceneTimer=null,lastEventId=0;
  let lastKoArrival=[]; // visual only; host owns the complete frontline
  let pendingCues=[]; // read-only display queue; never delays authoritative host
@@ -865,7 +865,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  }
  function handleClick(event){
   const b=event.target.closest('button');
-  if(suppressWheelClick&&b?.closest('.mb-wheel')&&!b.matches('.mb-center-symbol')){
+  if(suppressWheelClick&&suppressWheelSeat!==null&&
+     b?.closest('#mb-team'+suppressWheelSeat+' .mb-wheel')&&
+     !b.matches('.mb-center-symbol')){
    suppressWheelClick=false;
    event.preventDefault();return;
   }
@@ -953,7 +955,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   const wheel=target.closest?.('.mb-wheel');
   if(!wheel||!element.contains(wheel)||wheel.closest('[hidden]'))return;
   if(target.closest?.('.mb-center-symbol'))return;
-  suppressWheelClick=false;clearTimeout(wheelClickTimer);
+  suppressWheelClick=false;suppressWheelSeat=null;clearTimeout(wheelClickTimer);
   const b=wheel.getBoundingClientRect(),centerX=b.left+b.width/2,centerY=b.top+b.height/2;
   const radius=Math.min(b.width,b.height)/2,d=Math.hypot(x-centerX,y-centerY);
   if(d<radius*.22||d>radius*1.12)return;
@@ -1012,8 +1014,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    if(wireState)render(wireState);return;
   }
   event.preventDefault?.();
-  suppressWheelClick=true;clearTimeout(wheelClickTimer);
-  wheelClickTimer=setTimeout(()=>{suppressWheelClick=false;},460);
+  suppressWheelClick=true;suppressWheelSeat=p.seat;clearTimeout(wheelClickTimer);
+  wheelClickTimer=setTimeout(()=>{suppressWheelClick=false;suppressWheelSeat=null;},460);
   commandMode=null;command({type:'rotate',direction:p.direction});
   if(wireState)render(wireState);
  }
