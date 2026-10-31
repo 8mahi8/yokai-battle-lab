@@ -77,6 +77,7 @@ const fragment=['<!-- Phase24B: '+mode+'; iframe/Safari/real cloud not yet prove
  '#yw-sites-online .yw-online-bar{background:#23364a;color:#e3ecfa;padding:10px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font:13px/1.45 -apple-system,system-ui,sans-serif}',
  '#yw-sites-online .yw-online-bar button,#yw-sites-online .yw-online-bar input{font:inherit;padding:8px;min-height:36px;background:#204968;color:#fff;border:1px solid #7896ae;border-radius:7px}',
  '#yw-sites-online .yw-online-bar button:disabled{opacity:.45}',
+ friendsMode?'#yw-sites-online .yw-online-bar button,#yw-sites-online .yw-online-bar input{min-height:44px}':'',
  '#yw-sites-online .yw-online-bar input{width:118px;background:#10243a}',
  '#yw-sites-online .yw-online-status{font-size:12px;color:#d9e5f0;padding:9px;background:#142638}',
  '</style>',
