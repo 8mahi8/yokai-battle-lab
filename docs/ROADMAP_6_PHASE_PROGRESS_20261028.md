@@ -19,6 +19,12 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-31 V3-5-9｜原作動画の赤ピン/緑スキル表示の差分修正・実2席検証完了
+
+- 原作提供動画の過去一次観察記録 [Match01](./ORIGINAL_PVP_VIDEO_20261027_MATCH01_OF04.md) と [Phase49](./PHASE49_USER_SUPPLIED_ORIGINAL_PVP_VIDEO_REVIEW_20261027.md)、既存のStage CSSを実装状態まで追い、**原作の赤いピン円が金色の外輪／緑スキル通知が青**になっている二つの表示上の差を確認。**[正式な比較台帳](./ENGINE_V3_5_9_ORIGINAL_PVP_VISUAL_ALIGNMENT_20261031.md)**。色の方向だけ修正、原作の正確なRGBや時間は断定しない。必殺の大判カットイン、KO青い炎、控え交代、段階命中は既存機能を保持し、重複実装しない。戦闘エンジン、キャラ/AI/Firebase Rules/Auth/通信は不変。
+- 学校形式の**Firebase No-Auth 実Chromium二席**で、実際の敵ピンB3 ACK後の赤い照準とスキル通知コンテナの緑背景色を計算CSSで検査。通常必殺/G/おはらい・6体KO勝敗と過去Rules再現まで**二度通しPASS**。[Node950/950](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41178817313)、[Stage16/16](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41178817321)、[Firebase全実通信2回](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41178817458)が最新コードで成功。QA生成JSの初期エスケープ失敗は解決済み、構文の早期パースを回帰防止に追加。
+- **次 V3-5-10**：学校Safari実機2台での普通の6vs6・入力の感触/切断/同期/実所要時間、本人原作MP4原本との画面/演出比較を優先する。**V3-5全体は未完成**。学校Google Sitesに直接貼られた稼働HTML、本番Firebase設定、main、Drive未変更。10/22 Rules写しの11/8期限は現本番への適用未確認の運用リスクとして維持。
+
 ## 2026-10-31 V3-5-8｜Google Sitesの短い埋込高さでの下画面チャージ受入完了
 
 - [正式結果・再現範囲・次の受入手順](./ENGINE_V3_5_8_SHORT_SITES_GESTURE_ACCEPTANCE_20261031.md)。`mb-modal`は原作同様**下画面専用**であり、CSSに既存`max-height:100%`があることを確認。初期の誤ったViewport全面前提のQAと不要なCSS差分を破棄。**ゲーム本体/バランス/描画CSSはV3-5-7のまま**。
