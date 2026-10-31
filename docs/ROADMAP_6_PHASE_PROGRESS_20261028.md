@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-31 V3-5-8｜Google Sitesの短い埋込高さでの下画面チャージ受入完了
+
+- [正式結果・再現範囲・次の受入手順](./ENGINE_V3_5_8_SHORT_SITES_GESTURE_ACCEPTANCE_20261031.md)。`mb-modal`は原作同様**下画面専用**であり、CSSに既存`max-height:100%`があることを確認。初期の誤ったViewport全面前提のQAと不要なCSS差分を破棄。**ゲーム本体/バランス/描画CSSはV3-5-7のまま**。
+- 実Chromium srcdoc＋Firebase RTDB No-Auth Emulator2席で、**568×320/390×360/820×390px**の短いiframeへ変えた必殺/Gチャージ下画面の**中止/光る点/スクロールのタップ検証**を追加し、既存通常必殺/G/おはらい/1試合6KO/結果の全工程を過去Rules再現も含め**2回PASS**。[Node950/950](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41177796730)、[Stage Chromium](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41177796615)、[Firebase二席実Chrome](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41177796632)すべて成功。学校Safari実機2台は未試験。
+- **期限リスク**：10/22保管のFirebase Rules写しに**2026-11-08 00:00 JST**の時限許可あり。現本番Rules未確認のため影響は可能性。本番への読み取り専用GETは10/31時点成功したが期限後を保証しない。本人の許可なくRulesは変更しない。
+- **次V3-5-9**：学校の通常編成で実iPad Safari2台での操作/対戦時間・原作元映像との見え方を最優先し、外部資料に照らして未再現な表示・技の原因を調べる。学校Sites貼付HTML、本番Firebase/Drive/mainを変更しない。V3-5全体は未完成。
+
 ## 2026-10-31 V3-5-7｜学校友達対戦のタッチ領域と円ドラッグ直後の敵選択バグ修正完了
 
 - 正式成果：[学校iPad向けタップ領域/原作資料・原因/実通信証拠](./ENGINE_V3_5_7_FRIENDS_TOUCH_IPAD_20261031.md)。Apple HIGの44pt基準をもとに学校Friendsだけ44px接続・回転・キャンセル操作を確保し、輪の`touch-action:none`を追加（輪以外は従来どおりページスクロール可）。**Safari実機で同じサイズ/挙動と断言しない**。
