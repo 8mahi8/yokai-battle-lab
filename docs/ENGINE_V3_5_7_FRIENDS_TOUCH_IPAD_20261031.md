@@ -26,7 +26,9 @@
 ## CI・作業保存
 
 - 修正コードHEAD：`f42c7ea848b35d20d8bb5a968cb673acd76c0b6a`。
-- Node全回帰（既存950件）・Stage Chromium・Firebase Friends二席・歴史的Rules再試験のログはActionsを確認して**結果が確定してから以下に更新する**。
+- **Node [950/950 SUCCESS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41169963907)**（今回のStage UI変更を含む）。**[Chromium Stage SUCCESS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41170016291)**。
+- **[Firebase No-Auth RTDB Emulator実2席＋旧Rules再現＋読み取り専用本番疎通が全工程SUCCESS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41169963805)**：実Chromium 2つの`srcdoc` iframeで、4画面幅の44pxタッチ領域と`touch-action`/中央ヒット検査 → **実TouchEvent円回転のHost+Guest ACK → 即時の敵ピンB3 ACK** → 再クリックのクールダウン拒否 → Host自動進行・再接続の回帰をすべて通した。別シナリオの通常必殺、G、負とりつきのおはらい、通常6vs6、**同一試合の全部入り完走**も**2回連続PASS**。
+- ランナーでのFirebase SDK CDN読み込み失敗が**古いコミットの一部試験**（例：[41169764747](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41169764747)）に出た。これはHostが`Firebase SDKが読み込まれていません`と明示して初期化しないケースで、最新コードの実2席回帰は合格。学校のSafariでCDNが確実に読み込まれる保証にはならず、実機確認が必要。
 - **学校Google Sites直接HTML、GitHub main、本番Firebase Security Rules/Auth/DB、Google Drive配布物は変更していない**。開発ブランチ `feat/phase1-action-circle-lab-20261023` のみ。
 
 ## 次 V3-5-8
