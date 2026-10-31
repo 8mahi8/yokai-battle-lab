@@ -7,6 +7,7 @@ import {existsSync,mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
+import {Script} from 'node:vm';
 const friends=process.argv.includes('--emulator-friends');
 const emulator=process.argv.includes('--emulator')||friends;
 if(emulator&&!/^(127\.0\.0\.1|localhost):9000$/.test(process.env.FIREBASE_DATABASE_EMULATOR_HOST||''))
@@ -767,6 +768,14 @@ function gauge(frame,id){
 })().catch(error=>{result.textContent='SITES-FRIENDS-CHARGE-FAIL '+(error.stack||error.message)});
 </script></body></html>`;
 
+// A generated srcdoc QA script is JavaScript, not just a string. Parse it
+// before spawning Chrome so a stray escaped newline fails immediately rather
+// than appearing as an unrelated 90-second Firebase network timeout.
+for(const [name,html] of [['baseline',qa],['touch',chargeQa]]){
+ const match=html.match(/<script>([\\s\\S]*?)<\\/script>/);
+ if(!match)throw Error('inline '+name+' browser QA script missing');
+ new Script(match[1],{filename:name+'-sites-qa.js'});
+}
 const server=createServer((req,res)=>{
  const route=new URL(req.url,'http://localhost');
  if(route.pathname==='/embed'){
