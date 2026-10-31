@@ -634,12 +634,3 @@
 .mb-friends-stage .mb-modal-surface button{
  min-height:44px;touch-action:manipulation;
 }
-
-/* V3-5-8: Safari 13–15.3 does not understand dvh. Keep the touch
-   minigame's cancel control reachable within a short Google Sites iframe.
-   Modern Safari follows its visible dynamic viewport; the surface alone
-   scrolls, while the outer modal stays anchored inside the iframe. */
-.mb-friends-stage .mb-modal-surface{
- max-height:calc(100vh - 30px);
- max-height:calc(100dvh - 30px);
-}
