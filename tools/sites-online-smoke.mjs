@@ -772,7 +772,7 @@ function gauge(frame,id){
 // before spawning Chrome so a stray escaped newline fails immediately rather
 // than appearing as an unrelated 90-second Firebase network timeout.
 for(const [name,html] of [['baseline',qa],['touch',chargeQa]]){
- const match=html.match(/<script>([\\s\\S]*?)<\\/script>/);
+ const match=html.match(/<script>([\s\S]*?)<\/script>/);
  if(!match)throw Error('inline '+name+' browser QA script missing');
  new Script(match[1],{filename:name+'-sites-qa.js'});
 }
