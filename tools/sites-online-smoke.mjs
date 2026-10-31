@@ -146,6 +146,26 @@ if(friends){
   // Firebase Friends: actual target selection after wheel cooldown rejection.
   // Same seeded host/guest room; never bypass the real game rules.
   qa=qa.replace("assert(el(g,'.yw-online-auto').hidden,'guest cannot control host auto progression');","el(g,'#mb-target').click();\n el(g,'#mb-team0 [data-unit=A2]').click();\n await until(()=>el(g,'#mb-revision')?.textContent.includes('B 3')&&\n  el(h,'#mb-revision')?.textContent.includes('B 3'),\n  'guest pin command consumed by host and ACKed on both screens');\n assert(el(g,'#mb-team0 [data-unit=A2]').classList.contains('mb-pinned'),\n  'guest did not see pinned target after authoritative ACK');\n assert(el(g,'.yw-online-auto').hidden,'guest cannot control host auto progression');");
+  // V3-5-9: in real two-seat Chromium, after the Host ACKs the pin,
+  // validate the actual field reticle, not only the medal's mb-pinned class.
+  // And inspect the read-only skill notification's computed color without
+  // forcing a fake combat event or changing a real Host snapshot.
+  qa=qa.replace(
+   " 'guest did not see pinned target after authoritative ACK');",
+   " 'guest did not see pinned target after authoritative ACK');\\n"+
+   "const reticle=el(g,'.mb-foe-line [data-unit=A2] .mb-pin-reticle');\\n"+
+   "assert(reticle,'the visible enemy pin circle is missing');\\n"+
+   "const pinRGB=doc(g).defaultView.getComputedStyle(reticle).borderTopColor.match(/\\d+/g).map(Number);\\n"+
+   "assert(pinRGB[0]>pinRGB[1]+65&&pinRGB[0]>pinRGB[2]+55,\\n"+
+   " 'enemy pin reticle is not clearly red: '+pinRGB);\\n"+
+   "for(const frame of [h,g]){\\n"+
+   " const skill=el(frame,'#mb-passive-notice');\\n"+
+   " assert(skill,'original-style skill notice container missing');\\n"+
+   " const rgba=doc(frame).defaultView.getComputedStyle(skill).backgroundColor.match(/\\d+/g).map(Number);\\n"+
+   " assert(rgba[1]>rgba[0]+25&&rgba[1]>rgba[2],\\n"+
+   "  'skill notice is not green-tinted: '+rgba);\\n"+
+   "}\\n"
+  );
   // V3-5: actual touch-like DOM commands over the real RTDB room:
   // Zero Watch / G / Poke mode, and returning to Standard. Guest cannot
   // update the Host's authoritative Watch state locally.
