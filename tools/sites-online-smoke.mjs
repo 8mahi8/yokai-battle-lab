@@ -152,19 +152,19 @@ if(friends){
   // forcing a fake combat event or changing a real Host snapshot.
   qa=qa.replace(
    " 'guest did not see pinned target after authoritative ACK');",
-   " 'guest did not see pinned target after authoritative ACK');\\n"+
-   "const reticle=el(g,'.mb-foe-line [data-unit=A2] .mb-pin-reticle');\\n"+
-   "assert(reticle,'the visible enemy pin circle is missing');\\n"+
-   "const pinRGB=doc(g).defaultView.getComputedStyle(reticle).borderTopColor.match(/\\d+/g).map(Number);\\n"+
-   "assert(pinRGB[0]>pinRGB[1]+65&&pinRGB[0]>pinRGB[2]+55,\\n"+
-   " 'enemy pin reticle is not clearly red: '+pinRGB);\\n"+
-   "for(const frame of [h,g]){\\n"+
-   " const skill=el(frame,'#mb-passive-notice');\\n"+
-   " assert(skill,'original-style skill notice container missing');\\n"+
-   " const rgba=doc(frame).defaultView.getComputedStyle(skill).backgroundColor.match(/\\d+/g).map(Number);\\n"+
-   " assert(rgba[1]>rgba[0]+25&&rgba[1]>rgba[2],\\n"+
-   "  'skill notice is not green-tinted: '+rgba);\\n"+
-   "}\\n"
+   " 'guest did not see pinned target after authoritative ACK');\n"+
+   "const reticle=el(g,'.mb-foe-line [data-unit=A2] .mb-pin-reticle');\n"+
+   "assert(reticle,'the visible enemy pin circle is missing');\n"+
+   "const pinRGB=doc(g).defaultView.getComputedStyle(reticle).borderTopColor.match(/\\d+/g).map(Number);\n"+
+   "assert(pinRGB[0]>pinRGB[1]+65&&pinRGB[0]>pinRGB[2]+55,\n"+
+   " 'enemy pin reticle is not clearly red: '+pinRGB);\n"+
+   "for(const frame of [h,g]){\n"+
+   " const skill=el(frame,'#mb-passive-notice');\n"+
+   " assert(skill,'original-style skill notice container missing');\n"+
+   " const rgba=doc(frame).defaultView.getComputedStyle(skill).backgroundColor.match(/\\d+/g).map(Number);\n"+
+   " assert(rgba[1]>rgba[0]+25&&rgba[1]>rgba[2],\n"+
+   "  'skill notice is not green-tinted: '+rgba);\n"+
+   "}\n"
   );
   // V3-5: actual touch-like DOM commands over the real RTDB room:
   // Zero Watch / G / Poke mode, and returning to Standard. Guest cannot
