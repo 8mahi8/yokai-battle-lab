@@ -19,7 +19,8 @@ V3-5-7で実装済みの **44pxタップ面積・円回転／敵ピン誤抑止�
 
 - **Node[950/950 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41177796730)**（前ステップまでの950試験を維持）。
 - **実Chromium Stage [PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41177796615)**。
-- Firebase RTDB実2席の新3サイズ・通常/G・おはらい・KO結果、および保存した過去Rulesでの再試験はActionsで確認すること。**CIが完了するまでは成功と書かない**。
+- **[Firebase No-Auth RTDB Emulatorの実Chromium2席・最新コード全部成功](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41177796632)**：V3-5-8新規の**幅568/390/820px、縦320〜390px**の下画面のモーダル/中止/タッチ対象のヒット検証を含む。通常必殺(`SITES-FRIENDS-CHARGE-PASS`)、G(`SITES-FRIENDS-G-CHARGE-PASS`)、おはらい、6体KO、同一試合全部入りまで**初期Emulator Rulesと過去Rulesの2回ともPASS**。宿主とゲストの表示ACKも維持。非認証の本番Firebaseの`reserved_non_room_key_under_yokaiRoomsV1`に対する**read-only GET HTTP200**を確認したが、本番書込み/学校実機/現在のRules期限は未検証。
+- コード最終変更HEAD `5c8982ce6632a631817e581ede60a1711ede0320`（QAのみ）。不要なCSS追加と誤ったテストの撤回を含む引き継ぎ資料は後続コミット。**学校Google Sitesに反映したわけではない**。
 
 ## 直近の重要な運用リスク（対応は承認事項）
 
