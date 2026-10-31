@@ -658,18 +658,28 @@ function gauge(frame,id){
   'chargeStart consumed Soul before completing touch');
  check(!el(g,'#mb-gesture-progress')?.textContent.includes('試験用'),
   'visible Friends touch progress still reveals laboratory-only text');
- // V3-5-8: a short Sites iframe is NOT the full iPad viewport. Check
- // the real active modal, cancel button and illuminated touch target are
- // reachable without the entire page scrolling or modal top being cut off.
- // This also exercises the old Safari 100vh fallback (dvh is newer WebKit).
+ // V3-5-8: this original-style gesture dialog belongs to the LOWER
+ // screen, not the full iframe viewport. In a short Sites embed the page
+ // may scroll to that lower screen; the panel itself must not overflow and
+ // both Cancel and illuminated target must be reachable by a user.
  for(const [width,height] of [[568,320],[390,360],[820,390]]){
   g.style.width=width+'px';g.style.height=height+'px';
   await sleep(80);
-  const modal=el(g,'#mb-modal'),surface=el(g,'.mb-modal-surface');
-  const surfaceRect=surface.getBoundingClientRect();
-  check(!modal.hidden&&surfaceRect.top>=-2&&surfaceRect.bottom<=height+2,
-   'charge dialog exceeds clipped iframe '+width+'x'+height+
-   ' top='+surfaceRect.top+' bottom='+surfaceRect.bottom);
+  const lower=el(g,'.mb-lower-screen'),modal=el(g,'#mb-modal'),
+   surface=el(g,'.mb-modal-surface');
+  lower.scrollIntoView({block:'center',inline:'nearest'});
+  const lowerRect=lower.getBoundingClientRect(),
+   modalRect=modal.getBoundingClientRect(),
+   surfaceRect=surface.getBoundingClientRect();
+  check(!modal.hidden&&
+   Math.abs(modalRect.top-lowerRect.top)<=4&&
+   Math.abs(modalRect.bottom-lowerRect.bottom)<=4,
+   'gesture overlay not anchored to LOWER original screen '+width+'x'+height);
+  check(surfaceRect.top>=modalRect.top-4&&
+   surfaceRect.bottom<=modalRect.bottom+4,
+   'gesture panel overflows the LOWER screen '+width+'x'+height+
+   ' surface='+Math.round(surfaceRect.top)+'..'+Math.round(surfaceRect.bottom)+
+   ' lower='+Math.round(modalRect.top)+'..'+Math.round(modalRect.bottom));
   const cancel=el(g,'#mb-modal [data-act="cancel"]');
   cancel.scrollIntoView({block:'center',inline:'nearest'});
   let r=cancel.getBoundingClientRect();
@@ -677,9 +687,9 @@ function gauge(frame,id){
   let hit=doc(g).elementFromPoint(x,y);
   check(x>=0&&x<width&&y>=0&&y<height&&
    (hit===cancel||cancel.contains(hit)),
-   'charge cancel cannot be touched '+width+'x'+height);
+   'gesture cancel cannot be tapped after scrolling '+width+'x'+height);
   const dot=el(g,'#mb-touch-points .mb-touch-target');
-  check(dot,'charge touch target missing at '+width+'x'+height);
+  check(dot,'gesture target missing at '+width+'x'+height);
   dot.scrollIntoView({block:'center',inline:'nearest'});
   r=dot.getBoundingClientRect();
   x=r.left+r.width/2;y=r.top+r.height/2;
@@ -687,7 +697,7 @@ function gauge(frame,id){
   const pad=el(g,'#mb-touch-pad');
   check(x>=0&&x<width&&y>=0&&y<height&&
    (hit===pad||pad.contains(hit)),
-   'charge target cannot be reached inside modal '+width+'x'+height);
+   'gesture target cannot be tapped after scrolling '+width+'x'+height);
  }
  g.style.width='1080px';g.style.height='750px';
  await sleep(80);
