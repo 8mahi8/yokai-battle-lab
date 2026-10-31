@@ -1,3 +1,5 @@
+> **【2026-10-31 V3-5-8 最新】** [Google Sites短いiframeの下画面チャージ実通信受入](./docs/ENGINE_V3_5_8_SHORT_SITES_GESTURE_ACCEPTANCE_20261031.md)。**568×320／390×360／820×390px**でも実2席Firebase上で通常/Gチャージの中止・タッチ点へアクセス可能、既存おはらい/6体KO/結果まで2回PASS。**Node950件・Chromium Stage・Firebase実2席成功**。不必要なCSSを追加せず、ゲーム本体はV3-5-7と同じ。**10/22保存のFirebase Rules写しは11/8 00:00 JST期限**、現在の本番Rulesが同じか未確認のため接続不能リスクは要認識。学校Safari実機2台・原作動画原本直接比較は未実施。次V3-5-9。
+
 > **【2026-10-31 V3-5-7 最新】** [学校iPad向けタッチ領域/円ドラッグ直後の敵ピン不具合修正](./docs/ENGINE_V3_5_7_FRIENDS_TOUCH_IPAD_20261031.md)：Friendだけの44pxヒット領域と`touch-action:none`、実指ドラッグ相当の`TouchEvent`→Host正規回転後の**敵への即時ピン誤抑止**を修正。学校形式の本物Firebase No-Auth Chromium2席/4サイズでタッチ→ACK→KO/勝敗を2回完走。**Node950件・Stage・Firebase実2席すべてPASS**。学校Safari実機2台と元MP4原本再生はまだ未検証。次V3-5-8は学校実機の操作感／試合時間。
 
 > **【2026-10-31 V3-5-6 最新】** [通常学校対戦8シードのテンポ実測と友達用UI整理](./docs/ENGINE_V3_5_6_SCHOOL_PACING_AND_FRIENDS_UI_20261031.md)：**放置8試合で7試合121〜227行動で決着、1件240行動時点で未決着（停止なし）**。2.6秒/行動の暫定時計はそのまま。Friendsの開発用帯/REV/試験用文言を非表示、研究UIと戦闘ルールは不変。**Node950/950、Chrome Stage、Firebase No-Auth実2席と同一試合フルE2Eが成功**。学校iPad Safari2台と元MP4の原本直接比較は引き続き未検証。次V3-5-7は通常学校版の体感・端末画面確認。
