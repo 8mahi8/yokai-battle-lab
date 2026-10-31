@@ -19,6 +19,13 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-10-31 V3-5-7｜学校友達対戦のタッチ領域と円ドラッグ直後の敵選択バグ修正完了
+
+- 正式成果：[学校iPad向けタップ領域/原作資料・原因/実通信証拠](./ENGINE_V3_5_7_FRIENDS_TOUCH_IPAD_20261031.md)。Apple HIGの44pt基準をもとに学校Friendsだけ44px接続・回転・キャンセル操作を確保し、輪の`touch-action:none`を追加（輪以外は従来どおりページスクロール可）。**Safari実機で同じサイズ/挙動と断言しない**。
+- 実Chrome二席で円`TouchEvent`を送ったら、**直後の敵選択が無視される既存`suppressWheelClick`バグ**を再現。原因は本人のドラッグ輪だけでなく相手側の輪クリックも460ms禁止していたこと。直前の本人輪にだけ重複抑止を限定し、正規の敵ピンを阻害しなくした。**テストを遅延させて回避せず、即時入力を正常にした**。
+- Google Sites型 `srcdoc` 実Chrome＋Firebase No-Auth RTDBエミュレータ二席で、**1024/820/568/390pxのヒットテスト、回転Host+Guest ACK/拒否/即時敵ピン、通常必殺・零式G・おはらい・同一試合全6KO結果を2回通過**。[Node **950/950 PASS**](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41169963907)、[Stage Chromium PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41170016291)、[Firebase実通信2席＋旧Rules SUCCESS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41169963805)。
+- **次 V3-5-8**：学校Safari実機2台でのホスト・ゲスト通し試遊と原作動画の画面差・操作感／実試合所要時間を検証する。学校貼付HTML、main、本番Firebase Rules/DB/Auth、Drive保存は未変更。**V3-5全体は未完了**。
+
 ## 2026-10-31 V3-5-6｜通常学校レンタルの実戦テンポを8シード測定／Friends UI研究文言整理
 
 - [詳細な実測・原作2録画の過去観察との比較・実装・未検証事項](./ENGINE_V3_5_6_SCHOOL_PACING_AND_FRIENDS_UI_20261031.md)。通常学校版と**同じ**`MatchProtocol`/既存レンタル6体で、実Host自動行動×最大240回を8シード監査。7/8が**121〜227行動で決着**、1/8は240時点で続行、進行停止0。2.6秒の自動進行なら約5〜10分以上の可能性。**これは両者無操作の研究試合であり、実際の友達対戦の平均ではない**。原作の内部時刻・行動ポイントと同期した秒数ではないため、ルール・バランス・時計を勝手に変更しない。
