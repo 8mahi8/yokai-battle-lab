@@ -26,6 +26,25 @@ if(friends){
  // Inspect actual rendered targets, not just CSS rules or disabled button
  // properties. All checks execute inside a real embedded Chromium iframe at
  // 1024x768, 820x620, 568x520 and 390x760 BEFORE the live match inputs.
+
+ // In Friends baseline, actually DRAG the six-medal dial using browser
+ // TouchEvent dispatch, not a shortcut click on the rotation button.
+ // The subsequent canonical Firebase ACK / cooldown assertions stay intact.
+ qa=qa.replace(
+  "el(g,'[data-rotate=\"1\"]').click();",
+  `const wheel=el(g,'#mb-team1 .mb-wheel'),rect=wheel.getBoundingClientRect();
+ const radius=Math.min(rect.width,rect.height)*.5;
+ const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+ const from=new Touch({identifier:17,target:wheel,
+  clientX:cx+radius*.75,clientY:cy});
+ const to=new Touch({identifier:17,target:wheel,
+  clientX:cx+radius*.35,clientY:cy+radius*.66});
+ const finger=(type,t,active)=>wheel.dispatchEvent(new TouchEvent(type,{
+  bubbles:true,cancelable:true,touches:active?[t]:[],
+  targetTouches:active?[t]:[],changedTouches:[t]}));
+ finger('touchstart',from,true);
+ finger('touchmove',to,true);
+ finger('touchend',to,false);`);
  qa=qa.replace(
   "  // The controls must not only exist:",
   `  // V3-5-7 school touch acceptance: dial prevents accidental page pan,
