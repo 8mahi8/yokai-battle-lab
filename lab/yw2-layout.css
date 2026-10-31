@@ -1,0 +1,636 @@
+/* Phase 16 / visual-only two-screen battle arrangement inspired by YW2.
+ * Combat state and legal commands remain owned by engine/match-protocol.
+ * Original CSS painting, hand-drawn SVG characters, no official sprite assets.
+ * Source layout: foe/front ally on upper screen; one local six-medal wheel
+ * with four commands on lower screen. Item disabled in PvP on purpose. */
+.mb-yw2{max-width:1040px;padding:9px 13px 18px}
+.mb-yw2 .mb-topbar{margin-bottom:5px}
+.mb-yw2 .mb-disclaimer{margin-bottom:7px;font-size:10px}
+.mb-dualscreen{display:flex;flex-direction:column;gap:8px;max-width:960px;margin:auto}
+.mb-upper-screen,.mb-lower-screen{position:relative;min-width:0;overflow:hidden;border-radius:14px;
+ border:2px solid #6e7282;box-shadow:inset 0 0 0 2px #18263d,0 8px 22px #0004}
+.mb-upper-screen{background:#152838;border-color:#668ba5}
+.mb-lower-screen{background:linear-gradient(145deg,#25253f 0%,#32213c 80%);
+ border-color:#826b96;padding:8px 12px 9px}
+.mb-screen-caption{height:25px;padding:5px 12px;background:#182f43cf;color:#d7e9ed;
+ font-size:10px;letter-spacing:1.3px;font-weight:900}
+.mb-screen-caption span{color:#a8c8d6;font-size:10px;font-weight:400;letter-spacing:0;margin-left:10px}
+.mb-battle-backdrop{height:207px;position:relative;overflow:hidden;
+ background:linear-gradient(180deg,#7aa2b0 0%,#a3bfbc 35%,#d8cda6 36%,#bca779 49%,#a18c6e 100%)}
+.mb-scenery{position:absolute;pointer-events:none}
+.mb-scenery-back{inset:0 0 53%;opacity:.75;
+ background:
+ linear-gradient(135deg,transparent 48%,#617f80 48%,#617f80 51%,transparent 51%) 3% 30%/140px 85px no-repeat,
+ linear-gradient(150deg,transparent 50%,#627d78 51%,transparent 52%) 90% 0%/200px 95px no-repeat,
+ linear-gradient(0deg,#617579 15%,transparent 16%) 0 0/110px 100% repeat-x,
+ linear-gradient(90deg,transparent 3%,#73898b 3% 16%,transparent 16% 25%,#8ca8a5 25% 40%,transparent 40% 52%,#6b898e 52% 70%,transparent 70%)}
+.mb-scenery-floor{bottom:-58%;height:145%;left:-22%;width:144%;opacity:.48;transform:perspective(240px) rotateX(67deg);
+ background:repeating-linear-gradient(0deg,#4f686f44 0 2px,transparent 2px 38px),
+ repeating-linear-gradient(90deg,#52687544 0 2px,transparent 2px 64px);border:5px solid #728a82}
+.mb-foe-line,.mb-ally-line{position:absolute;left:50%;transform:translateX(-50%);
+ display:flex;justify-content:center;gap:clamp(10px,4vw,37px);z-index:2;width:min(94%,530px)}
+.mb-foe-line{top:2px}.mb-ally-line{bottom:2px}
+.mb-fighter{position:relative;width:clamp(78px,10vw,98px);height:96px;border:0;
+ background:transparent;color:#fff7e8;padding:0;display:flex;align-items:center;flex-direction:column;
+ justify-content:flex-end;gap:0;flex:none;filter:drop-shadow(0 2px 2px #24344766)}
+.mb-fighter-sprite{height:65px;width:74px;display:grid;place-items:center;flex:none;z-index:1;pointer-events:none}
+.mb-fighter .mb-character-art{height:65px;width:65px;max-width:none;filter:drop-shadow(0 2px 1px #25374688)}
+.mb-fighter-meta{width:100%;background:linear-gradient(#1c2d41eb,#0e1c33ee);border:1px solid #9eb7ba;
+ border-radius:6px;padding:2px 5px 3px;min-height:30px;position:relative;z-index:2}
+.mb-foe-line .mb-fighter-meta{background:linear-gradient(#4d2a3deb,#241c33f5);border-color:#dd989f}
+.mb-fighter-meta strong{font-size:10px;white-space:nowrap;display:block;line-height:13px}
+.mb-fighter-meta small{font-size:9px;line-height:9px;display:block;color:#c9d5db}
+.mb-fighter .mb-bars{height:4px;width:100%;margin-bottom:2px}
+.mb-fighter .mb-soulbar{height:3px}
+.mb-fighter.mb-ko{opacity:.42}.mb-fighter.mb-pinned .mb-fighter-sprite:after{
+ content:'▼';position:absolute;top:-5px;color:#fff2a9;font-size:20px;left:50%;transform:translateX(-50%);
+ text-shadow:0 2px 3px #5b2433}
+.mb-fighter.mb-acting .mb-character-art{animation:mb-strike .7s cubic-bezier(.2,.6,.4,1) both}
+.mb-fighter.mb-hit .mb-character-art{animation:mb-recoil .7s ease-out both}
+.mb-fighter.mb-healed .mb-character-art{animation:mb-lift .7s ease-out both}
+.mb-condition-icon{position:absolute;top:0;right:2px;color:#ffdca1}
+.mb-yw2 .mb-action-label{margin:0;padding:6px 12px;background:#20394a;border:0;min-height:29px;
+ font-size:12px;color:#f2e7c3;text-align:center}
+.mb-yw2 .mb-forecast-section{border:0;border-radius:0;margin:0;background:#152636;padding:5px 10px}
+.mb-yw2 .mb-section-label{padding-bottom:4px;font-size:11px}
+.mb-yw2 .mb-forecast{gap:5px}
+.mb-yw2 .mb-next{padding:3px 6px;min-height:34px;border-radius:7px}
+.mb-yw2 .mb-next-avatar{width:26px;height:26px}
+.mb-yw2 .mb-next strong{font-size:10px}.mb-yw2 .mb-next small{display:none}
+.mb-lower-title{min-height:26px;padding:0 4px 5px;border-bottom:1px solid #9b7e8d44}
+.mb-lower-title b{color:#ffdfa3;font-size:13px}
+.mb-lower-title small{font-size:10px}
+.mb-yw2 .mb-seat-switch button{padding:3px 11px}
+.mb-command-field{display:grid;grid-template-columns:minmax(108px,.9fr) minmax(280px,330px) minmax(108px,.9fr);
+ align-items:center;gap:7px;max-width:760px;margin:2px auto 0}
+.mb-command-column{display:flex;flex-direction:column;gap:9px;align-self:stretch;justify-content:center}
+.mb-watch-command{display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;
+ min-height:106px;border-radius:15px;padding:10px 3px;color:#fff8e3;font-weight:900;
+ font-size:18px;text-shadow:0 1px 2px #301c2c;box-shadow:inset 0 1px 0 #ffffff55,0 3px 0 #11182877}
+.mb-watch-command small{margin-top:4px;color:#fff9da;font-size:10px;font-weight:500;text-shadow:none}
+.mb-command-skill{background:linear-gradient(150deg,#ca6455,#87384b);border:2px solid #f9b8a4}
+.mb-command-target{background:linear-gradient(145deg,#498bcc,#28579a);border:2px solid #a3d6f6}
+.mb-command-purify{background:linear-gradient(145deg,#8770b5,#59488b);border:2px solid #cfc0f7}
+.mb-command-item{background:linear-gradient(145deg,#699264,#3e6d50);border:2px solid #b1d6a5}
+.mb-watch-command:disabled{opacity:.48;cursor:not-allowed}
+.mb-watch-command.mb-command-active{outline:3px solid #ffeb9c;outline-offset:2px;
+ box-shadow:0 0 18px #fbdc8b88,inset 0 1px 0 #ffffff66}
+.mb-watch-command:active:not(:disabled){transform:scale(.98)}
+.mb-wheel-shell{min-width:0;position:relative}
+.mb-wheel-host{height:308px;position:relative}
+.mb-yw2 .mb-team{height:308px;min-height:0;padding:0;background:transparent!important;border:none;overflow:visible;
+ border-radius:0;box-shadow:none}
+.mb-yw2 .mb-team:after{display:none}
+.mb-yw2 .mb-team[hidden]{display:none!important}
+.mb-yw2 .mb-team-heading{position:absolute;z-index:6;top:2px;left:5px;right:5px;pointer-events:none;
+ background:linear-gradient(90deg,#24384ab8,#23354433);border-radius:20px;padding:2px 6px}
+.mb-yw2 .mb-team-icon{height:23px;width:23px;font-size:12px}
+.mb-yw2 .mb-team-heading b{font-size:10px}.mb-yw2 .mb-team-heading small{display:none}
+.mb-yw2 .mb-team-control-indicator{font-size:9px}
+.mb-yw2 .mb-wheel{height:300px;max-width:330px;margin:5px auto 0}
+.mb-yw2 .mb-wheel-ring{width:76%;height:76%;left:12%;top:12%;
+ border:9px solid #c79b55;border-radius:50%;box-shadow:0 0 0 3px #69513e,
+ inset 0 0 0 4px #dec280,inset 0 0 15px #1c223c88;background:
+ repeating-conic-gradient(from -30deg,#a87745 0 28deg,#e2b562 28deg 55deg,#584762 55deg 60deg)}
+.mb-yw2 .mb-wheel-ring:before,.mb-yw2 .mb-wheel-ring:after{width:95%;background:#482a44a3;height:4px;z-index:1}
+.mb-yw2 .mb-center-symbol{width:69px;height:69px;background:radial-gradient(circle,#3a577b,#25283f);
+ border:5px solid #b9a375;box-shadow:0 0 0 3px #513b48;color:#e8d8ab;font-weight:900;
+ font-size:22px;z-index:4}
+.mb-yw2 .mb-center-symbol:after{content:'前 / 後';display:block;font-size:9px;position:absolute;bottom:10px}
+.mb-yw2 .mb-creature{width:74px;height:94px;padding:1px 4px 3px;border-radius:40px;
+ background:linear-gradient(165deg,#d7b67a,#b38d60);color:#272837;border:3px solid #d3b882;
+ box-shadow:0 1px 0 #e4dfce inset,0 2px 5px #111d36bd}
+.mb-yw2 .mb-creature.mb-bench{filter:saturate(.68) brightness(.78);border-color:#9b92a1}
+.mb-yw2 .mb-creature.mb-selected{border-color:#fff2bd;box-shadow:0 0 0 3px #f8e29c77,0 2px 6px #08132ecc}
+.mb-yw2 .mb-creature .mb-character-art{height:42px;width:42px;margin-top:0}
+.mb-yw2 .mb-creature .mb-name{color:#2d2835;font-size:10px}
+.mb-yw2 .mb-creature .mb-bars{height:5px;background:#504257;margin-bottom:2px}
+.mb-yw2 .mb-creature .mb-unit-stat{color:#382b36;font-size:9px}
+.mb-yw2 .mb-creature .mb-front-badge{right:0;top:0;background:#45757c}
+.mb-yw2 .mb-wheel-turn{display:flex;justify-content:center;align-items:center;gap:9px;margin-top:-5px;
+ position:relative;z-index:7}
+.mb-yw2 .mb-wheel-turn button{min-height:28px;font-size:11px;font-weight:800;padding:3px 9px;
+ border:1px solid #dfc17e;border-radius:9px;color:#fff3c7;background:#735d70}
+.mb-yw2 .mb-wheel-turn span{color:#d1bdc3;font-size:9px}
+.mb-command-footer{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;
+ border-top:1px solid #9b7e8d55;padding-top:7px;margin-top:6px}
+.mb-command-footer button{border:1px solid #9f96b7;background:#3e436a;color:#e6edfb;
+ border-radius:7px;padding:5px 9px;font-size:11px}
+.mb-command-footer button:disabled{opacity:.4}
+.mb-yw2 .mb-footnote{font-size:10px;color:#c3b4cc;margin:0;flex:1;min-width:170px}
+.mb-yw2 .mb-feed{margin:6px auto 0;padding:5px 10px;border-radius:9px;
+ background:#1e2a42;border-color:#494e69;max-width:800px}
+.mb-yw2 .mb-feed-heading{display:flex;align-items:center;justify-content:space-between;gap:5px}
+.mb-yw2 .mb-feed-heading b{font-size:10px;color:#e5c99c}
+.mb-yw2 .mb-feed-heading button{font-size:10px;min-height:24px;padding:3px 10px;border-radius:6px}
+.mb-yw2 .mb-activity{margin:3px 0;padding:3px 6px;min-height:18px;font-size:11px}
+.mb-yw2 .mb-feed-list{display:none}
+.mb-yw2 .mb-revision{margin-top:0;font-size:9px;opacity:.75}
+@media(max-width:700px){
+ .mb-yw2{padding:6px}
+ .mb-command-field{grid-template-columns:minmax(68px,.85fr) minmax(195px,1.8fr) minmax(68px,.85fr);gap:4px}
+ .mb-watch-command{font-size:13px;min-height:88px;border-radius:10px}
+ .mb-watch-command small{font-size:8px}
+ .mb-wheel-host,.mb-yw2 .mb-team{height:260px}
+ .mb-yw2 .mb-wheel{height:250px}
+ .mb-yw2 .mb-creature{width:64px;height:83px;border-width:2px}
+ .mb-yw2 .mb-creature .mb-character-art{width:34px;height:34px}
+ .mb-yw2 .mb-creature .mb-name{font-size:9px}
+ .mb-yw2 .mb-creature .mb-unit-stat{font-size:8px}
+ .mb-yw2 .mb-team-heading b{font-size:9px}
+ .mb-yw2 .mb-team-icon{width:20px;height:20px}
+ .mb-yw2 .mb-center-symbol{height:53px;width:53px;font-size:17px}
+ .mb-yw2 .mb-center-symbol:after{font-size:7px}
+ .mb-battle-backdrop{height:195px}
+ .mb-foe-line,.mb-ally-line{gap:14px}
+ .mb-fighter{width:78px}
+ .mb-yw2 .mb-forecast{gap:3px}
+ .mb-yw2 .mb-next{padding:3px}
+}
+@media(max-width:415px){
+ .mb-command-field{grid-template-columns:68px minmax(176px,1fr) 68px;gap:2px}
+ .mb-watch-command{font-size:12px;padding:4px 2px}
+ .mb-watch-command small{display:none}
+ .mb-yw2 .mb-creature{width:57px;height:79px}
+ .mb-yw2 .mb-creature .mb-character-art{height:31px;width:31px}
+ .mb-yw2 .mb-next-avatar{display:none}
+}
+@media(max-height:560px) and (orientation:landscape){
+ .mb-yw2 .mb-disclaimer{display:none}
+ .mb-dualscreen{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:7px}
+ .mb-battle-backdrop{height:195px}
+ .mb-command-field{grid-template-columns:70px minmax(180px,1fr) 70px;gap:2px}
+ .mb-watch-command{min-height:75px;font-size:11px}
+ .mb-watch-command small{display:none}
+ .mb-wheel-host,.mb-yw2 .mb-team{height:230px}
+ .mb-yw2 .mb-wheel{height:220px}
+ .mb-yw2 .mb-creature{height:75px;width:58px}
+ .mb-yw2 .mb-creature .mb-character-art{height:30px;width:30px}
+ .mb-yw2 .mb-creature .mb-name{font-size:8px}
+}
+@media(prefers-reduced-motion:reduce){.mb-fighter.mb-acting .mb-character-art,.mb-fighter.mb-hit .mb-character-art,
+ .mb-fighter.mb-healed .mb-character-art{animation:none}}
+
+/* 1024×768 class school iPad landscape: preserve authentic vertical
+   upper/lower ordering, shrink scene and medal area before adding scrolling. */
+@media(min-width:701px) and (max-height:820px){
+ .mb-yw2{padding:4px 9px 8px}
+ .mb-yw2 .mb-topbar{margin-bottom:3px}
+ .mb-yw2 .mb-mark{width:32px;height:32px;font-size:19px}
+ .mb-yw2 .mb-title-group h1{font-size:18px}
+ .mb-yw2 .mb-title-group small{font-size:8px}
+ .mb-yw2 .mb-disclaimer{display:none}
+ .mb-dualscreen{gap:5px}
+ .mb-battle-backdrop{height:171px}
+ .mb-fighter{height:77px;width:84px}
+ .mb-fighter-sprite{height:49px;width:61px}
+ .mb-fighter .mb-character-art{height:49px;width:49px}
+ .mb-fighter-meta{padding:1px 4px;min-height:27px}
+ .mb-fighter-meta strong{font-size:9px;line-height:11px}
+ .mb-fighter-meta small{font-size:8px;line-height:8px}
+ .mb-screen-caption{height:21px;padding:3px 10px}
+ .mb-yw2 .mb-action-label{padding:4px 9px;min-height:24px}
+ .mb-yw2 .mb-forecast-section{padding:4px 8px}
+ .mb-yw2 .mb-section-label{font-size:10px;padding-bottom:2px}
+ .mb-yw2 .mb-next{min-height:28px;padding:2px 5px}
+ .mb-lower-screen{padding:5px 10px 6px}
+ .mb-lower-title{padding-bottom:3px;min-height:23px}
+ .mb-command-field{grid-template-columns:minmax(108px,.9fr) minmax(260px,300px) minmax(108px,.9fr)}
+ .mb-watch-command{min-height:88px;font-size:16px}
+ .mb-watch-command small{font-size:9px}
+ .mb-wheel-host,.mb-yw2 .mb-team{height:268px}
+ .mb-yw2 .mb-wheel{height:260px;max-width:300px}
+ .mb-yw2 .mb-creature{width:65px;height:80px;border-width:2px;padding:0 4px 2px}
+ .mb-yw2 .mb-creature .mb-character-art{height:35px;width:35px}
+ .mb-yw2 .mb-creature .mb-name{font-size:9px}
+ .mb-yw2 .mb-creature .mb-unit-stat{font-size:8px}
+ .mb-yw2 .mb-center-symbol{width:54px;height:54px;font-size:16px}
+ .mb-yw2 .mb-center-symbol:after{font-size:8px;bottom:7px}
+ .mb-yw2 .mb-wheel-turn{margin-top:-3px}
+ .mb-yw2 .mb-wheel-turn button{min-height:25px;padding:2px 8px}
+ .mb-command-footer{padding-top:4px;margin-top:3px}
+ .mb-command-footer button{padding:3px 7px}
+ .mb-yw2 .mb-feed{padding:3px 8px;margin-top:3px}
+ .mb-yw2 .mb-activity{margin:2px 0;padding:2px 5px}
+ .mb-yw2 .mb-revision{display:none}
+}
+
+/* Phase 16B / command selection cues. Show eligibility only; the existing
+   authoritative engine still decides whether a command is legal. */
+.mb-upper-screen[data-selecting="target"] .mb-screen-caption{
+ background:linear-gradient(90deg,#375c84,#1a3954)}
+.mb-upper-screen[data-selecting="target"] #mb-choice-status{
+ color:#ffebb2;font-weight:800}
+.mb-upper-screen[data-selecting="target"] .mb-battle-backdrop{
+ box-shadow:inset 0 0 0 2px #ffe3a755}
+.mb-foe-line .mb-fighter.mb-choice-eligible{cursor:pointer}
+.mb-foe-line .mb-fighter.mb-choice-eligible:before{
+ content:'ねらう ▼';position:absolute;top:0;left:50%;transform:translate(-50%,-2px);
+ z-index:5;white-space:nowrap;padding:1px 5px;color:#fff4be;
+ background:#2c5e82e8;border:1px solid #ffdfa0;border-radius:6px;
+ font-size:10px;font-weight:800;text-shadow:0 1px 2px #24304a;
+ box-shadow:0 0 0 2px #fff1c12a}
+.mb-upper-screen[data-target-kind="poke"] .mb-foe-line .mb-fighter.mb-choice-eligible:before{
+ content:'つつく？';background:#66518bee;border-color:#d4bae9}
+.mb-upper-screen[data-selecting="target"] .mb-foe-line .mb-fighter.mb-choice-eligible{
+ border-radius:12px;outline:2px solid #ffe1a5;outline-offset:-3px;
+ background:#f2e1a41c}
+.mb-fighter.mb-choice-ineligible{opacity:.45}
+.mb-yw2 .mb-creature.mb-choice-eligible{
+ border-color:#fff9af;box-shadow:0 0 0 3px #ffe4a4bb,0 0 12px #ffbd73b8}
+.mb-yw2 .mb-creature.mb-choice-ineligible:not(.mb-selected){
+ opacity:.61;filter:saturate(.6)}
+.mb-yw2 .mb-creature.mb-choice-ineligible.mb-selected{
+ border-color:#a59ca1;box-shadow:0 1px 0 #e4dfce inset,0 2px 5px #111d36bd}
+.mb-yw2 .mb-lower-title [aria-pressed="true"]{border-color:#ffe2a9}
+.mb-yw2 .mb-watch-command:focus-visible,.mb-yw2 .mb-fighter:focus-visible,
+.mb-yw2 .mb-creature:focus-visible{
+ outline:3px solid #fff1ba;outline-offset:1px}
+@media(prefers-reduced-motion:reduce){
+ .mb-fighter.mb-choice-eligible,.mb-creature.mb-choice-eligible{animation:none}
+}
+
+/* Phase17: physical wheel drag, one snapped 60deg engine rotation per
+   deliberate angular gesture. Only the decorative medal ring previews motion;
+   text, interactive buttons and status bars stay readable and static. */
+.mb-yw2 .mb-wheel{touch-action:none}
+.mb-yw2 .mb-wheel-ring{transform:rotate(var(--wheel-drag-angle,0deg));
+ transition:transform .12s ease-out}
+.mb-yw2 .mb-wheel.mb-wheel-dragging .mb-wheel-ring{
+ transition:none}
+.mb-yw2 .mb-wheel.mb-wheel-dragging:after{
+ content:'サークル回転';position:absolute;z-index:8;top:48%;
+ left:50%;transform:translate(-50%,-50%);pointer-events:none;
+ background:#29283ddd;border:1px solid #e5c795;
+ border-radius:18px;padding:5px 8px;color:#fff0c3;
+ font-size:10px;font-weight:800;white-space:nowrap}
+
+/* Phase17: short original VFX in upper action field. These are read-only
+   playback of authoritative battle events (not new damage calculations).
+   Compositor-friendly transform and opacity only; no blur or filters. */
+.mb-special-flare{position:absolute;z-index:9;left:50%;top:50%;width:210px;
+ height:112px;transform:translate(-50%,-50%);pointer-events:none;
+ display:flex;align-items:center;justify-content:center}
+.mb-special-flare[hidden]{display:none!important}
+.mb-special-flare:before{content:'';position:absolute;inset:3px 0;
+ border:3px solid #ffe2a4;border-radius:60px;
+ background:radial-gradient(ellipse,#ac6d51cd,#3b4c88be);
+ animation:mb-special-burst 1.05s ease-out both}
+.mb-special-flare span{position:relative;display:block;z-index:1;
+ font-size:24px;font-weight:900;letter-spacing:1px;
+ color:#fff6c5;text-shadow:1px 2px #613d57;
+ animation:mb-special-text 1.05s ease-out both}
+@keyframes mb-special-burst{
+ 0%{opacity:0;transform:scale(.5)}
+ 22%,76%{opacity:1;transform:scale(1)}
+ 100%{opacity:0;transform:scale(1.22)}
+}
+@keyframes mb-special-text{
+ 0%{opacity:0;transform:translateY(13px) scale(.8)}
+ 20%,86%{opacity:1;transform:translateY(0) scale(1)}
+ 100%{opacity:0;transform:translateY(-7px) scale(1.05)}
+}
+.mb-fighter.mb-missed .mb-character-art{
+ animation:mb-miss .65s ease-out both}
+@keyframes mb-miss{
+ 0%,100%{transform:translateX(0)}
+ 35%{transform:translateX(9px)}
+ 65%{transform:translateX(-2px)}
+}
+@media(prefers-reduced-motion:reduce){
+ .mb-special-flare:before,.mb-special-flare span,
+ .mb-fighter.mb-missed .mb-character-art{animation:none!important}
+ .mb-yw2 .mb-wheel-ring{transition:none!important}
+}
+
+/* Original reproduction: Game8 documents the literal "わざOK" prompt on
+   ready medals. Zero Watch uses "Gわざ" and must fill both ring neighbours.
+   Decorative state ONLY; all eligibility comes from engine/soul.mjs. */
+.mb-yw2 .mb-special-ready{position:absolute;z-index:7;bottom:8px;left:50%;
+ transform:translateX(-50%);max-width:calc(100% + 16px);
+ padding:2px 4px;background:#d6f8d0;color:#274b35;
+ border:2px solid #4b895d;border-radius:6px;font-size:9px;
+ font-weight:900;white-space:nowrap;pointer-events:none;
+ box-shadow:0 1px 4px #1c2c294d}
+.mb-yw2 .mb-creature.mb-choice-eligible{box-shadow:0 0 0 2px #d1eec5,0 2px 7px #21393077}
+.mb-yw2 .mb-creature.mb-choice-ineligible{opacity:.54}
+
+/* Phase43: touch-priority circle for old Safari; center is the actual Zero Watch switch. */
+.mb-yw2 .mb-wheel,.mb-yw2 .mb-wheel .mb-creature,.mb-yw2 .mb-wheel-ring{
+ touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.mb-yw2 .mb-center-symbol{cursor:pointer;touch-action:manipulation;line-height:1.1;
+ padding:7px 0 16px;display:flex;align-items:center;justify-content:center;
+ -webkit-tap-highlight-color:transparent}
+.mb-yw2 .mb-center-symbol:focus-visible{outline:3px solid #ffe2a0;outline-offset:4px}
+.mb-action-callout{position:absolute;z-index:8;left:50%;top:44%;transform:translate(-50%,-50%);
+ pointer-events:none;text-align:center;min-width:165px;max-width:90%;padding:8px 14px;
+ background:#102c43e8;color:#fff4cb;border:2px solid #ffdb84;border-radius:12px;
+ box-shadow:0 5px 16px #080d17aa;text-shadow:0 2px 2px #10111f;
+ animation:mb-callout-appear .24s ease-out}
+.mb-action-callout[hidden]{display:none!important}
+.mb-action-callout b{display:block;font-size:21px;letter-spacing:.04em}
+.mb-action-callout span{display:block;font-size:13px;font-weight:700}
+.mb-action-callout[data-kind=heal]{border-color:#b0f3d8}
+.mb-action-callout[data-kind=inspirit]{border-color:#c9a7ff}
+@keyframes mb-callout-appear{from{opacity:.3;transform:translate(-50%,-40%) scale(.96)}
+ to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.mb-fighter.mb-acting .mb-character-art{animation-duration:1.65s}
+.mb-fighter.mb-hit .mb-character-art,.mb-fighter.mb-healed .mb-character-art{animation-duration:1.65s}
+.mb-fighter.mb-missed .mb-character-art{animation-duration:1.65s}
+.mb-creature.mb-acting,.mb-creature.mb-hit,.mb-creature.mb-healed{animation-duration:1.65s}
+@media(max-width:680px){.mb-action-callout b{font-size:16px}.mb-action-callout span{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.mb-action-callout{animation:none}}
+
+
+/* Phase46: the host resolves effects; these graphics only replay the result.
+   Each action's anticipation is different. The stage reports data-scene-phase,
+   so no effects or HP numbers appear before the impact frame. */
+.mb-yw2 .mb-battle-backdrop[data-scene-phase="anticipation"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-physical .52s ease-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-kind="technique"][data-scene-phase="anticipation"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-magic .7s ease-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-kind="heal"][data-scene-phase="anticipation"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-heal .65s ease-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-kind="inspirit"][data-scene-phase="anticipation"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-inspirit .65s ease-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-kind="guard"][data-scene-phase="anticipation"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-guard .4s ease-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-kind="loaf"][data-scene-phase="anticipation"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-loaf .6s ease-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-phase="impact"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-strike .6s ease-in-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-kind="guard"][data-scene-phase="impact"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-guard .63s ease-in-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-kind="heal"][data-scene-phase="impact"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-heal .48s ease-in-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-kind="inspirit"][data-scene-phase="impact"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-windup-inspirit .45s ease-in-out both}
+.mb-yw2 .mb-battle-backdrop[data-scene-phase="recovery"] .mb-fighter.mb-acting .mb-character-art{
+ animation:mb-recover-caster .7s ease-in-out both}
+@keyframes mb-windup-physical{from{transform:translateY(0) scale(1)}to{transform:translateY(-11px) scale(1.08)}}
+@keyframes mb-windup-magic{0%{transform:translateY(0) rotate(0deg)}60%{transform:translateY(-9px) rotate(-10deg)}100%{transform:translateY(-10px) rotate(9deg)}}
+@keyframes mb-windup-heal{0%{transform:translateY(0) scale(1)}100%{transform:translateY(-7px) scale(1.19)}}
+@keyframes mb-windup-inspirit{0%{transform:rotate(0deg) scale(1)}50%{transform:rotate(11deg) scale(1.12)}100%{transform:rotate(-9deg) scale(1.1)}}
+@keyframes mb-windup-guard{0%{transform:scale(1)}100%{transform:translateY(7px) scale(1.18,.80)}}
+@keyframes mb-windup-loaf{0%{transform:translateY(0) rotate(0)}50%{transform:translateY(5px) rotate(12deg)}100%{transform:translateY(4px) rotate(-9deg)}}
+@keyframes mb-recover-caster{0%{transform:translateY(-5px) scale(1.07)}100%{transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){
+ .mb-yw2 .mb-battle-backdrop .mb-fighter.mb-acting .mb-character-art{animation:none!important}
+}
+
+
+/* Inspirit is a status-transfer event, not a normal damage hit. */
+.mb-yw2 .mb-fighter.mb-inspirited .mb-character-art,
+.mb-yw2 .mb-creature.mb-inspirited .mb-character-art{
+ animation:mb-status-wobble .72s ease-in-out both}
+.mb-yw2 .mb-fighter.mb-inspirited:after{
+ content:'とりつき';position:absolute;z-index:7;right:-8px;top:19px;
+ font-weight:900;font-size:11px;padding:2px 5px;border-radius:9px;
+ background:#513777;color:#f1d7ff;border:1px solid #c9b0ed}
+.mb-yw2 .mb-battle-backdrop[data-scene-kind="technique"] .mb-fighter.mb-hit .mb-character-art{
+ animation:mb-technique-hit .65s ease-in-out both}
+@keyframes mb-status-wobble{0%{transform:rotate(0) scale(1)}40%{transform:rotate(14deg) scale(1.12)}
+ 75%{transform:rotate(-10deg) scale(.96)}100%{transform:rotate(0) scale(1)}}
+@keyframes mb-technique-hit{0%{transform:translateY(0) scale(1)}
+ 35%{transform:translateY(-9px) scale(.90)}75%{transform:translateY(3px) scale(1.06)}
+ 100%{transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){
+ .mb-yw2 .mb-fighter.mb-inspirited .mb-character-art,
+ .mb-yw2 .mb-creature.mb-inspirited .mb-character-art{animation:none!important}
+}
+
+
+/* Phase46 screenshot finding: 170px-wide centered callout occluded BOTH
+   acting and targeted sprites. Keep readable label in unused field margin. */
+.mb-yw2 .mb-action-callout{
+ left:10px;top:24px;transform:none;
+ width:clamp(102px,18%,165px);min-width:0;max-width:165px;
+ text-align:left;padding:6px 8px;box-shadow:0 2px 7px #060c1755;
+ border-width:1px;animation:mb-callout-side .22s ease-out both}
+.mb-yw2 .mb-action-callout b{font-size:14px;letter-spacing:0}
+.mb-yw2 .mb-action-callout span{font-size:11px}
+@keyframes mb-callout-side{from{opacity:.2;transform:translateX(-8px)}
+ to{opacity:1;transform:translateX(0)}}
+@media(max-width:680px){
+ .mb-yw2 .mb-action-callout{left:3px;top:28px;width:86px;padding:4px}
+ .mb-yw2 .mb-action-callout b{font-size:12px}
+ .mb-yw2 .mb-action-callout span{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+ .mb-yw2 .mb-action-callout{animation:none}
+}
+
+
+/* Host-resolved passive skills: show near the opposing field margin, not on
+   top of acting fighters or the touch wheel. Read-only and phase-delayed. */
+.mb-yw2 .mb-passive-notice{
+ position:absolute;z-index:8;right:8px;top:28px;width:clamp(110px,20%,165px);
+ padding:6px 8px;background:#214c3de8;border:1px solid #a3e4a1;
+ color:#e4ffe4;text-align:left;border-radius:10px;
+ font-size:11px;line-height:1.35;font-weight:800;pointer-events:none;
+ box-shadow:0 2px 7px #060c1755}
+.mb-yw2 .mb-passive-notice[hidden]{display:none!important}
+@media(max-width:680px){.mb-yw2 .mb-passive-notice{
+ right:3px;top:28px;width:91px;padding:4px;font-size:10px}}
+
+
+/*
+ * Phase49: directly observed in user-provided edited 3DS PvP footage:
+ * - 01:12-01:15 and 01:28 cut away from the battle scene to a large character
+ *   on a vivid, contrasting special-move background;
+ * - 00:37-00:43 a bright circular target reticle, not a plain arrow;
+ * - 00:44-00:48 status marks beside the subject, separate from HP bars.
+ *
+ * The original character art is NOT copied. Existing original embedded SVGs
+ * and CSS geometric backgrounds make a recognizably different but readable
+ * scene. Timings are presentation trial values, not 3DS measured seconds.
+ */
+.mb-yw2 .mb-special-flare{
+ inset:0;left:0;top:0;width:100%;height:100%;transform:none;z-index:12;
+ display:grid;grid-template-columns:minmax(110px,44%) 1fr;
+ align-items:center;justify-content:center;gap:8px;
+ padding:10px 20px;overflow:hidden;isolation:isolate;
+ --special-accent:#e1a36d;
+ background:radial-gradient(circle at 32% 51%,#c5d5f3 0%,#363c76 30%,#162846 73%,#181d39 100%);
+ box-shadow:inset 0 0 0 3px #f1da9bcc}
+.mb-yw2 .mb-special-flare[data-creature="1"]{--special-accent:#ffae79;background:radial-gradient(circle at 32% 45%,#f7bf7a,#9b4247 34%,#542a4c 72%,#222038)}
+.mb-yw2 .mb-special-flare[data-creature="2"]{--special-accent:#b7f09b;background:radial-gradient(circle at 36% 47%,#b6e8a1,#348a79 34%,#214d64 72%,#17344d)}
+.mb-yw2 .mb-special-flare[data-creature="3"]{--special-accent:#c8e0e8;background:radial-gradient(circle at 36% 47%,#d6edee,#587f9d 34%,#354968 72%,#1b2946)}
+.mb-yw2 .mb-special-flare[data-creature="4"]{--special-accent:#bef4ff;background:radial-gradient(circle at 36% 47%,#caf9fa,#428bb3 35%,#364d86 70%,#171e4b)}
+.mb-yw2 .mb-special-flare[data-creature="5"]{--special-accent:#ffe5a4;background:radial-gradient(circle at 36% 47%,#ffeab2,#b28554 34%,#69476c 70%,#27233d)}
+.mb-yw2 .mb-special-flare[data-creature="6"]{--special-accent:#dae9f6;background:radial-gradient(circle at 36% 47%,#c8e9fa,#5b7890 34%,#394263 70%,#181e37)}
+.mb-yw2 .mb-special-flare[data-mode="g"]{filter:saturate(1.12)}
+.mb-yw2 .mb-special-flare:before{
+ content:'';position:absolute;inset:-30%;border:0;border-radius:0;pointer-events:none;
+ background:repeating-conic-gradient(from 0deg at 37% 50%,transparent 0deg 10deg,#ffffff14 11deg 13deg,transparent 14deg 25deg);
+ opacity:.55;animation:mb-special-shine 1.25s ease-out both}
+.mb-yw2 .mb-special-cutin-lines{position:absolute;inset:8px;z-index:0;
+ border-top:3px solid var(--special-accent);border-bottom:3px solid var(--special-accent);
+ transform:skewY(-5deg);box-shadow:0 0 14px #ffe8ba44;pointer-events:none}
+.mb-yw2 .mb-special-portrait{position:relative;z-index:2;display:grid;place-items:center;
+ height:100%;overflow:visible;filter:drop-shadow(0 6px 2px #15203677);
+ animation:mb-special-portrait-enter .46s cubic-bezier(.16,.8,.26,1) both}
+.mb-yw2 .mb-special-portrait .mb-character-art{height:min(175px,92%);width:min(175px,100%);
+ max-width:100%;transform:scale(1.2);transform-origin:center center}
+.mb-yw2 .mb-special-copy{position:relative;z-index:3;display:flex;flex-direction:column;
+ align-items:flex-start;justify-content:center;min-width:0;line-height:1.18;
+ padding-right:8px;text-shadow:0 3px 4px #070d27dd}
+.mb-yw2 .mb-special-copy small{font-size:17px;font-weight:900;line-height:1.25;
+ padding:3px 8px;background:#1d2b4eaa;color:var(--special-accent);
+ border-left:3px solid var(--special-accent);border-radius:2px}
+.mb-yw2 .mb-special-copy span{font-size:clamp(22px,3.9vw,37px);
+ font-weight:1000;letter-spacing:.05em;text-align:left;line-height:1.3;
+ color:#fff3c7;animation:none;max-width:100%}
+@keyframes mb-special-shine{from{opacity:0;transform:rotate(-12deg) scale(.82)}
+ 40%{opacity:.8}to{opacity:.55;transform:rotate(10deg) scale(1.05)}}
+@keyframes mb-special-portrait-enter{from{opacity:0;transform:translateX(-30px) scale(.83)}
+ to{opacity:1;transform:translateX(0) scale(1)}}
+.mb-yw2 .mb-pin-reticle{
+ position:absolute;z-index:5;pointer-events:none;left:50%;top:29px;
+ width:51px;height:51px;border-radius:50%;transform:translate(-50%,-50%);
+ border:3px solid #ff6670;background:#b83b5355;
+ box-shadow:0 0 0 2px #a32948,0 0 10px #ff5f7abb,inset 0 0 0 2px #ffe1cc;
+ animation:mb-pin-breathe 1.45s ease-in-out infinite}
+.mb-yw2 .mb-pin-reticle:before{content:'';position:absolute;left:50%;top:50%;
+ width:13px;height:13px;border:2px solid #fff1bb;border-radius:50%;transform:translate(-50%,-50%)}
+.mb-yw2 .mb-pin-reticle:after{content:'';position:absolute;left:50%;top:50%;
+ width:78%;height:78%;transform:translate(-50%,-50%);
+ background:linear-gradient(transparent calc(50% - 1px),#fff0bc calc(50% - 1px),#fff0bc calc(50% + 1px),transparent calc(50% + 1px)),
+ linear-gradient(90deg,transparent calc(50% - 1px),#fff0bc calc(50% - 1px),#fff0bc calc(50% + 1px),transparent calc(50% + 1px));opacity:.78}
+@keyframes mb-pin-breathe{0%,100%{opacity:.79;transform:translate(-50%,-50%) scale(.94)}
+ 50%{opacity:1;transform:translate(-50%,-50%) scale(1.04)}}
+.mb-yw2 .mb-status-marker{
+ position:absolute;z-index:6;right:2px;top:32px;min-width:20px;height:20px;
+ display:grid;place-items:center;border:2px solid #f7f5d8;border-radius:8px;
+ font-weight:1000;font-size:15px;line-height:1;pointer-events:none;text-shadow:0 1px #10102077}
+.mb-yw2 .mb-status-bad{background:#853a9d;color:#ffe6ff;box-shadow:0 0 7px #b843daaa}
+.mb-yw2 .mb-status-good{background:#378c68;color:#dcffdf;box-shadow:0 0 7px #7aeec1aa}
+@media(max-width:680px){
+ .mb-yw2 .mb-special-flare{grid-template-columns:42% 1fr;gap:4px;padding:6px 9px}
+ .mb-yw2 .mb-special-copy small{font-size:12px}
+ .mb-yw2 .mb-special-copy span{font-size:19px}
+ .mb-yw2 .mb-special-portrait .mb-character-art{max-height:135px}
+ .mb-yw2 .mb-pin-reticle{width:42px;height:42px;top:24px}
+ .mb-yw2 .mb-status-marker{right:-2px;top:25px;font-size:12px;min-width:17px;height:17px}
+}
+@media(prefers-reduced-motion:reduce){
+ .mb-yw2 .mb-special-flare:before,.mb-yw2 .mb-special-portrait,
+ .mb-yw2 .mb-pin-reticle{animation:none!important}
+}
+
+/* Engine V3-4-24: the 6 existing rental effects have distinct cut-in and
+   field-impact treatments, derived from the rental move master. No original
+   3DS frames or unverified hit count are encoded by these effects. */
+.mb-yw2 .mb-special-flare[data-treatment="strike"] .mb-special-cutin-lines{
+ transform:skewY(-9deg) rotate(-3deg)}
+.mb-yw2 .mb-special-flare[data-treatment="siphon"] .mb-special-cutin-lines{
+ border-radius:44%;transform:rotate(13deg) scale(.89)}
+.mb-yw2 .mb-special-flare[data-treatment="rally"] .mb-special-cutin-lines{
+ transform:skewY(8deg);border-top-style:double;border-bottom-width:6px}
+.mb-yw2 .mb-special-flare[data-treatment="storm"] .mb-special-cutin-lines{
+ transform:rotate(-12deg);border-left:5px solid var(--special-accent)}
+.mb-yw2 .mb-special-flare[data-treatment="renew"] .mb-special-cutin-lines{
+ transform:rotate(0);border-radius:50%;border-left:3px solid var(--special-accent);
+ border-right:3px solid var(--special-accent)}
+.mb-yw2 .mb-special-flare[data-treatment="suppress"] .mb-special-cutin-lines{
+ transform:skewY(12deg) scale(.86);border-bottom-width:7px}
+.mb-yw2 .mb-special-impact-style{
+ position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;
+ --impact:#f8c58e;--impact-soft:#f4bd7440;
+ background:radial-gradient(ellipse at 50% 50%,var(--impact-soft),transparent 65%);
+ animation:mb-special-impact-glow .38s ease-out both}
+.mb-yw2 .mb-special-impact-style[hidden]{display:none!important}
+.mb-yw2 .mb-special-impact-style i{
+ position:absolute;left:50%;top:50%;width:38%;height:23%;
+ display:block;border:4px solid var(--impact);border-radius:50%;
+ box-shadow:0 0 17px var(--impact);transform:translate(-50%,-50%);
+ opacity:.8;animation:mb-special-impact-ripple .52s ease-out both}
+.mb-yw2 .mb-special-impact-style i:nth-child(2){animation-delay:.10s}
+.mb-yw2 .mb-special-impact-style i:nth-child(3){animation-delay:.20s}
+.mb-yw2 .mb-special-impact-style[data-treatment="strike"]{
+ --impact:#ffe1a1;--impact-soft:#ef6b314d;
+ background:repeating-linear-gradient(133deg,transparent 0 40px,#ffd69b55 42px 48px,transparent 50px 86px)}
+.mb-yw2 .mb-special-impact-style[data-treatment="strike"] i{
+ height:3px;width:65%;border-radius:0;border-top:0;border-bottom-width:4px;
+ transform:translate(-50%,-50%) rotate(-23deg)}
+.mb-yw2 .mb-special-impact-style[data-treatment="siphon"]{
+ --impact:#aeffe1;--impact-soft:#21887870;
+ background:radial-gradient(ellipse at center,#82f9d574,#173c5e26 45%,transparent 70%)}
+.mb-yw2 .mb-special-impact-style[data-treatment="siphon"] i{
+ width:21%;height:70%;border-style:dashed;transform:translate(-50%,-50%) rotate(24deg)}
+.mb-yw2 .mb-special-impact-style[data-treatment="rally"]{
+ --impact:#f9e49c;--impact-soft:#a9df7663;
+ background:linear-gradient(0deg,#c9f5a74b,transparent 73%)}
+.mb-yw2 .mb-special-impact-style[data-treatment="rally"] i{
+ width:24%;height:55%;border-radius:2px;transform:translate(-50%,-50%) rotate(45deg)}
+.mb-yw2 .mb-special-impact-style[data-treatment="storm"]{
+ --impact:#abeaff;--impact-soft:#487de168;
+ background:repeating-conic-gradient(from 10deg at center,#63bce849 0deg 13deg,transparent 14deg 48deg)}
+.mb-yw2 .mb-special-impact-style[data-treatment="storm"] i{
+ width:36%;height:65%;border-radius:9px;transform:translate(-50%,-50%) skew(-25deg)}
+.mb-yw2 .mb-special-impact-style[data-treatment="renew"]{
+ --impact:#e0ffcf;--impact-soft:#72d8a184;
+ background:radial-gradient(ellipse at 50% 77%,#ddffcc99,transparent 70%)}
+.mb-yw2 .mb-special-impact-style[data-treatment="renew"] i{
+ border-radius:48% 48% 8% 8%;height:55%;width:24%}
+.mb-yw2 .mb-special-impact-style[data-treatment="suppress"]{
+ --impact:#e8c1ff;--impact-soft:#9960c977;
+ background:linear-gradient(180deg,#593b8c88,transparent 80%)}
+.mb-yw2 .mb-special-impact-style[data-treatment="suppress"] i{
+ border-radius:12%;width:58%;height:23%;transform:translate(-50%,-50%) rotate(-8deg)}
+@keyframes mb-special-impact-glow{from{opacity:0}to{opacity:1}}
+@keyframes mb-special-impact-ripple{
+ from{opacity:.93;scale:.55}to{opacity:0;scale:1.45}}
+@media(prefers-reduced-motion:reduce){
+ .mb-yw2 .mb-special-impact-style,.mb-yw2 .mb-special-impact-style i{
+  animation:none!important}
+}
+
+/* V3-4-25: a freshly host-confirmed zero-HP fighter is represented by a
+   blue spirit flame. Rendered from HP, not from an untrusted local KO guess.
+   A subsequent true host reserve change marks the entering member briefly. */
+.mb-yw2 .mb-fighter.mb-ko{opacity:.83}
+.mb-yw2 .mb-ko-wisp{
+ position:relative;width:42px;height:52px;display:block;pointer-events:none;
+ filter:drop-shadow(0 0 8px #42c7ffcc);
+ animation:mb-ko-wisp-float 1.2s ease-in-out infinite alternate}
+.mb-yw2 .mb-ko-wisp:before{
+ content:'';position:absolute;inset:0;
+ background:radial-gradient(ellipse at 50% 74%,#fff 0 13%,#a9fcff 24%,#46d4ff 49%,#1756b6 76%,#343dbb 100%);
+ clip-path:polygon(50% 1%,67% 21%,62% 40%,81% 25%,90% 61%,80% 84%,62% 98%,34% 98%,18% 80%,12% 58%,26% 35%,32% 61%,39% 45%);
+ border-radius:44%}
+.mb-yw2 .mb-ko-wisp:after{
+ content:'';position:absolute;left:26%;top:36%;width:46%;height:48%;
+ background:radial-gradient(ellipse at center,#f3ffff 0,#b7ffff 45%,#88e9ff44 100%);
+ clip-path:polygon(50% 0,82% 40%,91% 80%,50% 100%,10% 81%,17% 35%);
+ border-radius:40%}
+.mb-yw2 .mb-fighter.mb-arriving .mb-fighter-sprite{
+ animation:mb-reserve-arrival .6s cubic-bezier(.12,.7,.24,1) both}
+@keyframes mb-ko-wisp-float{
+ from{transform:translateY(2px) scale(.96)}
+ to{transform:translateY(-4px) scale(1.04)}}
+@keyframes mb-reserve-arrival{
+ from{transform:translateY(27px) scale(.75);opacity:.3}
+ to{transform:translateY(0) scale(1);opacity:1}}
+@media(prefers-reduced-motion:reduce){
+ .mb-yw2 .mb-ko-wisp,.mb-yw2 .mb-fighter.mb-arriving .mb-fighter-sprite{
+  animation:none!important}
+}
+
+
+/* V3-5-7: school Friends iPad touch affordances only.
+   A finger dragging the watch wheel must not begin a page pan; everything
+   outside the wheel remains scrollable in the Google Sites iframe.
+   Research/lab screens retain their existing compact controls. */
+.mb-friends-stage .mb-wheel{
+ touch-action:none;-webkit-user-select:none;user-select:none;
+}
+.mb-friends-stage .mb-wheel-turn button{
+ min-height:44px;padding:8px 9px;touch-action:manipulation;
+}
+.mb-friends-stage .mb-command-footer button{
+ min-height:44px;touch-action:manipulation;
+}
+.mb-friends-stage .mb-modal-surface button{
+ min-height:44px;touch-action:manipulation;
+}

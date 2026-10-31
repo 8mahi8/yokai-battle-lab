@@ -1,0 +1,50 @@
+name: Phase35 build verified direct-paste Google Sites code
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+    paths:
+      - '.github/workflows/phase35-drive-sites-delivery-20261026.yml'
+permissions:
+  contents: write
+jobs:
+  sites-code:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install build dependency
+        run: npm install --no-save --package-lock=false --ignore-scripts esbuild@0.25.12
+      - name: Run all battle engine tests
+        run: node --test tests/*.test.mjs
+      - name: Build normal Supabase configured code, never QA variant
+        run: |
+          node tools/build-sites-supabase.mjs --public-config
+          node --input-type=module <<'EOF'
+          import assert from 'node:assert/strict';
+          import {readFileSync,statSync} from 'node:fs';
+          const s=readFileSync('dist/sites-supabase-online-code.html','utf8');
+          assert.ok(s.length>140000&&s.length<450000);
+          assert.match(s,/sb_publishable_/);
+          assert.match(s,/yw-online-make/);
+          assert.match(s,/mb-finish-screen/);
+          assert.match(s,/skillBoosts/);
+          assert.doesNotMatch(s,/QA-ONLY-NEVER-DEPLOY|yw-online-qa-finish|sb_secret_|service_role/);
+          console.log('DELIVERY-GATE-PASS codeChars='+s.length+' bytes='+statSync('dist/sites-supabase-online-code.html').size);
+          EOF
+      - name: Commit two paste-ready plain files to a delivery-only branch
+        run: |
+          git switch -c release/sites-paste-20261026-phase34b
+          mkdir -p delivery
+          cp dist/sites-supabase-online-code.html delivery/YW2_Battle_2026-10-26_Sites_PASTE.txt
+          cp dist/sites-supabase-online-code.html delivery/YW2_Battle_2026-10-26_Sites_PASTE.html
+          cmp delivery/YW2_Battle_2026-10-26_Sites_PASTE.txt delivery/YW2_Battle_2026-10-26_Sites_PASTE.html
+          git add -f delivery/YW2_Battle_2026-10-26_Sites_PASTE.txt delivery/YW2_Battle_2026-10-26_Sites_PASTE.html
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'build: paste-ready Phase34-B Sites HTML and TXT [skip ci]'
+          git push origin HEAD:refs/heads/release/sites-paste-20261026-phase34b
+          echo 'DELIVERY-COMMIT-PASS'

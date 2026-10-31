@@ -1,0 +1,23 @@
+name: Phase25 one-shot real Supabase 1v1 QA
+# Archived Supabase-only QA from the pre-Firebase school design.
+# Historical workflows remain for audit; NEVER run on current dev pushes.
+# Active friends online QA uses .github/workflows/phase37-firebase-friends.yml.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-once:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pin Supabase JS for isolated real two-user test
+        run: npm install --no-save --package-lock=false --ignore-scripts @supabase/supabase-js@2.57.0
+      - name: Check real-world host/guest anonymous Auth + RLS + ACK + auto
+        env:
+          YW_SUPABASE_LIVE_QA_APPROVED: '1'
+        run: node tools/supabase-live-one-shot.mjs

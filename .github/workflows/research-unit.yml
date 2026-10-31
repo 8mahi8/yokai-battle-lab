@@ -1,0 +1,43 @@
+name: Research battle unit tests
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+  # Connector run lookup currently lists PR-triggered runs only.
+  # Read-only PR checks make V3 regression status independently auditable;
+  # the original push and manual triggers stay untouched.
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'engine/**'
+      - 'content/**'
+      - 'tests/**'
+      - 'tools/normal-match-endurance.mjs'
+      - 'tools/browser-smoke.mjs'
+      - '.github/workflows/research-unit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout test branch
+        uses: actions/checkout@v4
+      - name: Report Node runtime
+        run: node --version
+      - name: Validate core JavaScript
+        run: |
+          node --check engine/phase1.mjs
+          node --check engine/combat.mjs
+          node --check engine/selection.mjs
+          node --check engine/inspirit.mjs
+          node --check engine/soul.mjs
+      - name: Run repository tests
+        run: node --test tests/*.test.mjs
+      - name: Measure natural six-rental endurance without altering combat values
+        run: node tools/normal-match-endurance.mjs
+      - name: Render real browser research UI
+        run: node tools/browser-smoke.mjs

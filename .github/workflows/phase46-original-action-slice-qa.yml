@@ -1,0 +1,59 @@
+name: Phase46 original-inspired action slice acceptance
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+    paths:
+      - '.github/workflows/phase46-original-action-slice-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Full battle and presentation unit tests
+        run: node --test tests/*.test.mjs
+      - name: Four real six-unit battle endings
+        run: node tools/normal-match-endurance.mjs
+      - name: Japanese font for truthful visual review
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-noto-cjk
+      - name: Full real Chromium touch stage and before-after screenshots
+        run: node tools/stage-smoke.mjs
+      - name: Compile friend-only Firebase Google Sites code
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts esbuild@0.25.12
+          node tools/build-sites-online.mjs --friends
+      - name: Check stable event-id adapter, animation phase and no-Auth output
+        run: |
+          node --input-type=module <<'EOF'
+          import assert from 'node:assert/strict';
+          import {readFileSync,statSync} from 'node:fs';
+          const html=readFileSync('dist/sites-online-friends-code.html','utf8');
+          assert.ok(statSync('dist/sites-online-friends-code.html').size>180000);
+          for(const key of ['mygame-df915-default-rtdb.firebaseio.com','yokaiRoomsV1',
+            'mb-action-callout','scenePhase','mb-windup-magic',
+            'firebase-app-compat.js','firebase-database-compat.js'])
+            assert.ok(html.includes(key),'missing '+key);
+          assert.doesNotMatch(html,/firebase-auth-compat\.js|signInAnonymously\(/);
+          assert.doesNotMatch(html,/supabase\.co|sb_secret_|service_role/);
+          console.log('PHASE46-ACCEPTANCE-FRIENDS-SITES-PASS');
+          EOF
+      - name: Keep screenshot evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase46-action-motions-real-chromium
+          path: |
+            phase46-action-windup.png
+            phase46-action-impact.png
+            phase16-ipad-landscape-preview.png
+            phase17-special-cutin-preview.png
+          if-no-files-found: ignore

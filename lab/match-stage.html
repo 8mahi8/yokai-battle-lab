@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>輪戦｜本来の戦闘エンジンを使う開発画面</title>
+<link rel="stylesheet" href="./match-stage.css">
+<link rel="stylesheet" href="./yw2-layout.css">
+<style>
+#stage-lab-bar{background:#243142;padding:8px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:11px;color:#b9cbd9;border-bottom:1px solid #506073}
+#stage-lab-bar strong{color:#f8e1b6}#stage-lab-bar button{background:#486583;color:white;border:1px solid #7694af;border-radius:6px;padding:6px}
+#stage-lab-bar button[aria-pressed="true"]{background:#8b6b48}
+</style>
+</head>
+<body>
+<div id="stage-lab-bar">
+<strong>PHASE 14 / 本来の戦闘エンジン</strong>
+<span>1ブラウザ2席操作で画面とルールを検証。オンラインではありません。</span>
+<button id="restart" type="button">新しいバトル</button>
+<button id="auto" type="button" aria-pressed="false">自動行動 OFF</button>
+<span id="lab-state"></span>
+</div>
+<div id="battle-stage"></div>
+<script type="module">
+import {createMatchProtocol} from '../engine/match-protocol.mjs';
+import {createCombat,RENTAL_SQUAD} from '../engine/combat.mjs';
+import {createMatchStage} from '../ui/match-stage.mjs';
+import {projectKoViewChange} from '../ui/ko-view-transition.mjs';
+import {passiveSkillNoticesForAction} from '../ui/passive-feedback.mjs';
+const el=id=>document.getElementById(id);
+let protocol=null,autoTimer=null;
+function begin(){
+ protocol=createMatchProtocol({battleOptions:{seed:20261024,
+  researchSoulRecoveryMode:'owner-nonattack',
+  // Geometry-only Chromium gestures can repeat immediately. The real Friends
+  // match still uses the original-style 3000ms host wheel cooldown.
+  ...(new URL(location.href).searchParams.get('review')==='stage-gesture-lab'?{rotationCooldownMs:0}:{})}});
+ stage.render(protocol.snapshot());stage.alert('戦闘準備完了。A / B の操作を切り替えて確認できます。');
+}
+function action(side,command){
+ const s=protocol.snapshot(),sequence=s.clientSequences[side]+1;
+ const receipt=protocol.dispatch(side,sequence,command);
+ if(receipt.accepted)stage.render(protocol.snapshot());
+ return receipt;
+}
+function step(){
+ const result=protocol.advanceAuto();
+ if(result.ok)stage.render(protocol.snapshot());
+ return result;
+}
+const stage=createMatchStage({element:el('battle-stage'),onAction:action,
+ onStep:step,onError:error=>{el('lab-state').textContent=error.message;},
+ // Source timing is not known: this is an isolated visual acceptance lab,
+ // NOT the default offline/school Friends ruleset.
+ researchOpponentVisibility:['seat-motion-v3','seat-motion-gap-v3'].includes(
+  new URL(location.href).searchParams.get('review'))});
+stage.setConnection('LOCAL 2-SEAT');
+el('restart').addEventListener('click',begin);
+el('auto').addEventListener('click',()=>{
+ if(autoTimer!==null){clearInterval(autoTimer);autoTimer=null;}
+ else autoTimer=setInterval(()=>{
+  if(protocol.snapshot().game.winner!==null){
+   clearInterval(autoTimer);autoTimer=null;el('auto').setAttribute('aria-pressed','false');
+   el('auto').textContent='自動行動 OFF';return;
+  }
+  step();
+ },1250);
+ const enabled=autoTimer!==null;
+ el('auto').setAttribute('aria-pressed',String(enabled));
+ el('auto').textContent=enabled?'自動行動 ON':'自動行動 OFF';
+});
+begin();
+const review=new URL(location.href).searchParams.get('review');
+if(review==='full-match-v3'){
+ // V3-4-26: real authoritative 6-vs-6 host and two fixed browser seats.
+ // Original-facing checkpoints: active 3/6, KO, true reserve swap,
+ // finishing hit BEFORE result and a fresh guest after match completion.
+ const check=(test,reason)=>{if(!test)throw Error(reason);};
+ const fixture=strong=>RENTAL_SQUAD.map(u=>({...u,
+  maxHp:strong?420:85,strength:strong?570:10,spirit:strong?310:10,
+  defense:strong?180:25,attackPower:strong?175:18,
+  techniquePower:strong?100:10,technique:'damage',
+  weights:[100,0,0,0],attackAccuracy:4}));
+ const host=createMatchProtocol({battleOptions:{seed:20261026,
+  teams:[fixture(true),fixture(false)],playtestSoulTuning:true,
+  rotationCooldownMs:3000},hostNowMs:()=>10000});
+ const frameRoot=(name)=>{
+  const node=document.createElement('div');
+  node.id=name;node.style.cssText='position:absolute;left:-12000px;width:990px';
+  document.body.append(node);return node;
+ };
+ const rootA=frameRoot('full-a'),rootB=frameRoot('full-b'),
+  lateRoot=frameRoot('full-late');
+ const seatA=createMatchStage({element:rootA,seat:0,onAction:()=>({accepted:false})}),
+  seatB=createMatchStage({element:rootB,seat:1,onAction:()=>({accepted:false})}),
+  lateB=createMatchStage({element:lateRoot,seat:1,onAction:()=>({accepted:false})});
+ let checkTimer=null,completed=false;
+ function cleanup(){clearInterval(checkTimer);seatA.destroy();seatB.destroy();
+  lateB.destroy();rootA.remove();rootB.remove();lateRoot.remove();}
+ try{
+  const initial=host.snapshot();
+  seatA.render(initial);seatB.render(initial);
+  check(rootA.querySelectorAll('#mb-foe-line .mb-fighter').length===3&&
+   rootA.querySelectorAll('#mb-team0 .mb-creature').length===6,
+   'opening 3 active opponents / 6 own wheel medals missing');
+  check(rootB.querySelectorAll('#mb-foe-line .mb-fighter').length===3&&
+   rootB.querySelectorAll('#mb-team1 .mb-creature').length===6,
+   'second player opening ring/field differs from original 3/6 layout');
+  let confirmedKO=0,confirmedReserve=0,actions=0;
+  for(let i=0;i<200&&host.snapshot().game.winner===null;i++){
+   const before=host.snapshot(),receipt=host.advanceAuto();
+   check(receipt.ok&&receipt.result?.type==='action','real host action stalled');
+   const after=host.snapshot();
+   const oldView={revision:before.revision,events:before.game.events,
+    teams:[0,1].map(side=>({side,
+     frontIds:before.game.clock.teams[side].frontIds,members:before.game.squads[side]}))};
+   const newView={revision:after.revision,events:after.game.events,
+    teams:[0,1].map(side=>({side,
+     frontIds:after.game.clock.teams[side].frontIds,members:after.game.squads[side]}))};
+   const changes=projectKoViewChange(oldView,newView);
+   confirmedKO+=changes.knockouts.length;
+   confirmedReserve+=changes.arrivals.length;
+   actions++;
+   // Actual host snapshots go through BOTH genuine DOM stage renderers.
+   seatA.render(after);seatB.render(after);
+  }
+  const final=host.snapshot();
+  check(final.game.winner===0,'real host never reached a winner');
+  check(final.game.squads[1].every(u=>u.hp===0),
+   'final opponent six KOs were not committed by the host');
+  check(actions>6&&confirmedKO>=1&&confirmedReserve>=1,
+   'full match did not contain actual KO and reserve action transitions');
+  check(rootA.dataset.matchFinished==='true'&&rootB.dataset.matchFinished==='true',
+   'both seats did not receive canonical match finish');
+  check(rootA.querySelector('#mb-finish-screen').hidden&&
+   rootB.querySelector('#mb-finish-screen').hidden,
+   'result covered the lethal host hit before choreography');
+  check(seatA.getStatus().sceneEventKey&&seatB.getStatus().sceneEventKey,
+   'final match update never entered a visible action scene');
+
+  // Same final snapshot, but joining AFTER the game should not replay stale
+  // attacks: result is visible immediately for a late/reconnected client.
+  lateB.render(final);
+  check(!lateRoot.querySelector('#mb-finish-screen').hidden,
+   'late join after ended match should show result immediately');
+  check(lateRoot.querySelector('#mb-finish-title').textContent==='敗北…',
+   'late guest received the wrong final result');
+  check(lateB.getStatus().sceneEventKey===null,
+   'late join replayed a past attack');
+
+  const lastAction=final.game.events.filter(e=>e.type==='action').at(-1);
+  const finalScene='event:'+lastAction.eventId;
+  let sawFinalImpact=false,sawKOFlame=false,earlyResult=false,ticks=0;
+  checkTimer=setInterval(()=>{
+   if(completed)return;
+   try{
+    ticks++;
+    for(const [node,seat] of [[rootA,seatA],[rootB,seatB]]){
+     const current=seat.getStatus().sceneEventKey;
+     const backdrop=node.querySelector('.mb-battle-backdrop');
+     if(current===finalScene&&backdrop.dataset.scenePhase==='impact'){
+      sawFinalImpact=true;
+      if(node.querySelector('.mb-ko-wisp'))sawKOFlame=true;
+     }
+     if(current&& !node.querySelector('#mb-finish-screen').hidden)
+      earlyResult=true;
+    }
+    const resultA=rootA.querySelector('#mb-finish-screen');
+    const resultB=rootB.querySelector('#mb-finish-screen');
+    if(!resultA.hidden&&!resultB.hidden){
+     check(!earlyResult,'final result appeared during unresolved action cue');
+     check(sawFinalImpact,'the last confirmed attack was not shown');
+     check(sawKOFlame,'KO blue flame never appeared during lethal hit');
+     check(seatA.getStatus().sceneEventKey===null&&
+      seatB.getStatus().sceneEventKey===null,
+      'result visible while an animation is still running');
+     check(rootA.querySelector('#mb-finish-title').textContent==='勝利！'&&
+      rootB.querySelector('#mb-finish-title').textContent==='敗北…',
+      'opposite seats must show consistent winning/losing labels');
+     check(rootA.querySelector('#mb-turn').textContent===String(final.game.clock.turn)&&
+      rootB.querySelector('#mb-turn').textContent===String(final.game.clock.turn),
+      'players disagree on the final host turn');
+     completed=true;
+     el('lab-state').textContent='V3-4-26-FULL-MATCH-DOM-PASS '+actions+
+      ' host actions '+confirmedKO+' observed KO '+confirmedReserve+' reserve changes';
+     cleanup();
+    }else if(ticks>125){
+     throw Error('host winner scene did not finish and reveal result in 12.5s');
+    }
+   }catch(error){
+    completed=true;
+    el('lab-state').textContent='V3-4-26-FULL-MATCH-DOM-FAIL '+error.message;
+    cleanup();
+   }
+  },100);
+ }catch(error){
+  completed=true;
+  el('lab-state').textContent='V3-4-26-FULL-MATCH-DOM-FAIL '+error.message;
+  cleanup();
+ }
+}
+if(review==='ko-phase-v3'){
+ // V3-4-25: real seeded host, never injected fake HP or a local KO event.
+ const check=(ok,message)=>{if(!ok)throw Error(message);};
+ const sideSquad=strong=>RENTAL_SQUAD.map(u=>({...u,
+  maxHp:strong?420:85,strength:strong?570:10,spirit:strong?310:10,
+  defense:strong?180:25,attackPower:strong?175:18,
+  techniquePower:strong?100:10,technique:'damage',
+  weights:[100,0,0,0],attackAccuracy:4}));
+ const host=createMatchProtocol({battleOptions:{seed:20261026,
+  teams:[sideSquad(true),sideSquad(false)],rotationCooldownMs:3000,
+  playtestSoulTuning:true},hostNowMs:()=>10000});
+ let knockout=null,arrival=null;
+ for(let n=0;n<200&&host.snapshot().game.winner===null;n++){
+  const before=host.snapshot();host.advanceAuto();
+  const after=host.snapshot();
+  const result=projectKoViewChange(
+   {revision:before.revision,events:before.game.events,
+    teams:[0,1].map(i=>({side:i,frontIds:before.game.clock.teams[i].frontIds,
+     members:before.game.squads[i]}))},
+   {revision:after.revision,events:after.game.events,
+    teams:[0,1].map(i=>({side:i,frontIds:after.game.clock.teams[i].frontIds,
+     members:after.game.squads[i]}))});
+  if(!knockout&&result.knockouts.some(x=>x.side===1))
+   knockout={before,after,row:result.knockouts.find(x=>x.side===1)};
+  if(!arrival&&result.arrivals.some(x=>x.side===1))
+   arrival={before,after,row:result.arrivals.find(x=>x.side===1)};
+ }
+ const root=document.createElement('div'),reentryRoot=document.createElement('div');
+ root.style.cssText='position:absolute;left:-10000px;width:990px';
+ reentryRoot.style.cssText=root.style.cssText;
+ document.body.append(root,reentryRoot);
+ const matchStage=createMatchStage({element:root,seat:0,
+  onAction:()=>({accepted:false})});
+ const returnStage=createMatchStage({element:reentryRoot,seat:0,
+  onAction:()=>({accepted:false})});
+ try{
+  check(knockout&&arrival,'real host did not produce KO + reserve on this seed; observed KO='+!!knockout+' arrival='+!!arrival);
+  matchStage.render(knockout.before);
+  check(!root.querySelector('#mb-foe-line [data-unit="'+knockout.row.id+'"] .mb-ko-wisp'),
+   'a live fighter had a KO flame');
+  matchStage.render(knockout.after);
+  check(!root.querySelector('#mb-foe-line [data-unit="'+knockout.row.id+'"] .mb-ko-wisp'),
+   'KO visual appeared before the actual hit impact frame');
+  returnStage.render(arrival.before);
+  returnStage.render(arrival.after);
+  const arriving=reentryRoot.querySelector(
+   '#mb-foe-line [data-unit="'+arrival.row.ids[0]+'"]');
+  check(arriving?.classList.contains('mb-arriving'),
+   'host-confirmed reserve newcomer has no entrance animation');
+  const left=arrival.before.game.clock.teams[1].frontIds;
+  check(left.every(id=>arrival.before.game.squads[1]
+   .find(u=>u.id===id).hp===0),'reserve animation shown before full front KO');
+  setTimeout(()=>{
+   try{
+    const affected=root.querySelector(
+     '#mb-foe-line [data-unit="'+knockout.row.id+'"]');
+    check(affected?.classList.contains('mb-ko'),
+     'KO not reflected by canonical staged HP during impact');
+    check(affected.querySelector('.mb-ko-wisp'),
+     'blue KO spirit missing after authoritative strike impact');
+    check(knockout.after.game.squads[1].find(u=>u.id===knockout.row.id).hp===0,
+     'KO visual contradicted real host');
+    el('lab-state').textContent='V3-4-25-KO-RESERVE-DOM-PASS';
+   }catch(error){el('lab-state').textContent='V3-4-25-KO-RESERVE-DOM-FAIL '+error.message;}
+   finally{matchStage.destroy();returnStage.destroy();root.remove();reentryRoot.remove();}
+  },1000);
+ }catch(error){
+  el('lab-state').textContent='V3-4-25-KO-RESERVE-DOM-FAIL '+error.message;
+  matchStage.destroy();returnStage.destroy();root.remove();reentryRoot.remove();
+ }
+}
+if(review==='seat-motion-gap-v3'){
+ // The remote guest misses an action snapshot and receives a later host
+ // snapshot AFTER the opponent has rotated: no causally trustworthy motion
+ // baseline remains. This is a research-only receive-lag fixture.
+ const fail=e=>{el('lab-state').textContent='V3-4-21-GAP-FAIL '+e.message;};
+ try{
+  const check=(ok,message)=>{if(!ok)throw Error(message);};
+  stage.selectSeat(1);
+  check(protocol.snapshot().revision===0,'wrong starting revision');
+  check(protocol.advanceAuto().ok,'auto action missing');
+  const rotate=protocol.dispatch(0,1,{type:'rotate',direction:1});
+  check(rotate.accepted&&rotate.result?.ok!==false,'host rotate rejected');
+  check(protocol.snapshot().revision===2,'host did not commit both revisions');
+  // Skip revision 1: guest B only receives revision 2. Previous FIFO stage
+  // view was revision 0, so a full 1700ms old-wheel hold would be false.
+  stage.render(protocol.snapshot());
+  const receipt=stage.getStatus().motionDelivery;
+  check(receipt?.reason==='revision_gap'&&receipt.revisionGap===2,
+   'guest did not recognize missed host snapshot');
+  check(!stage.getStatus().opponentVisibility.blocked,
+   'stale opponent wheel should not be frozen after a revision gap');
+  const ids=[...el('battle-stage').querySelectorAll('#mb-foe-line [data-unit]')]
+   .map(x=>x.dataset.unit).join(',');
+  check(ids==='A2,A3,A4','guest did not immediately show actual new host front: '+ids);
+  check(protocol.snapshot().game.clock.teams[0].frontIds.join(',')===ids,
+   'rendered enemy wheel does not match the host');
+  el('lab-state').textContent='V3-4-21-GAP-PASS';
+ }catch(error){fail(error);}
+}
+if(review==='seat-motion-v3'){
+ // V3-4-20: two actual DOM seats and the same authoritative protocol.
+ // B rotates DURING an A/B visible combat motion. Host + B should change
+ // immediately while A's opponent display remains at the pre-motion front.
+ const peerRoot=document.createElement('div');
+ peerRoot.id='seat-motion-peer';
+ peerRoot.style.cssText='position:absolute;left:-10000px;width:1100px;height:740px';
+ document.body.appendChild(peerRoot);
+ const peer=createMatchStage({element:peerRoot,seat:1,
+  researchOpponentVisibility:true,onAction:()=>({accepted:false})});
+ const fail=error=>{el('lab-state').textContent='V3-4-20-SEAT-FAIL '+error.message;
+  peer.destroy();peerRoot.remove();};
+ try{
+  peer.render(protocol.snapshot());
+  const check=(ok,message)=>{if(!ok)throw Error(message);};
+  check([...el('battle-stage').querySelectorAll('#mb-foe-line [data-unit]')]
+   .map(x=>x.dataset.unit).join(',')==='B1,B2,B3','initial enemy front');
+  check(protocol.advanceAuto().ok,'host auto action failed');
+  stage.render(protocol.snapshot());peer.render(protocol.snapshot());
+  check(stage.getStatus().opponentVisibility?.blocked,'A visual motion not started');
+  check(peer.getStatus().opponentVisibility?.blocked,'B visual motion not started');
+  const rotation=protocol.dispatch(1,1,{type:'rotate',direction:1});
+  check(rotation.accepted&&rotation.result?.ok!==false,'B host rotation rejected');
+  const hostFront=protocol.snapshot().game.clock.teams[1].frontIds;
+  check(hostFront.join(',')==='B2,B3,B4','host B front must change immediately');
+  stage.render(protocol.snapshot());peer.render(protocol.snapshot());
+  const front=(root,selector)=>[...root.querySelectorAll(selector)]
+   .map(x=>x.dataset.unit).join(',');
+  check(front(el('battle-stage'),'#mb-foe-line [data-unit]')==='B1,B2,B3',
+   'A saw the new opponent wheel DURING motion');
+  check(front(peerRoot,'#mb-ally-line [data-unit]')==='B2,B3,B4',
+   'B own wheel did not update immediately');
+  check(el('battle-stage').querySelector('.mb-battle-backdrop').dataset
+   .opponentViewBlocked==='true','A visual delay not active');
+  el('lab-state').textContent='V3-4-20-SEAT-BLOCKED';
+  setTimeout(()=>{
+   try{
+    check(front(el('battle-stage'),'#mb-foe-line [data-unit]')==='B2,B3,B4',
+     'A opponent wheel did not unlock after motion');
+    check(el('battle-stage').querySelector('.mb-battle-backdrop').dataset
+     .opponentViewBlocked==='false','A visual delay stuck');
+    check(protocol.snapshot().game.clock.teams[1].frontIds.join(',')==='B2,B3,B4',
+     'visual updates changed canonical front');
+    // A fresh game has eventId=0. Old FIFO/motion locks cannot leak from the
+    // previous battle even if it is restarted DURING a newer animation.
+    check(protocol.advanceAuto().ok,'second real motion failed');
+    stage.render(protocol.snapshot());
+    check(stage.getStatus().opponentVisibility.blocked,
+     'new motion lock not present before restart');
+    begin(); // new host round; canonical first front restored
+    check(!stage.getStatus().opponentVisibility.blocked,
+     'old opponent lock survived a brand-new match');
+    check(front(el('battle-stage'),'#mb-foe-line [data-unit]')==='B1,B2,B3',
+     'new match did not show its own fresh opponent front');
+    el('lab-state').textContent='V3-4-20-SEAT-ROUNDTRIP-PASS';
+   }catch(error){el('lab-state').textContent='V3-4-20-SEAT-FAIL '+error.message;}
+   finally{peer.destroy();peerRoot.remove();}
+  },3100);
+ }catch(error){fail(error);}
+}
+if(review==='purify-e1'){
+ // Research ONLY: use real combat rules, with a deterministic bench Inspirit
+ // injected by the lab. The player must still perform real touch gestures,
+ // and the host must clear the actual status before a finish can be shown.
+ const host=createCombat({seed:22});
+ host.applyInspirit({id:'A4',sign:'negative',effect:'sleep'});
+ let revision=0,processed=0;
+ protocol={
+  snapshot:()=>({game:host.snapshot(),revision,
+   clientSequences:[processed,0],forecast:[]}),
+  dispatch:(side,seq,cmd)=>{
+   if(side!==0||seq!==processed+1)throw Error('purify lab command sequence');
+   let result;
+   if(cmd.type==='purifyStart')
+    result=host.beginPurify(side,cmd.id,{kind:'mash'});
+   else if(cmd.type==='purifyInput')
+    result=host.purifyInput(side,cmd.gesture);
+   else if(cmd.type==='purifyCancel')result=host.cancelPurify(side);
+   else throw Error('unexpected purify E1 command '+cmd.type);
+   processed++;revision++;
+   return {accepted:true,ok:result.ok,side,clientSeq:seq,result};
+  },
+  advanceAuto:()=>{
+   const action=host.step();
+   revision++;
+   return {ok:action.type==='action',action};
+  }
+ };
+ stage.render(protocol.snapshot());
+ const pick=selector=>el('battle-stage').querySelector(selector);
+ const assert=(value,label)=>{if(!value)throw Error(label);};
+ try{
+  assert(pick('#mb-purify-complete').hidden,'finish shown before input');
+  assert(host.snapshot().inspirits.A4.some(x=>x.sign==='negative'),
+   'fixture failed to infect rear medal');
+  // Separate online-style fixed B viewpoint: A's purification must never
+  // leak a completion banner to the opponent's lower touch screen.
+  const peerRoot=document.createElement('div');
+  peerRoot.style.cssText='position:absolute;left:-12000px;width:1100px';
+  document.body.appendChild(peerRoot);
+  const peer=createMatchStage({element:peerRoot,seat:1,
+   onAction:()=>({ok:false,reason:'qa_read_only'})});
+  peer.render(protocol.snapshot());
+  pick('#mb-purify').click();
+  pick('#mb-team0 [data-unit="A4"]').click();
+  assert(host.snapshot().purification[0]?.challenge.kind==='mash',
+   'actual host purification did not start');
+  const upper=pick('.mb-upper-screen'),lower=pick('.mb-lower-screen'),
+   modal=pick('#mb-modal');
+  assert(!modal.hidden,'purification input absent');
+  const u=upper.getBoundingClientRect(),
+   l=lower.getBoundingClientRect(),m=modal.getBoundingClientRect();
+  assert(u.height>180&&l.height>170,'battle or touch screen missing');
+  assert(m.top>=l.top-2&&m.bottom<=l.bottom+2&&m.top>=u.bottom-1,
+   'gesture overlays the original upper battle field');
+  assert(pick('#mb-foe-line .mb-fighter')!==null&&
+   pick('#mb-ally-line .mb-fighter')!==null,
+   'upper fighters gone while purification happens');
+  for(let n=0;n<13;n++){
+   const pad=pick('#mb-touch-pad'),rect=pad.getBoundingClientRect();
+   const x=rect.left+rect.width/2,y=rect.top+rect.height/2;
+   pad.dispatchEvent(new PointerEvent('pointerdown',{
+    bubbles:true,cancelable:true,pointerId:201+n,button:0,
+    pointerType:'touch',clientX:x,clientY:y}));
+   pad.dispatchEvent(new PointerEvent('pointerup',{
+    bubbles:true,cancelable:true,pointerId:201+n,button:0,
+    pointerType:'touch',clientX:x,clientY:y}));
+  }
+  assert(host.snapshot().purification[0]!==null,
+   'partial tap count falsely completed');
+  assert(pick('#mb-purify-complete').hidden,
+   'partial/queued touch falsely displayed completion');
+  // The battlefield may update while the player is touching the lower screen.
+  const action=protocol.advanceAuto();
+  if(action.ok)stage.render(protocol.snapshot());
+  assert(!pick('#mb-modal').hidden,'upper auto action ended active lower touch');
+  const pad=pick('#mb-touch-pad'),rect=pad.getBoundingClientRect();
+  const x=rect.left+rect.width/2,y=rect.top+rect.height/2;
+  pad.dispatchEvent(new PointerEvent('pointerdown',{
+   bubbles:true,cancelable:true,pointerId:250,button:0,
+   pointerType:'touch',clientX:x,clientY:y}));
+  pad.dispatchEvent(new PointerEvent('pointerup',{
+   bubbles:true,cancelable:true,pointerId:250,button:0,
+   pointerType:'touch',clientX:x,clientY:y}));
+  const state=host.snapshot(),done=state.events.findLast(e=>e.type==='purification');
+  assert(done&&done.side===0&&done.targetId==='A4'&&done.removed.length>0,
+   'host failed to emit actual purification completion');
+  assert(state.inspirits.A4.length===0,'actual negative status not cleared');
+  peer.render(protocol.snapshot());
+  assert(peerRoot.querySelector('#mb-purify-complete').hidden,
+   'opponent screen leaked another players purification finish');
+  peer.destroy();peerRoot.remove();
+  assert(pick('#mb-modal').hidden,'touch modal did not release lower screen');
+  const finish=pick('#mb-purify-complete');
+  assert(!finish.hidden&&finish.textContent.includes('おはらい完了！'),
+   'real host completion missing lower finish');
+  assert(finish.dataset.eventId===String(done.eventId??state.events.length),
+   'wrong host event identity attached to finish');
+  assert(finish.getBoundingClientRect().top>=lower.getBoundingClientRect().top-2,
+   'finish overlay obscures upper screen');
+  stage.render(protocol.snapshot());
+  assert(!pick('#mb-purify-complete').hidden,'duplicate frame lost finish');
+  // Fresh join/reconnect must not replay an already-finished event.
+  const lateRoot=document.createElement('div');
+  lateRoot.style.cssText='position:absolute;left:-12000px;width:1100px';
+  document.body.appendChild(lateRoot);
+  const late=createMatchStage({element:lateRoot,seat:0,
+   onAction:()=>({ok:false,reason:'qa_read_only'})});
+  late.render(protocol.snapshot());
+  assert(lateRoot.querySelector('#mb-purify-complete').hidden,
+   'a historical purification replayed for a late joiner');
+  late.destroy();lateRoot.remove();
+  setTimeout(()=>{
+   const pass=pick('#mb-purify-complete').hidden&&pick('#mb-modal').hidden&&
+    pick('#mb-team0 .mb-wheel')!==null&&
+    pick('.mb-upper-screen').getBoundingClientRect().height>180;
+   el('lab-state').textContent=pass?
+    'PHASE-E1-REAL-HOST-PURIFY-ROUNDTRIP-PASS':
+    'PHASE-E1-REAL-HOST-PURIFY-ROUNDTRIP-FAIL timeout/restore';
+  },1400);
+ }catch(error){
+  el('lab-state').textContent='PHASE-E1-REAL-HOST-PURIFY-ROUNDTRIP-FAIL '+error.message;
+ }
+}else if(review==='winner-a'||review==='winner-b'){
+ // Result PRESENTATION fixture only: gameplay proof lives in
+ // tests/full-match-playtest-gate.test.mjs. No battle rule is faked.
+ const side=review==='winner-a'?0:1;
+ const winner=0;
+ const state=protocol.snapshot();
+ state.game.winner=winner;
+ for(const member of state.game.squads[1-winner])member.hp=0;
+ for(const member of state.game.clock.teams[1-winner].members)
+  member.canAct=false;
+ if(side===1)stage.selectSeat(1);
+ stage.render(state);
+}else if(review==='passive-skill'){
+ // Real seeded authoritative school-playtest battle with actual skill rules.
+ // Step until the engine itself emits a Skill tied to the latest auto turn;
+ // never fabricate a Skill event or modify the HP/resolved mechanics.
+ protocol=createMatchProtocol({battleOptions:{seed:20261024,
+  playtestSoulTuning:true,enableLoafing:true}});
+ stage.render(protocol.snapshot());
+ let found=false;
+ for(let i=0;i<160;i++){
+  const next=protocol.advanceAuto();
+  if(!next.ok||next.result.type!=='action')break;
+  const snap=protocol.snapshot(),events=snap.game.events;
+  const action=events.filter(e=>e.type==='action').at(-1);
+  const notes=action&&passiveSkillNoticesForAction(events,action.eventId).length>0;
+  if(notes){
+   stage.render(snap);
+   el('lab-state').textContent='REAL-SKILL-REVIEW';
+   found=true;break;
+  }
+ }
+ if(!found)el('lab-state').textContent='NO-REAL-SKILL-IN-SEED';
+}else if(review==='action-motion'){
+ // Actual canonical engine step. Never inject fake combat damage for QA.
+ step();
+}else if(review==='target'){
+ // Local research screenshot fixture only; no network/command dispatch.
+ el('battle-stage').querySelector('#mb-target').click();
+}else if(review==='special'){
+ // Presentation-only QA fixture matching canonical event shape. It does not
+ // grant Soul, resolve real damage, or alter the match engine.
+ const state=protocol.snapshot();
+ state.game.events.push({type:'special',mode:'soultimate',actor:'A1',impacts:[
+  {targetId:'B1',kind:'damage',amount:42},
+  {targetId:'B2',kind:'damage',amount:17},
+  {targetId:'B3',kind:'damage',amount:12}
+ ]});
+ stage.render(state);
+ // QA fixture only: observe rendered foreground damage by target.
+ // Separate visual target-index from verified original multi-hit count.
+ const targetsSeen=[];
+ const observing=setInterval(()=>{
+  const field=el('battle-stage');
+  const index=field.querySelector('.mb-battle-backdrop')?.dataset.specialTargetIndex;
+  if(!index||targetsSeen.includes(index))return;
+  const expected='B'+index;
+  const shown=[...field.querySelectorAll('#mb-foe-line .mb-floating-number')]
+   .map(n=>n.closest('.mb-fighter')?.dataset.unit);
+  targetsSeen.push(shown.length===1&&shown[0]===expected?index:'BAD-'+index);
+  if(targetsSeen.length===3){
+   clearInterval(observing);
+   el('lab-state').textContent=targetsSeen.join(',')==='1,2,3'?
+    'PHASE22-VISUAL-TARGET-ORDER-PASS': 'PHASE22-VISUAL-TARGET-ORDER-FAIL '+targetsSeen.join(',');
+  }
+ },20);
+}else if(review==='real-special-ledger'){
+ // QA-only actual host resolution; unlike the ?review=special fixture,
+ // every HP value and target belongs to the real seeded battle engine.
+ const host=createCombat({seed:20261029,catalogSoultimateResolution:true,
+  researchSpecialEffects:true,researchDamageModel:true,researchStatInspirits:true});
+ host.giveSoul('A1',100);
+ const charge=host.prepareSoultimate(0,'A1');
+ if(!charge.ok)throw Error('real special charge rejected');
+ const result=host.resolveSoultimate(0,charge.token,true);
+ if(!result.ok)throw Error('real special resolution failed');
+ const actual=host.snapshot(),rows=actual.events.findLast(e=>e.type==='special').impacts;
+ stage.render({game:actual,revision:1,clientSequences:[0,0],forecast:[]});
+ const cutin=el('battle-stage').querySelector('#mb-special-flare');
+ if(cutin.hidden||cutin.dataset.treatment!=='strike')
+  throw Error('V3-4-24 real A1 rental cutin did not use strike profile');
+ const seen=[];
+ const observer=setInterval(()=>{
+  const field=el('battle-stage');
+  const backdrop=field.querySelector('.mb-battle-backdrop');
+  const index=backdrop?.dataset.specialTargetIndex;
+  if(!index||seen.includes(index))return;
+  const i=Number(index)-1,target=rows[i]?.targetId;
+  const shown=[...field.querySelectorAll('#mb-foe-line .mb-floating-number')]
+   .map(n=>n.closest('.mb-fighter')?.dataset.unit);
+  const fighter=field.querySelector('#mb-foe-line [data-unit="'+target+'"]');
+  const renderedHp=fighter?.querySelector('.mb-fighter-meta small')?.textContent;
+  const layer=field.querySelector('#mb-special-impact-style');
+  const ok=backdrop.dataset.specialImpactSchema==='1'&&
+   backdrop.dataset.specialTreatment==='strike'&&
+   layer&&!layer.hidden&&layer.dataset.treatment==='strike'&&
+   shown.length===1&&shown[0]===target&&
+   renderedHp?.startsWith(String(rows[i].hpAfter)+'/');
+  seen.push(ok?index:'BAD-'+index);
+  if(seen.length===rows.length){
+   clearInterval(observer);
+   el('lab-state').textContent=seen.join(',')==='1,2,3'?
+    'PHASE22-REAL-HOST-HP-LEDGER-PASS':'PHASE22-REAL-HOST-HP-LEDGER-FAIL '+seen.join(',');
+  }
+ },20);
+}else if(review==='real-special-hit-ledger'){
+ // Dedicated test scenario. An explicit CUSTOM roster sets an intentionally
+ // fixture-only 3-hit special. No original move count or school roster changes.
+ const rosters=[0,1].map(()=>RENTAL_SQUAD.map(u=>({...u,weights:[...u.weights]})));
+ const host=createCombat({seed:20261029,teams:rosters,
+  researchSoultimateHitCount:3,researchSpecialEffects:true,
+  researchDamageModel:true,researchStatInspirits:true});
+ host.giveSoul('A1',100);
+ const charge=host.prepareSoultimate(0,'A1');
+ if(!charge.ok)throw Error('custom hit charge rejected');
+ const outcome=host.resolveSoultimate(0,charge.token,true);
+ if(!outcome.ok)throw Error('custom hit resolution failed');
+ const game=host.snapshot(),source=game.events.findLast(e=>e.type==='special');
+ const hits=source.researchSoultimateHits?.hits;
+ if(!hits?.length)throw Error('custom host failed to emit actual hit ledger');
+ stage.render({game,revision:1,clientSequences:[0,0],forecast:[]});
+ let last=-1;
+ const observed=[];
+ const observer=setInterval(()=>{
+  const field=el('battle-stage');
+  const backdrop=field.querySelector('.mb-battle-backdrop');
+  const idx=Number(backdrop?.dataset.specialHitIndex||0)-1;
+  if(idx<0||idx===last||idx>=hits.length)return;
+  last=idx;
+  const hit=hits[idx],target=hit.targetId;
+  const floats=[...field.querySelectorAll('#mb-foe-line .mb-floating-number')]
+   .map(n=>({id:n.closest('.mb-fighter')?.dataset.unit,value:n.textContent}));
+  const fighter=field.querySelector('#mb-foe-line [data-unit="'+target+'"]');
+  const renderedHp=fighter?.querySelector('.mb-fighter-meta small')?.textContent;
+  const correctNumber=hit.hit?
+   floats[0]?.value?.includes(String(hit.damage)) :
+   floats[0]?.value==='MISS';
+  const ok=backdrop.dataset.specialHitSchema==='1'&&
+   floats.length===1&&floats[0].id===target&&correctNumber&&
+   renderedHp?.startsWith(String(hit.hpAfter)+'/');
+  observed.push(ok?'ok:'+idx:'BAD:'+idx);
+  if(idx===hits.length-1){
+   clearInterval(observer);
+   const complete=observed.length===hits.length&&
+    observed.every((x,i)=>x==='ok:'+i);
+   el('lab-state').textContent=complete?
+    'PHASE22-REAL-HOST-PER-HIT-DOM-PASS':
+    'PHASE22-REAL-HOST-PER-HIT-DOM-FAIL '+observed.join(',');
+  }
+ },12);
+}else if(review==='yw2-reference-front'||review==='yw2-reference-single'){
+ // Source-backed YW2 move shape, NOT the original character artwork or
+ // verified 3DS RNG/timing. The host is a separate CUSTOM research battle.
+ const front=review==='yw2-reference-front';
+ const reference=front?'yw2:tararin:hanaji-bomber':
+  'yw2:ookuwano-kami:daisetsudan';
+ const referenceName=front?'鼻血ボンバー':'大切断';
+ const rosters=[0,1].map(()=>RENTAL_SQUAD.map(u=>({...u,weights:[...u.weights]})));
+ const host=createCombat({seed:20261029,teams:rosters,
+  researchYw2Soultimate:reference,researchSpecialEffects:true,
+  researchDamageModel:true,researchStatInspirits:true});
+ host.giveSoul('A1',100);
+ const charge=host.prepareSoultimate(0,'A1');
+ if(!charge.ok)throw Error('YW2 source-backed charge refused');
+ const response=host.resolveSoultimate(0,charge.token,true);
+ if(!response.ok)throw Error('YW2 source-backed action refused');
+ const game=host.snapshot();
+ const event=game.events.findLast(e=>e.type==='special');
+ const hits=event.researchSoultimateHits.hits;
+ const want=front?3:1;
+ if(hits.length!==want||event.referenceSoultimate.id!==reference)
+  throw Error('YW2 reference source shape failed: '+hits.length);
+ stage.render({game,revision:1,clientSequences:[0,0],forecast:[]});
+ let last=-1;
+ const observed=[];
+ const observer=setInterval(()=>{
+  const field=el('battle-stage');
+  const backdrop=field.querySelector('.mb-battle-backdrop');
+  const idx=Number(backdrop?.dataset.specialHitIndex||0)-1;
+  if(idx<0||idx===last||idx>=hits.length)return;
+  last=idx;
+  const hit=hits[idx];
+  const floats=[...field.querySelectorAll('#mb-foe-line .mb-floating-number')]
+   .map(n=>({id:n.closest('.mb-fighter')?.dataset.unit,value:n.textContent}));
+  const fighter=field.querySelector('#mb-foe-line [data-unit="'+hit.targetId+'"]');
+  const hp=fighter?.querySelector('.mb-fighter-meta small')?.textContent;
+  const valid=backdrop.dataset.specialHitSchema==='1'&&
+   field.querySelector('#mb-special-title')?.textContent.includes(referenceName)&&
+   floats.length===1&&floats[0].id===hit.targetId&&
+   (hit.hit?floats[0].value?.includes(String(hit.damage)):
+     floats[0].value==='MISS')&&
+   hp?.startsWith(String(hit.hpAfter)+'/');
+  observed.push(valid?'ok:'+idx:'BAD:'+idx);
+  if(idx===hits.length-1){
+   clearInterval(observer);
+   const all=observed.length===want&&observed.every((s,i)=>s==='ok:'+i);
+   el('lab-state').textContent=all?
+    'PHASE22C-YW2-SOURCE-SHAPE-PASS-'+(front?'FRONT':'SINGLE'):
+    'PHASE22C-YW2-SOURCE-SHAPE-FAIL '+observed.join(',');
+  }
+ },16);
+  }else if(review==='soul-ready'||review==='g-soul-ready'){
+ // Local screenshot-only projection of a possible full Soul state.
+ // No engine state is mutated, no client is given arbitrary Soul commands.
+ const state=protocol.snapshot();
+ const fill=id=>{
+  const member=state.game.soul.teams[0].find(x=>x.id===id);
+  member.soul=member.capacity;
+ };
+ if(review==='g-soul-ready'){
+  state.game.soul.modes[0]='zero';
+  fill('A1');fill('A2');fill('A6'); // A6 is fixed neighbour on reserve
+ }else fill('A2');
+ stage.render(state);
+ el('battle-stage').querySelector('#mb-charge').click();
+}
+</script>
+</body></html>

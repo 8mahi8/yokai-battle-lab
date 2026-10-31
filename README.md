@@ -1,3 +1,25 @@
+> **【2026-10-31 V3-5-9 最新】** [原作PvP動画と戦闘画面の差分照合](./docs/ENGINE_V3_5_9_ORIGINAL_PVP_VISUAL_ALIGNMENT_20261031.md)。原作の**赤い円形ピン外輪**と**緑のスキル発動通知**に合わせてCSSを修正。大判必殺・KO青いひとだま・控え交代は既存のまま、ゲームルール/通信変更なし。**[Node950/950](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41178817313)、[Stage16/16](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41178817321)、[Firebase No-Auth実2席＋歴史的Rulesの全回帰二度通し](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41178817458) PASS**。学校のSafari実機2台とMP4原本の今回直接比較は未検証。**次 V3-5-10**：学校実試遊と原作の体感差分を優先。学校Sites稼働HTML、本番Firebase Rules/Auth/DB、main、Driveは未変更。
+
+> **【2026-10-31 V3-5-8 最新】** [Google Sites短いiframeの下画面チャージ実通信受入](./docs/ENGINE_V3_5_8_SHORT_SITES_GESTURE_ACCEPTANCE_20261031.md)。**568×320／390×360／820×390px**でも実2席Firebase上で通常/Gチャージの中止・タッチ点へアクセス可能、既存おはらい/6体KO/結果まで2回PASS。**Node950件・Chromium Stage・Firebase実2席成功**。不必要なCSSを追加せず、ゲーム本体はV3-5-7と同じ。**10/22保存のFirebase Rules写しは11/8 00:00 JST期限**、現在の本番Rulesが同じか未確認のため接続不能リスクは要認識。学校Safari実機2台・原作動画原本直接比較は未実施。次V3-5-9。
+
+> **【2026-10-31 V3-5-7 最新】** [学校iPad向けタッチ領域/円ドラッグ直後の敵ピン不具合修正](./docs/ENGINE_V3_5_7_FRIENDS_TOUCH_IPAD_20261031.md)：Friendだけの44pxヒット領域と`touch-action:none`、実指ドラッグ相当の`TouchEvent`→Host正規回転後の**敵への即時ピン誤抑止**を修正。学校形式の本物Firebase No-Auth Chromium2席/4サイズでタッチ→ACK→KO/勝敗を2回完走。**Node950件・Stage・Firebase実2席すべてPASS**。学校Safari実機2台と元MP4原本再生はまだ未検証。次V3-5-8は学校実機の操作感／試合時間。
+
+> **【2026-10-31 V3-5-6 最新】** [通常学校対戦8シードのテンポ実測と友達用UI整理](./docs/ENGINE_V3_5_6_SCHOOL_PACING_AND_FRIENDS_UI_20261031.md)：**放置8試合で7試合121〜227行動で決着、1件240行動時点で未決着（停止なし）**。2.6秒/行動の暫定時計はそのまま。Friendsの開発用帯/REV/試験用文言を非表示、研究UIと戦闘ルールは不変。**Node950/950、Chrome Stage、Firebase No-Auth実2席と同一試合フルE2Eが成功**。学校iPad Safari2台と元MP4の原本直接比較は引き続き未検証。次V3-5-7は通常学校版の体感・端末画面確認。
+
+> **【2026-10-31 V3-5-5 最新】** [一試合の全操作・Firebase2席通し結果](./docs/ENGINE_V3_5_5_ONE_ROOM_FULL_MATCH_E2E_20261031.md)：とりつき→おはらい→通常必殺→控え交代→零式G→6体KO→両者反対の勝敗まで**同じ部屋の正規実通信でPASS**。Node949/949・Stage Chrome・No-Auth RTDB二席成功。学校Safari実機・本家元動画直接再視聴・原作数値は未検証。次は通常レンタルの試合テンポ/学校実戦の品質検証。
+
+> **【2026-10-31 V3-5-4 最新】** [オンライン実2席・おはらい完了E2E](./docs/ENGINE_V3_5_4_FRIENDS_PURIFY_E2E_20261031.md)：Node946件・Chromium/Firebase Emulator二席PASS。次はV3-5-5全試合統合。学校Safari実機と原作MP4直接比較は未検証。現行通信は認証なしFirebase Friends。
+
+> **【2026-10-31 現行開発入口】** [最新V3-5-3 Friends GわざE2E・検証・次工程](./docs/ENGINE_V3_5_3_FRIENDS_ZERO_G_DAMAGE_E2E_20261031.md) / [引き継ぎ現況](./docs/HANDOFF_LATEST_20261030.md) / [6段階ロードマップ](./docs/ROADMAP_6_PHASE_PROGRESS_20261028.md)。開発はV3-5途中。原作値/学校Safari最新版は未検証。以下の旧2.5Dデモ記述は現行ゲーム仕様ではありません。
+
+> **【2026-10-25最新入口】** この`main`由来のREADME本文は旧2.5D造形デモの記録です。**現在の開発状況は[再監査済み引き継ぎ](./docs/HANDOFF_VERIFIED_20261025.md)と[設計全体図](./docs/PROJECT_MAP_AND_PROGRESS.md)**を参照（開発ブランチ`feat/phase1-action-circle-lab-20261023`）。Phase25でSupabase実2 iframe E2EとNode497/497テストに成功。実Google Sites／学校iPad Safari／原作完全一致は未検証。以下のPhase20などの古い記述は履歴です。
+
+> **2026-10-24｜このREADMEは古い2.5Dキャラ研究デモの説明です。今の対戦ゲーム完成状況ではありません。**
+> 最新の原作再現1vs1と現在の開発位置は **[設計全体図・進捗管理](./docs/PROJECT_MAP_AND_PROGRESS.md)** を先に確認し、詳細は [最新引き継ぎ](./docs/HANDOFF_LATEST_20261024.md) を参照してください。
+> 現在の開発はブランチ `feat/phase1-action-circle-lab-20261023`。Phase 20A（攻撃/妖術＋多段計算の対戦統合）が完了し、Phase 20B（とりつき・回復の根拠確認）が次。原作の完全再現・Googleサイト直貼り・学校実機検証は未完了です。**この下は歴史的な旧デモの説明で、現行仕様として採用しないこと。**
+
+---
+
 # 妖怪キャラ研究室 / 2.5D Lab
 
 学校のiPad（Safari）向けブラウザ対戦ゲームを作る前段階として、**1体の造形・動きの品質を検証する専用ページ**です。現時点ではバトルではなく、キャラクターの動きを観察します。

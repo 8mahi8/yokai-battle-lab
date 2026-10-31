@@ -1,0 +1,228 @@
+/* Phase 14 battle stage. Paint-light CSS aimed at Safari/iPad landscape.
+   All art is simple original CSS, not extracted copyrighted assets. */
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#0b111d;color:#f3f5fa;font:14px/1.45 -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",system-ui,sans-serif}
+button,input{font:inherit}
+button{touch-action:manipulation;cursor:pointer}
+button:focus-visible{outline:3px solid #ffe5a9;outline-offset:2px}
+.mb-stage{--mb-line:#35445f;--mb-white:#f5f0e5;--mb-muted:#afbdce;max-width:1200px;margin:auto;padding:15px clamp(10px,2vw,25px) 30px}
+.mb-stage .mb-topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.mb-title-group{display:flex;align-items:center;gap:12px}
+.mb-mark{display:grid;place-items:center;font-size:24px;background:radial-gradient(circle at 35% 25%,#fdca7d,#ca7955 80%);border:1px solid #ffd3a9;color:#3e2634;border-radius:13px;width:43px;height:43px}
+.mb-title-group small{display:block;font-size:9px;letter-spacing:2.2px;color:#adbed3}
+.mb-title-group h1{font-size:clamp(18px,2.1vw,26px);letter-spacing:1.2px;margin:1px 0;color:var(--mb-white)}
+.mb-title-group h1 span{color:#d0a577;font-weight:400}
+.mb-state{display:flex;align-items:center;gap:12px;letter-spacing:1px;font-size:11px;color:#b7c7d8}
+.mb-state b{font-size:18px;color:#ffdfab;font-variant-numeric:tabular-nums}
+.mb-online{background:#26464d;padding:5px 10px;border:1px solid #638c86;border-radius:100px;color:#bcf5dc;letter-spacing:.7px}
+.mb-disclaimer{font-size:11px;color:#bbbece;margin-bottom:11px}
+.mb-forecast-section{background:linear-gradient(100deg,#182c3a,#1b2d47);border:1px solid #3e5363;border-radius:15px;padding:10px 12px 12px;margin-bottom:11px}
+.mb-section-label{display:flex;align-items:center;gap:13px;padding-bottom:7px;font-size:12px}
+.mb-section-label b{color:#f3dfa5;letter-spacing:.7px}.mb-section-label span{color:#9fadc4;font-size:10px}
+.mb-forecast{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+.mb-next{display:flex;align-items:center;gap:7px;min-width:0;padding:6px 8px;border-radius:9px;background:#0f1d2f;border:1px solid #344960}
+.mb-num{font-weight:800;color:#dbcaab;font-size:11px}.mb-next-avatar{flex:none;border-radius:10px;width:26px;height:26px;background:#477aa4;display:grid;place-items:center;font-size:13px;font-weight:900}
+.mb-next-avatar.mb-b{background:#ab6981}
+.mb-next strong{font-size:11px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mb-next small{font-size:9px;color:#9aacc1;display:block}
+
+.mb-action-label{margin-top:8px;border-top:1px solid #425467;padding-top:7px;color:#d5e7ed;font-size:11px;min-height:22px}
+.mb-creature.mb-acting{animation:mb-acting .72s ease-out}
+.mb-creature.mb-hit{animation:mb-hit .72s ease-out}
+.mb-creature.mb-healed{animation:mb-healed .72s ease-out}
+.mb-floating-number{position:absolute;left:50%;top:0;z-index:5;transform:translateX(-50%);
+ color:#ffe7b8;font-size:15px;font-weight:900;text-shadow:0 2px 5px #071422;
+ white-space:nowrap;pointer-events:none;animation:mb-number .72s ease-out forwards}
+.mb-healed .mb-floating-number{color:#b1f7c9}
+@keyframes mb-acting{0%{filter:brightness(1.6);box-shadow:0 0 0 5px #d1bb8299}100%{filter:brightness(1);box-shadow:0 3px 11px #050d1a99}}
+@keyframes mb-hit{0%{filter:brightness(1.8);box-shadow:0 0 0 5px #ef7c8399}100%{filter:brightness(1);box-shadow:0 3px 11px #050d1a99}}
+@keyframes mb-healed{0%{filter:brightness(1.5);box-shadow:0 0 0 5px #75e9b488}100%{filter:brightness(1);box-shadow:0 3px 11px #050d1a99}}
+@keyframes mb-number{0%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-27px)}}
+
+.mb-empty{color:#aab8c9;font-size:12px}
+.mb-arena{display:grid;grid-template-columns:minmax(0,1fr) 42px minmax(0,1fr);align-items:stretch;gap:4px}
+.mb-team{position:relative;overflow:hidden;min-width:0;background:linear-gradient(163deg,#1e3851,#142537 62%,#182433);border:1px solid #416279;border-radius:20px;min-height:334px;padding:10px}
+.mb-team.mb-side1{background:linear-gradient(163deg,#4a314a,#29263c 62%,#192638);border-color:#865568}
+.mb-team:after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,#6ab2e517 0%,transparent 70%);pointer-events:none}
+.mb-team.mb-side1:after{background:radial-gradient(ellipse at center,#ec90aa12 0%,transparent 70%)}
+.mb-team-heading{position:relative;z-index:2;display:flex;align-items:center;gap:9px}
+.mb-team-icon{display:grid;place-items:center;width:31px;height:31px;background:#4b82a5;color:#effaff;border-radius:10px;font-size:17px;font-weight:900}
+.mb-side1 .mb-team-icon{background:#a35d7b}
+.mb-team-heading b{display:block;font-size:12px;letter-spacing:1.4px}
+.mb-team-heading small{display:block;color:#bbc9da;font-size:10px}
+.mb-team-control-indicator{font-size:10px;color:#d7deaa;margin-left:auto}
+.mb-divider{display:flex;align-items:center;justify-content:center;color:#d5bba0}
+.mb-divider div{font-style:italic;font-size:18px;font-weight:900;text-shadow:0 0 14px #bc8a60}
+.mb-wheel{height:286px;position:relative;z-index:1;max-width:370px;margin:auto}
+.mb-wheel-ring{position:absolute;width:64%;height:61%;left:18%;top:19%;border:2px solid #c0b58c66;border-radius:50%;background:radial-gradient(circle,#293b4b55 0,#08152545 65%,transparent 66%);box-shadow:0 0 0 10px #283b4d44,0 0 55px #9f9d5a16,inset 0 0 25px #ffffff09}
+.mb-side1 .mb-wheel-ring{border-color:#b78b9166;box-shadow:0 0 0 10px #53384844,0 0 55px #bf647b1c}
+.mb-wheel-ring:before,.mb-wheel-ring:after{content:"";position:absolute;left:50%;top:50%;width:91%;height:1px;background:#e9d8aa29;transform:translate(-50%,-50%) rotate(30deg)}
+.mb-wheel-ring:after{transform:translate(-50%,-50%) rotate(150deg)}
+.mb-center-symbol{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;border:1px solid #afc29b66;background:#172c3b;width:46px;height:46px;display:grid;place-items:center;font-size:22px;color:#e8c68f}
+.mb-creature{position:absolute;z-index:3;left:var(--x);top:var(--y);transform:translate(-50%,-50%);width:clamp(71px,22%,91px);height:109px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:0;background:linear-gradient(170deg,#263d54,#172b40);border:1px solid #7395a2;border-radius:14px;color:#f0f3f5;padding:4px 4px 3px;box-shadow:0 3px 11px #050d1a99;transition:transform .14s ease,filter .14s ease}
+.mb-side1 .mb-creature{background:linear-gradient(170deg,#543a53,#322537);border-color:#ae8794}
+.mb-creature.mb-bench{filter:saturate(.62) brightness(.7);border-color:#73808c}
+.mb-creature.mb-selected{border:2px solid #ffe08e;box-shadow:0 0 0 3px #ffd16b44,0 4px 14px #050d1a}
+.mb-creature.mb-pinned{border:2px solid #f9be7a;box-shadow:0 0 0 4px #f4a67b55}
+.mb-creature.mb-ko{opacity:.32}
+.mb-creature:active{transform:translate(-50%,-50%) scale(.96)}
+/* Phase15 original vector familar roster. The SVG root (not individual
+   SVG path transforms) is animated for older WebKit compatibility. Only three
+   front-row units per team animate at a time; bench and forecasts stay still. */
+.mb-character-art{display:block;flex:none;width:47px;height:47px;max-width:100%;overflow:visible;pointer-events:none;
+  -webkit-transform-origin:center center;transform-origin:center center}
+.mb-creature:not(.mb-bench):not(.mb-ko) .mb-character-art{animation:mb-idle 3.8s ease-in-out infinite}
+.mb-creature:nth-child(2n) .mb-character-art{animation-delay:-1.3s}
+.mb-creature:nth-child(3n) .mb-character-art{animation-delay:-2.5s}
+@keyframes mb-idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+.mb-creature.mb-acting .mb-character-art{animation:mb-strike .7s cubic-bezier(.18,.75,.28,1) both}
+.mb-creature.mb-hit .mb-character-art{animation:mb-recoil .7s ease-out both}
+.mb-creature.mb-healed .mb-character-art{animation:mb-lift .7s ease-out both}
+@keyframes mb-strike{0%,100%{transform:translateX(0) scale(1)}30%{transform:translateX(5px) scale(1.13)}60%{transform:translateX(-2px) scale(.97)}}
+@keyframes mb-recoil{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px) rotate(-8deg)}50%{transform:translateX(3px) rotate(5deg)}}
+@keyframes mb-lift{0%,100%{transform:translateY(0)}40%{transform:translateY(-6px) scale(1.07)}}
+.mb-next-avatar{overflow:hidden;padding:1px}
+.mb-next-avatar .mb-mini-art{width:26px;height:26px;max-width:unset;flex:none}
+/* Short-lived combat FX take precedence; no continuous compositor layers
+   or costly blur/filter effects on the moving portrait shapes. */
+@media(prefers-reduced-motion:reduce){
+ .mb-creature:not(.mb-bench):not(.mb-ko) .mb-character-art,
+ .mb-creature.mb-acting .mb-character-art,
+ .mb-creature.mb-hit .mb-character-art,
+ .mb-creature.mb-healed .mb-character-art{animation:none!important}
+}
+
+.mb-name{max-width:100%;font-weight:800;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:1px 0}
+.mb-bars{display:block;width:90%;height:5px;background:#0c1824;border-radius:6px;overflow:hidden;margin-bottom:3px}
+.mb-bars i{display:block;background:linear-gradient(90deg,#53c9a4,#b1f1b0);height:100%;border-radius:6px}
+.mb-soulbar i{background:linear-gradient(90deg,#df9e52,#ffe1a6)}
+.mb-unit-stat{font-size:9px;white-space:nowrap;color:#d5e2e8;line-height:1}
+.mb-front-badge{position:absolute;top:0;right:0;transform:translate(40%,-42%);background:#597d82;color:#fff0c9;font-size:8px;padding:1px 3px;border-radius:4px}
+.mb-bottom{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(220px,.6fr);gap:10px;margin-top:11px}
+.mb-actions,.mb-feed{background:#16263a;border:1px solid #3b5366;border-radius:15px;padding:11px;min-width:0}
+.mb-command-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mb-command-head b{font-size:13px;color:#f4e8cb}
+.mb-command-head small{display:block;font-size:11px;color:#aabacf;margin-top:2px}
+.mb-seat-switch{display:flex;gap:4px}
+.mb-seat-switch button{border:1px solid #586f83;background:#142334;color:#adc6d6;border-radius:7px;padding:5px 13px}
+.mb-seat-switch button.is-active{background:#e8ba80;color:#241b20;font-weight:bold}
+.mb-control-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px}
+.mb-control-grid button,.mb-feed button{background:#2b4967;color:#f6fafc;border:1px solid #557a9b;border-radius:9px;min-height:38px;padding:6px 8px;font-size:12px;font-weight:750}
+.mb-control-grid button.mb-big{background:#436778;border-color:#86b2ba;color:#fff4d3}
+.mb-control-grid button.mb-accent{background:#8e6a48;border-color:#c8a16e;color:#fff3da}
+.mb-control-grid button:active,.mb-feed button:active{filter:brightness(1.25)}
+.mb-control-grid button:disabled,.mb-feed button:disabled{opacity:.4}
+.mb-footnote{font-size:11px;color:#a5b9c9;margin-top:7px}
+.mb-activity{background:#0e1d2d;border-radius:8px;padding:9px;min-height:35px;font-size:12px;color:#e9d09b;margin:9px 0}
+.mb-feed-list{max-height:90px;overflow:auto;font-size:11px;color:#a9c2d7}
+.mb-feed-list div{padding:3px 0;border-bottom:1px solid #2e465b}
+.mb-feed-list span{color:#f0dab2;font-weight:800}
+.mb-feed-empty{color:#839bb2}.mb-revision{color:#8099b0;font-size:10px;display:block;text-align:right;margin-top:5px}
+.mb-modal{position:fixed;inset:0;background:#081019df;z-index:40;display:grid;place-items:center;padding:15px;overscroll-behavior:contain}
+.mb-modal[hidden],[hidden]{display:none!important}
+.mb-modal-surface{width:min(380px,95vw);max-height:98dvh;overflow:auto;border-radius:20px;border:1px solid #81919d;background:linear-gradient(130deg,#2a465a,#16273e);padding:16px;box-shadow:0 20px 90px #0009}
+.mb-modal-surface button{background:#335675;border:1px solid #7a9cb1;border-radius:7px;color:white;padding:7px 10px}
+.mb-modal-surface p{font-size:13px;color:#e1d5af;text-align:center}
+.mb-touch-pad{height:min(54vh,260px);aspect-ratio:1;position:relative;touch-action:none;user-select:none;margin:10px auto;background:radial-gradient(circle at 50% 50%,#385e73,#152c45 69%);border-radius:50%;border:6px solid #8eabbc;box-shadow:inset 0 0 35px #071423}
+.mb-touch-pad:before{content:"";position:absolute;inset:8%;border:2px dashed #d2b98c99;border-radius:50%;pointer-events:none}
+.mb-gesture-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.mb-touch-target,.mb-trace-target{position:absolute;transform:translate(-50%,-50%);border:2px solid #fff0b0;background:#efbb66;width:23px;height:23px;border-radius:50%;pointer-events:none;box-shadow:0 0 15px #ffcb75aa}
+.mb-trace-target{width:14px;height:14px;background:#a8f1e2}
+.mb-touch-guideline{position:absolute;inset:0;display:grid;place-items:center;font-size:76px;color:#d4f0e3;pointer-events:none}
+.mb-meter{background:#071626;border-radius:9px;border:1px solid #516880;height:11px;overflow:hidden;margin-top:6px}
+.mb-meter i{display:block;height:100%;background:linear-gradient(90deg,#d8a665,#f7deb0);width:0}
+#mb-gesture-progress{display:block;text-align:center;color:#a9c4d4;font-size:11px;margin-top:6px}
+@media(max-width:710px){.mb-stage{padding:8px}.mb-arena{grid-template-columns:minmax(0,1fr)}.mb-divider{height:18px}
+ .mb-team{min-height:315px}.mb-wheel{height:275px;max-width:360px}.mb-bottom{grid-template-columns:1fr}
+ .mb-control-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .mb-forecast{gap:3px}.mb-next{padding:4px 3px;gap:3px}.mb-next-avatar{display:none}
+ .mb-next strong{font-size:9px}.mb-num{font-size:9px}}
+@media(max-height:490px) and (orientation:landscape){.mb-stage{padding:5px}.mb-topbar{margin-bottom:5px}
+ .mb-disclaimer{display:none}.mb-forecast-section{margin-bottom:6px;padding:5px}
+ .mb-team{min-height:292px;padding:5px}.mb-wheel{height:260px}
+ .mb-arena{grid-template-columns:minmax(0,1fr) 30px minmax(0,1fr)}
+ .mb-bottom{margin-top:6px}.mb-actions,.mb-feed{padding:7px}
+ .mb-control-grid{margin-top:6px;gap:4px}}
+@media(prefers-reduced-motion:reduce){.mb-creature{transition:none}.mb-creature.mb-acting,.mb-creature.mb-hit,.mb-creature.mb-healed,.mb-floating-number{animation:none}}
+
+/* Phase29: deterministic win/loss result, over the LOCAL match stage only.
+ * A remote room/new match is intentionally not auto-created or restored. */
+.mb-stage{position:relative}
+.mb-finish-screen{position:absolute;inset:0;z-index:80;background:rgba(9,17,28,.94);
+ display:flex;align-items:center;justify-content:center;padding:16px;
+ border-radius:16px;text-align:center}
+.mb-finish-screen[hidden]{display:none!important}
+.mb-finish-card{width:min(100%,390px);padding:28px 20px;
+ background:linear-gradient(145deg,#1b3247,#282840);
+ border:2px solid #ccad70;border-radius:20px;
+ box-shadow:0 8px 30px #0007;color:#f7f0df}
+.mb-finish-eyebrow{font-size:12px;letter-spacing:.23em;color:#d3b78f}
+.mb-finish-card h2{font-size:clamp(34px,7vw,54px);margin:6px 0;color:#ffe3a5}
+.mb-finish-card b{display:block;font-size:18px;color:#e8eef5}
+.mb-finish-card p{font-size:14px;line-height:1.5;margin:12px 0}
+.mb-finish-card .mb-finish-help{font-size:11px;color:#b9c9d3}
+.mb-finish-close{background:#456b79;border:1px solid #a2d3d5;border-radius:12px;
+ color:#f8fafb;padding:12px 15px;font-weight:700;min-height:44px;
+ max-width:100%;touch-action:manipulation}
+.mb-finish-close:focus-visible{outline:3px solid #ffe5a9}
+@media(max-width:440px){
+ .mb-finish-screen{padding:8px}
+ .mb-finish-card{padding:20px 12px}
+}
+
+
+/* Phase51: original 3DS two-screen touch interactions.
+   The upper battlefield stays visible and keeps rendering while the
+   *lower* screen switches from the medal wheel to a gesture challenge.
+   Never recreate a viewport-wide modal which obscures battle information.
+   The lower screen is a positioned/overflow-hidden container in
+   lab/yw2-layout.css. This overlay is display-only; the host owns actions. */
+.mb-yw2 .mb-lower-screen>.mb-modal{
+ position:absolute;inset:0;z-index:40;
+ background:linear-gradient(140deg,rgba(30,25,54,.98),rgba(20,34,57,.98));
+ display:grid;place-items:center;padding:6px;overscroll-behavior:contain;
+}
+.mb-yw2 .mb-lower-screen>.mb-modal[hidden]{display:none!important}
+.mb-yw2 .mb-lower-screen .mb-modal-surface{
+ width:min(360px,100%);max-height:100%;
+ padding:8px 11px;border-radius:13px;box-shadow:0 4px 15px #0005;
+ display:flex;flex-direction:column;align-items:stretch;gap:3px;overflow-y:auto;
+}
+.mb-yw2 .mb-lower-screen .mb-modal-surface .mb-command-head{min-height:27px}
+.mb-yw2 .mb-lower-screen .mb-modal-surface .mb-command-head button{min-height:30px}
+.mb-yw2 .mb-lower-screen .mb-modal-surface p{margin:1px 0;line-height:1.2}
+.mb-yw2 .mb-lower-screen .mb-touch-pad{
+ width:min(26vh,202px);height:min(26vh,202px);min-width:112px;min-height:112px;
+ flex-shrink:0;margin:1px auto;border-width:4px;
+}
+.mb-yw2 .mb-lower-screen .mb-meter{margin-top:1px}
+.mb-yw2 .mb-lower-screen #mb-gesture-progress{margin-top:1px}
+@media(max-height:560px) and (orientation:landscape){
+ .mb-yw2 .mb-lower-screen .mb-modal-surface{padding:4px 8px;gap:1px}
+ .mb-yw2 .mb-lower-screen .mb-modal-surface p{font-size:11px}
+ .mb-yw2 .mb-lower-screen .mb-touch-pad{
+  width:min(24vh,148px);height:min(24vh,148px);min-width:106px;min-height:106px;
+ }
+}
+
+/* Source video Match01 00:15–00:20: after a successful REAL host
+   purification event, briefly show the finish card only on the touch
+   screen. The upper battle field must remain visible and update normally. */
+.mb-yw2 .mb-lower-screen>.mb-purify-complete{
+ position:absolute;inset:0;z-index:43;display:flex;flex-direction:column;
+ align-items:center;justify-content:center;gap:9px;padding:14px;
+ pointer-events:none;text-align:center;
+ background:radial-gradient(circle at center,#664682ef 0%,#33264bee 73%,#251e3def 100%);
+ color:#fff4e2;animation:mb-purify-finish-in .2s ease-out both;
+}
+.mb-yw2 .mb-lower-screen>.mb-purify-complete[hidden]{display:none!important}
+.mb-purify-complete-icon{font-size:clamp(35px,6vw,53px);line-height:1;color:#f5ddaa}
+.mb-purify-complete strong{font-size:clamp(20px,3.3vw,30px);letter-spacing:.06em;text-shadow:0 3px 12px #170e27}
+.mb-purify-complete small{font-size:clamp(11px,1.9vw,15px);color:#f7dfe7}
+@keyframes mb-purify-finish-in{
+ from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}
+}
+@media(prefers-reduced-motion:reduce){
+ .mb-yw2 .mb-lower-screen>.mb-purify-complete{animation:none}
+}

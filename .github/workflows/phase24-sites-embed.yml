@@ -1,0 +1,46 @@
+name: Phase24 Google Sites one-file offline embed QA
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+    paths:
+      - 'engine/**'
+      - 'ui/**'
+      - 'lab/sites-embed-local-entry.mjs'
+      - 'lab/match-stage.css'
+      - 'lab/yw2-layout.css'
+      - 'tools/build-sites-embed.mjs'
+      - 'tools/sites-embed-smoke.mjs'
+      - '.github/workflows/phase24-sites-embed.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-one-file:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned offline-preview bundler
+        run: npm install --no-save --package-lock=false esbuild@0.25.12
+      - name: Check all custom builder and entry scripts
+        run: |
+          node --check lab/sites-embed-local-entry.mjs
+          node --check tools/build-sites-embed.mjs
+          node --check tools/sites-embed-smoke.mjs
+      - name: Generate standalone CSS and JS embed snippet
+        run: node tools/build-sites-embed.mjs
+      - name: Interact with actual built snippet in headless Chromium iframe
+        run: node tools/sites-embed-smoke.mjs
+      - name: Attach directly pasteable LOCAL single-HTML fragment
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase24-google-sites-offline-one-file
+          path: |
+            dist/sites-embed-code.html
+            dist/sites-embed-local-preview.html
+          if-no-files-found: error
+          retention-days: 14

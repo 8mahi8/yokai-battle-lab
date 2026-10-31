@@ -1,0 +1,60 @@
+name: Phase48 school original behavior and passive skill QA
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+    paths:
+      - '.github/workflows/phase48-school-behavior-and-passive-vfx.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  school-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Full combat, networking and visual read-only regression
+        run: node --test tests/*.test.mjs
+      - name: Four natural 6v6 seeded outcomes
+        run: node tools/normal-match-endurance.mjs
+      # Phase48 photo reviewed: passive buff notifications must be fully
+      # generated from host events and must not imply the KO victim got buffed.
+      - name: Real Chrome wheel touch, normal actions and authentic Skill reaction
+        run: node tools/stage-smoke.mjs
+      - name: Build actual Firebase Friends no-Auth single-file Google Sites HTML
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts esbuild@0.25.12
+          node tools/build-sites-online.mjs --friends
+      - name: Validate no new transport dependency; actual loaf action enabled
+        run: |
+          node --input-type=module <<'EOF'
+          import assert from 'node:assert/strict';
+          import {readFileSync,statSync} from 'node:fs';
+          const html=readFileSync('dist/sites-online-friends-code.html','utf8');
+          assert.ok(statSync('dist/sites-online-friends-code.html').size>180000);
+          for(const marker of ['mygame-df915-default-rtdb.firebaseio.com',
+            'yokaiRoomsV1','mb-passive-notice','mb-action-callout',
+            'enableLoafing','loafChance','passiveSkillNoticesForAction',
+            'firebase-app-compat.js','firebase-database-compat.js']){
+            if(marker==='passiveSkillNoticesForAction')continue; // minified symbol
+            assert.ok(html.includes(marker),'missing compiled component '+marker);
+          }
+          assert.doesNotMatch(html,/firebase-auth-compat\.js|signInAnonymously\(/);
+          assert.doesNotMatch(html,/supabase\.co|sb_secret_|service_role/);
+          console.log('PHASE48-SCHOOL-FIREBASE-FRIENDS-PRODUCTION-BUNDLE-PASS');
+          EOF
+      - name: Keep real-frame review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase48-school-skill-and-touch-real-chromium
+          path: |
+            phase48-real-passive-skill.png
+            phase46-action-windup.png
+            phase46-action-impact.png
+          if-no-files-found: ignore
+          retention-days: 14

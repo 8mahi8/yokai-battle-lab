@@ -1,0 +1,33 @@
+name: Phase28 actual Supabase two-iframe full-match QA
+# Archived Supabase-only QA from the pre-Firebase school design.
+# Historical workflows remain for audit; NEVER run on current dev pushes.
+# Active friends online QA uses .github/workflows/phase37-firebase-friends.yml.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  online-full-match:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare pinned HTML bundler
+        run: npm install --no-save --package-lock=false --ignore-scripts esbuild@0.25.12
+      - name: Syntax and isolated build checks
+        run: |
+          node --check tools/build-sites-supabase.mjs
+          node --check lab/sites-embed-supabase-entry.mjs
+          node --check tools/supabase-sites-full-match-smoke.mjs
+          node tools/build-sites-supabase.mjs --public-config
+          node tools/build-sites-supabase.mjs --public-config --qa-full-match
+          grep -q 'QA-ONLY-NEVER-DEPLOY' dist/sites-supabase-qa-full-match-code.html
+          if grep -q 'QA-ONLY-NEVER-DEPLOY\|yw-online-qa-finish' dist/sites-supabase-online-code.html; then
+            echo 'FATAL: internal QA switch leaked into the owner HTML'
+            exit 1
+          fi
+      - name: Run real cloud host/guest through six KOs and opposite result screens
+        run: node tools/supabase-sites-full-match-smoke.mjs
