@@ -425,8 +425,8 @@
    top of acting fighters or the touch wheel. Read-only and phase-delayed. */
 .mb-yw2 .mb-passive-notice{
  position:absolute;z-index:8;right:8px;top:28px;width:clamp(110px,20%,165px);
- padding:6px 8px;background:#244460e8;border:1px solid #a7d5ee;
- color:#e1f8ff;text-align:left;border-radius:10px;
+ padding:6px 8px;background:#214c3de8;border:1px solid #a3e4a1;
+ color:#e4ffe4;text-align:left;border-radius:10px;
  font-size:11px;line-height:1.35;font-weight:800;pointer-events:none;
  box-shadow:0 2px 7px #060c1755}
 .mb-yw2 .mb-passive-notice[hidden]{display:none!important}
@@ -488,8 +488,8 @@
 .mb-yw2 .mb-pin-reticle{
  position:absolute;z-index:5;pointer-events:none;left:50%;top:29px;
  width:51px;height:51px;border-radius:50%;transform:translate(-50%,-50%);
- border:3px solid #ffce83;background:#b83b5355;
- box-shadow:0 0 0 2px #922c49,0 0 10px #ffb767bb,inset 0 0 0 2px #ffe5ae;
+ border:3px solid #ff6670;background:#b83b5355;
+ box-shadow:0 0 0 2px #a32948,0 0 10px #ff5f7abb,inset 0 0 0 2px #ffe1cc;
  animation:mb-pin-breathe 1.45s ease-in-out infinite}
 .mb-yw2 .mb-pin-reticle:before{content:'';position:absolute;left:50%;top:50%;
  width:13px;height:13px;border:2px solid #fff1bb;border-radius:50%;transform:translate(-50%,-50%)}
