@@ -37,7 +37,10 @@
 - 実装コミット`6c545a79c3fb271666f7cb7a9876202bd6aa4f80`、QA改良`5872c2f9dc58dd74e74d878f91490061eb03162e`。
 - **[Stage Chromium](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41178471773)：成功**。
 - **[Node 全回帰](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41178475495)：成功**（件数はログに従って記録）。
-- **[Firebase二席No-Authブラウザ＋歴史的Rules再現](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41178475668)：検証結果確定後に追記**。最新ではないActionsを代用して「成功」とは書かない。
+- **[Node 950/950 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41178817313)**（最新コードとテスト生成パーサの全回帰）。**[Chromium Stage 全16件PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41178817321)**。
+- **[Firebase No-Auth RTDB Emulator実2席＋旧Rules再現が2回連続PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41178817458)**：Host受信済みGuest敵ピンの赤い円形`mb-pin-reticle`の**実計算CSS色をChromiumで検証**、両席の`mb-passive-notice`計算色も緑色と検証。以前からの円ドラッグ、狭枠チャージ、通常必殺、零式G、おはらい、6体KO・控え・勝敗がすべて2回成功。**本番Firebaseは読み取り専用GET HTTP200**、本番書込み・学校Safari実機2台は未検証。
+- テスト中の修正履歴：最初の画面色検査スクリプト生成で`\\n`と`\n`を取り違えて、Chromiumが`ONLINE-EMBED-WAIT`のまま90秒タイムアウト（[修正前Run](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41178475668)）。**元ゲームのFirebase障害ではなくテスト用HTML内JavaScriptの構文エラー**。検査コードのエスケープを修正し、`node:vm.Script`で**生成済みQAスクリプトをChrome起動前にパースする予防策**を追加した。最終の[修正済み全通しRun](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41178817458)で成功。
+- **検証済みコード・QA最終HEAD `2ee18dee20e295455763429f67b62d0792a0c154`**。この後は資料のみを更新。
 - **学校Safari物理iPad2台で未検証**。本人からの原作MP4をこの工程で直接再視聴していない。GitHub開発ブランチだけ、Google Sites実稼働HTML、本番Firebase Rules/DB/Auth、main、Drive配布は無変更。
 
 ## 次V3-5-10
