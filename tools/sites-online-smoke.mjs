@@ -910,6 +910,20 @@ function gauge(frame,id){
       'Host did not choose valid clock target '+clock);
      const angle=-Math.PI/2+(number%12)*Math.PI/6;
      const x=.5+.32*Math.cos(angle),y=.5+.32*Math.sin(angle);
+     if(clock===0){
+      // V3-5-14 Safari pointercancel is NOT a real finger lift.
+      // Without this, aligning the clock then switching apps/rotating
+      // the iPad would incorrectly credit a completed clock step.
+      const countBefore=challenge()?.count;
+      await gesture('pointerdown',.5,.18,id+50);
+      await gesture('pointermove',x,y,id+50);
+      await gesture('pointercancel',x,y,id+50);
+      check(challenge()?.count===countBefore&&guided()?.kind==='align'&&
+       challenge()?.handAngle===-Math.PI/2,
+       'canceled clock stream was counted or left an active hand');
+      check(gauge(g,'B1')==='100%',
+       'canceled clock unexpectedly consumed the Soultimate Soul');
+     }
      await gesture('pointerdown',.5,.18,id+clock);
      await gesture('pointermove',x,y,id+clock);
      await gesture('pointerup',x,y,id+clock);
