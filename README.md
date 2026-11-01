@@ -1,3 +1,5 @@
+> **2026-11-02 V3-5-18｜実Hit列の共通描画・原作数値色：** [調査・実装・検証・引き継ぎ](./docs/ENGINE_V3_5_18_NORMAL_HIT_TIMELINE_AND_BROWSER_QA_20261102.md)。Hostが記録した攻撃の各Hit/Missだけを共通Choreography・学校版と共通のStage表示へ接続。カスタム研究技は既存レンタルのMove IDを誤用せず、もとの6体・戦闘値・通信は維持。Node **965/965 PASS**（コード修正後 `bc118633`）。Chromium追加の新受入は最新HEADのCIで別途確認。原作5/7 Hit数資料衝突は未確定、V3-5は未完成。
+
 > **2026-11-02 V3-5-17｜技名・実行定義の出典ゲート：** [原作参照と表示修正の正式記録](./docs/ENGINE_V3_5_17_SPECIAL_NAME_SOURCE_GATE_20261102.md)。レンタル6体の技名は維持。研究用の別必殺が同じスロット・キャラ名でもレンタル固有名を誤表示しないよう、実Hostの技種・対象範囲・威力・状態効果を一致判定。出典確認済み原作研究技は研究名、未認証の別技は汎用名。表示・テストのみ変更で戦闘値/通信不変。Node961件成功（[Actions](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41335044627)）、実Chromium Stage成功（[Actions](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41335038967)）。Firebase同HEADの結果は別途照合。学校Safari実機は未検証。V3-5全体未完成。
 
 > **【2026-11-02 V3-5-16 引継ぎ再監査・多段Hit表示修正】** [正式な原作・実装・試験台帳](./docs/ENGINE_V3_5_16_HANDOFF_REAUDIT_AND_HIT_CAPTION_20261102.md)。Host確定の各命中/ミスに合わせて行動説明の数値を更新し、途中ヒットで最終合計を先出ししない。既存のゲーム結果/通信とオリジナル6体、未確定の原作Hit数はそのまま。開発ブランチのみ更新。V3-5全体・学校Safari実機受入は未完。
