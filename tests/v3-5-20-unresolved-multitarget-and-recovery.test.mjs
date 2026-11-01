@@ -20,7 +20,11 @@ test('V3-5-20 independent YW2 sources CONFLICT on Shogunyan hits and power, not 
  assert.equal(source.battleReady,false);
  assert.equal(source.power.status,'disputed');
  assert.equal(source.listedHits.status,'disputed');
- assert.deepEqual(source.power.claims.map(x=>x.value),[25,20,22]);
+ assert.deepEqual(source.power.claims.map(x=>x.value),[25,20]);
+ assert.deepEqual(source.excludedOtherGames.map(x=>[x.game,x.power,x.listedHits]),
+  [['yw1',22,9]],'YW1 numbers must not be attributed to YW2');
+ assert.ok(source.power.claims[0].sourceRefs.includes(
+  'https://mtwildwood.net/yw2/yokai/shogunyan'));
  assert.deepEqual(source.listedHits.claims.map(x=>x.value),[10,9]);
  assert.equal(source.allocation.status,'unknown');
  assert.equal(source.allocation.perTargetHits,null);
