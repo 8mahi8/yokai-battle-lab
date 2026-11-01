@@ -217,6 +217,7 @@ const chargeQa=String.raw`<!doctype html><html lang="ja"><meta charset="utf-8">
 const h=document.getElementById('host'),g=document.getElementById('guest');
 const result=document.getElementById('result');
 const isG=location.search==='?gcharge';
+const isChargeCycle=location.search==='?chargecycle';
 const isPurifyCycle=location.search==='?purifycycle';
 const isPurify=location.search==='?purify'||isPurifyCycle;
 const isFull=location.search==='?fullmatch';
@@ -802,6 +803,135 @@ function gauge(frame,id){
  await until(()=>!el(g,'#mb-modal').hidden&&
   el(g,'#mb-revision')?.textContent.includes('B '+startSeq),
   'Host ACK of guest chargeStart and touch panel');
+ if(isChargeCycle){
+  // V3-5-13: existing Host RNG chooses spin/trace/align for seed 14
+  // (tokens 1/2/3). No trial type, Soul, HP or game action is injected.
+  const kinds=['spin','trace','align'];
+  const initialDamage=hostQa.snapshot().game.squads[0].map(x=>x.hp);
+  let guestSeq=startSeq;
+  let actions=turns;
+  const challenge=()=>hostQa.snapshot().game.guided[1]?.challenge;
+  const guided=()=>hostQa.snapshot().game.guided[1];
+  const rev=()=>el(g,'#mb-revision')?.textContent||'';
+  const pad=()=>el(g,'#mb-touch-pad');
+  async function ack(label){
+   const expected='B '+(++guestSeq);
+   await until(()=>rev().includes(expected)&&
+    el(h,'#mb-revision')?.textContent.includes(expected),
+    'real two-seat ACK '+label+' '+expected);
+  }
+  async function gesture(type,x,y,pointerId,expectAck=true){
+   const target=pad(),box=target?.getBoundingClientRect();
+   check(target&&box.width>0&&box.height>0,'touch pad missing for '+type);
+   target.dispatchEvent(new PointerEvent(type,{
+    bubbles:true,cancelable:true,button:0,pointerType:'touch',
+    isPrimary:true,pointerId,
+    clientX:box.left+x*box.width,clientY:box.top+y*box.height
+   }));
+   if(expectAck)await ack(type+' '+pointerId);
+  }
+  async function refill(){
+   // Successful specials spend real Soul; only actual Host guard actions
+   // may refill it. Never use debug grants or modify a snapshot.
+   for(let j=0;j<30&&gauge(g,'B1')!=='100%';j++){
+    await until(()=>{const t=hostQa.status();return t.lastPublished>=t.revision&&!t.dirty;},
+     'prior Soul guard published');
+    const r=hostQa.step();check(r.ok,'real Soul guard failed '+r.reason);
+    actions++;
+    const revision=hostQa.status().revision;
+    await until(()=>rev().startsWith('REV '+revision+' /'),
+     'Guest real Soul guard revision '+revision);
+   }
+   await until(()=>gauge(g,'B1')==='100%',
+    'real Host Soul never refilled for next gesture');
+  }
+  for(let i=0;i<kinds.length;i++){
+   if(i>0){
+    await refill();
+    el(g,'#mb-charge').click();
+    const caster=el(g,'#mb-team1 [data-unit="B1"]');
+    check(caster?.classList.contains('mb-choice-eligible'),
+     'Soultimate after prior charge not selectable');
+    caster.click();
+    await ack('next chargeStart '+kinds[i]);
+    await until(()=>!el(g,'#mb-modal').hidden,'next challenge ready');
+   }
+   const kind=kinds[i],start=guided(),id=600+i*100;
+   check(start?.kind===kind&&start.token===i+1,
+    'Host random charge type was not genuine '+kind+
+    ': '+JSON.stringify(start));
+   check(el(g,'#mb-gesture-help')?.textContent===
+    ({spin:'円に沿って指を回そう',trace:'光る点を順番になぞろう',
+      align:'時計の針を目的の数字へ回そう'})[kind],
+    'wrong on-screen challenge explanation '+kind);
+   check(gauge(g,'B1')==='100%',
+    'chargeStart spent Soul before touch '+kind);
+   const specialsBefore=hostQa.snapshot().game.events.filter(e=>e.type==='special').length;
+   if(kind==='spin'){
+    // Two clockwise revolutions, sampled gradually so the host never
+    // accepts a teleport or a reversed sign. ~30 degrees per move.
+    await gesture('pointerdown',.82,.5,id);
+    let finished=false;
+    for(let j=1;j<=30;j++){
+     const rad=j*Math.PI/6;
+     await gesture('pointermove',.5+.32*Math.cos(rad),.5+.32*Math.sin(rad),id);
+     if(!guided()){finished=true;break;}
+     check(challenge()?.progress>0,'spin Host did not accumulate motion');
+    }
+    check(finished,'two rotations did not finish spin charge');
+    // The pointer must be released even after the Host has completed
+    // the last move and already closed the touch dialog.
+    await gesture('pointerup',.82,.5,id,false);
+   }else if(kind==='trace'){
+    const path=challenge()?.path;
+    check(path?.length>=3&&!!el(g,'#mb-touch-points .mb-gesture-svg'),
+     'trace guide not rendered for real Guest');
+    for(let stroke=0;stroke<3;stroke++){
+     const points=challenge()?.path;
+     check(points?.length>=3,'Host trace pattern missing '+stroke);
+     await gesture('pointerdown',points[0][0],points[0][1],id+stroke);
+     for(let point=1;point<points.length;point++){
+      await gesture('pointermove',points[point][0],points[point][1],id+stroke);
+     }
+     if(stroke<2){
+      check(challenge()?.count===stroke+1,'trace not credited on Host');
+      await gesture('pointerup',points.at(-1)[0],points.at(-1)[1],id+stroke);
+     }else{
+      await gesture('pointerup',points.at(-1)[0],points.at(-1)[1],id+stroke,false);
+     }
+    }
+   }else{
+    check(!!el(g,'#mb-touch-points .mb-gesture-svg'),
+     'clock numbers SVG not rendered for real Guest');
+    for(let clock=0;clock<3;clock++){
+     const number=challenge()?.clockNumber;
+     check(Number.isInteger(number)&&number>=1&&number<=12,
+      'Host did not choose valid clock target '+clock);
+     const angle=-Math.PI/2+(number%12)*Math.PI/6;
+     const x=.5+.32*Math.cos(angle),y=.5+.32*Math.sin(angle);
+     await gesture('pointerdown',.5,.18,id+clock);
+     await gesture('pointermove',x,y,id+clock);
+     await gesture('pointerup',x,y,id+clock);
+     if(clock<2)check(challenge()?.count===clock+1,
+      'clock alignment not credited by Host '+clock);
+    }
+   }
+   await until(()=>guided()===null&&el(g,'#mb-modal').hidden,
+    'real '+kind+' charge did not finish and close');
+   check(hostQa.snapshot().game.events.filter(e=>e.type==='special').length===
+    specialsBefore+1,'Host did not emit a genuine '+kind+' Special');
+   await until(()=>gauge(g,'B1')==='0%',
+    'completed '+kind+' did not consume real Soul');
+   check(el(g,'.yw-online-status')?.textContent.includes('わざを発動しました'),
+    kind+' did not receive positive command ACK');
+  }
+  check(hostQa.snapshot().game.squads[0].some((unit,i)=>unit.hp!==initialDamage[i]),
+   'three real Specials caused no real Host HP change');
+  result.textContent='SITES-FRIENDS-CHARGE-CYCLE-PASS three real Host selected '+kinds.join('/')+
+   ' power charges, all Pointer gestures, ACK, Soul spent and three true Specials ('+
+   actions+' real Soul guard actions)';
+  return;
+ }
  check(el(g,'#mb-gesture-help')?.textContent.includes('タップ'),
   'existing seed12 guest B1 fixture should be tap; original weights unverified');
  check(gauge(g,'B1')==='100%',
