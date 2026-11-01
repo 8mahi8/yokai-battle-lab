@@ -1063,7 +1063,12 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   if(!view?.gesture)return;
   if(['tap','pop','mash','poke'].includes(kind)){
    if(!cancelled)sendGesture('tap',coords(event,pad));
-  }else sendGesture(cancelled?'cancel':'up');
+  }else if(!cancelled||kind!=='align'){
+   // Existing RTDB Rules allow only down/move/up/tap. For align, sending
+   // up after pointercancel would falsely commit an aligned clock hand.
+   // Do not send on cancel; the next real down resets the host's stroke.
+   sendGesture('up');
+  }
  }
  function onUp(event){finishPointer(event,false);}
  function onCancel(event){finishPointer(event,true);}
