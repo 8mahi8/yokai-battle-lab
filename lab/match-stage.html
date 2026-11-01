@@ -615,6 +615,23 @@ if(review==='purify-e1'){
  const observer=setInterval(()=>{
   const field=el('battle-stage');
   const backdrop=field.querySelector('.mb-battle-backdrop');
+  // Recovery is a NEW paint. Recreating the final floating digit there
+  // looks like another hit, even though Host HP must remain final.
+  if(backdrop?.dataset.scenePhase==='recovery'&&observed.length===hits.length){
+   clearInterval(observer);
+   const hp=field.querySelector('.mb-fighter[data-unit="'+event.target+'"]'+
+    ' .mb-fighter-meta small')?.textContent;
+   const noRepeatedDigit=field.querySelectorAll('.mb-floating-number').length===0;
+   const complete=observed.every((x,i)=>x==='ok:'+i)&&
+    noRepeatedDigit&&hp?.startsWith(String(hits.at(-1).targetHpAfter)+'/');
+   el('lab-state').textContent=complete?
+    (sourceBacked?'V3-5-19-YW2-SOURCED-ATTACK-PASS':
+     'V3-5-18-REAL-HOST-NORMAL-HITS-PASS'):
+    (sourceBacked?'V3-5-19-YW2-SOURCED-ATTACK-FAIL ':
+     'V3-5-18-REAL-HOST-NORMAL-HITS-FAIL ')+
+      'recovery='+noRepeatedDigit+' hp='+hp+' '+observed.join(',');
+   return;
+  }
   const idx=Number(backdrop?.dataset.activeHit||0)-1;
   if(idx<0||idx===last||idx>=hits.length)return;
   last=idx;
@@ -636,16 +653,7 @@ if(review==='purify-e1'){
    (h.hit?label.includes(String(h.amount))&&color==='rgb(255, 115, 126)':
     label.includes('ミス'));
   observed.push(valid?'ok:'+idx:'BAD:'+idx);
-  if(idx===hits.length-1){
-   clearInterval(observer);
-   const complete=observed.length===hits.length&&
-    observed.every((x,i)=>x==='ok:'+i);
-   el('lab-state').textContent=complete?
-    (sourceBacked?'V3-5-19-YW2-SOURCED-ATTACK-PASS':
-     'V3-5-18-REAL-HOST-NORMAL-HITS-PASS'):
-    (sourceBacked?'V3-5-19-YW2-SOURCED-ATTACK-FAIL ':
-     'V3-5-18-REAL-HOST-NORMAL-HITS-FAIL ')+observed.join(',');
-  }
+  // Wait for Host-result preserving recovery; no duplicate floating digits.
  },12);
 }else if(review==='real-special-hit-ledger'){
  // Dedicated test scenario. An explicit CUSTOM roster sets an intentionally
@@ -668,6 +676,20 @@ if(review==='purify-e1'){
  const observer=setInterval(()=>{
   const field=el('battle-stage');
   const backdrop=field.querySelector('.mb-battle-backdrop');
+  if(backdrop?.dataset.scenePhase==='recovery'&&observed.length===hits.length){
+   clearInterval(observer);
+   const lastHit=hits.at(-1);
+   const hp=field.querySelector('#mb-foe-line [data-unit="'+lastHit.targetId+'"]'+
+    ' .mb-fighter-meta small')?.textContent;
+   const noRepeatedDigit=field.querySelectorAll('.mb-floating-number').length===0;
+   const complete=observed.every((x,i)=>x==='ok:'+i)&&
+    noRepeatedDigit&&hp?.startsWith(String(lastHit.hpAfter)+'/');
+   el('lab-state').textContent=complete?
+    'PHASE22-REAL-HOST-PER-HIT-DOM-PASS':
+    'PHASE22-REAL-HOST-PER-HIT-DOM-FAIL recovery='+
+     noRepeatedDigit+' hp='+hp+' '+observed.join(',');
+   return;
+  }
   const idx=Number(backdrop?.dataset.specialHitIndex||0)-1;
   if(idx<0||idx===last||idx>=hits.length)return;
   last=idx;
@@ -683,14 +705,7 @@ if(review==='purify-e1'){
    floats.length===1&&floats[0].id===target&&correctNumber&&
    renderedHp?.startsWith(String(hit.hpAfter)+'/');
   observed.push(ok?'ok:'+idx:'BAD:'+idx);
-  if(idx===hits.length-1){
-   clearInterval(observer);
-   const complete=observed.length===hits.length&&
-    observed.every((x,i)=>x==='ok:'+i);
-   el('lab-state').textContent=complete?
-    'PHASE22-REAL-HOST-PER-HIT-DOM-PASS':
-    'PHASE22-REAL-HOST-PER-HIT-DOM-FAIL '+observed.join(',');
-  }
+  // Keep checking until the special's recovery redraw has finished.
  },12);
 }else if(review==='yw2-reference-front'||review==='yw2-reference-single'){
  // Source-backed YW2 move shape, NOT the original character artwork or
