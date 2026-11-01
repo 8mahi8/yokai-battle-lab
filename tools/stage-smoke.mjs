@@ -633,6 +633,27 @@ try{
    (sourceResult||'missing DOM marker')+' '+sourcedAttackErr.slice(-550));
  console.log('V3-5-19-YW2-SOURCED-ATTACK-CHROMIUM-PASS original 20 x 3 attack shape');
 
+ // V3-5-21: one REAL custom Host normal multi-hit action with critical
+ // from its canonical hit rows. Verify gold vs normal red, caption and HP.
+ const criticalQa=spawn(browser,[
+  '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+  '--no-first-run','--disable-extensions','--hide-scrollbars',
+  '--user-data-dir='+path.join(tmp,'v3-5-21-critical-dump'),
+  '--window-size=1024,768','--virtual-time-budget=3300','--dump-dom',
+  'http://127.0.0.1:'+server.address().port+'/lab/match-stage.html?review=real-attack-critical'
+ ],{stdio:['ignore','pipe','pipe']});
+ let criticalDom='',criticalErr='';
+ criticalQa.stdout.on('data',data=>criticalDom+=String(data));
+ criticalQa.stderr.on('data',data=>criticalErr+=String(data).slice(0,2000));
+ const criticalTimer=setTimeout(()=>criticalQa.kill('SIGKILL'),18000);
+ const criticalExit=await new Promise(resolve=>criticalQa.on('close',resolve));
+ clearTimeout(criticalTimer);
+ const criticalResult=criticalDom.match(/<span id="lab-state">([^<]*)<[/]span>/)?.[1];
+ if(criticalExit!==0||criticalResult!=='V3-5-21-REAL-CRITICAL-DOM-PASS')
+  throw Error('V3-5-21 real Host critical Chromium mismatch: '+
+   (criticalResult||'missing DOM marker')+' '+criticalErr.slice(-450));
+ console.log('V3-5-21-REAL-HOST-CRITICAL-CHROMIUM-PASS');
+
  // Phase2.2C: original-YW2 *documented move shape* is exercised in a
  // custom host. Confirm real browser reflects one hit per target and correct
  // move name, not an unsourced fixture with a forged original label.
