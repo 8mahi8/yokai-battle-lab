@@ -44,13 +44,3 @@ export const YW2_MULTITARGET_SOULTIMATE_RESEARCH=Object.freeze([source]);
 export function yw2MultitargetSoultimateResearch(id){
  return id===source.id?source:null;
 }
-/** Bridge intentionally cannot fabricate a Host execution spec.
- * Return null until both numeric conflict and target assignment are proven. */
-export function yw2MultiTargetSoultimateExecutableSpec(id){
- const move=yw2MultitargetSoultimateResearch(id);
- if(!move||move.power.status!=='documented'||
-    move.listedHits.status!=='documented'||
-    move.allocation.status!=='documented')return null;
- // This collection currently contains NO executable source-backed moves.
- return null;
-}
