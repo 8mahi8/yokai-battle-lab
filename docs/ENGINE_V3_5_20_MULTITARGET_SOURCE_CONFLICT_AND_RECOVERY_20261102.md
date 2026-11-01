@@ -57,6 +57,6 @@
 
 - [Node Research battle tests](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41361314423)：**971/971 PASS**。`V3-5-20` 4テストを含む。
 - [Chromium Stage QA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41361314464)：**SUCCESS**。16件のStage予備テスト、通常3Hit・出典つき閃光ぎり・カスタム必殺9Host Hitの各DOM受入成功。今回追加したrecovery再描画防止も各ケースの終了条件。
-- [Firebase Friends 2席 CI](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41361320062)：独立の**実2クライアント・認証不要Rules・二iframe Chromium対戦**ステップはSUCCESS。その後の「旧Rules期限の再現・LIVE read-only probe」の全ワークフロー終了はこの追記時点で**進行中**。全体PASSと取り違えない。
+- [Firebase Friends 2席 CI](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41361320062)：独立の**実2クライアント・認証不要Rules・二iframe Chromium対戦**および旧Rules期限の再現・LIVE read-only probeを含む**ワークフロー全体がSUCCESS**。学校Safari実機での成功を意味するものではない。
 
 後続の `docs/HANDOFF_LATEST_20261030.md` / `docs/ROADMAP_6_PHASE_PROGRESS_20261028.md` / README更新は文書変更。これらの最新HEADのCIは別途GitHub Actionsで確認する。学校iPad Safari実機では未検証。
