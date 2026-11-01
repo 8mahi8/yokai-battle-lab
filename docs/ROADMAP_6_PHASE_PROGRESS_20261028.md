@@ -1,3 +1,9 @@
+## 2026-11-02 V3-5-17｜実行技に合わない固有技名の表示防止
+
+**2026-11-02 V3-5-17｜技名・実行定義の出典ゲート：** [原作参照と表示修正の正式記録](./ENGINE_V3_5_17_SPECIAL_NAME_SOURCE_GATE_20261102.md)。レンタル6体の技名は維持。研究用の別必殺が同じスロット・キャラ名でもレンタル固有名を誤表示しないよう、実Hostの技種・対象範囲・威力・状態効果を一致判定。出典確認済み原作研究技は研究名、未認証の別技は汎用名。表示・テストのみ変更で戦闘値/通信不変。Node961件成功（[Actions](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41335044627)）、実Chromium Stage成功（[Actions](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41335038967)）。Firebase同HEADの結果は別途照合。学校Safari実機は未検証。V3-5全体未完成。
+
+- **次 V3-5-18**：原作動画の技固有Hit列とHostの順序付きHitLedger・Stage表示を照合。未確認の5/7ヒット数・秒数は確定しない。
+
 ## 2026-11-02 V3-5-16｜引き継ぎ再監査・多段Hit行動ラベル整合修正
 
 - [正式な引継ぎ再監査/根拠/変更/未検証項目](./ENGINE_V3_5_16_HANDOFF_REAUDIT_AND_HIT_CAPTION_20261102.md)に記録。本人原作動画の過去観察・公式画面・二系統の原作必殺技資料と、最新レンタル技マスター/Source-backed研究例/Host HitLedger/Stageを再照合。原作ジバニャン必殺20×5／20×7は出典で食い違うため、既存のdisputedを保持。元6体の名前や実原作値は変えない。
