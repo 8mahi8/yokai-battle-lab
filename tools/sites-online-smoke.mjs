@@ -1041,7 +1041,7 @@ const server=createServer((req,res)=>{
   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(fragment);return;
  }
  res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'}).end(
-  friends&&['?charge','?gcharge','?purify','?purifycycle','?fullmatch','?onegame'].includes(route.search)?chargeQa:qa);
+  friends&&['?charge','?gcharge','?chargecycle','?purify','?purifycycle','?fullmatch','?onegame'].includes(route.search)?chargeQa:qa);
 });
 const tmp=mkdtempSync(path.join(tmpdir(),'yw-sites-online-'));
 try{
