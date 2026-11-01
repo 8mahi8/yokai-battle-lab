@@ -636,21 +636,24 @@ if(review==='purify-e1'){
    hp.startsWith(String(hit.targetHpAfter)+'/');
   observed.push(ok?'ok:'+idx:'BAD:'+idx);
  },12);
-}else if(review==='real-attack-hit-ledger'||review==='yw2-bushinyan-attack'){
- // Both use the same read-only Host hit paint; the second case explicitly
- // trials the Japanese guide 20x3 interpretation. Mt. Wildwood YW2 has 20x2,
- // so NEITHER is a finalized original hit count.
+}else if(['real-attack-hit-ledger','yw2-bushinyan-attack',
+ 'yw2-bushinyan-attack-mtw'].includes(review)){
+ // Custom Host Hit paint compares TWO contested YW2 source profiles:
+ // Japanese guides 20x3 vs Mt. Wildwood YW2 20x2. Neither is final.
  // The surrounding rental stats/portraits are explicit lab fixtures.
- const sourceBacked=review==='yw2-bushinyan-attack';
+ const sourceBacked=review!=='real-attack-hit-ledger';
+ const profile=review==='yw2-bushinyan-attack-mtw'?'mtwildwood-yw2':'jp-guides';
+ const expectedHits=sourceBacked?
+  (profile==='mtwildwood-yw2'?2:3):3;
  const sourceId='yw2:bushinyan:senko-giri';
  const authored=sourceBacked?yw2ReferenceAttack(sourceId):null;
  const roster=RENTAL_SQUAD.map((u,index)=>({...u,maxHp:800,
   attackHits:3,weights:[100,0,0,0],
   ...(sourceBacked&&index===0?
-    yw2ReferenceAttackResearchOverride(sourceId,'jp-guides'):{})}));
+    yw2ReferenceAttackResearchOverride(sourceId,profile):{})}));
  if(sourceBacked&&(authored?.name!=='閃光ぎり'||authored.power!==20||
     authored.hitEvidence.status!=='disputed'||authored.hitsPerTarget!==null||
-    roster[0].attackHits!==3||
+    roster[0].attackHits!==expectedHits||
     roster[0].attackPower!==authored.power))
   throw Error('YW2 cited original attack authored shape mismatch');
  const host=createCombat({seed:41,teams:[roster,roster],
@@ -658,7 +661,8 @@ if(review==='purify-e1'){
  const action=host.step(),game=host.snapshot();
  const event=game.events.findLast(e=>e.type==='action');
  const hits=event?.multiHit?.hits;
- if(action.type!=='action'||action.kind!=='attack'||!hits||hits.length!==3)
+ if(action.type!=='action'||action.kind!=='attack'||!hits||
+    hits.length!==expectedHits)
   throw Error('real normal attack did not produce three resolved host hits');
  stage.render({game,revision:1,clientSequences:[0,0],forecast:[]});
  let last=-1;
@@ -676,9 +680,11 @@ if(review==='purify-e1'){
    const complete=observed.every((x,i)=>x==='ok:'+i)&&
     noRepeatedDigit&&hp?.startsWith(String(hits.at(-1).targetHpAfter)+'/');
    el('lab-state').textContent=complete?
-    (sourceBacked?'V3-5-19-YW2-SOURCED-ATTACK-PASS':
+    (sourceBacked?(profile==='mtwildwood-yw2'?
+      'V3-5-22-YW2-MTW-2HIT-PASS':'V3-5-19-YW2-SOURCED-ATTACK-PASS'):
      'V3-5-18-REAL-HOST-NORMAL-HITS-PASS'):
-    (sourceBacked?'V3-5-19-YW2-SOURCED-ATTACK-FAIL ':
+    (sourceBacked?(profile==='mtwildwood-yw2'?
+      'V3-5-22-YW2-MTW-2HIT-FAIL ':'V3-5-19-YW2-SOURCED-ATTACK-FAIL '):
      'V3-5-18-REAL-HOST-NORMAL-HITS-FAIL ')+
       'recovery='+noRepeatedDigit+' hp='+hp+' '+observed.join(',');
    return;
