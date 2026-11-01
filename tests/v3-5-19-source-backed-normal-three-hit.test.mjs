@@ -15,22 +15,28 @@ import {RENTAL_ATTACK_MOVES} from '../content/rental-attack-moves.mjs';
 const id='yw2:bushinyan:senko-giri';
 const build=()=>RENTAL_SQUAD.map((unit,i)=>({...unit,
  maxHp:800,weights:[100,0,0,0],
- ...(i===0?yw2ReferenceAttackResearchOverride(id):{})}));
+ ...(i===0?yw2ReferenceAttackResearchOverride(id,'jp-guides'):{})}));
  
-test('V3-5-19 source-backed original attack uses corroborated 20x3 and no inferred Soultimate allocation',()=>{
+test('V3-5-19 Japanese source-profile 20x3 remains a LAB candidate, not universal original truth',()=>{
  const move=yw2ReferenceAttack(id);
  assert.equal(YW2_REFERENCE_ATTACKS.length,1);
  assert.deepEqual({name:move.name,actor:move.actor,slot:move.slot,
   power:move.power,hits:move.hitsPerTarget,targetScope:move.targetScope},
   {name:'閃光ぎり',actor:'ブシニャン',slot:'attack',
-   power:20,hits:3,targetScope:'single_enemy'});
- assert.equal(move.evidence,'three-independent-yw2-guides');
- assert.equal(move.sourceRefs.length,3);
+   power:20,hits:null,targetScope:'single_enemy'});
+ assert.equal(move.evidence,'disputed-yw2-sources');
+ assert.equal(move.hitEvidence.status,'disputed');
+ assert.deepEqual(move.hitEvidence.claims.map(c=>[c.profile,c.value]),
+  [['jp-guides',3],['mtwildwood-yw2',2]]);
+ assert.throws(()=>yw2ReferenceAttackResearchOverride(id),/explicit YW2 source profile/);
+ assert.deepEqual(yw2ReferenceAttackResearchOverride(id,'mtwildwood-yw2'),
+  {attackPower:20,attackHits:2});
+ assert.equal(move.sourceRefs.length,4);
  for(const url of move.sourceRefs)assert.ok(url.startsWith('https://'));
  assert.ok(Object.isFrozen(move)&&Object.isFrozen(move.sourceRefs));
- assert.deepEqual(yw2ReferenceAttackResearchOverride(id),
+ assert.deepEqual(yw2ReferenceAttackResearchOverride(id,'jp-guides'),
   {attackPower:20,attackHits:3});
- assert.ok(Object.isFrozen(yw2ReferenceAttackResearchOverride(id)));
+ assert.ok(Object.isFrozen(yw2ReferenceAttackResearchOverride(id,'jp-guides')));
  assert.throws(()=>yw2ReferenceAttack('yw2:jibanyan:paws-of-fury'),/unknown/);
  assert.deepEqual(RENTAL_ATTACK_MOVES.map(x=>x.hits),[1,1,1,1,1,1],
   'the school rental six must never inherit the sourced research override');
