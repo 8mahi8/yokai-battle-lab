@@ -32,7 +32,7 @@ const chargeQaMode=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&(()=>{
 })();
 const purifyQaMode=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&(()=>{
  try{return location.href==='about:srcdoc'&&window.parent!==window&&
-  window.parent.location.search==='?purify';}catch{return false;}
+  ['?purify','?purifycycle'].includes(window.parent.location.search);}catch{return false;}
 })();
 // Reproduce a whole 6v6 with actual Host action, KO, reserve replacement,
 // and seat-specific result; HP/power are explicitly local QA ONLY.
@@ -229,7 +229,7 @@ $('.yw-online-start').addEventListener('click',async()=>{
   // Even in emulation the Host's real MatchProtocol resolves every action.
   const chargeGuard=chargeQaMode?RENTAL_SQUAD.map(unit=>({...unit,
    soulCapacity:5,weights:[0,0,0,100]})):null;
-  // Purify fixture is never installed into a normal Friends match.
+  // Purify fixtures (including the all-five-gestures QA) are never installed into a normal Friends match.
   // Enemy uses legitimate autonomous negative Inspirit; the guest must
   // choose a benched poisoned member and finish the real touch minigame.
   const purifyTeams=purifyQaMode?[
