@@ -17,7 +17,7 @@ import {planActionChoreography,choreographyFrame} from '../presentation/action-c
 import {createSeatMotionVisibility} from './seat-motion-visibility.mjs';
 import {projectKoViewChange} from './ko-view-transition.mjs';
 import {assessSeatMotionDelivery} from './seat-motion-delivery.mjs';
-import {projectLegacyAttackOutcome} from '../presentation/legacy-attack-outcome.mjs';
+import {projectLegacyAttackOutcome,projectRecordedAttackHits} from '../presentation/legacy-attack-outcome.mjs';
 import {projectAttackOutcomeV2} from '../presentation/legacy-attack-to-v2.mjs';
 import {projectSoultimateImpactLedger} from '../contracts/soultimate-impact-ledger-v1.mjs';
 import {projectSoultimateHitLedger} from '../contracts/soultimate-hit-ledger-v1.mjs';
@@ -129,12 +129,16 @@ export function makeStageView(state,side=0){
  // the host's canonical event array, RNG, Soul, HP, or wire fingerprint.
  const live=(game.events?.slice(-20)||[]).map(event=>{
   const projection=projectLegacyAttackOutcome(event,game.squads);
+  // CUSTOM original-move research may have host-confirmed multi-hits without
+  // a certified rental move ID. Preserve their damage rows, not a fake name.
+  const hostAttackHits=projection?null:projectRecordedAttackHits(event);
   const actionOutcomeV2=projectAttackOutcomeV2(event,game.squads);
   const specialImpactLedger=projectSoultimateImpactLedger(event);
   const specialHitLedger=projectSoultimateHitLedger(event);
   const specialVisual=projectSoultimateVisual(event,game.squads);
-  return projection||actionOutcomeV2||specialImpactLedger||specialHitLedger||specialVisual?{...event,
+  return projection||hostAttackHits||actionOutcomeV2||specialImpactLedger||specialHitLedger||specialVisual?{...event,
    ...(projection?{attackProjection:projection}:{}),
+   ...(hostAttackHits?{hostAttackHits}:{}),
    ...(actionOutcomeV2?{actionOutcomeV2}:{}),
    ...(specialImpactLedger?{specialImpactLedger}:{}),
    ...(specialHitLedger?{specialHitLedger}:{}),
