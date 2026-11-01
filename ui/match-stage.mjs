@@ -344,12 +344,14 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   if(scenePhase!=='impact')return null;
   if(flash?.type==='action'&&scenePlan?.hitResults?.length){
    const h=scenePlan.hitResults[sceneHitIndex??0];
-   return h?.targetId===id?{id,hit:h.hit,kind:'damage',amount:h.damage}:null;
+   return h?.targetId===id?{id,hit:h.hit,kind:'damage',amount:h.damage,
+    ...(h.critical===true?{critical:true}:{})}:null;
   }
   if(flash?.type==='special'&&scenePlan){
    if(scenePlan.specialHitLedger&&sceneSpecialHitIndex!==null){
     const hit=scenePlan.specialHitLedger.hits[sceneSpecialHitIndex];
-    return hit?.targetId===id?{id,kind:'damage',amount:hit.damage,hit:hit.hit}:null;
+    return hit?.targetId===id?{id,kind:'damage',amount:hit.damage,hit:hit.hit,
+     ...(hit.critical===true?{critical:true}:{})}:null;
    }
    const current=scenePlan.impacts[sceneSpecialTargetIndex??0];
    return sceneSpecialTargetIndex!==null&&current?.targetId===id?
@@ -792,7 +794,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const victim=impact&&view.teams[impact.id?.startsWith('B')?1:0]?.members.find(u=>u.id===impact.id);
    $('mb-cue-kind').textContent=flash.mode==='g-tech'?'Gわざ！':names[flash.kind]||names[flash.type]||'行動';
    $('mb-cue-summary').textContent=(caster?.name||'')+(victim?' → '+victim.name:'')+
-     (impact?.hit===false?' ミス！':impact?.amount>0?' '+impact.amount:'');
+     (impact?.hit===false?' ミス！':impact?.amount>0?
+      ' '+impact.amount+(impact.critical===true?' クリティカル！':''):'');
    callout.dataset.kind=flash.kind||flash.type;
    // Soultimates already have their own prominent full-field cut-in.
    // Do not overlay a second announcement on top of the named special.
@@ -850,10 +853,14 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    // The HP/impact animation steps through real hit rows. Keep this
    // caption on the SAME hit; never announce the final total early.
    const labelImpact=actionLabelImpact(action,scenePlan?.hitResults,sceneHitIndex);
+   const activeHit=scenePlan?.hitResults?.[sceneHitIndex??0];
+   const critical=scenePhase==='impact'&&flash?.type==='action'&&
+    labelImpact.hit&&(activeHit?activeHit.critical===true:action.critical===true);
    $('mb-action-label').textContent=(actor?.name||action.actor||'妖怪')+' → '+(target?.name||'行動')+
     ' / '+(kindNames[action.kind]||action.kind)+(showImpact()&&
     flash?.type==='action'&&!labelImpact.hit?'（ミス）':
-    showImpact()&&flash?.type==='action'&&labelImpact.amount>0?' '+labelImpact.amount:'');
+    showImpact()&&flash?.type==='action'&&labelImpact.amount>0?
+     ' '+labelImpact.amount+(critical?'（クリティカル）':''):'');
   }else $('mb-action-label').textContent='次の行動を待機中';
   $('mb-active-label').textContent='PLAYER '+(activeSeat?'B':'A')+' の操作';
   const selected=own.members.find(x=>x.id===selection);
