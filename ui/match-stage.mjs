@@ -176,6 +176,16 @@ export function matchSelectionHints(view,mode){
     'ねらう：相手の前衛を選ぼう'};
 }
 
+/** Name only a validated presentation move. A custom roster sharing a slot
+ * with the six rentals must not inherit that rental's made-up special title. */
+export function specialTitleFromPlan(plan){
+ if(plan?.kind!=='special')return '';
+ if(plan.referenceSoultimate)
+  return '原作技の研究：'+yw2ReferenceSoultimate(plan.referenceSoultimate.id).name;
+ if(plan.specialVisual)return soultimateDisplayTitle(plan.actorId);
+ return 'ひっさつわざ';
+}
+
 /** Winner comes only from the authoritative host snapshot, never from
  * estimating the opponent's visible HP or independent guest simulation. */
 export function projectMatchResult(winner,seat){
@@ -783,9 +793,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    callout.hidden=flash.type==='special';
   }else callout.hidden=true;
   $('mb-special-title').textContent=flash?.type==='special'?
-   flash.referenceSoultimate?
-    '原作技の研究：'+yw2ReferenceSoultimate(flash.referenceSoultimate.id).name:
-    soultimateDisplayTitle(flash.actor):'';
+   specialTitleFromPlan(scenePlan):'';
 
   const own=view.teams[activeSeat];
   if(!own.members.some(x=>x.id===selection))selection=own.frontIds[0];
@@ -825,7 +833,9 @@ export function createMatchStage({element,onAction,onStep=()=>{},
     (showImpact()&&flash.amount>0?' '+flash.amount:'');
   }else if(flash?.type==='special'){
    const caster=view.teams[flash.actor?.startsWith('B')?1:0]?.members.find(u=>u.id===flash.actor);
-   $('mb-action-label').textContent=(caster?.name||'妖怪')+' / '+
+   const title=specialTitleFromPlan(scenePlan);
+   const named=title&&title!=='ひっさつわざ'?title+' / ':'';
+   $('mb-action-label').textContent=(caster?.name||'妖怪')+' / '+named+
     (flash.mode==='g-tech'?'Gわざ':'ひっさつわざ')+'発動';
   }else if(action){
    const actor=view.teams[action.actor?.startsWith('B')?1:0]?.members.find(u=>u.id===action.actor);
