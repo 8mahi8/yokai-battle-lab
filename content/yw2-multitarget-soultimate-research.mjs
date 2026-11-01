@@ -3,8 +3,10 @@
  * establish how N strikes are distributed among the three enemy front units.
  *
  * Shogunyan/ブシニャン is an actual dispute, not a ready-to-execute move:
- * Japanese game guides disagree on Power, and Mt. Wildwood's mined YW2
- * numbers disagree on both power and hit count.
+ * Japanese YW2 guides disagree on Power. Mt. Wildwood's long page
+ * contains BOTH YW1 and YW2 sections: YW1's 22×9 must NOT be treated as
+ * YW2 data. The YW2 section documents 25×9, while Japanese guides
+ * document 25×10 or 20×10. The target allocation remains unverified.
  *
  * Nothing here is imported by the Host, rental move master, or Friends mode.
  * Preserve raw sourced claims instead of picking a plausible winner.
@@ -24,14 +26,18 @@ const source=Object.freeze({
  character:'ブシニャン',name:'かつおブシ斬り',slot:'soultimate',
  category:'enemy-front-physical-multiattack',
  power:fact('disputed',[
-  {value:25,ids:['guide','gamecap']},
-  {value:20,ids:['gamee']},
-  {value:22,ids:['mined']}
+  {value:25,ids:['guide','gamecap','mined']},
+  {value:20,ids:['gamee']}
  ]),
  listedHits:fact('disputed',[
   {value:10,ids:['guide','gamecap','gamee']},
   {value:9,ids:['mined']}
  ]),
+ // 22×9 in the SAME online page belongs to the distinct YW1 section.
+ excludedOtherGames:Object.freeze([Object.freeze({
+  game:'yw1',power:22,listedHits:9,sourceRef:refs.mined,
+  reason:'distinct Yo-kai Watch 1 heading; not a YW2 claim'
+ })]),
  // No YW2 source yet proves a per-target count, hit selection order,
  // retarget-after-KO or even whether every strike is applied to every foe.
  allocation:Object.freeze({
