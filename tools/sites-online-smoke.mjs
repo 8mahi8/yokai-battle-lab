@@ -917,10 +917,11 @@ function gauge(frame,id){
       const countBefore=challenge()?.count;
       await gesture('pointerdown',.5,.18,id+50);
       await gesture('pointermove',x,y,id+50);
-      await gesture('pointercancel',x,y,id+50);
-      check(challenge()?.count===countBefore&&guided()?.kind==='align'&&
-       challenge()?.handAngle===-Math.PI/2,
-       'canceled clock stream was counted or left an active hand');
+      // Deliberately no RTDB command after pointercancel: existing Firebase
+      // Rules admit up/down/move/tap only. The next down restarts Host drag.
+      await gesture('pointercancel',x,y,id+50,false);
+      check(challenge()?.count===countBefore&&guided()?.kind==='align',
+       'canceled clock stream was counted as a normal pointerup');
       check(gauge(g,'B1')==='100%',
        'canceled clock unexpectedly consumed the Soultimate Soul');
      }
