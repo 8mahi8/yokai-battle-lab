@@ -1,3 +1,10 @@
+## 2026-11-02 V3-5-19｜Source-backed 原作通常多段攻撃を実際の戦闘表示に接続
+
+- [技データ・根拠・改修・QA記録](./ENGINE_V3_5_19_BUSHINYAN_SOURCE_ATTACK_20261102.md)を確認。YW2資料（攻略大百科 / game-cap / GameConductor）からブシニャン「閃光ぎり」の通常攻撃Lv1威力20×3の一致を確認。新たな出典つき研究Moveデータが、従来のレンタルとは独立して追加された。
+- QA専用のcustom実Hostに `attackPower:20, attackHits:3` を出典データから適用。結果は既存Host命中列→両席Snapshot→Stage/Chromiumで3Hit確認。原作のHit分配・時計・ダメージ関数を捏造しない。
+- **実テスト**：Node **967/967 PASS**（`c39abf6`、[CI](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41338130252)）、Chromium Stage PASS（[CI](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41338124340)）で新たな原作3Hitブラウザ受入マーカーを確認。Firebase回帰・学校Safariは別途。
+- **次 V3-5-20**：原作の多段必殺技について、**総Hit数と対象3体間での命中分配**を本人動画・原作確実資料から調査する。資料衝突のあるブシニャン必殺の威力やジバニャン5/7Hitを都合よく決定しない。実機で遊べる機会があれば通常戦の楽しさ・操作性・進行時間を最優先。
+
 ## 2026-11-02 V3-5-18｜実行記録と映像表示の多段Hit整合
 
 - [正式な調査・コード変更・一時回帰失敗と復元](./ENGINE_V3_5_18_NORMAL_HIT_TIMELINE_AND_BROWSER_QA_20261102.md)。元動画過去観察の「必殺カットイン→連続数字→HP推移」と「赤攻撃・緑回復」対比から、共通Choreographyの通常攻撃だけ最終合計を先行投影していた差分を修正。
