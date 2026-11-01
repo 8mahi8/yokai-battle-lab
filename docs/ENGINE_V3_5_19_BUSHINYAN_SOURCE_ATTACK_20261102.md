@@ -1,3 +1,5 @@
+> **V3-5-22 重要訂正（2026-11-02）:** このV3-5-19記録の「閃光ぎり20×3が原作で確定」は後の[ゲーム別見出し再監査](./ENGINE_V3_5_22_CROSS_GAME_SOURCE_SECTION_CORRECTION_20261102.md)で訂正した。日本語のYW2攻略3資料は20×3だが、Mt. Wildwoodの明示的なYW2欄は20×2。現在の `content/yw2-attack-reference.mjs` ではHit数を `disputed` とし、自動採用しない。この文書の20×3は**日本語資料を採用した研究Fixtureの記録**であり原作確定ではない。
+
 # 妖怪ウォッチ2｜Engine V3-5-19：ブシニャン「閃光ぎり」原作裏付けの3Hit研究
 
 2026-11-02 / 開発ブランチ `feat/phase1-action-circle-lab-20261023`
