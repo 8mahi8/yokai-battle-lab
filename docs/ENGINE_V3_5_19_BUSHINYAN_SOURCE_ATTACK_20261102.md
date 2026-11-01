@@ -41,3 +41,13 @@
 命中列を含む原作の**必殺技**について、（1）技の総Hit数、（2）前衛3体へのHit割り振り、（3）KO後の次対象、（4）アニメの起点と時間を資料/本人元動画で独立確認する。これが揃うまでは「20×10全体必殺」を既存の per-target 10Hit 契約へ自動変換しない。学校Safari実機が用意できるなら、数値研究より実戦の操作/進行・画面品質の確認を優先する。
 
 引き継ぎ時は [HANDOFF最新版](./HANDOFF_LATEST_20261030.md) と [6段階ロードマップ](./ROADMAP_6_PHASE_PROGRESS_20261028.md)を併読。
+
+## V3-5-19 コードHEADの最終CI実測（2026-11-02）
+
+コード＋新研究Chrome受入を含むコミット **`c39abf67`** に対して、GitHub Actionsの終了状態まで確認済み：
+
+- Node **967/967 PASS**：[Research battle unit tests](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41338130252)
+- Chromium Stage **16/16 PASS** かつ `V3-5-19-YW2-SOURCED-ATTACK-CHROMIUM-PASS` をジョブログで確認：[Phase14](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41338124340)
+- Firebase Emulator / Friends 2席の全ワークフロー **SUCCESS**：[Phase37](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41338130275)
+
+後続のREADME/HANDOFF/ROADMAPは**文書だけ**のコミットであり、上のテスト結果はコード `c39abf67` を対象にしたもの。学校Safari実機は未検証、Google Sites HTML/Firebase本番 Rules は無変更。
