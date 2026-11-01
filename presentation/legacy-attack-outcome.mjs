@@ -82,8 +82,10 @@ export function projectLegacyAttackOutcome(event,squads,
  const move=character.moves?.attack;
  if(!move||move.category!=='physical_damage'||
     actor.attackPower!==move.power||
-    (actor.attackHits??1)!==move.hitPattern.count||
-    recorded.plannedHitCount!==move.hitPattern.count)return null;
+    // The caster's authored move identity must still be the rental's.
+    // Legacy per-action recorded `planned` may differ (QA host fixtures);
+    // it describes HOST execution, not original game hit count.
+    (actor.attackHits??1)!==move.hitPattern.count)return null;
  return Object.freeze({
   schema:'legacy-attack-projection-v1',
   sourceEventId:isInt(event.eventId)&&event.eventId>0?event.eventId:null,
