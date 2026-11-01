@@ -259,6 +259,21 @@ function gauge(frame,id){
   'host canonical battle stage');
  await until(()=>el(g,'#battle-stage')?.dataset.stageReady==='true',
   'guest auto-connect without extra tap');
+ // V3-5-15: original footage Match01 opens with a short 'いざ勝負！'.
+ // Verify fresh Friends Guest gets a non-blocking intro, then live controls
+ // remain available with no extra command or modified canonical action.
+ if(isChargeCycle){
+  const opening=el(g,'#mb-start-callout');
+  check(opening&&opening.hidden===false&&opening.textContent==='いざ勝負！',
+   'fresh Friend Guest did not see the original-style opening challenge');
+  check(getComputedStyle(opening).pointerEvents==='none',
+   'battle opening overlay can steal a touch from the player');
+  await until(()=>opening.hidden===true,
+   'battle opening callout never ended');
+  check(el(g,'#mb-turn')?.textContent==='0'&&
+   el(g,'#mb-charge')&&!el(g,'#mb-charge').disabled,
+   'opening visual blocked the first real battle controls');
+ }
  await until(()=>el(h,'.yw-online-presence')?.textContent==='相手と接続中'&&
   el(g,'.yw-online-presence')?.textContent==='相手と接続中','both peer presences');
  // V3-5-6: the school Friends layout is playable, not a debug dashboard.
