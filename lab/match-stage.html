@@ -23,6 +23,8 @@
 <script type="module">
 import {createMatchProtocol} from '../engine/match-protocol.mjs';
 import {createCombat,RENTAL_SQUAD} from '../engine/combat.mjs';
+import {yw2ReferenceAttack,yw2ReferenceAttackResearchOverride}
+ from '../content/yw2-attack-reference.mjs';
 import {createMatchStage} from '../ui/match-stage.mjs';
 import {projectKoViewChange} from '../ui/ko-view-transition.mjs';
 import {passiveSkillNoticesForAction} from '../ui/passive-feedback.mjs';
@@ -586,11 +588,20 @@ if(review==='purify-e1'){
     'PHASE22-REAL-HOST-HP-LEDGER-PASS':'PHASE22-REAL-HOST-HP-LEDGER-FAIL '+seen.join(',');
   }
  },20);
-}else if(review==='real-attack-hit-ledger'){
- // Real CUSTOM three-hit normal attack: data is host-recorded, not a
- // fabricated original YW2 three-hit move or a renamed rental card.
- const roster=RENTAL_SQUAD.map(u=>({...u,maxHp:800,attackHits:3,
-  weights:[100,0,0,0]}));
+}else if(review==='real-attack-hit-ledger'||review==='yw2-bushinyan-attack'){
+ // Both use the same read-only Host hit paint; the second case takes ONLY
+ // documented attack Power20 x 3 from three independent YW2-only guides.
+ // The surrounding rental stats/portraits are explicit lab fixtures.
+ const sourceBacked=review==='yw2-bushinyan-attack';
+ const sourceId='yw2:bushinyan:senko-giri';
+ const authored=sourceBacked?yw2ReferenceAttack(sourceId):null;
+ const roster=RENTAL_SQUAD.map((u,index)=>({...u,maxHp:800,
+  attackHits:3,weights:[100,0,0,0],
+  ...(sourceBacked&&index===0?yw2ReferenceAttackResearchOverride(sourceId):{})}));
+ if(sourceBacked&&(authored?.name!=='閃光ぎり'||authored.power!==20||
+    roster[0].attackHits!==authored.hitsPerTarget||
+    roster[0].attackPower!==authored.power))
+  throw Error('YW2 cited original attack authored shape mismatch');
  const host=createCombat({seed:41,teams:[roster,roster],
   researchMultiHit:true,researchDamageModel:true});
  const action=host.step(),game=host.snapshot();
@@ -630,8 +641,10 @@ if(review==='purify-e1'){
    const complete=observed.length===hits.length&&
     observed.every((x,i)=>x==='ok:'+i);
    el('lab-state').textContent=complete?
-    'V3-5-18-REAL-HOST-NORMAL-HITS-PASS':
-    'V3-5-18-REAL-HOST-NORMAL-HITS-FAIL '+observed.join(',');
+    (sourceBacked?'V3-5-19-YW2-SOURCED-ATTACK-PASS':
+     'V3-5-18-REAL-HOST-NORMAL-HITS-PASS'):
+    (sourceBacked?'V3-5-19-YW2-SOURCED-ATTACK-FAIL ':
+     'V3-5-18-REAL-HOST-NORMAL-HITS-FAIL ')+observed.join(',');
   }
  },12);
 }else if(review==='real-special-hit-ledger'){
