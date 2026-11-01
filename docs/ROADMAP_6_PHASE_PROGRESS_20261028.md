@@ -1,3 +1,10 @@
+## 2026-11-02 V3-5-18｜実行記録と映像表示の多段Hit整合
+
+- [正式な調査・コード変更・一時回帰失敗と復元](./ENGINE_V3_5_18_NORMAL_HIT_TIMELINE_AND_BROWSER_QA_20261102.md)。元動画過去観察の「必殺カットイン→連続数字→HP推移」と「赤攻撃・緑回復」対比から、共通Choreographyの通常攻撃だけ最終合計を先行投影していた差分を修正。
+- 攻撃Hostイベントの実Hit列を技IDなしで検証投影する共通アダプタを追加。既存レンタル6体と `ActionOutcomeV2` / `SoultimateHitLedger` は保持し、カスタムの3連Hitは元Host結果・両席・舞台演出で検証。原作の5/7 Hit衝突は保留。
+- **Node965/965 PASS**（`bc118633`）。別途 Chromium実舞台3Hit DOM受入とFirebase2席・最終HEADはCIを見て確認。本番学校Sites/DB/Rulesは未変更。
+- **次 V3-5-19**：本家で独立出典が揃う技固有Hit・モーション表示を既存データ駆動へ反映。学校Safari2台の実試合・長さ/操作/回線確認を優先。出典なし秒数・攻撃回数は推定しない。
+
 ## 2026-11-02 V3-5-17｜実行技に合わない固有技名の表示防止
 
 **2026-11-02 V3-5-17｜技名・実行定義の出典ゲート：** [原作参照と表示修正の正式記録](./ENGINE_V3_5_17_SPECIAL_NAME_SOURCE_GATE_20261102.md)。レンタル6体の技名は維持。研究用の別必殺が同じスロット・キャラ名でもレンタル固有名を誤表示しないよう、実Hostの技種・対象範囲・威力・状態効果を一致判定。出典確認済み原作研究技は研究名、未認証の別技は汎用名。表示・テストのみ変更で戦闘値/通信不変。Node961件成功（[Actions](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41335044627)）、実Chromium Stage成功（[Actions](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41335038967)）。Firebase同HEADの結果は別途照合。学校Safari実機は未検証。V3-5全体未完成。
