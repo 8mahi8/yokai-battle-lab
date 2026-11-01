@@ -40,3 +40,13 @@
 ## 次工程：V3-5-23
 
 試合中の大きな差分を優先する。出典を再検証したうえで元動画や本家の実プレイ映像を直接観察できれば、**1つの全体多段必殺の対象Hit列・KO後の挙動**を確認する。その証拠がなければ、学校Safariでの実プレイ・操作とバトルテンポなど現状のゲーム品質の検証を進める。別タイトル由来の数値や架空の原作ヒット数は導入しない。
+
+## GitHub Actions コード版CI確定（2026-11-02）
+
+ソース修正、旧契約テスト更新、二つのChromium研究プロファイル、新回帰3件を含む**コードHEAD `42d7b397`**の結果：
+
+- **Node 978/978 PASS**： [Research battle unit tests](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41363136916)。初代22×9の混入拒否・原作攻撃20×2/20×3の不一致・各解釈を明示したHostの両席一致を確認。
+- **Chromium Stage SUCCESS**： [Phase14 original-engine stage QA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41363131898)。通常16件の基本テストと、`V3-5-22-YW2-VARIANT-CHROMIUM-PASS JP 20x3`・`... MtWildwood 20x2`の双方を実ブラウザDOMで確認。
+- **Firebase Friends 2席 SUCCESS**： [Phase37 Friends no Auth QA](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41363136905)。独立エミュレータにおける二つのクライアント・Rules・Chromiumの対戦と、後続ワークフローを含む全体の成功。学校iPad実機の試験ではない。
+
+後続のREADME/引き継ぎ/ロードマップは**文書のみの変更**。最新文書コミットの追加CIが残っていても、上記コードコミットのテストと混同しない。

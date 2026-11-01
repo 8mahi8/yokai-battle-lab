@@ -1,4 +1,4 @@
-> **2026-11-02 V3-5-22｜原作研究データの重要訂正：** [原作のゲーム別見出し再監査・実装・テスト](./docs/ENGINE_V3_5_22_CROSS_GAME_SOURCE_SECTION_CORRECTION_20261102.md)。初代22×9の数字をYW2必殺に混ぜていた記録を修正（YW2欄25×9）、通常技も日本語20×3と別YW2資料20×2を区別。研究用2プロファイルでのみ実Host・Chromiumを検証し、学校6体や原作確定ルールには導入しない。Node978/978＋Chromium両ケース成功、Firebase2席の最新版結果は別途。V3-5原作再現は未完了。
+> **2026-11-02 V3-5-22｜原作研究データの重要訂正：** [原作のゲーム別見出し再監査・実装・テスト](./docs/ENGINE_V3_5_22_CROSS_GAME_SOURCE_SECTION_CORRECTION_20261102.md)。初代22×9の数字をYW2必殺に混ぜていた記録を修正（YW2欄25×9）、通常技も日本語20×3と別YW2資料20×2を区別。研究用2プロファイルでのみ実Host・Chromiumを検証し、学校6体や原作確定ルールには導入しない。Node978/978＋Chromium両ケース成功、Firebase2席もコードHEAD `42d7b397`でSUCCESS（[CI](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41363136905)）。V3-5原作再現は未完了。
 
 > **2026-11-02 V3-5-21｜ホスト確定のクリティカルを戦闘画面へ表示：** [引き継ぎ・原作照合・テスト](./docs/ENGINE_V3_5_21_CRITICAL_HIT_FEEDBACK_AND_MULTI_TARGET_EVIDENCE_20261102.md)。通常/研究必殺の1Hitごとの`critical`を再計算せず描画に反映。数値や通信は変更せず、学校の6体はそのまま。原作の複数対象連撃の配分/KO後挙動は出典不十分につき保留。新CIが完了するまで合格と記さない。
 
