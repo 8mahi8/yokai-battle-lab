@@ -7,7 +7,7 @@
  */
 import {renderSpiritPortrait} from './character-art.mjs';
 import {wheelAngle,wheelGestureAt} from './wheel-gesture.mjs';
-import {latestBattleCue,visualReactionClass} from './battle-vfx.mjs';
+import {latestBattleCue,visualReactionClass,actionLabelImpact} from './battle-vfx.mjs';
 import {collectNewBattleCues,MAX_VISUAL_CATCHUP_CUES,actionForVisibleCue} from './battle-cue-sequence.mjs';
 import {passiveSkillNoticesForAction} from './passive-feedback.mjs';
 import {soultimateDisplayTitle} from '../content/presentation-labels.mjs';
@@ -831,10 +831,13 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const actor=view.teams[action.actor?.startsWith('B')?1:0]?.members.find(u=>u.id===action.actor);
    const target=view.teams[action.target?.startsWith('B')?1:0]?.members.find(u=>u.id===action.target);
    const kindNames={attack:'攻撃',technique:'妖術',inspirit:'とりつき',guard:'ガード',heal:'回復',loaf:'サボり'};
+   // The HP/impact animation steps through real hit rows. Keep this
+   // caption on the SAME hit; never announce the final total early.
+   const labelImpact=actionLabelImpact(action,scenePlan?.hitResults,sceneHitIndex);
    $('mb-action-label').textContent=(actor?.name||action.actor||'妖怪')+' → '+(target?.name||'行動')+
     ' / '+(kindNames[action.kind]||action.kind)+(showImpact()&&
-    flash?.type==='action'&&action.hit===false?'（ミス）':
-    showImpact()&&flash?.type==='action'&&action.amount>0?' '+action.amount:'');
+    flash?.type==='action'&&!labelImpact.hit?'（ミス）':
+    showImpact()&&flash?.type==='action'&&labelImpact.amount>0?' '+labelImpact.amount:'');
   }else $('mb-action-label').textContent='次の行動を待機中';
   $('mb-active-label').textContent='PLAYER '+(activeSeat?'B':'A')+' の操作';
   const selected=own.members.find(x=>x.id===selection);
