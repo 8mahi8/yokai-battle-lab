@@ -964,6 +964,16 @@ try{
   if(!pProof.ok)throw Error('V3-5-4 real 2-seat Friends Purify failed: '+
    String(pProof.rendered||pProof.reason).slice(0,1500));
   console.log(pProof.rendered);
+  // V3-5-12: run the actual online Game/Stage inputs, not unit-only
+  // simulations, for all five purification touch challenge types.
+  const pCycle=await runRealtimeQa({
+   browser,profile:path.join(tmp,'purifycycle-profile'),
+   url:'http://127.0.0.1:'+server.address().port+'/qa?purifycycle',
+   sentinel:'SITES-FRIENDS-PURIFY-CYCLE-PASS',timeoutMs:120000
+  });
+  if(!pCycle.ok)throw Error('V3-5-12 real two-seat 5 Purify gestures failed: '+
+   String(pCycle.rendered||pCycle.reason).slice(0,1700));
+  console.log(pCycle.rendered);
   const full=await runRealtimeQa({
    browser,profile:path.join(tmp,'fullmatch-profile'),
    url:'http://127.0.0.1:'+server.address().port+'/qa?fullmatch',
