@@ -206,6 +206,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  let seenCueKey=null,flash=null,scenePlan=null,scenePhase='done',sceneStartedAt=0,sceneTimer=null,lastEventId=0;
  let lastKoArrival=[]; // visual only; host owns the complete frontline
  let pendingCues=[]; // read-only display queue; never delays authoritative host
+ let matchIntroShown=false,matchIntroTimer=null; // local presentation only
  let sceneHitIndex=null; // presentation only: index into host-confirmed attack hits
  let sceneSpecialTargetIndex=null; // resolved target, not a hit count
  let sceneSpecialHitIndex=null; // custom host hit, never target count
@@ -241,6 +242,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
      </div>
      <div class="mb-foe-line" id="mb-foe-line"></div><div id="mb-action-callout" class="mb-action-callout" hidden><b id="mb-cue-kind"></b><span id="mb-cue-summary"></span></div><div id="mb-passive-notice" class="mb-passive-notice" hidden aria-live="off"></div>
      <div class="mb-scenery mb-scenery-floor" aria-hidden="true"></div>
+     <div id="mb-start-callout" class="mb-start-callout" hidden aria-hidden="true">いざ勝負！</div>
      <div class="mb-ally-line" id="mb-ally-line"></div>
     </div>
     <div class="mb-action-label" id="mb-action-label" aria-live="polite">次の行動を待機中</div>
@@ -414,6 +416,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  }
  function beginScene(cue,previousView,allowOpponentHold=false){
   cancelScene();
+  clearTimeout(matchIntroTimer);matchIntroTimer=null;
+  $('mb-start-callout').hidden=true;
   if(document.hidden)return;
   try{scenePlan=planActionChoreography(cue);}
   catch(error){onError(error);cancelScene();return;}
@@ -605,6 +609,18 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   const previousView=view;
   wireState=state;
   view=makeStageView(state,activeSeat);
+  // A first-match cue grounded in the supplied original PvP recording;
+  // never resurrect on mid-battle attach, nor hold the actual battle clock.
+  if(!matchIntroShown){
+   matchIntroShown=true;
+   if(!showResearchLabels&&!document.hidden&&view.winner===null&&view.turn===0&&
+      !view.events.some(e=>e.type==='action'||e.type==='special')){
+    const intro=$('mb-start-callout');
+    intro.hidden=false;
+    matchIntroTimer=setTimeout(()=>{intro.hidden=true;matchIntroTimer=null;},
+     950); // presentation trial, not an original measured duration
+   }
+  }
   // A compulsory reserve entrance is rendered only after the host wheel
   // truly moves away from an entirely KO front, not after a manual rotation.
   if(previousView){
@@ -1091,6 +1107,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  element.addEventListener('lostpointercapture',onLostCapture);
  function setConnection(label){$('mb-connection').textContent=String(label);}
  function destroy(){pendingCues=[];cancelScene();clearTimeout(wheelClickTimer);
+  clearTimeout(matchIntroTimer);matchIntroTimer=null;
   clearTimeout(purificationTimer);purificationTimer=null;
   document.removeEventListener('visibilitychange',onSceneVisibility);
   element.removeEventListener('click',handleClick);
