@@ -25,3 +25,10 @@ export function yw2ReferenceAttack(id){
   throw new RangeError('unknown YW2 reference normal attack');
  return byId.get(id);
 }
+
+/** Only the two documented AUTHORING fields, for an explicit custom test
+ * roster. This is never automatically installed into Friends matches. */
+export function yw2ReferenceAttackResearchOverride(id){
+ const move=yw2ReferenceAttack(id);
+ return Object.freeze({attackPower:move.power,attackHits:move.hitsPerTarget});
+}
