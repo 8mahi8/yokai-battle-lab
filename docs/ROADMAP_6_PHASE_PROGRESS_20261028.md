@@ -19,6 +19,12 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-11-02 V3-5-14｜Safari pointercancel/時計合わせ「中断なのに成功・再操作不能」改善
+
+- [**根拠・実装・CI完走台帳**](./ENGINE_V3_5_14_SAFARI_POINTERCANCEL_ALIGNMENT_RECOVERY_20261102.md)。Safari等のブラウザは画面回転/アプリ切替/掌拒否で`pointercancel`を出す。時計`align`は指離し`up`で成功を数えるため、従来の中断`up`転送では誤成功の可能性。最初の新`cancel`案は**既存No-Auth Firebase Rulesで`permission_denied`**となり、ルール変更せずに撤回。`ui/match-stage.mjs`の中断時計のみ`up`送信を避ける、`engine/charge-input.mjs`で前のドラッグが未完了なら次の本物の`down`で12時に戻す。**現行4入力の通信プロトコル、時計3回判定・Soul/技威力・他4つの対戦操作は不変**。
+- Node**[953/953 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41329695172)**、[Stage16/16 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41329691071)、[本物の無認証Firebase2席（通常＋旧Rules再現の両条件）全工程2回PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41329695160)。時計で`pointercancel`→成功回数/妖気増減なし→次の正規指操作でチャージ完走・必殺成功を実DOM/Hostスナップショットで検証。既存全チャージ、おはらい、6体KO/勝敗も通し成功。
+- **次V3-5-15**：学校iPad Safari二台で実試合できる機会があれば最優先。それ以外は**原作と今のレンタル仮実装・戦闘テンポ・見た目の最大の差**を既存元動画観察資料/外部原作出典/コードから選び、完成に直接つながる修正を優先。稀な例外の無制限な試験はしない。学校Sites稼働HTML/本番Firebase Rules/DB/Auth/main/Driveは未変更。**V3-5全体未完**。
+
 ## 2026-11-02 V3-5-13｜必殺チャージ残り3操作の実二席完走・回帰
 
 - [**原作出典・実装と受入の正式記録**](./ENGINE_V3_5_13_FOUR_SOULTIMATE_CHARGE_GESTURES_ONLINE_E2E_20261102.md)。元々実装済みの4種類のうち、Firebase2席で`tap`は既に6タップ完走。今回`spin/trace/align`も**Host既存RNG（localhost限定seed14）に選ばせ、Guestの実Pointer操作から全3種必殺完了、Soul消費、敵HP正規変化**まで2回通しで成功。ゲームルール、操作閾値、キャラ性能、UI/時間は無変更で**QAだけ追加**。
