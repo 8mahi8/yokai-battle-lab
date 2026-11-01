@@ -626,7 +626,7 @@ function gauge(frame,id){
     await until(()=>el(g,'#mb-revision')?.textContent.includes(tag)&&
      el(h,'#mb-revision')?.textContent.includes(tag),label+' real ACK '+tag);
    }
-   async function pointerEvent(type,x,y,id){
+   async function pointerEvent(type,x,y,id,expectAck=true){
     const pad=el(g,'#mb-touch-pad');
     check(pad&&!pad.closest('[hidden]'),'touch pad hidden for '+type);
     const rect=pad.getBoundingClientRect();
@@ -634,7 +634,7 @@ function gauge(frame,id){
      pointerType:'touch',pointerId:id,isPrimary:true,
      clientX:rect.left+rect.width*x,clientY:rect.top+rect.height*y});
     pad.dispatchEvent(evt);
-    await ackGuest(type+' '+id);
+    if(expectAck)await ackGuest(type+' '+id);
    }
    for(let i=0;i<expected.length;i++){
     if(i!==0){
@@ -653,11 +653,11 @@ function gauge(frame,id){
     const id=500+i*10;
     if(kind==='pop'){
      const p=challenge.popPoints[0];
-     await pointerEvent('pointerdown',p[0],p[1],id);
+     await pointerEvent('pointerdown',p[0],p[1],id,false);
      // tap/pop consumes only pointerup as the genuine canonical tap
      await pointerEvent('pointerup',p[0],p[1],id);
     }else if(kind==='mash'){
-     await pointerEvent('pointerdown',.5,.5,id);
+     await pointerEvent('pointerdown',.5,.5,id,false);
      await pointerEvent('pointerup',.5,.5,id);
     }else if(kind==='rub'){
      await pointerEvent('pointerdown',.5,.5,id);
