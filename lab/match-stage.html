@@ -637,17 +637,20 @@ if(review==='purify-e1'){
   observed.push(ok?'ok:'+idx:'BAD:'+idx);
  },12);
 }else if(review==='real-attack-hit-ledger'||review==='yw2-bushinyan-attack'){
- // Both use the same read-only Host hit paint; the second case takes ONLY
- // documented attack Power20 x 3 from three independent YW2-only guides.
+ // Both use the same read-only Host hit paint; the second case explicitly
+ // trials the Japanese guide 20x3 interpretation. Mt. Wildwood YW2 has 20x2,
+ // so NEITHER is a finalized original hit count.
  // The surrounding rental stats/portraits are explicit lab fixtures.
  const sourceBacked=review==='yw2-bushinyan-attack';
  const sourceId='yw2:bushinyan:senko-giri';
  const authored=sourceBacked?yw2ReferenceAttack(sourceId):null;
  const roster=RENTAL_SQUAD.map((u,index)=>({...u,maxHp:800,
   attackHits:3,weights:[100,0,0,0],
-  ...(sourceBacked&&index===0?yw2ReferenceAttackResearchOverride(sourceId):{})}));
+  ...(sourceBacked&&index===0?
+    yw2ReferenceAttackResearchOverride(sourceId,'jp-guides'):{})}));
  if(sourceBacked&&(authored?.name!=='閃光ぎり'||authored.power!==20||
-    roster[0].attackHits!==authored.hitsPerTarget||
+    authored.hitEvidence.status!=='disputed'||authored.hitsPerTarget!==null||
+    roster[0].attackHits!==3||
     roster[0].attackPower!==authored.power))
   throw Error('YW2 cited original attack authored shape mismatch');
  const host=createCombat({seed:41,teams:[roster,roster],
