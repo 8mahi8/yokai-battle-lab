@@ -168,6 +168,11 @@ function setupSeat(role){
  $('.yw-online-connect').disabled=role!==1;
  stage=createMatchStage({element:$('#battle-stage'),seat:role,onError:err,
   showResearchLabels:!__YW_FRIENDS_MODE__,
+  // The original PvP opponent cannot see fresh wheel position during an
+  // action motion. Reuse the existing presentation-only, delivery-gated
+  // projection for real Friends; never withhold canonical Firebase state,
+  // inputs, HP, or winner. Its scene duration is still a playtest estimate.
+  researchOpponentVisibility:__YW_FRIENDS_MODE__,
   onAction:(_side,intent)=>{
    if(!match)return {ok:false,reason:'battle_not_started'};
    const blocked=guard();if(blocked)return blocked;
