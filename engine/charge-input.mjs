@@ -63,7 +63,14 @@ export function createChargeTrial({kind,seed=20261023}={}){
  }
  function input(event){
   if(complete)return snapshot();
-  if(!event||!['down','move','up','tap'].includes(event.type))throw new TypeError('touch input type must be down/move/up/tap');
+  if(!event||!['down','move','up','tap','cancel'].includes(event.type))throw new TypeError('touch input type must be down/move/up/tap/cancel');
+  // Safari may cancel a stream due to app switch, rotation or palm rejection.
+  // Only a genuine pointerup can commit a clock alignment; cancellation
+  // abandons this unfinished stroke without consuming Soul or granting count.
+  if(event.type==='cancel'){
+   active=false;lastAngle=null;turnDirection=0;traceIndex=0;handAngle=-Math.PI/2;
+   return snapshot();
+  }
   const p=event.type==='up'?null:point(event);
   if(event.type!=='up'&&!p)return snapshot();
   if(kind==='tap'){
