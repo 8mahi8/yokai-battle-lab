@@ -19,6 +19,12 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-11-01 V3-5-10｜原作のモーション中の相手サークル表示保留をFriendsへ展開
+
+- [**正式根拠と検証台帳**](./ENGINE_V3_5_10_FRIENDS_OPPONENT_MOTION_VISIBILITY_20261101.md)。本人の原作PvP体験優先／外部対戦経験資料「ノーモーション必殺」参照。研究Stageに既存の描画専用`createSeatMotionVisibility`と配信順ゲートがあったため、**学校Friendsにのみ有効化**。戦闘ルール・戦闘時計・Host権威値/ACK・認証なしFirebaseは変更しない。**見た目の敵前衛/妖気保留のみ**で、原作の正確な3DS時間と同値を主張しない。
+- Google Sites型**実Chromium srcdoc 2席＋RTDB Emulator**：正規Host負とりつき→Guestがサークル回転しACK→Guestと権威あるHostはB4前衛、Host画面には演出中B1が残る→終了後B4へ復帰。続くおはらい5入力、通常必殺・G各6入力、全6KO/控え/勝敗を**通常/保存旧Rulesの2回通しPASS**。新しい保留では相手から見える妖気が遅れるので、テストのSoul進行基準を**Host正規値＋Guest自身画面**にして不要な余分Host行動を解消。最終[Node950/950](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41283583422)、[Stage16/16](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41283580374)、[Firebase2席全工程2回](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41283583410)成功。
+- **次V3-5-11**：原作映像のモーション時刻/二視点表示差と実学校Safari2台での接続・操作・実試合長。学校実機未検証、MP4原本は今回直接未再視聴。現在の試用モーション長/2600msを原作同等と断言せず、数値やルールの独断変更はしない。学校Google Sites、main、本番Firebase Rules/DB/Auth、Driveは無変更。**V3-5全体未完了**。
+
 ## 2026-10-31 V3-5-9｜原作動画の赤ピン/緑スキル表示の差分修正・実2席検証完了
 
 - 原作提供動画の過去一次観察記録 [Match01](./ORIGINAL_PVP_VIDEO_20261027_MATCH01_OF04.md) と [Phase49](./PHASE49_USER_SUPPLIED_ORIGINAL_PVP_VIDEO_REVIEW_20261027.md)、既存のStage CSSを実装状態まで追い、**原作の赤いピン円が金色の外輪／緑スキル通知が青**になっている二つの表示上の差を確認。**[正式な比較台帳](./ENGINE_V3_5_9_ORIGINAL_PVP_VISUAL_ALIGNMENT_20261031.md)**。色の方向だけ修正、原作の正確なRGBや時間は断定しない。必殺の大判カットイン、KO青い炎、控え交代、段階命中は既存機能を保持し、重複実装しない。戦闘エンジン、キャラ/AI/Firebase Rules/Auth/通信は不変。
