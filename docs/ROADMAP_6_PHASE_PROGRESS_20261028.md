@@ -19,6 +19,12 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-11-02 V3-5-11｜とりつき状態表示の予備動作→命中タイミング矛盾を修正
+
+- [**正式な原因・原作動画一次観察の出典・修正範囲・CI結果**](./ENGINE_V3_5_11_INSPIRIT_IMPACT_TIMING_20261102.md)。Hostが確定した`inspirit`で、HPには既存`stagedHealth`を使い命中まで旧値を表示する一方、正負とりつきマークは直接新値を描画していた問題を修正。`stagedConditions`は前Snapshotのある`inspirit`対象に限定し、`anticipation`中だけ旧状態、命中後にHost正規状態を描画。**戦闘ルール/ホスト確定効果/通信/オート進行時間は不変**。
+- **実Firebase無認証2席**で本物の負とりつき→前動作でマークなし→命中後マーク出現→おはらいを、`?purify`で厳密チェック。全部入り`?onegame`では前に別演出がキューされるので現在の`anticipation`を勝手に仮定しない。既存の必殺/G/6KO/結果を旧Rules再現含め**2回連続PASS**。[Node950/950](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41323466145)、[Stage16/16](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41323465990)、[Firebase二席全工程](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41323466038)。
+- **次V3-5-12**：学校iPad Safari2台での通常バトルと原作元動画の動作・表示・入力感。実機未検証、MP4原本今回は未アクセス。原作秒数/確率を推測で変えない。学校稼働Sites、Firebase本番Rules/DB/Auth、main/Driveは無変更、**V3-5全体は未完了**。
+
 ## 2026-11-01 V3-5-10｜原作のモーション中の相手サークル表示保留をFriendsへ展開
 
 - [**正式根拠と検証台帳**](./ENGINE_V3_5_10_FRIENDS_OPPONENT_MOTION_VISIBILITY_20261101.md)。本人の原作PvP体験優先／外部対戦経験資料「ノーモーション必殺」参照。研究Stageに既存の描画専用`createSeatMotionVisibility`と配信順ゲートがあったため、**学校Friendsにのみ有効化**。戦闘ルール・戦闘時計・Host権威値/ACK・認証なしFirebaseは変更しない。**見た目の敵前衛/妖気保留のみ**で、原作の正確な3DS時間と同値を主張しない。
