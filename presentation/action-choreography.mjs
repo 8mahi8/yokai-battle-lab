@@ -60,9 +60,8 @@ export function planActionChoreography(event){
  const preset=ACTION_VISUAL_CATALOG[kind];
  const durationMs=preset.windupMs+preset.impactMs+preset.recoveryMs;
  const impacts=normalizeImpacts(event,kind);
- // V2 migration: ordered, already-resolved hit metadata (NOT damage logic).
- // The existing renderer still presents one aggregate damage cue; a future
- // phase can schedule the individual hits without guessing outcomes.
+ // Ordered, already-resolved host hit metadata (NOT damage logic).
+ // The SAME per-hit sequence drives the Stage and this common visual API.
  const actionOutcomeV2=event.actionOutcomeV2?
   defineActionOutcomeV2(event.actionOutcomeV2):null;
  const specialImpactLedger=event.specialImpactLedger??null;
@@ -226,11 +225,18 @@ export function choreographyFrame(plan,elapsedMs){
   plan.impacts.findIndex(x=>x.targetId===currentSpecialHit.targetId):
   specialTargetIndex;
  const actualImpact=actualTargetIndex===null?null:plan.impacts[actualTargetIndex];
+ // Per-hit host rows are the visual truth for both ordinary attacks and
+ // research Soultimates. Never project the final aggregate as an early hit.
+ // For specials with no per-hit evidence, ONLY stagger confirmed targets.
  const visibleImpacts=currentSpecialHit?Object.freeze([Object.freeze({
     targetId:currentSpecialHit.targetId,effect:'damage',hit:currentSpecialHit.hit,
     amount:currentSpecialHit.damage
   })]):plan.kind==='special'?
   (currentSpecialImpact?Object.freeze([currentSpecialImpact]):Object.freeze([])):
+  currentHit?Object.freeze([Object.freeze({
+    targetId:currentHit.targetId,effect:'damage',hit:currentHit.hit,
+    amount:currentHit.damage
+  })]):
   impactVisible?plan.impacts:Object.freeze([]);
  return Object.freeze({eventKey:plan.eventKey,timeMs,phase,finished,
   actorPose:finished?'idle':phase==='anticipation'?plan.pose:
