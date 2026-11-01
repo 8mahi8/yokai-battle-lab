@@ -595,10 +595,16 @@ function gauge(frame,id){
     'guest received canonical Inspirit action '+rev);
   }
   check(negative(),'enemy never gave B1 a genuine negative status');
-  check(el(g,'#mb-team1 [data-unit="B1"] .mb-unit-stat')?.textContent.includes('⚠'),
-   'Guest cannot see the Host-confirmed negative Inspirit');
-  check(el(h,'.mb-fighter[data-unit="B1"] .mb-condition-icon'),
-   'Host did not render the actual negative Inspirit');
+  // The true condition is already applied by Host but appears in the
+  // portrait/status medal only when the associated impact is drawn.
+  check(el(g,'.mb-battle-backdrop').dataset.scenePhase==='anticipation',
+   'missing Guest windup before the true Inspirit effect');
+  check(!el(g,'#mb-team1 [data-unit="B1"] .mb-unit-stat')?.textContent.includes('⚠')&&
+   !el(h,'.mb-fighter[data-unit="B1"] .mb-condition-icon'),
+   'new condition leaked into the scene before the hit');
+  await until(()=>el(g,'#mb-team1 [data-unit="B1"] .mb-unit-stat')?.textContent.includes('⚠')&&
+   !!el(h,'.mb-fighter[data-unit="B1"] .mb-condition-icon'),
+   'real negative Inspirit status did not appear after the Host-resolved hit');
 
   // B1 starts front. A legal one-step right rotation moves it to bench.
   el(g,'[data-rotate="1"]').click();
