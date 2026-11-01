@@ -1,3 +1,5 @@
+> **2026-11-02 V3-5-20｜原作必殺技の数値不一致とLast-Hit再描画修正：** [資料・コード・テスト・引継ぎ](./docs/ENGINE_V3_5_20_MULTITARGET_SOURCE_CONFLICT_AND_RECOVERY_20261102.md)。ブシニャン必殺は資料が25×10 / 20×10 / 22×9と衝突、全体Hitの各敵配分は未確認。安全に研究用の未確定データとして保存し、試遊対戦には適用せず。攻撃終了後の回復演出で最後のダメージ数字が繰り返し出る問題を修正。Node971/971・Chromium Stage PASS。学校HTML/Firebase Rules/mainは未変更。
+
 > **2026-11-02 V3-5-19｜原作根拠のある3Hit通常技を研究環境で実演：** [資料・実装・テスト・引き継ぎ](./docs/ENGINE_V3_5_19_BUSHINYAN_SOURCE_ATTACK_20261102.md)。ブシニャン「閃光ぎり」20×3（YW2攻略3資料が一致）を学校版と分離した研究データとして収録。実カスタムHost→両席の連続Hit→Chromium表示まで確認。Node967/967・Stage PASS。原作本体の能力値/モーション/必殺Hit分配は未確定。学校Safari/Google Sites本番HTML、main、Firebase Rulesは変更なし。
 
 > **2026-11-02 V3-5-18｜実Hit列の共通描画・原作数値色：** [調査・実装・検証・引き継ぎ](./docs/ENGINE_V3_5_18_NORMAL_HIT_TIMELINE_AND_BROWSER_QA_20261102.md)。Hostが記録した攻撃の各Hit/Missだけを共通Choreography・学校版と共通のStage表示へ接続。カスタム研究技は既存レンタルのMove IDを誤用せず、もとの6体・戦闘値・通信は維持。Node **965/965 PASS**（コード修正後 `bc118633`）。Chromium追加の新受入は最新HEADのCIで別途確認。原作5/7 Hit数資料衝突は未確定、V3-5は未完成。
