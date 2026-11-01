@@ -27,10 +27,10 @@ function idOf(x,side=null){
  return x;
 }
 function normalizeGesture(e){
- exact(e,['type',...(['up','cancel'].includes(e.type)?[]:['x','y'])]);
- if(!['down','move','tap','up','cancel'].includes(e.type))
+ exact(e,['type',...(e.type==='up'?[]:['x','y'])]);
+ if(!['down','move','tap','up'].includes(e.type))
   throw new RangeError('unrecognized touch gesture');
- if(e.type==='up'||e.type==='cancel')return {type:e.type};
+ if(e.type==='up')return {type:'up'};
  if(!Number.isFinite(e.x)||!Number.isFinite(e.y)||
    e.x<0||e.x>1||e.y<0||e.y>1)
   throw new RangeError('touch coordinates outside [0,1]');
