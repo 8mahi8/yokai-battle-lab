@@ -589,6 +589,27 @@ try{
    (phase22HitState||'no observed per-hit DOM state')+' '+phase22HitErr.slice(-400));
  console.log('PHASE22-REAL-HOST-PER-HIT-DOM-PASS nine host hit/HP states');
 
+ // V3-5-18: CUSTOM normal three-hit move uses real host rolls, not an
+ // invented rental/original move count. Observe all three actual DOM stages.
+ const normalHitQa=spawn(browser,[
+  '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+  '--no-first-run','--disable-extensions','--hide-scrollbars',
+  '--user-data-dir='+path.join(tmp,'v3-5-18-normal-hit-dump'),
+  '--window-size=1024,768','--virtual-time-budget=3300','--dump-dom',
+  'http://127.0.0.1:'+server.address().port+'/lab/match-stage.html?review=real-attack-hit-ledger'
+ ],{stdio:['ignore','pipe','pipe']});
+ let normalDom='',normalErr='';
+ normalHitQa.stdout.on('data',chunk=>normalDom+=String(chunk));
+ normalHitQa.stderr.on('data',chunk=>normalErr+=String(chunk).slice(0,2300));
+ const normalTimeout=setTimeout(()=>normalHitQa.kill('SIGKILL'),20000);
+ const normalCode=await new Promise(resolve=>normalHitQa.on('close',resolve));
+ clearTimeout(normalTimeout);
+ const normalResult=normalDom.match(/<span id="lab-state">([^<]*)<[/]span>/)?.[1];
+ if(normalCode!==0||normalResult!=='V3-5-18-REAL-HOST-NORMAL-HITS-PASS')
+  throw Error('V3-5-18 normal multi-hit Chrome stage mismatch: '+
+   (normalResult||'missing DOM state')+' '+normalErr.slice(-500));
+ console.log('V3-5-18-REAL-HOST-NORMAL-HITS-CHROMIUM-PASS three numbered damage frames');
+
  // Phase2.2C: original-YW2 *documented move shape* is exercised in a
  // custom host. Confirm real browser reflects one hit per target and correct
  // move name, not an unsourced fixture with a forged original label.
