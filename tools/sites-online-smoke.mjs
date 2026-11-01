@@ -334,11 +334,28 @@ function gauge(frame,id){
   check(el(g,'#mb-team1 [data-unit="B1"] .mb-unit-stat')?.textContent.includes('⚠'),
    'guest missing real negative status');
 
+  // V3-5-10: the original opponent's wheel/frontline is only revealed
+  // once the current motion ends, even though the true Host has ACKed a
+  // valid rotation. This tests two DIFFERENT seat views in one live room.
+  // No HP, move, client sequence or RTDB snapshot is overwritten here.
+  check(el(h,'.mb-battle-backdrop').dataset.opponentViewBlocked==='true',
+   'the Host opponent view did not enter the current-motion hold');
   // Phase 2: guest wheel B1 to bench; 5 true Guest touch ACKs cleanse it.
   el(g,'[data-rotate="1"]').click();
   await ack(1,'guest benches B1');
   check(el(g,'#mb-team1 [data-unit="B1"]').classList.contains('mb-bench'),
    'B1 was not benched');
+  check(hostQa.snapshot().game.clock.teams[1].frontIds.includes('B4')&&
+   !hostQa.snapshot().game.clock.teams[1].frontIds.includes('B1'),
+   'guest rotation was not authoritative while the Host view was held');
+  check(el(h,'.mb-battle-backdrop').dataset.opponentViewBlocked==='true'&&
+   el(h,'.mb-foe-line [data-unit="B1"]')&&
+   !el(h,'.mb-foe-line [data-unit="B4"]'),
+   'opponent saw the new front before the current action motion ended');
+  await until(()=>el(h,'.mb-battle-backdrop').dataset.opponentViewBlocked==='false'&&
+   el(h,'.mb-foe-line [data-unit="B4"]')&&
+   !el(h,'.mb-foe-line [data-unit="B1"]'),
+   'Host opponent view did not reveal the current authorized front after motion');
   el(g,'#mb-purify').click();
   const affected=el(g,'#mb-team1 [data-unit="B1"]');
   check(affected.classList.contains('mb-choice-eligible'),'cannot select afflicted bench');
