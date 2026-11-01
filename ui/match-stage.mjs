@@ -1063,7 +1063,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   if(!view?.gesture)return;
   if(['tap','pop','mash','poke'].includes(kind)){
    if(!cancelled)sendGesture('tap',coords(event,pad));
-  }else sendGesture('up');
+  }else sendGesture(cancelled?'cancel':'up');
  }
  function onUp(event){finishPointer(event,false);}
  function onCancel(event){finishPointer(event,true);}
