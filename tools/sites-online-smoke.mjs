@@ -662,8 +662,15 @@ function gauge(frame,id){
  }
  const startSeq=isG?3:1;
  const consumers=isG?['B6','B1','B2']:['B1'];
- const gaugesFull=()=>consumers.every(id=>
-  gauge(g,id)==='100%'&&gauge(h,id)==='100%');
+ // With opponent-motion visibility enabled, the Host's view of the
+ // Guest Soul intentionally stays stale until the current animation ends.
+ // The HOST CANONICAL state and the Guest's OWN dial must drive test steps;
+ // never create extra battle turns just to force an opponent visual refresh.
+ const canonicalFull=()=>consumers.every(id=>{
+  const soul=hostQa.snapshot().game.soul.teams[1].find(x=>x.id===id);
+  return soul&&soul.soul>=soul.capacity;
+ });
+ const gaugesFull=()=>canonicalFull()&&consumers.every(id=>gauge(g,id)==='100%');
  let turns=0;
  while(!gaugesFull()&&turns<120){
   const status=hostQa.status();
@@ -676,7 +683,11 @@ function gauge(frame,id){
   await until(()=>el(g,'#mb-revision')?.textContent.startsWith('REV '+revision+' /'),
    'guest receives real guard action '+revision);
  }
- await until(gaugesFull,'all real consumer Soul gauges full in both seats');
+ await until(gaugesFull,'all canonical Guest Soul earned and visible to the owner');
+ // The opponent display should be released by the animation end, without
+ // advancing any more battle actions. It may not be instant on the Host.
+ await until(()=>consumers.every(id=>gauge(h,id)==='100%'),
+  'opponent Soul panel did not catch up after current motion');
  check(!el(g,'#mb-team1 [data-unit="B1"]').classList.contains('mb-bench'),
   'B1 lost its frontline before real charge');
  const hpBefore=hostQa.snapshot().game.squads[0].map(x=>x.hp);
