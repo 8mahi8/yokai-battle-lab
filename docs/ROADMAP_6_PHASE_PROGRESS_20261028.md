@@ -1,3 +1,10 @@
+## 2026-11-02 V3-5-20｜原作全体連撃の出典不一致を記録し、回復フレームで重複ダメージを防止
+
+- [原作照合・変更・CI・未検証項目](./ENGINE_V3_5_20_MULTITARGET_SOURCE_CONFLICT_AND_RECOVERY_20261102.md)。ブシニャン「かつおブシ斬り」は日本語25×10 / 20×10・解析系22×9と不一致。敵3体へのHit振分けも不明で、9/10Hitを3体それぞれに複製する処理は実装しない。
+- `content/yw2-multitarget-soultimate-research.mjs` に矛盾する原作資料と未知の割当を凍結。生の数値をHost/学校6体/原作参照済みの2技へ混ぜない。
+- `ui/match-stage.mjs` の回復（recovery）描画時にlast-hit数字を再度作らず、命中後HPだけ確定値のまま表示。Node **971/971 PASS**・Chromium Stage PASS（実通常/必殺3HitのrecoveryをDOM検証）。Firebase2席は最終確認待ち。学校の埋込HTML・Rulesは未変更。
+- **次V3-5-21**：総Hit数 vs 対象別Hit回数、KO後の標的変更を原作実プレイ動画で判別し、資料の一致する技だけに正規ルールを導入。学校Safariでプレイできる機会なら実戦UI/テンポ・通信検証優先。
+
 ## 2026-11-02 V3-5-19｜Source-backed 原作通常多段攻撃を実際の戦闘表示に接続
 
 - [技データ・根拠・改修・QA記録](./ENGINE_V3_5_19_BUSHINYAN_SOURCE_ATTACK_20261102.md)を確認。YW2資料（攻略大百科 / game-cap / GameConductor）からブシニャン「閃光ぎり」の通常攻撃Lv1威力20×3の一致を確認。新たな出典つき研究Moveデータが、従来のレンタルとは独立して追加された。
