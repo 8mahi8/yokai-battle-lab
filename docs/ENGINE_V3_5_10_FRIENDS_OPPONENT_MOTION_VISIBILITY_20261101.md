@@ -21,7 +21,9 @@
 
 - `Node`ゲーム/通信/表示共通回帰 **950/950 PASS**： [Actions](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41283249216)（最初の実装/QA）
 - 実Chromium Stage **16/16 PASS**：[Actions](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41283245794)（最初の実装/QA）
-- FirebaseローカルRTDB + 2つの学校Sites型`srcdoc`実Chromium：実Hostのnegative Inspirit→Guest rotationの**異なる表示タイミングを実DOMで確認し、後続の全操作を完走**：[最初の全工程PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41283249153)。今回の妖気表示試験修正を含む最終QAも実行確認が必要。
+- FirebaseローカルRTDB + 2つの学校Sites型`srcdoc`実Chromium：実Hostのnegative Inspirit→Guest rotationの**異なる表示タイミングを実DOMで確認し、後続の全操作を完走**：[最初の全工程PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41283249153)。
+- **[V3-5-10最終コード/QAのFirebase no-Auth実2席＋過去Rules再現2回完全PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41283583410)**。1回目・2回目の双方で回転・ピン/新モーション保留の旧前衛→真の前衛表示復帰、`SITES-FRIENDS-CHARGE-PASS` **2正規Soul行動**、`SITES-FRIENDS-G-CHARGE-PASS` **6正規Soul行動**、`SITES-FRIENDS-PURIFY-PASS`、`SITES-FRIENDS-FULL-MATCH-PASS`、`SITES-FRIENDS-ONE-GAME-PASS`（1試合13正規Host行動・全6KO・ホスト敗北/ゲスト勝利）を実行。QAはHostの敵妖気見た目が遅れることと正規妖気値を区別し、**表示遅延のために余分なHost自動行動を増やす誤りを修正**。本番Firebaseの読み取り専用GETもHTTP200、**書込みは未試験**。
+- **最終QAコードコミット：`a0564c9baefb2539ce6351e5ff2b55c7b0d0cc86`**。同コミットの[Node950/950合格](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41283583422)と[Chromium Stage16/16合格](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41283580374)も確認。文書更新は後続コミットで、学校Google Sitesへの反映を意味しない。
 - これらは**1台のLinux Chromium内で2つのiframe**を並べたローカルFirebase実通信の受入試験。**学校のiPad Safari2台・Google Sites本番埋込での指操作・2台の描画時間同期は未検証**。正規モーションの正確な秒数は未確定で、今の`presentation/action-choreography.mjs`は原作の実フレーム秒数ではなく試作用表示時間。原作通りの全ノーモーション技術を完成したとは判定しない。
 - 10/22保存の過去Firebase Rules写しには **2026-11-08 00:00 JSTの期限**。現在の本番Rulesが同じかは未確認。本番Rules/Auth/DBには許可なく変更していない（本番疎通はread-only）。
 - **学校Google Sitesに現在貼られているHTMLは無変更**。学校版はGitHubの開発ブランチ更新では自動変更されない。main/Pages/Google Driveも今回更新していない。
