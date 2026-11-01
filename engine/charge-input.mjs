@@ -108,6 +108,10 @@ export function createChargeTrial({kind,seed=20261023}={}){
     }
     active=false;
    }else if(event.type==='down'){
+    // A Safari pointercancel can terminate a drag without sending up
+    // (which would falsely award alignment). The next genuine finger down
+    // starts a fresh hand at 12 o'clock, never credits the aborted stroke.
+    if(active)handAngle=-Math.PI/2;
     active=close(p,[.5+.32*Math.cos(handAngle),.5+.32*Math.sin(handAngle)],.16);
    }else if(event.type==='move'&&active){
     if(distance(p,[.5,.5])>=.15)handAngle=angle(p);
