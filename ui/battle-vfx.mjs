@@ -35,7 +35,9 @@ export function latestBattleCue(events){
   return {key:Number.isSafeInteger(event.eventId)&&event.eventId>0?'event:'+event.eventId:'action:'+event.turn,type:'action',actor:event.actor,
    kind:event.kind,targets:event.target?[{id:event.target,
     amount:Number.isFinite(event.amount)?event.amount:0,
-    kind:event.kind==='heal'?'heal':event.kind==='inspirit'?'status':'damage',hit:event.hit!==false}]:[],
+    kind:event.kind==='heal'?'heal':event.kind==='inspirit'?'status':'damage',
+    hit:event.hit!==false,
+    ...(event.critical===true?{critical:true}:{})}]:[],
    target:event.target||null,amount:event.amount??0,hit:event.hit!==false,
    // Already validated against the actual host rental squad by makeStageView.
    // This is presentation metadata and never a second damage calculation.
@@ -59,6 +61,9 @@ export function visualReactionClass(impact){
  if(impact.hit===false)return 'mb-missed';
  if(['heal','revive','buff'].includes(impact.kind))return 'mb-healed';
  if(impact.kind==='status')return 'mb-inspirited';
+ // The host already resolved this exact hit as critical. Never infer
+ // critical from unusually high damage or from an unsourced original move.
+ if(impact.kind==='damage'&&impact.critical===true)return 'mb-hit mb-critical';
  return 'mb-hit';
 }
 
