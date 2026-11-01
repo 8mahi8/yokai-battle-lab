@@ -1,0 +1,63 @@
+name: Phase49 user-recorded YW2 PvP footage fidelity acceptance
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+    paths:
+      - '.github/workflows/phase49-user-video-fidelity-acceptance.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  visual-and-battle-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Full source-driven UI, battle and protocol regression
+        run: node --test tests/*.test.mjs
+      - name: Real seeded six-rental battle completion
+        run: node tools/normal-match-endurance.mjs
+      - name: Japanese text screenshot font support
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-noto-cjk
+      - name: 'Chrome stage: original-inspired cutin, pinned reticle and authentic skill'
+        run: node tools/stage-smoke.mjs
+      - name: Build exact no-Auth Firebase Friends Google Sites copy-code
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts esbuild@0.25.12
+          node tools/build-sites-online.mjs --friends
+      # esbuild may escape Japanese literals; semantic titles are verified
+      # in tests/phase49-named-soultimate-cutins.test.mjs.
+      - name: Verify embedded footage-informed markup and safe transport
+        run: |
+          node --input-type=module <<'EOF'
+          import assert from 'node:assert/strict';
+          import {readFileSync,statSync} from 'node:fs';
+          const html=readFileSync('dist/sites-online-friends-code.html','utf8');
+          assert.ok(statSync('dist/sites-online-friends-code.html').size>180000);
+          for(const marker of ['mygame-df915-default-rtdb.firebaseio.com',
+           'yokaiRoomsV1','mb-special-portrait','mb-special-cutin-lines',
+           'mb-pin-reticle','mb-status-marker','mb-passive-notice',
+           'firebase-app-compat.js','firebase-database-compat.js']){
+            assert.ok(html.includes(marker),'missing '+marker);
+          }
+          assert.doesNotMatch(html,/firebase-auth-compat\.js|signInAnonymously\(/);
+          assert.doesNotMatch(html,/supabase\.co|sb_secret_|service_role/);
+          console.log('PHASE49-SOURCE-VIDEO-BATTLE-UI-FIREBASE-FRIENDS-PASS');
+          EOF
+      - name: Archive render evidence only (NO copyrighted user video or source frames)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase49-video-inspired-original-ui-screenshots
+          path: |
+            phase17-special-cutin-preview.png
+            phase16-target-selection-preview.png
+            phase48-real-passive-skill.png
+          if-no-files-found: ignore
+          retention-days: 14

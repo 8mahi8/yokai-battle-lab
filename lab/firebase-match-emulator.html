@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>妖怪対戦｜Firebase ローカル2席テスト</title>
+<style>
+:root{color-scheme:dark}body{font:16px system-ui,sans-serif;background:#151d29;color:#e8eff7;margin:0;padding:16px;max-width:900px}
+header{font-size:1.2rem;font-weight:700;margin-bottom:9px}
+p{color:#b9c8dc;line-height:1.5}.panel{background:#212c3c;padding:14px;border-radius:12px;margin:12px 0}
+button,input{font:inherit;padding:10px;margin:4px;border:1px solid #6b819b;border-radius:8px}
+button{background:#365d88;color:white}button:disabled{opacity:.4}
+input{background:#132033;color:white;width:7em}#status{white-space:pre-wrap;overflow-wrap:anywhere;background:#09131f;padding:12px;border-radius:8px;min-height:50px}
+#view{white-space:pre-wrap;font-size:14px;line-height:1.6}code{color:#bad8fa}
+</style>
+</head>
+<body>
+<header>妖怪対戦｜Firebaseローカル通信研究</header>
+<p>2つのブラウザタブを開き、片方でルーム作成、もう片方で6桁番号を入力。操作のACKと戦闘状態を調査するための画面。<strong>本番ゲームではない。</strong></p>
+<div class="panel"><div id="identity">準備中</div>
+<button id="create" disabled>ルームを作成</button>
+<input id="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="6桁番号" aria-label="ルーム番号">
+<button id="join" disabled>ルーム参加</button>
+<button id="start" disabled>試合開始（ホスト）</button>
+<button id="connect" disabled>戦闘状態を接続（ゲスト）</button></div>
+<div class="panel"><div id="room">未参加</div>
+<button id="left" disabled>← サークル</button><button id="right" disabled>サークル →</button>
+<button id="normal" disabled>標準ウォッチ</button><button id="zero" disabled>零式ウォッチ</button>
+<button id="auto" disabled>自動行動を1回進める（ホスト）</button></div>
+<div id="status" role="status">Firebaseローカル接続を準備しています</div>
+<div class="panel"><strong>最新の確定状態</strong><div id="view">未取得</div></div>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script type="module">
+import {createFirebaseRoomClient} from '../network/firebase-room.mjs';
+import {createFirebaseMatchHost,createFirebaseMatchGuest} from '../network/firebase-match.mjs';
+import {createMatchProtocol} from '../engine/match-protocol.mjs';
+const $=id=>document.getElementById(id);
+let db=null,uid=null,room=null,match=null,seat=null,latest=null;
+function say(s){$('status').textContent=s;}
+function enableGame(yes){
+ for(const id of ['left','right','normal','zero'])$(id).disabled=!yes;
+ $('auto').disabled=!yes||seat!==0;
+}
+function showState(s){
+ latest=s;
+ if(!s?.game)return;
+ const a=s.game.clock.teams[0],b=s.game.clock.teams[1];
+ $('view').textContent='revision: '+s.revision+'\n'
+  +'ACK 0P/1P: '+s.clientSequences.join(' / ')+'\n'
+  +'A 前衛: '+a.frontIds.join('・')+'\n'
+  +'B 前衛: '+b.frontIds.join('・')+'\n'
+  +'winner: '+String(s.game.winner)+'\n'
+  +'fingerprint (debug only): '+s.hash;
+}
+function action(intent){
+ try{
+  const result=seat===1?match.enqueue(intent):match.submit(intent);
+  if(!result.ok)say('操作未送信: '+(result.reason||'unknown')+' / '+JSON.stringify(match.status()));
+  else if(result.queued)say('入力を端末内で順番待ち '+result.position+' 件（ホストACK待ち）。');
+  else say('送信番号 '+(result.clientSeq??result.revision??'host')+' / ACK待ち。');
+ }catch(e){say('操作エラー: '+e.message);}
+}
+function activate(role){
+ seat=role;
+ $('room').textContent='ルーム番号: '+room.active().roomCode+' / '+(seat===0?'ホスト':'ゲスト');
+ $('create').disabled=true;$('join').disabled=true;
+ $('start').disabled=seat!==0;$('connect').disabled=seat!==1;
+}
+async function initialize(){
+ // Explicitly deny all public-Google-Sites / production contexts.
+ if(!['127.0.0.1','localhost'].includes(location.hostname))
+  throw Error('このページはlocalhostのFirebaseエミュレーター専用です');
+ if(!window.firebase?.auth||!window.firebase?.database)
+  throw Error('Firebase SDKが読み込めません');
+ firebase.initializeApp({apiKey:'demo-key',authDomain:'demo-yokai-lab.firebaseapp.com',
+  databaseURL:'https://demo-yokai-lab-default-rtdb.firebaseio.com',projectId:'demo-yokai-lab'});
+ firebase.auth().useEmulator('http://127.0.0.1:9099',{disableWarnings:true});
+ db=firebase.database();db.useEmulator('127.0.0.1',9000);
+ // Each tab must own an independent anonymous UID, even under one origin.
+ await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE);
+ const credential=await firebase.auth().signInAnonymously();
+ uid=credential.user.uid;
+ room=createFirebaseRoomClient({database:db,uid,onError:e=>say('Firebase: '+e.message)});
+ $('identity').textContent='匿名接続OK / ローカル実験専用';
+ $('create').disabled=false;$('join').disabled=false;
+ say('エミュレーターにログイン済み。2タブでルームを作成・参加してください。');
+}
+$('create').onclick=async()=>{
+ try{const r=await room.createRoom();if(!r.ok)throw Error(r.reason);activate(0);
+  say('番号 '+r.code+' をもう片方のブラウザへ入力してください。');}
+ catch(e){say('作成失敗: '+e.message);}
+};
+$('join').onclick=async()=>{
+ try{const r=await room.joinRoom($('code').value.trim());if(!r.ok)throw Error(r.reason);
+  activate(1);say('参加成功。ホストが「試合開始」を押したら「戦闘状態を接続」を押してください。');}
+ catch(e){say('参加失敗: '+e.message);}
+};
+$('start').onclick=async()=>{
+ try{
+  const started=await room.startRoom();
+  if(!started.ok)throw Error(started.reason);
+  match=createFirebaseMatchHost({roomClient:room,protocol:createMatchProtocol(),
+   onSnapshot:showState,onError:e=>say('通信エラー: '+e.message)});
+  await match.start();enableGame(true);$('start').disabled=true;
+  say('ホスト開始。ゲストに「戦闘状態を接続」を押してもらってください。');
+ }catch(e){say('開始失敗: '+e.message);}
+};
+$('connect').onclick=async()=>{
+ try{
+  const phase=(await db.ref('yokaiRoomsV1/'+room.active().roomCode+'/phase').once('value')).val();
+  if(phase!=='playing')throw Error('ホストがまだ試合開始していません');
+  match=createFirebaseMatchGuest({roomClient:room,onSnapshot:s=>{
+   showState(s);enableGame(true);},onAck:e=>say('入力 '+e.clientSeq+' をホストが確定しました。'),
+   onError:e=>say('通信エラー: '+e.message)});
+  match.start();$('connect').disabled=true;
+  say('ゲスト接続。初期状態が届くまで操作はできません。');
+ }catch(e){say('接続失敗: '+e.message);}
+};
+$('left').onclick=()=>action({type:'rotate',direction:-1});
+$('right').onclick=()=>action({type:'rotate',direction:1});
+$('normal').onclick=()=>action({type:'watch',mode:'standard'});
+$('zero').onclick=()=>action({type:'watch',mode:'zero'});
+$('auto').onclick=()=>{if(seat!==0)return;try{
+ const r=match.advanceAuto();say('ホスト自動進行: '+JSON.stringify(r));
+}catch(e){say('進行失敗: '+e.message);}};
+initialize().catch(e=>say('起動できません: '+e.message));
+</script>
+</body></html>

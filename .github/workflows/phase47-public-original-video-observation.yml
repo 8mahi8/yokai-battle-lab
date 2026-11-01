@@ -1,0 +1,57 @@
+name: Phase47 public YW2 footage frame-research feasibility
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+    paths:
+      - .github/workflows/phase47-public-original-video-observation.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  video-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch a small lawful public research excerpt if video host permits it
+        id: extract
+        continue-on-error: true
+        run: |
+          set -euxo pipefail
+          python -m pip install --disable-pip-version-check -q "yt-dlp>=2026.9"
+          mkdir -p evidence
+          # Only short segments from credited public videos. Do NOT ship,
+          # redistribute, or commit source audio/complete videos.
+          yt-dlp --no-playlist --no-progress --socket-timeout 12 --retries 1 \
+            --download-sections "*00:00:00-00:01:00" \
+            --force-keyframes-at-cuts \
+            -f "b[height<=480]/best[height<=480]/worst" \
+            -o "evidence/source.%(ext)s" \
+            "https://www.youtube.com/watch?v=GxCjC9STpmE"
+          input=$(find evidence -maxdepth 1 -type f | head -n 1)
+          test -s "$input"
+          ffprobe -v quiet -show_entries format=duration -of default=noprint_wrappers=1 "$input"
+          # Small annotated contact sheet for private source comparison.
+          ffmpeg -hide_banner -loglevel error -i "$input" \
+            -vf "fps=1/5,scale=300:-1,tile=4x3:padding=8:margin=8" -frames:v 1 \
+            "evidence/no-motion-original-12frames.jpg" -y
+          test -s evidence/no-motion-original-12frames.jpg
+          rm "$input"
+          echo 'ACTUAL_SOURCE_FRAMES_EXTRACTED=YES'
+      - name: Report actual read status clearly
+        if: always()
+        run: |
+          if [ -s evidence/no-motion-original-12frames.jpg ]; then
+            echo 'ORIGINAL_VIDEO_FRAMES_VERIFIED' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'ORIGINAL_VIDEO_FRAME_FETCH_FAILED; video descriptions and web research are NOT frame evidence' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Keep a small frame summary only, never source video
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase47-source-video-frame-availability
+          path: evidence/no-motion-original-12frames.jpg
+          if-no-files-found: ignore
+          retention-days: 2

@@ -1,0 +1,65 @@
+name: Phase42 school Firebase friends 999 rarity corrected paste files
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+    paths:
+      - '.github/workflows/phase42-school-rare999-delivery.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build-verified-rare999-school-code:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned bundler
+        run: npm install --no-save --package-lock=false --ignore-scripts esbuild@0.25.12
+      - name: Unit tests and reproducible six-rental battles
+        run: |
+          node --test tests/*.test.mjs
+          node tools/normal-match-endurance.mjs
+      - name: Build direct Google Sites inline-code friends
+        run: node tools/build-sites-online.mjs --friends
+      - name: Assert source provisional 0.1 percent and shipped bundle production-safe
+        run: |
+          node --input-type=module <<'EOF'
+          import assert from 'node:assert/strict';
+          import {readFileSync,statSync} from 'node:fs';
+          import {PLAYTEST_SOUL_TUNING as P,choosePlaytestPokeOutcome as choose} from './engine/playtest-soul-tuning.mjs';
+          assert.equal(P.pokeHeavyWeight,0.1);
+          assert.equal(P.pokeDamageWeight+P.pokeSoulWeight+P.pokeHeavyWeight,100);
+          assert.equal(choose(.99899),'soul-drain');
+          assert.equal(choose(.99901),'heavy-hit');
+          const filename='dist/sites-online-friends-code.html';
+          const code=readFileSync(filename,'utf8');
+          assert.ok(statSync(filename).size>170000&&statSync(filename).size<400000);
+          for(const needle of ['mygame-df915-default-rtdb.firebaseio.com','yokaiRoomsV1',
+            'yw-online-make','yw-online-join','yw-online-start','mb-finish-screen',
+            'firebase-app-compat.js','firebase-database-compat.js']) assert.ok(code.includes(needle),needle);
+          assert.doesNotMatch(code,/firebase-auth-compat\.js|signInAnonymously\(|supabase\.co|sb_secret_|service_role/);
+          console.log('PHASE42-FRIENDS-RARE999-SCHOOL-BUNDLE-PASS '+statSync(filename).size);
+          EOF
+      - name: Save school TXT and HTML independently without modifying earlier release
+        run: |
+          git switch -c release/sites-firebase-friends-20261027-rare999
+          mkdir -p delivery
+          cp dist/sites-online-friends-code.html delivery/YW2_Firebase_Friends_20261027_V2_RARE999_Sites_PASTE.txt
+          cp dist/sites-online-friends-code.html delivery/YW2_Firebase_Friends_20261027_V2_RARE999_Sites_PASTE.html
+          cmp delivery/YW2_Firebase_Friends_20261027_V2_RARE999_Sites_PASTE.txt delivery/YW2_Firebase_Friends_20261027_V2_RARE999_Sites_PASTE.html
+          git add -f delivery/YW2_Firebase_Friends_20261027_V2_RARE999_Sites_PASTE.txt delivery/YW2_Firebase_Friends_20261027_V2_RARE999_Sites_PASTE.html
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'release: 20261027 V2 Poke 999 rare provisional 0.1 pct [skip ci]'
+          git push origin HEAD:refs/heads/release/sites-firebase-friends-20261027-rare999
+          echo 'PHASE42-SCHOOL-RELEASE-SAVED'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phase42-20261027-V2-rare999-googleSites-code
+          path: |
+            delivery/YW2_Firebase_Friends_20261027_V2_RARE999_Sites_PASTE.txt
+            delivery/YW2_Firebase_Friends_20261027_V2_RARE999_Sites_PASTE.html
+          if-no-files-found: error
+          retention-days: 14

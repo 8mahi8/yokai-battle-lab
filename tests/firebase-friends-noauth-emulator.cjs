@@ -1,0 +1,263 @@
+/**
+ * Phase37: real Firebase RTDB emulator + unauthenticated test clients.
+ * NEVER points at mygame-df915; tests real Rules but NOT cloud deployment.
+ */
+'use strict';
+const fs=require('node:fs');
+const assert=require('node:assert/strict');
+const {initializeTestEnvironment,assertSucceeds,assertFails}=
+ require('@firebase/rules-unit-testing');
+async function main(){
+ const endpoint=process.env.FIREBASE_DATABASE_EMULATOR_HOST||'';
+ if(!/^(127\.0\.0\.1|localhost):9000$/.test(endpoint))
+  throw Error('Refuse any database other than localhost:9000');
+ const [host,port]=endpoint.split(':');
+ const env=await initializeTestEnvironment({
+  projectId:'demo-yokai-lab',
+  database:{host,port:+port,
+   rules:fs.readFileSync('network/emulator/database.friends-noauth.rules.json','utf8')}
+ });
+ const hostDb=env.unauthenticatedContext().database();
+ const guestDb=env.unauthenticatedContext().database();
+ const deny=(name,p)=>assertFails(p).then(()=>console.log('DENY '+name));
+ const allow=(name,p)=>assertSucceeds(p).then(()=>console.log('ALLOW '+name));
+ const h='a'.repeat(32),g='b'.repeat(32),session='1234567890abcdef1234567890abcdef';
+ const id='827391',path='yokaiRoomsV1/'+id;
+ const first={version:13,hostUid:h,session,phase:'lobby',createdAt:Date.now()};
+ try {
+  await deny('other shared games namespace untouched',hostDb.ref('shokokuRooms1v1/22222').set({x:1}));
+  await deny('room list cannot be enumerated',hostDb.ref('yokaiRoomsV1').once('value'));
+  await deny('invalid code prevented',hostDb.ref('yokaiRoomsV1/unsafe-room').set(first));
+  await deny('invalid room seed prevented',hostDb.ref('yokaiRoomsV1/827392').set({...first,hostUid:'x'}));
+  await allow('host creates room without Auth',hostDb.ref(path).set(first));
+  await allow('guest reads six-digit room without Auth',guestDb.ref(path).once('value'));
+  await deny('no wholesale overwrite after create',hostDb.ref(path).set({...first,guestUid:g}));
+  await deny('wrong guest ID prevented',guestDb.ref(path+'/guestUid').set('short'));
+  await allow('guest claims open seat',guestDb.ref(path+'/guestUid').set(g));
+  await deny('third seat cannot replace guest',hostDb.ref(path+'/guestUid').set('c'.repeat(32)));
+  await allow('begin play with both seats',hostDb.ref(path+'/phase').set('playing'));
+  await deny('cannot revert finished state',guestDb.ref(path+'/phase').set('lobby'));
+  await deny('cannot rewrite host UID',guestDb.ref(path+'/hostUid').set('c'.repeat(32)));
+  await allow('guest input',guestDb.ref(path+'/inputs/guest').set({
+   session,clientSeq:1,intent:{type:'rotate',direction:1}
+  }));
+  await deny('invalid move type',guestDb.ref(path+'/inputs/guest').set({
+   session,clientSeq:2,intent:{type:'setHP'}
+  }));
+  await deny('same sequence cannot overwrite earlier input',guestDb.ref(path+'/inputs/guest').set({
+   session,clientSeq:1,intent:{type:'rotate',direction:-1}
+  }));
+  await deny('host input path not used',hostDb.ref(path+'/inputs/host').set({
+   session,clientSeq:1,intent:{type:'rotate',direction:1}
+  }));
+  const original={session,revision:0,stateJson:JSON.stringify({
+   revision:0,clientSequences:[0,0],game:{winner:null,turn:0}
+  })};
+  await allow('snapshot preserved',hostDb.ref(path+'/state').set(original));
+  await deny('no stale snapshot revision',hostDb.ref(path+'/state').set(original));
+  await allow('revision advances',hostDb.ref(path+'/state').set({...original,revision:1}));
+  await allow('host presence',hostDb.ref(path+'/presence/host').set(true));
+  await allow('guest presence',guestDb.ref(path+'/presence/guest').set(true));
+
+  // Reuse actual existing Firebase room adapter WITHOUT Auth SDK or user sign-in.
+  const {createFirebaseRoomClient}=await import('../network/firebase-room.mjs');
+  const {createMatchProtocol}=await import('../engine/match-protocol.mjs');
+  const hClient=createFirebaseRoomClient({database:hostDb,uid:h});
+  const gClient=createFirebaseRoomClient({database:guestDb,uid:g});
+  const room='827395';
+  assert.equal((await hClient.createRoom({code:room})).ok,true);
+  assert.equal((await gClient.joinRoom(room)).ok,true);
+  assert.equal((await hClient.startRoom()).ok,true);
+  const received=[];
+  const stop=hClient.subscribeInputs(p=>received.push(p));
+  assert.equal((await gClient.sendIntent(1,{type:'rotate',direction:1})).ok,true);
+  for(let i=0;i<75&&!received.length;i++)await new Promise(resolve=>setTimeout(resolve,40));
+  assert.equal(received.length,1,'real guest intent reaches host');
+  const match=createMatchProtocol({battleOptions:{seed:212,playtestSoulTuning:true}});
+  const ack=match.dispatch(1,received[0].clientSeq,received[0].intent);
+  assert.equal(ack.accepted,true);
+  assert.equal((await hClient.publishSnapshot(match.snapshot())).ok,true);
+  const packet=await gClient.readPublishedSnapshot();
+  assert.equal(packet.revision,1);
+  assert.equal(packet.game.winner,null);
+
+  // Phase2.1C-2: prove the actual no-Auth Friends RTDB snapshot can carry
+  // several canonical combat results after a guest wheel command. This
+  // exercises the existing school transport, not a mock Cloud/Auth path.
+  for(let turn=0;turn<24;turn++){
+   const step=match.advanceAuto();
+   assert.equal(step.ok,true,'canonical school combat must keep stepping');
+  }
+  const advanced=match.snapshot();
+  assert.equal(advanced.revision,25);
+  assert.equal(advanced.clientSequences[1],1,'guest wheel ACK survives auto battle');
+  assert.ok(advanced.game.clock.turn>=20,'actual scheduler advanced by repeated host actions');
+  assert.ok(advanced.game.squads.flat().every(unit=>
+   !Object.hasOwn(unit,'techniquePlaySources')&&
+   !Object.hasOwn(unit,'techniquePenetrate')),
+   'original six keep unknown Play/Penetrate research-only');
+  assert.equal((await hClient.publishSnapshot(advanced)).ok,true,
+   'host can publish accumulated canonical actions on actual Friends RTDB');
+  const guestAdvanced=await gClient.readPublishedSnapshot();
+  assert.deepEqual(guestAdvanced,advanced,
+   'guest must read the same canonical multi-action state, not a separate damage simulation');
+  console.log('FIREBASE-FRIENDS-COMBAT-REGRESSION-PASS 24 host actions, ACK, canonical snapshot parity');
+  stop();hClient.leaveLocal();gClient.leaveLocal();
+  // V3-3: actual isolated RTDB clients, not the fake in-memory transport.
+  // A disconnected guest must catch up to host authoritative revisions,
+  // and an identical resend must never execute a second logical command.
+  const {createFirebaseMatchHost,createFirebaseMatchGuest}=
+   await import('../network/firebase-match.mjs');
+  const h2=createFirebaseRoomClient({database:hostDb,uid:h});
+  const g2=createFirebaseRoomClient({database:guestDb,uid:g});
+  assert.equal((await h2.createRoom({code:'827396'})).ok,true);
+  assert.equal((await g2.joinRoom('827396')).ok,true);
+  assert.equal((await h2.startRoom()).ok,true);
+  const errors=[],acks=[],views=[];
+  const hostBridge=createFirebaseMatchHost({
+   roomClient:h2,
+   protocol:createMatchProtocol({battleOptions:{seed:212,playtestSoulTuning:true}}),
+   onError:e=>errors.push('host:'+e.message)
+  });
+  const guestBridge=createFirebaseMatchGuest({
+   roomClient:g2,onAck:x=>acks.push(x),
+   onSnapshot:s=>views.push(s),
+   onError:e=>errors.push('guest:'+e.message)
+  });
+  const until=async(check,label)=>{
+   for(let i=0;i<150;i++){
+    if(check())return;
+    await new Promise(resolve=>setTimeout(resolve,40));
+   }
+   throw new Error('Firebase Friends reconnect timeout: '+label+
+    ' '+JSON.stringify({host:hostBridge.status(),
+     guestRevision:guestBridge.status().revision,errors}));
+  };
+  try{
+   guestBridge.start();
+   assert.equal((await hostBridge.start()).ok,true);
+   await until(()=>guestBridge.status().revision===0,'initial authoritative snapshot');
+   assert.equal(guestBridge.submit({type:'rotate',direction:1}).clientSeq,1);
+   await until(()=>guestBridge.status().acked===1,'first canonical ACK');
+   assert.deepEqual(acks.map(x=>x.clientSeq),[1]);
+   assert.equal(acks[0].applied,true);
+   const authoritativeRev=hostBridge.snapshot().revision;
+   const repeated=await g2.sendIntent(1,{type:'rotate',direction:1});
+   assert.equal(repeated.ok,true,'same seq and payload may be idempotently resent');
+   await new Promise(resolve=>setTimeout(resolve,120));
+   assert.equal(hostBridge.snapshot().revision,authoritativeRev);
+   assert.equal(guestBridge.status().acked,1);
+   assert.equal(acks.length,1);
+   guestDb.goOffline();
+   guestBridge.setDeliveryEnabled(false);
+   const disconnectedAt=guestBridge.status().revision;
+   assert.equal(guestBridge.submit({type:'watch',mode:'zero'}).reason,
+    'connection_paused');
+   for(let i=0;i<3;i++)assert.equal(hostBridge.advanceAuto().ok,true);
+   await hostBridge.retryPublish();
+   assert.equal(hostBridge.snapshot().revision,authoritativeRev+3);
+   await new Promise(resolve=>setTimeout(resolve,140));
+   assert.equal(guestBridge.status().revision,disconnectedAt,
+    'offline guest cannot observe unconfirmed remote host actions');
+   guestDb.goOnline();
+   guestBridge.setDeliveryEnabled(true);
+   await until(()=>guestBridge.status().revision===hostBridge.snapshot().revision,
+    'guest catches up without any speculative offline input');
+   assert.deepEqual(guestBridge.status().lastState,hostBridge.snapshot());
+   assert.equal(acks.length,1,'reconnect must not repeat command ACK');
+   assert.equal(guestBridge.status().pendingSequence,null);
+   assert.equal(guestBridge.submit({type:'watch',mode:'zero'}).clientSeq,2);
+   await until(()=>guestBridge.status().acked===2,'new command after reconnect');
+   assert.equal(acks[1].applied,true);
+   assert.equal(hostBridge.snapshot().game.soul.modes[1],'zero');
+   assert.deepEqual(guestBridge.status().lastState,hostBridge.snapshot());
+   assert.deepEqual(errors,[]);
+   console.log('FIREBASE-FRIENDS-RECONNECT-ACK-PASS real RTDB offline catchup, idempotent resend, one ACK, new seq');
+  }finally{
+   guestDb.goOnline();
+   hostBridge.stop();guestBridge.stop();h2.leaveLocal();g2.leaveLocal();
+  }
+  // V3-3-4: real RTDB seat-to-seat channel, with only the host's publication
+  // artificially held. The guest still receives genuine Firebase callbacks.
+  // A local host snapshot must not act as remote ACK or visible game state.
+  const h3=createFirebaseRoomClient({database:hostDb,uid:h});
+  const g3=createFirebaseRoomClient({database:guestDb,uid:g});
+  assert.equal((await h3.createRoom({code:'827397'})).ok,true);
+  assert.equal((await g3.joinRoom('827397')).ok,true);
+  assert.equal((await h3.startRoom()).ok,true);
+  let holdNext=false,releaseHeld=null,publishBlocked=false,writeCount=0;
+  const delayedHost={...h3,async publishSnapshot(state){
+   writeCount++;
+   if(holdNext){
+    holdNext=false;publishBlocked=true;
+    await new Promise(resolve=>{releaseHeld=resolve;});
+   }
+   return h3.publishSnapshot(state);
+  }};
+  const delayedErr=[],delayedAck=[],delayedViews=[];
+  const hDelayed=createFirebaseMatchHost({
+   roomClient:delayedHost,
+   protocol:createMatchProtocol({battleOptions:{seed:212,playtestSoulTuning:true}}),
+   onError:e=>delayedErr.push('host:'+e.message)
+  });
+  const gDelayed=createFirebaseMatchGuest({
+   roomClient:g3,onAck:ack=>delayedAck.push(ack),
+   onSnapshot:state=>delayedViews.push(state),
+   onError:e=>delayedErr.push('guest:'+e.message)
+  });
+  const untilDelayed=async(pred,label)=>{
+   for(let i=0;i<150;i++){
+    if(pred())return;
+    await new Promise(resolve=>setTimeout(resolve,40));
+   }
+   throw Error('RTDB delayed publication failed '+label+' '+
+    JSON.stringify({host:hDelayed.status(),guest:gDelayed.status(),
+     error:delayedErr}));
+  };
+  try{
+   gDelayed.start();
+   assert.equal((await hDelayed.start()).ok,true);
+   await untilDelayed(()=>gDelayed.status().revision===0,'baseline');
+   holdNext=true;
+   assert.equal(gDelayed.enqueue({type:'watch',mode:'zero'}).clientSeq,1);
+   await untilDelayed(()=>publishBlocked&&hDelayed.snapshot().revision===1,
+    'host accepts unpublished input');
+   assert.equal(hDelayed.status().lastPublished,0);
+   assert.equal(gDelayed.status().revision,0,'no guest frame from host local progress');
+   assert.equal(gDelayed.status().acked,0,'no ACK until authoritative RTDB publish');
+   assert.equal(gDelayed.enqueue({type:'watch',mode:'standard'}).queued,true);
+   for(let i=0;i<8;i++)assert.equal(hDelayed.advanceAuto().ok,true);
+   assert.equal(hDelayed.snapshot().revision,9);
+   assert.equal(hDelayed.status().lastPublished,0);
+   assert.equal(gDelayed.status().revision,0);
+   assert.equal(gDelayed.status().pendingSequence,1);
+   assert.equal(gDelayed.status().queuedInputs,1);
+   assert.equal(delayedViews.at(-1).game.clock.turn,0);
+   assert.deepEqual(delayedAck,[]);
+   releaseHeld();
+   await untilDelayed(()=>gDelayed.status().acked===2&&
+    gDelayed.status().revision===hDelayed.snapshot().revision&&
+    hDelayed.status().lastPublished===hDelayed.snapshot().revision,
+    'two ACKs and host/guest canonical catchup');
+   assert.equal(hDelayed.snapshot().revision,10);
+   assert.deepEqual(delayedAck.map(x=>x.clientSeq),[1,2]);
+   assert.ok(delayedAck.every(x=>x.accepted&&x.applied===true));
+   assert.equal(gDelayed.status().pendingSequence,null);
+   assert.equal(gDelayed.status().queuedInputs,0);
+   assert.deepEqual(gDelayed.status().lastState,hDelayed.snapshot());
+   assert.equal(gDelayed.status().lastState.game.soul.modes[1],'standard');
+   assert.equal(gDelayed.status().lastState.game.clock.turn,8);
+   assert.ok(writeCount<=4,'avoid one publication per paused auto step');
+   for(let i=1;i<delayedViews.length;i++)
+    assert.ok(delayedViews[i].revision>delayedViews[i-1].revision,
+     'guest rendered revision must be monotonic');
+   assert.deepEqual(delayedErr,[]);
+   console.log('FIREBASE-FRIENDS-PUBLISH-LAG-PASS real RTDB 8 host auto, delayed publication, ordered ACK and canonical guest view');
+  }finally{
+   releaseHeld?.();
+   hDelayed.stop();gDelayed.stop();h3.leaveLocal();g3.leaveLocal();
+  }
+  console.log('FIREBASE-FRIENDS-NOAUTH-PASS room, seat, command, snapshot, rules');
+ } finally {await env.cleanup();}
+}
+main().catch(e=>{console.error(e);process.exitCode=1});

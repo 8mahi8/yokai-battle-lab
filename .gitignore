@@ -1,0 +1,17 @@
+# Generated single-HTML previews and local build artifacts
+dist/
+node_modules/
+.firebase/
+firebase-debug.log
+ui-debug.log
+
+# Private owner-exported Firebase Web config and deployed Rules snapshots.
+# Never commit real Firebase setup files, even though Web config is publicly
+# readable at runtime; the current Rules may expose other games' policies.
+private/
+*.local.firebase.json
+*.rules-export.json
+*.rules-review.json
+*.firebase-setup.local.json
+.env
+.env.*

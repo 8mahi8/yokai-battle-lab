@@ -1,0 +1,47 @@
+name: Phase24 online Sites code sandbox QA
+# Archived authentication-era Firebase QA; retained for manual research.
+# The current school game uses no-Auth Firebase Friends (Phase37 workflow).
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  online-inline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned bundler and local Firebase Emulator
+        run: npm install --no-save --package-lock=false esbuild@0.25.12 firebase-tools@14.24.0
+      - name: Syntax check online one-file builder and its entry
+        run: |
+          node --check lab/sites-embed-online-entry.mjs
+          node --check tools/build-sites-online.mjs
+          node --check tools/sites-online-smoke.mjs
+          node --check tools/sites-online-build-gate.mjs
+      - name: Verify cloud config guard without contacting any Firebase service
+        run: node tools/sites-online-build-gate.mjs
+      - name: Produce disabled setup and local emulator test builds
+        run: |
+          node tools/build-sites-online.mjs
+          node tools/build-sites-online.mjs --emulator
+      - name: Verify unconfigured code never opens Firebase
+        run: node tools/sites-online-smoke.mjs
+      - name: Verify real Auth RTDB in TWO embedded Chromium frames
+        run: ./node_modules/.bin/firebase emulators:exec --only auth,database --project demo-yokai-lab --config network/emulator/firebase.json "node tools/sites-online-smoke.mjs --emulator"
+      - name: Upload ONLY the disabled setup build (never an emulator artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase24-online-sites-unconfigured-setup
+          path: |
+            dist/sites-online-setup-code.html
+            dist/sites-online-setup-preview.html
+          if-no-files-found: error
+          retention-days: 14

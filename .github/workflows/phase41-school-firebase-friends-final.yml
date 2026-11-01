@@ -1,0 +1,65 @@
+name: Phase41 school Firebase friends final validated paste files
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+    paths:
+      - '.github/workflows/phase41-school-firebase-friends-final.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  final-school-paste:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned build tool
+        run: npm install --no-save --package-lock=false --ignore-scripts esbuild@0.25.12
+      - name: Run entire battle engine and room unit suite
+        run: node --test tests/*.test.mjs
+      - name: Sample full normal six-rental battles to natural finish
+        run: node tools/normal-match-endurance.mjs
+      - name: Compile current school Firebase no-Auth Friends build
+        run: node tools/build-sites-online.mjs --friends
+      - name: Gate browser gameplay bootstrap and production-free configuration
+        run: |
+          node --input-type=module <<'EOF'
+          import assert from 'node:assert/strict';
+          import {readFileSync,statSync} from 'node:fs';
+          const file='dist/sites-online-friends-code.html';
+          const code=readFileSync(file,'utf8');
+          assert.ok(statSync(file).size>170000&&statSync(file).size<400000);
+          for(const needle of ['mygame-df915-default-rtdb.firebaseio.com',
+            'yokaiRoomsV1','yw-online-make','yw-online-join','yw-online-start',
+            'mb-finish-screen',
+            'firebase-app-compat.js','firebase-database-compat.js'])
+            assert.ok(code.includes(needle), 'missing: '+needle);
+          assert.doesNotMatch(code,/firebase-auth-compat\.js|signInAnonymously\(/);
+          assert.doesNotMatch(code,/supabase\.co|sb_secret_|service_role|demo-yokai-lab|127\.0\.0\.1:9099/);
+          assert.equal((code.match(/<style\b/g)||[]).length,1);
+          assert.equal((code.match(/firebase-(?:app|database)-compat\.js/g)||[]).length,2);
+          console.log('PHASE41-FINAL-PASTE-GATE-PASS bytes='+statSync(file).size);
+          EOF
+      - name: Keep editable branch untouched and commit separate TXT and HTML to dedicated release branch
+        run: |
+          git switch -c release/sites-firebase-friends-20261027-final
+          mkdir -p delivery
+          cp dist/sites-online-friends-code.html delivery/YW2_Firebase_Friends_20261027_FINAL_Sites_PASTE.txt
+          cp dist/sites-online-friends-code.html delivery/YW2_Firebase_Friends_20261027_FINAL_Sites_PASTE.html
+          cmp delivery/YW2_Firebase_Friends_20261027_FINAL_Sites_PASTE.txt delivery/YW2_Firebase_Friends_20261027_FINAL_Sites_PASTE.html
+          git add -f delivery/YW2_Firebase_Friends_20261027_FINAL_Sites_PASTE.txt delivery/YW2_Firebase_Friends_20261027_FINAL_Sites_PASTE.html
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'release: 20261027 final school no-auth Firebase paste code [skip ci]'
+          git push origin HEAD:refs/heads/release/sites-firebase-friends-20261027-final
+          echo 'PHASE41-FINAL-SEPARATE-HTML-TXT-PASS'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phase41-20261027-final-GoogleSites-code
+          path: |
+            delivery/YW2_Firebase_Friends_20261027_FINAL_Sites_PASTE.txt
+            delivery/YW2_Firebase_Friends_20261027_FINAL_Sites_PASTE.html
+          if-no-files-found: error
+          retention-days: 14

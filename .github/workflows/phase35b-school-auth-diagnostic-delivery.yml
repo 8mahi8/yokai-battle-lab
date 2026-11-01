@@ -1,0 +1,47 @@
+name: Phase35B safe school Safari auth diagnosis paste files
+on:
+  push:
+    branches:
+      - feat/phase1-action-circle-lab-20261023
+    paths:
+      - '.github/workflows/phase35b-school-auth-diagnostic-delivery.yml'
+permissions:
+  contents: write
+jobs:
+  school-diagnosis-files:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --package-lock=false --ignore-scripts esbuild@0.25.12
+      - name: Verify engine and auth error classification
+        run: node --test tests/*.test.mjs
+      - name: Build playable normal Google Sites code with public Supabase config
+        run: |
+          node tools/build-sites-supabase.mjs --public-config
+          node --input-type=module <<'EOF'
+          import {readFileSync} from 'node:fs';
+          import assert from 'node:assert/strict';
+          const code=readFileSync('dist/sites-supabase-online-code.html','utf8');
+          assert.match(code,/yw-online-auth-retry/);
+          assert.match(code,/AUTH_HEALTH_NETWORK/);
+          assert.match(code,/AUTH_DISABLED/);
+          assert.match(code,/sb_publishable_/);
+          assert.match(code,/yw-online-make/);
+          assert.doesNotMatch(code,/QA-ONLY-NEVER-DEPLOY|yw-online-qa-finish|sb_secret_|service_role/);
+          console.log('SCHOOL-AUTH-DIAGNOSTICS-BUILD-PASS bytes='+Buffer.byteLength(code));
+          EOF
+      - name: Store paste-ready TXT and HTML separately in a non-main release branch
+        run: |
+          git switch -c release/sites-paste-20261026-school-auth-diagnostics
+          mkdir -p delivery
+          cp dist/sites-supabase-online-code.html delivery/YW2_School_Auth_Diagnostics_20261026_PASTE.txt
+          cp dist/sites-supabase-online-code.html delivery/YW2_School_Auth_Diagnostics_20261026_PASTE.html
+          cmp delivery/YW2_School_Auth_Diagnostics_20261026_PASTE.txt delivery/YW2_School_Auth_Diagnostics_20261026_PASTE.html
+          git add -f delivery/YW2_School_Auth_Diagnostics_20261026_PASTE.txt delivery/YW2_School_Auth_Diagnostics_20261026_PASTE.html
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'build: school auth diagnostic direct-paste HTML TXT [skip ci]'
+          git push origin HEAD:refs/heads/release/sites-paste-20261026-school-auth-diagnostics
+          echo 'SCHOOL-AUTH-DIAGNOSTICS-DELIVERY-PASS'
