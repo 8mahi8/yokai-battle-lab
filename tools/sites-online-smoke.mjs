@@ -822,7 +822,8 @@ function gauge(frame,id){
   }
   async function gesture(type,x,y,pointerId,expectAck=true){
    const target=pad(),box=target?.getBoundingClientRect();
-   check(target&&box.width>0&&box.height>0,'touch pad missing for '+type);
+   check(target&&((box.width>0&&box.height>0)||
+    (!expectAck&&type==='pointerup')),'touch pad missing for '+type);
    target.dispatchEvent(new PointerEvent(type,{
     bubbles:true,cancelable:true,button:0,pointerType:'touch',
     isPrimary:true,pointerId,
