@@ -210,6 +210,8 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  let sceneSpecialTargetIndex=null; // resolved target, not a hit count
  let sceneSpecialHitIndex=null; // custom host hit, never target count
  const stagedHealth=new Map();
+ // Hold previous Inspirit marks until the host-confirmed hit is drawn.
+ const stagedConditions=new Map();
  const opponentVisibility=researchOpponentVisibility?[
   createSeatMotionVisibility({seat:0}),createSeatMotionVisibility({seat:1})]:null;
  let commandMode=null,battleDrawCache=null,resultDismissed=false;
@@ -375,10 +377,12 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   }
   return !showImpact()&&stagedHealth.has(unit.id)?stagedHealth.get(unit.id):unit.hp;
  };
+ const shownCondition=unit=>scenePhase==='anticipation'&&stagedConditions.has(unit.id)
+  ?stagedConditions.get(unit.id):unit;
  function cancelScene(){
   clearTimeout(sceneTimer);sceneTimer=null;flash=null;scenePlan=null;
   scenePhase='done';sceneHitIndex=null;sceneSpecialTargetIndex=null;
-  sceneSpecialHitIndex=null;stagedHealth.clear();
+  sceneSpecialHitIndex=null;stagedHealth.clear();stagedConditions.clear();
   if(opponentVisibility)for(const gate of opponentVisibility)gate.finish();
  }
  function advanceScene(){
@@ -423,7 +427,13 @@ export function createMatchStage({element,onAction,onStep=()=>{},
   for(const impact of cue.targets||[]){
    const side=impact.id?.startsWith('B')?1:0;
    const old=previousView?.teams?.[side]?.members.find(m=>m.id===impact.id);
-   if(old)stagedHealth.set(old.id,old.hp);
+   if(old){
+    stagedHealth.set(old.id,old.hp);
+    // An Inspirit status change must not visually precede its hit.
+    // Missing previous frames must not invent a previous status.
+    if(cue.type==='action'&&cue.kind==='inspirit')
+     stagedConditions.set(old.id,{positive:old.positive,negative:old.negative});
+   }
   }
   sceneTimer=setTimeout(advanceScene,scenePlan.phases[0].endMs+1);
  }
@@ -478,13 +488,14 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const benched=unit.front?'':' mb-bench';
    const ineligible=commandMode&&t.side===activeSeat&&!choice?' mb-choice-ineligible':'';
    const name=escapeHTML(unit.name);
+   const condition=shownCondition(unit);
    return '<button type="button" data-unit="'+unit.id+'" class="mb-creature'+selected+pinned+disabled+animated+benched+choice+ineligible+
     '" style="--x:'+pos.x+'%;--y:'+pos.y+'%" aria-label="'+name+(unit.front?' 前衛':' 後衛')+'">'+
     renderSpiritPortrait(unit.id)+
     '<span class="mb-name">'+name+'</span>'+
     '<span class="mb-bars"><i style="width:'+pct(shownHp(unit),unit.maxHp)+'%"></i></span>'+
     '<span class="mb-bars mb-soulbar"><i style="width:'+pct(unit.soul,unit.capacity)+'%"></i></span>'+
-    '<span class="mb-unit-stat">'+shownHp(unit)+'/'+unit.maxHp+(unit.negative?' ⚠':'')+'</span>'+
+    '<span class="mb-unit-stat">'+shownHp(unit)+'/'+unit.maxHp+(condition.negative?' ⚠':'')+'</span>'+
     (unit.front?'<span class="mb-front-badge">前衛</span>':'')+
     (commandMode==='charge'&&unit.specialReady?
      '<span class="mb-special-ready">'+(t.mode==='zero'?'GわざOK':'わざOK')+'</span>':'')+
@@ -505,6 +516,7 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const unit=team.members.find(m=>m.id===id);
    if(!unit)return '';
    const name=escapeHTML(unit.name);
+   const condition=shownCondition(unit);
    const actor=flash?.actor===id?' mb-acting':'';
    const impact=visibleHit(id);
    const target=impact?' '+visualReactionClass(impact):'';
@@ -516,17 +528,17 @@ export function createMatchStage({element,onAction,onStep=()=>{},
    const arriving=!isKO&&scenePhase==='anticipation'&&lastKoArrival.some(row=>
     row.side===team.side&&row.ids.includes(id)&&flash?.key==='event:'+row.eventId)
     ?' mb-arriving':'';
-   const status=(unit.positive?'<span class="mb-condition-icon" aria-label="良いとりつき">↑</span>':'')+
-    (unit.negative?'<span class="mb-condition-icon" aria-label="悪いとりつき">⚠</span>':'');
+   const status=(condition.positive?'<span class="mb-condition-icon" aria-label="良いとりつき">↑</span>':'')+
+    (condition.negative?'<span class="mb-condition-icon" aria-label="悪いとりつき">⚠</span>':'');
    return '<button type="button" data-unit="'+id+'" class="mb-fighter'+
     actor+target+pinned+ko+arriving+candidate+tonedDown+'" aria-label="'+name+
     (isOwn?' 味方前衛':' 敵前衛')+(candidate?' 選択可能':'')+
-    (pinned?' ピンでねらい中':'')+(unit.negative?' 悪いとりつき':unit.positive?' 良いとりつき':'')+'">'+
+    (pinned?' ピンでねらい中':'')+(condition.negative?' 悪いとりつき':condition.positive?' 良いとりつき':'')+'">'+
     '<span class="mb-fighter-sprite">'+(isKO?
       '<span class="mb-ko-wisp" aria-hidden="true"></span>':renderSpiritPortrait(id))+'</span>'+
     (pinned?'<span class="mb-pin-reticle" aria-hidden="true"></span>':'')+
-    (unit.negative?'<span class="mb-status-marker mb-status-bad" aria-hidden="true">✕</span>':
-     unit.positive?'<span class="mb-status-marker mb-status-good" aria-hidden="true">↑</span>':'')+
+    (condition.negative?'<span class="mb-status-marker mb-status-bad" aria-hidden="true">✕</span>':
+     condition.positive?'<span class="mb-status-marker mb-status-good" aria-hidden="true">↑</span>':'')+
     '<span class="mb-fighter-meta"><strong>'+name+'</strong>'+
     '<span class="mb-bars"><i style="width:'+pct(shownHp(unit),unit.maxHp)+'%"></i></span>'+
     (isOwn?'<span class="mb-bars mb-soulbar"><i style="width:'+pct(unit.soul,unit.capacity)+'%"></i></span>':'')+
