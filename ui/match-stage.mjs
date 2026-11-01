@@ -337,9 +337,11 @@ export function createMatchStage({element,onAction,onStep=()=>{},
  $('mb-revision').hidden=!showResearchLabels;
  element.querySelector('.mb-title-group small').hidden=!showResearchLabels;
  // Presentation-only clock. All authoritative results already come from host.
+ // Keep Host-confirmed HP after the last blow through recovery,
+ // but never respawn the LAST damage number or MISS when recovery redraws.
  const showImpact=()=>scenePhase==='impact'||scenePhase==='recovery';
  const visibleHit=id=>{
-  if(!showImpact())return null;
+  if(scenePhase!=='impact')return null;
   if(flash?.type==='action'&&scenePlan?.hitResults?.length){
    const h=scenePlan.hitResults[sceneHitIndex??0];
    return h?.targetId===id?{id,hit:h.hit,kind:'damage',amount:h.damage}:null;
