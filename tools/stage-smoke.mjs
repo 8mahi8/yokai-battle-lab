@@ -610,28 +610,32 @@ try{
    (normalResult||'missing DOM state')+' '+normalErr.slice(-500));
  console.log('V3-5-18-REAL-HOST-NORMAL-HITS-CHROMIUM-PASS three numbered damage frames');
 
- // V3-5-19: the SAME browser stage now receives a real custom Host
- // normal attack whose 20 x 3 authored shape is documented in 3 YW2 guides.
- // The host's actual target HP/Miss rows—not source sheet power guesses—
- // must be visible in all 3 DOM frames without an unsourced move ID.
- const sourcedAttack=spawn(browser,[
-  '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
-  '--no-first-run','--disable-extensions','--hide-scrollbars',
-  '--user-data-dir='+path.join(tmp,'v3-5-19-sourced-attack'),
-  '--window-size=1024,768','--virtual-time-budget=3300','--dump-dom',
-  'http://127.0.0.1:'+server.address().port+'/lab/match-stage.html?review=yw2-bushinyan-attack'
- ],{stdio:['ignore','pipe','pipe']});
- let sourcedAttackDom='',sourcedAttackErr='';
- sourcedAttack.stdout.on('data',chunk=>sourcedAttackDom+=String(chunk));
- sourcedAttack.stderr.on('data',chunk=>sourcedAttackErr+=String(chunk).slice(0,2500));
- const sourceTimer=setTimeout(()=>sourcedAttack.kill('SIGKILL'),20000);
- const sourceCode=await new Promise(resolve=>sourcedAttack.on('close',resolve));
- clearTimeout(sourceTimer);
- const sourceResult=sourcedAttackDom.match(/<span id="lab-state">([^<]*)<[/]span>/)?.[1];
- if(sourceCode!==0||sourceResult!=='V3-5-19-YW2-SOURCED-ATTACK-PASS')
-  throw Error('V3-5-19 source-backed normal attack DOM mismatch: '+
-   (sourceResult||'missing DOM marker')+' '+sourcedAttackErr.slice(-550));
- console.log('V3-5-19-YW2-SOURCED-ATTACK-CHROMIUM-PASS original 20 x 3 attack shape');
+ // V3-5-22 provenance audit: TWO explicit, conflicting YW2 sources.
+ // Japanese guides 20x3 and Mt. Wildwood YW2 20x2 run in an isolated
+ // custom HOST. Neither is certified as the definitive original count.
+ for(const [review,expected,label] of [
+  ['yw2-bushinyan-attack','V3-5-19-YW2-SOURCED-ATTACK-PASS','JP 20x3'],
+  ['yw2-bushinyan-attack-mtw','V3-5-22-YW2-MTW-2HIT-PASS','MtWildwood 20x2']
+ ]){
+  const qa=spawn(browser,[
+   '--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu',
+   '--no-first-run','--disable-extensions','--hide-scrollbars',
+   '--user-data-dir='+path.join(tmp,'v3-5-22-'+review),
+   '--window-size=1024,768','--virtual-time-budget=3300','--dump-dom',
+   'http://127.0.0.1:'+server.address().port+'/lab/match-stage.html?review='+review
+  ],{stdio:['ignore','pipe','pipe']});
+  let output='',stderr='';
+  qa.stdout.on('data',chunk=>output+=String(chunk));
+  qa.stderr.on('data',chunk=>stderr+=String(chunk).slice(0,2500));
+  const kill=setTimeout(()=>qa.kill('SIGKILL'),20000);
+  const code=await new Promise(resolve=>qa.on('close',resolve));
+  clearTimeout(kill);
+  const result=output.match(/<span id="lab-state">([^<]*)<[/]span>/)?.[1];
+  if(code!==0||result!==expected)
+   throw Error('V3-5-22 source-variant '+label+' Chromium mismatch: '+
+    (result||'missing marker')+' '+stderr.slice(-500));
+  console.log('V3-5-22-YW2-VARIANT-CHROMIUM-PASS '+label);
+ }
 
  // V3-5-21: one REAL custom Host normal multi-hit action with critical
  // from its canonical hit rows. Verify gold vs normal red, caption and HP.
