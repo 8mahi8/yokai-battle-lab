@@ -48,8 +48,8 @@ test('V3-5-20 disputed all-enemy multi-hits remain outside executable source-bac
  assert.equal(RENTAL_SOULTIMATE_MOVES.length,6);
  assert.ok(RENTAL_SOULTIMATE_MOVES.every(x=>x.id!==id));
  assert.deepEqual(RENTAL_SOULTIMATE_MOVES.map(x=>x.hitPattern.count),
-  [null,null,null,null,null,null],
-  'no conflicting source-only hit count can leak to the rental six');
+  [null,null,0,null,0,0],
+  'non-damage rentals have zero hits and damage rentals retain unknown hit count');
 });
 
 test('V3-5-20 reading unresolved research cannot change seed, Host combat, or even custom Soultimate ledger',()=>{
