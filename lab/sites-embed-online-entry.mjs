@@ -28,7 +28,7 @@ const config=__YW_ONLINE_CONFIG__;
 // only in our localhost emulator, with build-time flags for dead-code removal.
 const chargeQaMode=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&(()=>{
  try{return location.href==='about:srcdoc'&&window.parent!==window&&
-  ['?charge','?gcharge'].includes(window.parent.location.search);}catch{return false;}
+  ['?charge','?gcharge','?chargecycle'].includes(window.parent.location.search);}catch{return false;}
 })();
 const purifyQaMode=__YW_EMULATOR_MODE__&&__YW_FRIENDS_MODE__&&(()=>{
  try{return location.href==='about:srcdoc'&&window.parent!==window&&
@@ -257,7 +257,7 @@ $('.yw-online-start').addEventListener('click',async()=>{
    purifyQaMode?{seed:12,teams:purifyTeams,
    rotationCooldownMs:0,researchSpecialEffects:true,
    researchDamageModel:true,researchStatInspirits:true}:
-   chargeQaMode?{seed:12,teams:[chargeGuard,chargeGuard],
+   chargeQaMode?{seed:(()=>{try{return window.parent.location.search==='?chargecycle'?14:12;}catch{return 12;}})(),teams:[chargeGuard,chargeGuard],
    rotationCooldownMs:0,researchSpecialEffects:true,
    researchDamageModel:true,researchStatInspirits:true}:null;
   match=createFirebaseMatchHost({roomClient:room,protocol:touchQaMode?
