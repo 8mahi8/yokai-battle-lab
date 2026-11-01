@@ -37,6 +37,10 @@ button:focus-visible{outline:3px solid #ffe5a9;outline-offset:2px}
 /* The supplied original PvP video shows damage digits in red and healing
    digits in green. This is visual feedback only, never damage semantics. */
 .mb-hit .mb-floating-number{color:#ff737e;text-shadow:0 1px 2px #48111b,0 2px 5px #071422}
+/* Critical is a separate Host-confirmed result, not damage color guessing.
+   Keep standard red normal damage and unchanged green healing. */
+.mb-hit.mb-critical .mb-floating-number{
+ color:#ffe075;text-shadow:0 1px 3px #81400a,0 2px 5px #071422}
 .mb-healed .mb-floating-number{color:#b1f7c9}
 @keyframes mb-acting{0%{filter:brightness(1.6);box-shadow:0 0 0 5px #d1bb8299}100%{filter:brightness(1);box-shadow:0 3px 11px #050d1a99}}
 @keyframes mb-hit{0%{filter:brightness(1.8);box-shadow:0 0 0 5px #ef7c8399}100%{filter:brightness(1);box-shadow:0 3px 11px #050d1a99}}
