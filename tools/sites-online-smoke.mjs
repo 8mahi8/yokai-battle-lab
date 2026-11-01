@@ -331,8 +331,26 @@ function gauge(frame,id){
   check(negative('B1')&&snap().game.events.some(e=>
    e.type==='action'&&e.kind==='inspirit'&&e.target==='B1'&&e.hit),
    'the B1 negative Inspirit was not caused by an enemy action');
-  check(el(g,'#mb-team1 [data-unit="B1"] .mb-unit-stat')?.textContent.includes('⚠'),
-   'guest missing real negative status');
+  // V3-5-11: canonical Inspirit is resolved before the graphic plays,
+  // but the new negative mark must NOT appear until the hit, on either
+  // the own wheel or either combat field. This is real Host/Guest DOM.
+  check(el(g,'.mb-battle-backdrop').dataset.sceneKind==='inspirit'&&
+   el(g,'.mb-battle-backdrop').dataset.scenePhase==='anticipation',
+   'negative Inspirit windup not presented to Guest');
+  for(const frame of [g,h]){
+   const fighter=el(frame,'.'+(frame===g?'mb-ally-line':'mb-foe-line')+
+    ' [data-unit="B1"]');
+   check(fighter&&!fighter.querySelector('.mb-status-marker')&&
+    !fighter.querySelector('.mb-condition-icon'),
+    'negative mark leaked into combat field before Inspirit hit');
+  }
+  check(!el(g,'#mb-team1 [data-unit="B1"] .mb-unit-stat')?.textContent.includes('⚠'),
+   'negative mark leaked into own wheel before Inspirit hit');
+  await until(()=>el(g,'.mb-battle-backdrop').dataset.scenePhase!=='anticipation'&&
+   el(g,'#mb-team1 [data-unit="B1"] .mb-unit-stat')?.textContent.includes('⚠')&&
+   el(g,'.mb-ally-line [data-unit="B1"] .mb-status-marker')&&
+   el(h,'.mb-foe-line [data-unit="B1"] .mb-status-marker'),
+   'new negative marks did not arrive at or after the host-resolved hit');
 
   // V3-5-10: the original opponent's wheel/frontline is only revealed
   // once the current motion ends, even though the true Host has ACKed a
