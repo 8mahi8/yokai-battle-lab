@@ -19,6 +19,12 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-11-02 V3-5-12｜原作の5種類のおはらいをオンライン実二席で確認
+
+- [**正式な試験出典・変更内容・証拠**](./ENGINE_V3_5_12_FIVE_PURIFY_GESTURES_ONLINE_E2E_20261102.md)。公式/原作攻略資料の「つぶせ・連打・こすれ・まわせ・斬れ」5方式はゲーム本体に既存実装。しかしオンライン2席の本物のUI+指操作E2Eはpopのみだったので、**4方式の未検証リスク**を優先。Emulator限定`?purifycycle`の本物のHost負とりつき→Guest B1後衛で、既存Host選択に沿ってpop/mash/rub/spinの各途中進捗+取消→slash3斬りで**本当の状態解除**を実ブラウザ/通信受入。既存pop5タップの完遂試験も維持。
+- **[Node950/950](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41325027151)・[Stage Chromium16/16](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41325020257)・[Firebase実2席+旧Rules再現2回全工程](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41325027081)全成功**。ゲームルール/閾値/時刻、学校通常HTMLや本番Rules/Auth/DBは不変。**全5種類の完遂ではなく、4種は一部入力＋中止、斬れ/別pop試験は完遂**であることを区別する。
+- **次V3-5-13**：必殺の残り3種spin/trace/alignを同様に実Firebase2席＋iPad風ポインタ操作で受入。学校iPad Safari実機2台・以前本人が送った原作MP4原本直接再確認は未達。確かめていない原作の難易度や秒数を独断で変更しない。**V3-5全体未完了**。
+
 ## 2026-11-02 V3-5-11｜とりつき状態表示の予備動作→命中タイミング矛盾を修正
 
 - [**正式な原因・原作動画一次観察の出典・修正範囲・CI結果**](./ENGINE_V3_5_11_INSPIRIT_IMPACT_TIMING_20261102.md)。Hostが確定した`inspirit`で、HPには既存`stagedHealth`を使い命中まで旧値を表示する一方、正負とりつきマークは直接新値を描画していた問題を修正。`stagedConditions`は前Snapshotのある`inspirit`対象に限定し、`anticipation`中だけ旧状態、命中後にHost正規状態を描画。**戦闘ルール/ホスト確定効果/通信/オート進行時間は不変**。
