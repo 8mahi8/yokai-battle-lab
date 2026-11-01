@@ -60,3 +60,12 @@ export function visualReactionClass(impact){
  if(impact.kind==='status')return 'mb-inspirited';
  return 'mb-hit';
 }
+
+/** One displayed action hit at a time, based only on host-resolved rows.
+ * The total action amount is a legacy fallback, not a per-hit value. */
+export function actionLabelImpact(action,hitResults,hitIndex){
+ const hit=Array.isArray(hitResults)&&Number.isInteger(hitIndex)&&hitIndex>=0
+  ?hitResults[hitIndex]:null;
+ return {hit:hit?hit.hit!==false:action?.hit!==false,
+  amount:hit?hit.damage:(Number.isFinite(action?.amount)?action.amount:0)};
+}
