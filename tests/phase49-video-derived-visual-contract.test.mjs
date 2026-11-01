@@ -33,8 +33,13 @@ test('original video crosshair and statuses are presentation-only, never separat
  assert.match(stage,/class="mb-pin-reticle"/);
  assert.match(stage,/mb-status-marker mb-status-bad/);
  assert.match(stage,/mb-status-marker mb-status-good/);
- assert.match(stage,/unit\.negative/);
- assert.match(stage,/unit\.positive/);
+ // V3-5-11: the host's newly applied Inspirit stays hidden during the
+ // windup, then the same canonical mark appears at the hit in the field.
+ // Real two-seat DOM timing is separately verified by sites-online-smoke.
+ assert.match(stage,/const shownCondition=unit=>scenePhase==='anticipation'/);
+ assert.match(stage,/stagedConditions\.set\(old\.id/);
+ assert.match(stage,/condition\.negative/);
+ assert.match(stage,/condition\.positive/);
  assert.match(css,/mb-pin-reticle:after/);
  assert.match(css,/mb-status-bad/);
  assert.match(css,/mb-status-good/);
