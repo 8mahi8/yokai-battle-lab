@@ -57,3 +57,34 @@ test('V3-5-21 UI attaches critical only to actual indexed damage rows and keeps 
  assert.match(css,/\.mb-hit \.mb-floating-number\{color:#ff737e/);
  assert.match(css,/\.mb-healed \.mb-floating-number\{color:#b1f7c9/);
 });
+
+test('V3-5-21 real research Soultimate criticals remain on their own host hit rows',()=>{
+ const teams=[toRoster(),toRoster()];
+ const host=createCombat({seed:20261029,teams,researchSpecialEffects:true,
+  researchDamageModel:true,researchStatInspirits:true,
+  researchSoultimateHitCount:3});
+ host.giveSoul('A1',100);
+ const charge=host.prepareSoultimate(0,'A1');
+ assert.equal(charge.ok,true);
+ assert.equal(host.resolveSoultimate(0,charge.token,true).ok,true);
+ const game=host.snapshot();
+ const event=game.events.findLast(x=>x.type==='special');
+ assert.ok(event.researchSoultimateHits.hits.some(h=>h.critical),
+  'the seeded custom Host must truly resolve a critical hit');
+ const wire={game,revision:1,clientSequences:[0,0]};
+ const views=[makeStageView(wire,0),makeStageView(wire,1)];
+ const hits=views.map(v=>v.events.findLast(e=>e.type==='special').specialHitLedger.hits);
+ assert.deepEqual(hits[0],hits[1]);
+ const scene=planActionChoreography(latestBattleCue(views[0].events));
+ assert.equal(scene.specialHitLedger.originalHitCount,null);
+ for(const [i,hit] of scene.specialHitLedger.hits.entries()){
+  const start=scene.phases[1].startMs;
+  const duration=scene.phases[1].endMs-start;
+  const frame=choreographyFrame(scene,start+(i+.1)*duration/
+   scene.specialHitLedger.hits.length);
+  assert.equal(frame.currentSpecialHit.critical,hit.critical);
+  const reaction=visualReactionClass({kind:'damage',hit:hit.hit,
+   amount:hit.damage,critical:hit.critical});
+  assert.equal(reaction,hit.hit?(hit.critical?'mb-hit mb-critical':'mb-hit'):'mb-missed');
+ }
+});
