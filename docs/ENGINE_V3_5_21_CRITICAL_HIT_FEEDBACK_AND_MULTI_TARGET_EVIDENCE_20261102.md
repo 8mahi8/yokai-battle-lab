@@ -28,7 +28,9 @@
 
 ## 4. 実行結果と未確認
 
-- この節を作成した時点では最新コミットのCIは実行中。コードHEADのNode、Chromium Stage、Firebase Friends 2席を順に確認し、**終了したものだけPASSと追記**する。
+- **コード＋新クリティカルNode/Chromium受入を含むコミット `b11e9df0`：** [Node 975/975 PASS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41362127997)。新たな4件のHost critical/2席/研究必殺/表示照合も全件合格。
+- 同コードコミットで [Chromium Stage SUCCESS](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41362127869)。16件の基本テストと、ログの `V3-5-21-REAL-HOST-CRITICAL-CHROMIUM-PASS` により、実Host会心HitのDOM色・ラベル・HP・復帰後の重複ゼロを検証。
+- [Firebase Friends 2席](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41362132193) はこの追記時点で実行中。**終了前に全体成功と記録しない**。本番学校Safari実機の試験とは別。
 - 原作技の総Hit数・敵への分配・KO後の再標的化・3DS原作の正確な会心ラベル/色は未確認。
 - 学校iPad Safari実機2台の試験・原作MP4フレーム直接分析はしていない。
 - main、学校のGoogle Sites内の直接HTML埋め込み、Firebase Security Rules/Auth/DB、Google Drive配布は未変更。
