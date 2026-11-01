@@ -1086,6 +1086,16 @@ try{
   if(!gProof.ok)throw Error('V3-5-3 real 3-Soul Zero G charge failed: '+
    String(gProof.rendered||gProof.reason).slice(0,1400));
   console.log(gProof.rendered);
+  // V3-5-13: full real 2-seat spin, trace, align charge challenges, selected
+  // from Host seed14 in one room; all three must spend Soul and cast.
+  const chargeCycle=await runRealtimeQa({
+   browser,profile:path.join(tmp,'chargecycle-profile'),
+   url:'http://127.0.0.1:'+server.address().port+'/qa?chargecycle',
+   sentinel:'SITES-FRIENDS-CHARGE-CYCLE-PASS',timeoutMs:180000
+  });
+  if(!chargeCycle.ok)throw Error('V3-5-13 real 2-seat 3 charge gestures failed: '+
+   String(chargeCycle.rendered||chargeCycle.reason).slice(0,2100));
+  console.log(chargeCycle.rendered);
   const pProof=await runRealtimeQa({
    browser,profile:path.join(tmp,'purify-profile'),
    url:'http://127.0.0.1:'+server.address().port+'/qa?purify',
