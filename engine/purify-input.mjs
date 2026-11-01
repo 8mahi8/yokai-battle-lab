@@ -54,9 +54,9 @@ export function createPurifyTrial({kind,seed=0}={}){
  }
  function input(event){
   if(completed)return snapshot();
-  if(!event||!['down','move','up','tap','cancel'].includes(event.type))
-   throw new TypeError('purification accepts down/move/up/tap/cancel');
-  if(event.type==='up'||event.type==='cancel'){
+  if(!event||!['down','move','up','tap'].includes(event.type))
+   throw new TypeError('purification accepts down/move/up/tap');
+  if(event.type==='up'){
    active=false;last=null;lastAngle=null;spinDirection=0;segmentStart=null;
    return snapshot();
   }
