@@ -19,6 +19,12 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-11-02 V3-5-13｜必殺チャージ残り3操作の実二席完走・回帰
+
+- [**原作出典・実装と受入の正式記録**](./ENGINE_V3_5_13_FOUR_SOULTIMATE_CHARGE_GESTURES_ONLINE_E2E_20261102.md)。元々実装済みの4種類のうち、Firebase2席で`tap`は既に6タップ完走。今回`spin/trace/align`も**Host既存RNG（localhost限定seed14）に選ばせ、Guestの実Pointer操作から全3種必殺完了、Soul消費、敵HP正規変化**まで2回通しで成功。ゲームルール、操作閾値、キャラ性能、UI/時間は無変更で**QAだけ追加**。
+- 最終[Node950/950](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41326495148)、[Stage16/16](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41326490328)、[無認証Firebaseエミュレーター2席・通常+過去Rules2回全工程](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41326490366)すべてPASS。以前のおはらい5方式・通常/G・6KO/同一試合結果も回帰成功。
+- **次V3-5-14**：iPad Safari実機2台の指操作/ラグ/復帰/中断。可能でなければ実戦で重要な操作不整合の証拠を集め、必要な修正だけ。**元動画MP4の今回直接視聴、学校実機試遊は未実施／V3-5全体未完了**。学校Google Sites稼働版と本番Firebase Rules/DB/Auth、main、Driveは未変更。
+
 ## 2026-11-02 V3-5-12｜原作の5種類のおはらいをオンライン実二席で確認
 
 - [**正式な試験出典・変更内容・証拠**](./ENGINE_V3_5_12_FIVE_PURIFY_GESTURES_ONLINE_E2E_20261102.md)。公式/原作攻略資料の「つぶせ・連打・こすれ・まわせ・斬れ」5方式はゲーム本体に既存実装。しかしオンライン2席の本物のUI+指操作E2Eはpopのみだったので、**4方式の未検証リスク**を優先。Emulator限定`?purifycycle`の本物のHost負とりつき→Guest B1後衛で、既存Host選択に沿ってpop/mash/rub/spinの各途中進捗+取消→slash3斬りで**本当の状態解除**を実ブラウザ/通信受入。既存pop5タップの完遂試験も維持。
