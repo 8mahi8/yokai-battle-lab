@@ -19,6 +19,12 @@
 3. **ロードマップの現在地**：Phase 1～6のどこ、どのサブステップ、何が未完か。「作業進捗」と「原作再現度」を混同しない。
 本番Google Sites稼働HTML、GitHub main、Firebase本番Rules/DB、旧Drive配布は本人の明示依頼まで更新しない。
 
+## 2026-11-02 V3-5-15｜原作動画との再現度上位ギャップ再監査＋開戦演出
+
+- **[元動画の過去実フレーム観察・コード実体を照合した重要度順位とCI](./ENGINE_V3_5_15_ORIGINAL_PVP_GAP_PRIORITIES_AND_OPENING_20261102.md)**：技固有の命中回数・固有演出・元のキャラ名との一致、学校普通試合の長さが**主要未完成**。元6体は本人承認オリジナルレンタル、`rental-move-master`は通常技名`null`、必殺の一部ヒット数`unknown`。**無根拠の技名/ヒット数を確定しない、キャラを勝手に原作キャラへ置換しない**。
+- 本人提供動画の00:00–00:11に観察された**「いざ勝負」開戦表示が実画面にない**という明確なギャップのみ、Friends初回に軽量表示で補完。950msは試用値、戦闘時計/タップ/通信/Rulesを止めない。途中参加/研究画面/勝敗後に再生しない。[Node955/955](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41331203475)、[Stage16/16](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41331203441)、[Firebase2席・通常/旧Rules再現の全工程](https://github.com/8mahi8/yokai-battle-lab/actions/runs/41331185608)を成功。
+- **次V3-5-16**：原作資料に確証のある固有技1つの動き・ターゲット/ヒット列/画面表示の意味を整理し、既存の共通エンジンと原作資料の照合を優先。正式名称/パワー/確率が不明なら判断を保留、独自レンタルの正式仕様を無断変更しない。学校iPad Safari実戦時間・手触りを測れる機会があれば最優先。学校稼働Sites/本番Firebase/main/Drive未変更、V3-5全体未完成。
+
 ## 2026-11-02 V3-5-14｜Safari pointercancel/時計合わせ「中断なのに成功・再操作不能」改善
 
 - [**根拠・実装・CI完走台帳**](./ENGINE_V3_5_14_SAFARI_POINTERCANCEL_ALIGNMENT_RECOVERY_20261102.md)。Safari等のブラウザは画面回転/アプリ切替/掌拒否で`pointercancel`を出す。時計`align`は指離し`up`で成功を数えるため、従来の中断`up`転送では誤成功の可能性。最初の新`cancel`案は**既存No-Auth Firebase Rulesで`permission_denied`**となり、ルール変更せずに撤回。`ui/match-stage.mjs`の中断時計のみ`up`送信を避ける、`engine/charge-input.mjs`で前のドラッグが未完了なら次の本物の`down`で12時に戻す。**現行4入力の通信プロトコル、時計3回判定・Soul/技威力・他4つの対戦操作は不変**。
