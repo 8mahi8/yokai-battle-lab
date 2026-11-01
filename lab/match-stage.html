@@ -588,6 +588,54 @@ if(review==='purify-e1'){
     'PHASE22-REAL-HOST-HP-LEDGER-PASS':'PHASE22-REAL-HOST-HP-LEDGER-FAIL '+seen.join(',');
   }
  },20);
+}else if(review==='real-attack-critical'){
+ // Real seeded Host hits, not a fake critical visual injected into DOM.
+ // This is an explicit custom research roster, never the six school rentals.
+ const roster=RENTAL_SQUAD.map(unit=>({...unit,maxHp:900,
+  weights:[100,0,0,0],attackHits:3,moveCritBonus:98,attackAccuracy:4}));
+ const host=createCombat({seed:41,teams:[roster,roster],
+  researchMultiHit:true,researchDamageModel:true});
+ const action=host.step(),game=host.snapshot();
+ const event=game.events.findLast(e=>e.type==='action');
+ const hits=event?.multiHit?.hits;
+ if(action.type!=='action'||action.kind!=='attack'||hits?.length!==3||
+    !hits.some(h=>h.critical))
+  throw Error('critical-feedback lab needs three real Host hits with critical');
+ stage.render({game,revision:1,clientSequences:[0,0],forecast:[]});
+ const observed=[];let last=-1;
+ const timer=setInterval(()=>{
+  const field=el('battle-stage');
+  const backdrop=field.querySelector('.mb-battle-backdrop');
+  const phase=backdrop?.dataset.scenePhase;
+  if(phase==='recovery'&&observed.length===hits.length){
+   clearInterval(timer);
+   const fighter=field.querySelector('.mb-fighter[data-unit="'+event.target+'"]');
+   const hp=fighter?.querySelector('.mb-fighter-meta small')?.textContent||'';
+   const ok=observed.every((x,i)=>x==='ok:'+i)&&
+    field.querySelectorAll('.mb-floating-number').length===0&&
+    hp.startsWith(String(hits.at(-1).targetHpAfter)+'/');
+   el('lab-state').textContent=ok?'V3-5-21-REAL-CRITICAL-DOM-PASS':
+    'V3-5-21-REAL-CRITICAL-DOM-FAIL recovery='+hp+' '+observed.join(',');
+   return;
+  }
+  const idx=Number(backdrop?.dataset.activeHit||0)-1;
+  if(phase!=='impact'||idx<0||idx===last||idx>=hits.length)return;
+  last=idx;
+  const hit=hits[idx];
+  const fighter=field.querySelector('.mb-fighter[data-unit="'+event.target+'"]');
+  const floating=fighter?.querySelector('.mb-floating-number');
+  const label=field.querySelector('#mb-action-label')?.textContent||'';
+  const hp=fighter?.querySelector('.mb-fighter-meta small')?.textContent||'';
+  const expectedColor=hit.critical?'rgb(255, 224, 117)':'rgb(255, 115, 126)';
+  const ok=!!fighter&&
+   fighter.classList.contains('mb-critical')===hit.critical&&
+   (hit.hit?floating?.textContent.includes(String(hit.amount))&&
+    getComputedStyle(floating).color===expectedColor:
+    floating?.textContent==='MISS')&&
+   label.includes('（クリティカル）')===hit.critical&&
+   hp.startsWith(String(hit.targetHpAfter)+'/');
+  observed.push(ok?'ok:'+idx:'BAD:'+idx);
+ },12);
 }else if(review==='real-attack-hit-ledger'||review==='yw2-bushinyan-attack'){
  // Both use the same read-only Host hit paint; the second case takes ONLY
  // documented attack Power20 x 3 from three independent YW2-only guides.
