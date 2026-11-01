@@ -1,3 +1,5 @@
+> **2026-11-02 V3-5-21｜ホスト確定のクリティカルを戦闘画面へ表示：** [引き継ぎ・原作照合・テスト](./docs/ENGINE_V3_5_21_CRITICAL_HIT_FEEDBACK_AND_MULTI_TARGET_EVIDENCE_20261102.md)。通常/研究必殺の1Hitごとの`critical`を再計算せず描画に反映。数値や通信は変更せず、学校の6体はそのまま。原作の複数対象連撃の配分/KO後挙動は出典不十分につき保留。新CIが完了するまで合格と記さない。
+
 > **2026-11-02 V3-5-20｜原作必殺技の数値不一致とLast-Hit再描画修正：** [資料・コード・テスト・引継ぎ](./docs/ENGINE_V3_5_20_MULTITARGET_SOURCE_CONFLICT_AND_RECOVERY_20261102.md)。ブシニャン必殺は資料が25×10 / 20×10 / 22×9と衝突、全体Hitの各敵配分は未確認。安全に研究用の未確定データとして保存し、試遊対戦には適用せず。攻撃終了後の回復演出で最後のダメージ数字が繰り返し出る問題を修正。Node971/971・Chromium Stage PASS。学校HTML/Firebase Rules/mainは未変更。
 
 > **2026-11-02 V3-5-19｜原作根拠のある3Hit通常技を研究環境で実演：** [資料・実装・テスト・引き継ぎ](./docs/ENGINE_V3_5_19_BUSHINYAN_SOURCE_ATTACK_20261102.md)。ブシニャン「閃光ぎり」20×3（YW2攻略3資料が一致）を学校版と分離した研究データとして収録。実カスタムHost→両席の連続Hit→Chromium表示まで確認。Node967/967・Stage PASS。原作本体の能力値/モーション/必殺Hit分配は未確定。学校Safari/Google Sites本番HTML、main、Firebase Rulesは変更なし。
